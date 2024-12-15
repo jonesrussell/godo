@@ -6,11 +6,14 @@ package di
 import (
 	"context"
 	"database/sql"
+	"fmt"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/google/wire"
 	"github.com/jonesrussell/godo/internal/database"
 	"github.com/jonesrussell/godo/internal/repository"
 	"github.com/jonesrussell/godo/internal/service"
+	"github.com/jonesrussell/godo/internal/ui"
 )
 
 // App represents the main application
@@ -20,7 +23,39 @@ type App struct {
 
 // Run starts the application
 func (a *App) Run(ctx context.Context) error {
-	// TODO: Implement application logic
+	if err := a.initializeServices(ctx); err != nil {
+		return fmt.Errorf("failed to initialize services: %w", err)
+	}
+
+	ui := ui.New(a.todoService)
+	p := tea.NewProgram(ui)
+
+	// Run UI in a goroutine
+	go func() {
+		<-ctx.Done()
+		p.Quit()
+	}()
+
+	if err := p.Start(); err != nil {
+		return fmt.Errorf("failed to start UI: %w", err)
+	}
+
+	return nil
+}
+
+func (a *App) initializeServices(ctx context.Context) error {
+	// Verify database connection
+	// We can do this by creating a test todo
+	testTodo, err := a.todoService.CreateTodo(ctx, "Test Todo", "Testing service initialization")
+	if err != nil {
+		return fmt.Errorf("failed to verify database connection: %w", err)
+	}
+
+	// Clean up test todo
+	if err := a.todoService.DeleteTodo(ctx, testTodo.ID); err != nil {
+		return fmt.Errorf("failed to cleanup test todo: %w", err)
+	}
+
 	return nil
 }
 

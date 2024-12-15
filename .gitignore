@@ -1,1 +1,4 @@
-internal/di/wire_gen.go
+*_gen.go
+*.db
+
+*.log

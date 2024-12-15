@@ -1,24 +1,21 @@
+//go:build wireinject
+// +build wireinject
+
 package di
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/google/wire"
+	"github.com/jonesrussell/godo/internal/database"
+	"github.com/jonesrussell/godo/internal/repository"
+	"github.com/jonesrussell/godo/internal/service"
 )
 
 // App represents the main application
 type App struct {
-	taskService *TaskService
-}
-
-// TaskService handles task-related operations
-type TaskService struct {
-	repository *TaskRepository
-}
-
-// TaskRepository handles task persistence
-type TaskRepository struct {
-	// Could be expanded to include database connection
+	todoService *service.TodoService
 }
 
 // Run starts the application
@@ -28,30 +25,32 @@ func (a *App) Run(ctx context.Context) error {
 }
 
 // NewApp creates a new App instance
-func NewApp(taskService *TaskService) *App {
+func NewApp(todoService *service.TodoService) *App {
 	return &App{
-		taskService: taskService,
+		todoService: todoService,
 	}
 }
 
-// NewTaskService creates a new TaskService instance
-func NewTaskService(repo *TaskRepository) *TaskService {
-	return &TaskService{
-		repository: repo,
-	}
+// Provide TodoRepository interface implementation
+func provideTodoRepository(db *sql.DB) repository.TodoRepository {
+	return repository.NewSQLiteTodoRepository(db)
 }
 
-// NewTaskRepository creates a new TaskRepository instance
-func NewTaskRepository() *TaskRepository {
-	return &TaskRepository{}
+// Add provider set
+var DefaultSet = wire.NewSet(
+	NewSQLiteDB,
+	provideTodoRepository,
+	service.NewTodoService,
+	NewApp,
+)
+
+// Add database provider
+func NewSQLiteDB() (*sql.DB, error) {
+	return database.NewSQLiteDB("./godo.db")
 }
 
 // InitializeApp sets up the dependency injection
 func InitializeApp() (*App, error) {
-	wire.Build(
-		NewApp,
-		NewTaskService,
-		NewTaskRepository,
-	)
-	return &App{}, nil // This will be replaced by Wire
+	wire.Build(DefaultSet)
+	return nil, nil
 }

@@ -24,7 +24,7 @@ Godo is a lightweight todo application that runs as a system service, allowing q
 
 1. Clone the repository
 ```bash
-git clone https://github.com/yourusername/godo.git
+git clone https://github.com/jonesrussell/godo.git
 cd godo
 ```
 

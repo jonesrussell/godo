@@ -58,14 +58,9 @@ func (a *App) Run(ctx context.Context) error {
 				return
 			case <-hotkeyEvents:
 				logger.Info("Hotkey triggered - showing quick note")
-				// Create and run quick note program
-				p := tea.NewProgram(
-					ui.NewQuickNote(a.todoService),
-					tea.WithAltScreen(),
-				)
-				if _, err := p.Run(); err != nil {
-					logger.Error("Quick note error: %v", err)
-				}
+				// Show quick note window
+				qn := ui.NewQuickNote(a.todoService)
+				qn.Show()
 			}
 		}
 	}()
@@ -79,7 +74,7 @@ func (a *App) initializeServices(ctx context.Context) error {
 	logger.Info("Initializing services...")
 
 	// Verify database connection
-	testTodo, err := a.todoService.CreateTodo(ctx, "Test Todo", "Testing service initialization")
+	testTodo, err := a.todoService.CreateTodo(ctx, "test", "Testing service initialization")
 	if err != nil {
 		logger.Error("Failed to verify database connection: %v", err)
 		return fmt.Errorf("failed to verify database connection: %w", err)

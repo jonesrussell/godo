@@ -41,21 +41,10 @@ func setupSignalHandler(parentCtx context.Context) context.Context {
 	return ctx
 }
 
-// showQuickNote displays a minimal quick-note UI
+// showQuickNote displays a minimal quick-note window
 func showQuickNote(service *service.TodoService) {
-	logger.Debug("Opening quick note window...")
-
-	p := tea.NewProgram(
-		ui.NewQuickNote(service),
-		tea.WithAltScreen(),
-		tea.WithMouseCellMotion(),
-	)
-
-	if _, err := p.Run(); err != nil {
-		logger.Error("Quick note error: %v", err)
-	}
-
-	logger.Debug("Quick note window closed")
+	qn := ui.NewQuickNote(service)
+	qn.Show()
 }
 
 // runBackgroundService handles hotkey events and background operations

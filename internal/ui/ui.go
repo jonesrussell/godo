@@ -3,9 +3,11 @@ package ui
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/model"
 	"github.com/jonesrussell/godo/internal/service"
@@ -22,21 +24,23 @@ func (i todoItem) Description() string { return i.todo.Description }
 func (i todoItem) FilterValue() string { return i.todo.Title }
 
 type TodoUI struct {
-	todoService *service.TodoService
-	list        list.Model
-	err         error
+	todos    []model.Todo
+	service  *service.TodoService
+	cursor   int
+	input    textinput.Model
+	adding   bool
+	err      error
 }
 
-func New(todoService *service.TodoService) *TodoUI {
-	logger.Debug("Creating new TodoUI instance")
-	// Create a new list
-	l := list.New([]list.Item{}, list.NewDefaultDelegate(), 0, 0)
-	l.Title = "Todo List"
-	l.SetShowHelp(true)
+func New(service *service.TodoService) *TodoUI {
+	input := textinput.New()
+	input.Placeholder = "Enter todo title..."
+	input.Focus()
 
 	return &TodoUI{
-		todoService: todoService,
-		list:        l,
+		service: service,
+		input:   input,
+		adding:  false,
 	}
 }
 
@@ -48,7 +52,7 @@ func (ui *TodoUI) Init() tea.Cmd {
 
 func (ui *TodoUI) loadTodos() tea.Msg {
 	logger.Debug("Loading todos from service")
-	todos, err := ui.todoService.ListTodos(context.Background())
+	todos, err := ui.service.ListTodos(context.Background())
 	if err != nil {
 		logger.Error("Failed to load todos: %v", err)
 		return errMsg{err}
@@ -69,45 +73,43 @@ type todosLoadedMsg struct{ items []list.Item }
 func (ui *TodoUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		logger.Debug("Received key press: %s", msg.String())
 		switch msg.String() {
-		case "ctrl+c", "q":
-			logger.Info("Quitting application")
-			return ui, tea.Quit
+		case "a":
+			ui.adding = true
+			ui.input.Focus()
+			return ui, nil
 		case "enter":
-			if i, ok := ui.list.SelectedItem().(todoItem); ok {
-				logger.Debug("Toggling todo status for ID: %d", i.todo.ID)
-				// Toggle todo status
-				if err := ui.todoService.ToggleTodoStatus(context.Background(), i.todo.ID); err != nil {
-					logger.Error("Failed to toggle todo status: %v", err)
+			if ui.adding {
+				title := ui.input.Value()
+				if err := ui.service.CreateTodo(context.Background(), title, ""); err != nil {
 					ui.err = err
-					return ui, nil
 				}
+				ui.adding = false
+				ui.input.Reset()
 				return ui, ui.loadTodos
 			}
 		}
-
-	case errMsg:
-		logger.Error("UI error: %v", msg.error)
-		ui.err = msg
-		return ui, nil
-
-	case todosLoadedMsg:
-		logger.Debug("Updating UI with loaded todos")
-		ui.list.SetItems(msg.items)
-
-	case ShowMsg:
-		logger.Debug("Received show message")
-		// Handle showing the UI
-		return ui, ui.loadTodos
 	}
-
-	var cmd tea.Cmd
-	ui.list, cmd = ui.list.Update(msg)
-	return ui, cmd
+	
+	if ui.adding {
+		var cmd tea.Cmd
+		ui.input, cmd = ui.input.Update(msg)
+		return ui, cmd
+	}
+	
+	return ui, nil
 }
 
 func (ui *TodoUI) View() string {
+	var s strings.Builder
+
+	if ui.adding {
+		s.WriteString("\n  Add new todo:\n")
+		s.WriteString(ui.input.View())
+		s.WriteString("\n  (press enter to save)\n")
+		return s.String()
+	}
+
 	if ui.err != nil {
 		logger.Error("Error in view: %v", ui.err)
 		return fmt.Sprintf("Error: %v\n", ui.err)

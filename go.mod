@@ -3,22 +3,20 @@ module github.com/jonesrussell/godo
 go 1.23
 
 require (
+	github.com/charmbracelet/bubbles v0.20.0
+	github.com/charmbracelet/bubbletea v1.2.4
 	github.com/google/wire v0.6.0
 	github.com/mattn/go-sqlite3 v1.14.24
-	github.com/robotn/gohook v0.41.0
+	github.com/micmonay/keybd_event v1.1.2
 )
 
 require (
 	github.com/atotto/clipboard v0.1.4 // indirect
 	github.com/sahilm/fuzzy v0.1.1 // indirect
-	github.com/vcaesar/keycode v0.10.1 // indirect
-	github.com/vcaesar/tt v0.20.1 // indirect
 )
 
 require (
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
-	github.com/charmbracelet/bubbles v0.20.0
-	github.com/charmbracelet/bubbletea v1.2.4
 	github.com/charmbracelet/lipgloss v1.0.0 // indirect
 	github.com/charmbracelet/x/ansi v0.4.5 // indirect
 	github.com/charmbracelet/x/term v0.2.1 // indirect

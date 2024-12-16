@@ -43,12 +43,6 @@ func (a *App) Run(ctx context.Context) error {
 	}()
 	log.Println("Hotkey listener started")
 
-	// Run the Bubble Tea program
-	log.Println("Starting UI...")
-	if err := a.program.Start(); err != nil {
-		return fmt.Errorf("failed to start UI: %w", err)
-	}
-
 	return nil
 }
 
@@ -69,22 +63,24 @@ func (a *App) initializeServices(ctx context.Context) error {
 }
 
 // NewApp creates a new App instance
-func NewApp(todoService *service.TodoService, ui *ui.TodoUI) *App {
+func NewApp(todoService *service.TodoService, ui *ui.TodoUI) (*App, error) {
 	program := tea.NewProgram(ui)
 
-	// Create a closure that captures the UI instance
 	showUI := func() {
-		program.Send(struct{}{}) // We'll handle the actual message type in the UI
+		program.Send(ui.ShowMsg{})
 	}
 
-	hotkeyManager := hotkey.New(showUI)
+	hotkeyManager, err := hotkey.New(showUI)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize hotkey manager: %w", err)
+	}
 
 	return &App{
 		todoService:   todoService,
-		ui:            ui,
-		program:       program,
 		hotkeyManager: hotkeyManager,
-	}
+		program:       program,
+		ui:            ui,
+	}, nil
 }
 
 // Provide TodoRepository interface implementation

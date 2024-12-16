@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -103,26 +104,27 @@ func onExit() {
 
 // showFullUI displays the full todo management interface
 func showFullUI(service *service.TodoService) {
+	// Switch to file-only logging before showing UI
+	cleanup := logger.InitializeFileOnly()
+	defer cleanup()
+
+	// Clear the screen before starting UI
+	fmt.Print("\033[H\033[2J")
+
 	p := tea.NewProgram(
 		ui.New(service),
-		tea.WithAltScreen(),
-		tea.WithMouseCellMotion(),
+		tea.WithAltScreen(),       // Use alternate screen buffer
+		tea.WithMouseCellMotion(), // Enable mouse support
 	)
+
 	if _, err := p.Run(); err != nil {
 		logger.Error("UI error: %v", err)
 	}
 }
 
 func main() {
-	// Initialize logger with different settings based on mode
-	var cleanup func()
-	if *fullUI {
-		// In full UI mode, log to file only
-		cleanup = logger.InitializeFileOnly()
-	} else {
-		// In systray mode, normal logging
-		cleanup = logger.Initialize()
-	}
+	// Initialize normal logging by default
+	cleanup := logger.Initialize()
 	defer cleanup()
 
 	flag.Parse()

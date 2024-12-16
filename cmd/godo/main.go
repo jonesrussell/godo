@@ -10,6 +10,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/getlantern/systray"
 	"github.com/jonesrussell/godo/internal/di"
+	"github.com/jonesrussell/godo/internal/icon"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/service"
 	"github.com/jonesrussell/godo/internal/ui"
@@ -82,11 +83,15 @@ func runBackgroundService(ctx context.Context, app *di.App) {
 // onReady is called when systray is ready
 func onReady(ctx context.Context, app *di.App) func() {
 	return func() {
-		systray.SetIcon(nil) // Set your icon here
+		systray.SetIcon(icon.Data)
 		systray.SetTitle("Godo")
 		systray.SetTooltip("Quick Todo Manager")
 
+		// Add separator for better visual organization
+		systray.AddSeparator()
+
 		mOpen := systray.AddMenuItem("Open Manager", "Open todo manager")
+		systray.AddSeparator()
 		mQuit := systray.AddMenuItem("Quit", "Quit application")
 
 		// Handle menu items

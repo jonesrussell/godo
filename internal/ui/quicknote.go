@@ -50,13 +50,20 @@ func (qn *QuickNote) Show() {
 		qn.window.Hide()
 	}
 
+	title := widget.NewLabel("🗒️ Quick Note")
+	title.TextStyle = fyne.TextStyle{Bold: true}
+
+	hint := widget.NewLabel("Press Enter to save • Esc to cancel")
+	hint.TextStyle = fyne.TextStyle{Italic: true}
+
 	content := container.NewVBox(
-		widget.NewLabel("🗒️ Quick Note"),
+		title,
 		input,
-		widget.NewLabel("Press Enter to save • Esc to cancel"),
+		hint,
 	)
 
-	qn.window.SetContent(content)
+	paddedContent := container.NewPadded(content)
+	qn.window.SetContent(paddedContent)
 
 	qn.window.Canvas().SetOnTypedKey(func(ev *fyne.KeyEvent) {
 		if ev.Name == fyne.KeyEscape {

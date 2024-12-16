@@ -75,7 +75,11 @@ func runQuickNoteMode(ctx context.Context, app *di.App) {
 
 // showQuickNote displays the quick-note UI
 func showQuickNote(service *service.TodoService) {
-	p := tea.NewProgram(ui.NewQuickNote(service))
+	p := tea.NewProgram(
+		ui.NewQuickNote(service),
+		tea.WithAltScreen(),       // Use alternate screen
+		tea.WithMouseCellMotion(), // Enable mouse support
+	)
 	if _, err := p.Run(); err != nil {
 		logger.Error("Quick note error: %v", err)
 	}

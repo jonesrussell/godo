@@ -5,6 +5,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/service"
 )
@@ -19,7 +20,11 @@ func NewQuickNote(service *service.TodoService) *QuickNoteUI {
 	input := textinput.New()
 	input.Placeholder = "Type your note and press Enter..."
 	input.Focus()
-	input.Width = 50 // Adjust as needed
+	input.Width = 80 // Wider for better visibility
+
+	// Add styling for better visibility
+	input.PromptStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
+	input.TextStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("252"))
 
 	return &QuickNoteUI{
 		input:   input,

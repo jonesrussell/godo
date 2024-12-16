@@ -43,6 +43,17 @@ func (a *App) Run(ctx context.Context) error {
 	}()
 	logger.Info("Hotkey listener started")
 
+	// Start the UI program
+	logger.Info("Starting UI program...")
+	go func() {
+		if err := a.program.Start(); err != nil {
+			logger.Error("UI program error: %v", err)
+		}
+	}()
+	logger.Info("UI program started")
+
+	// Keep the main thread alive
+	<-ctx.Done()
 	return nil
 }
 
@@ -72,8 +83,9 @@ func NewApp(todoService *service.TodoService, ui *ui.TodoUI) (*App, error) {
 	program := tea.NewProgram(ui)
 
 	showUI := func() {
-		logger.Debug("ShowUI callback triggered")
+		logger.Debug("Hotkey triggered - attempting to show UI")
 		program.Send(struct{}{})
+		logger.Debug("UI show message sent to program")
 	}
 
 	hotkeyManager := hotkey.New(showUI)

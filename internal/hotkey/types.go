@@ -20,10 +20,10 @@ type HotkeyConfig struct {
 	Key          rune
 }
 
-// DefaultConfig provides the default Ctrl+Alt+T configuration
+// DefaultConfig provides a different hotkey combination
 var DefaultConfig = HotkeyConfig{
-	WindowHandle: 0, // NULL window handle
+	WindowHandle: 0,
 	ID:           1,
 	Modifiers:    MOD_CONTROL | MOD_ALT,
-	Key:          'T',
+	Key:          'G',
 }

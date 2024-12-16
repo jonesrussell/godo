@@ -12,7 +12,6 @@ var (
 	procPeekMessage      = user32.NewProc("PeekMessageW")
 )
 
-// win32 helper functions
 func registerHotkey(config HotkeyConfig) (bool, error) {
 	ret, _, err := procRegisterHotKey.Call(
 		uintptr(config.WindowHandle),

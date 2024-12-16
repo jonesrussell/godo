@@ -30,16 +30,9 @@ func (h *HotkeyManager) GetEventChannel() <-chan struct{} {
 
 // Start begins listening for hotkey events
 func (h *HotkeyManager) Start(ctx context.Context) error {
-	if err := h.registerHotkey(); err != nil {
-		return err
-	}
-
-	return h.startMessageLoop(ctx)
-}
-
-func (h *HotkeyManager) registerHotkey() error {
 	// Cleanup any existing registration
 	_, _ = unregisterHotkey(h.config.WindowHandle, h.config.ID)
+	time.Sleep(100 * time.Millisecond)
 
 	success, err := registerHotkey(h.config)
 	if !success {
@@ -47,13 +40,15 @@ func (h *HotkeyManager) registerHotkey() error {
 		return fmt.Errorf("failed to register hotkey: %w (lastErr=%d)", err, lastErr)
 	}
 
-	logger.Info("Successfully registered hotkey")
-	return nil
+	logger.Info("Successfully registered hotkey (ID=%d, Key='%c', Mods=0x%X)",
+		h.config.ID, h.config.Key, h.config.Modifiers)
+
+	return h.startMessageLoop(ctx)
 }
 
 func (h *HotkeyManager) startMessageLoop(ctx context.Context) error {
 	var msg MSG
-	ticker := time.NewTicker(100 * time.Millisecond)
+	ticker := time.NewTicker(50 * time.Millisecond) // Increased polling frequency
 	defer ticker.Stop()
 
 	for {

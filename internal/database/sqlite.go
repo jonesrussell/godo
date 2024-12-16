@@ -35,17 +35,7 @@ func NewSQLiteDB(dbPath string) (*sql.DB, error) {
 }
 
 func initSchema(db *sql.DB) error {
-	schema := `
-	CREATE TABLE IF NOT EXISTS todos (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		title TEXT NOT NULL,
-		description TEXT,
-		completed BOOLEAN DEFAULT FALSE,
-		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-	);`
-
-	_, err := db.Exec(schema)
+	_, err := db.Exec(Schema)
 	if err != nil {
 		logger.Error("Failed to create todos table: %v", err)
 		return err

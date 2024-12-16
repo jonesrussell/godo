@@ -72,7 +72,7 @@ func onReady(ctx context.Context, app *di.App, cancel context.CancelFunc) func()
 					return
 				case <-hotkeyEvents:
 					logger.Info("Hotkey triggered - showing quick note")
-					quickNote := ui.NewQuickNote(app.GetTodoService())
+					quickNote := ui.NewQuickNote(app.GetTodoService(), app.GetFyneApp())
 					quickNote.Show()
 				}
 			}
@@ -132,16 +132,28 @@ func main() {
 	}
 
 	fyneApp := app.New()
+	diApp.SetFyneApp(fyneApp)
+
+	// Create main window but don't show it
 	mainWindow := fyneApp.NewWindow("Godo")
+	mainWindow.SetCloseIntercept(func() {
+		mainWindow.Hide()
+	})
 
 	if *fullUI {
 		showFullUI(diApp.GetTodoService())
 	} else {
+		// Start systray first
 		go systray.Run(onReady(sigCtx, diApp, cancel), onExit)
 
-		<-sigCtx.Done()
-		logger.Info("Starting graceful shutdown...")
-	}
+		// Run Fyne app in the main thread
+		go func() {
+			<-sigCtx.Done()
+			logger.Info("Starting graceful shutdown...")
+			fyneApp.Quit()
+		}()
 
-	mainWindow.ShowAndRun()
+		// This will block until the app quits
+		fyneApp.Run()
+	}
 }

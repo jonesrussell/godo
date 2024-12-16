@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 	"github.com/jonesrussell/godo/internal/logger"
@@ -17,12 +16,12 @@ type QuickNote struct {
 	window  fyne.Window
 }
 
-func NewQuickNote(service service.TodoServicer) *QuickNote {
-	a := app.New()
+// NewQuickNote creates a new QuickNote instance using an existing Fyne app
+func NewQuickNote(service service.TodoServicer, app fyne.App) *QuickNote {
 	return &QuickNote{
 		service: service,
-		app:     a,
-		window:  a.NewWindow("Quick Note"),
+		app:     app,
+		window:  app.NewWindow("Quick Note"),
 	}
 }
 
@@ -34,8 +33,8 @@ func (qn *QuickNote) Show() {
 	logger.Debug("Opening quick note window...")
 
 	qn.window.Resize(fyne.NewSize(300, 100))
+	qn.window.SetFixedSize(true)
 	qn.window.CenterOnScreen()
-	qn.window.RequestFocus()
 
 	input := widget.NewEntry()
 	input.SetPlaceHolder("Enter quick note...")
@@ -48,7 +47,7 @@ func (qn *QuickNote) Show() {
 			}
 			logger.Debug("Created quick note: %s (ID: %d)", text, todo.ID)
 		}
-		qn.window.Close()
+		qn.window.Hide()
 	}
 
 	content := container.NewVBox(
@@ -59,17 +58,20 @@ func (qn *QuickNote) Show() {
 
 	qn.window.SetContent(content)
 
-	// Handle Escape key
 	qn.window.Canvas().SetOnTypedKey(func(ev *fyne.KeyEvent) {
 		if ev.Name == fyne.KeyEscape {
 			logger.Debug("Quick note cancelled")
-			qn.window.Close()
+			qn.window.Hide()
 		}
 	})
 
-	// Focus the input field
-	qn.window.Canvas().Focus(input)
+	qn.window.SetCloseIntercept(func() {
+		qn.window.Hide()
+	})
 
 	qn.window.Show()
+	qn.window.RequestFocus()
+	qn.window.Canvas().Focus(input)
+
 	logger.Debug("Quick note window should now be visible")
 }

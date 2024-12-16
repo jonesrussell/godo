@@ -4,13 +4,14 @@ import (
 	"context"
 	"testing"
 
+	"fyne.io/fyne/v2/app"
 	"github.com/jonesrussell/godo/internal/testutil"
 	"github.com/jonesrussell/godo/internal/ui"
 )
 
 func TestNewQuickNote(t *testing.T) {
 	mockService := testutil.NewMockTodoService()
-	quickNote := ui.NewQuickNote(mockService)
+	quickNote := ui.NewQuickNote(mockService, app.New())
 
 	if quickNote == nil {
 		t.Error("Expected QuickNote instance, got nil")

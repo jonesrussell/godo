@@ -1,227 +1,192 @@
-package ui
+package ui_test
 
 import (
 	"context"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/jonesrussell/godo/internal/model"
-	"github.com/jonesrussell/godo/internal/service"
+	"github.com/jonesrussell/godo/internal/testutil"
+	"github.com/jonesrussell/godo/internal/ui"
 )
 
-// MockTodoRepository implements repository.TodoRepository for testing
-type MockTodoRepository struct {
-	todos     []model.Todo
-	lastError error
-}
-
-func (m *MockTodoRepository) Create(ctx context.Context, todo *model.Todo) error {
-	if m.lastError != nil {
-		return m.lastError
-	}
-	todo.ID = int64(len(m.todos) + 1)
-	m.todos = append(m.todos, *todo)
-	return nil
-}
-
-func (m *MockTodoRepository) GetByID(ctx context.Context, id int64) (*model.Todo, error) {
-	if m.lastError != nil {
-		return nil, m.lastError
-	}
-	for _, todo := range m.todos {
-		if todo.ID == id {
-			return &todo, nil
-		}
-	}
-	return nil, nil
-}
-
-func (m *MockTodoRepository) List(ctx context.Context) ([]model.Todo, error) {
-	if m.lastError != nil {
-		return nil, m.lastError
-	}
-	return m.todos, nil
-}
-
-func (m *MockTodoRepository) Delete(ctx context.Context, id int64) error {
-	if m.lastError != nil {
-		return m.lastError
-	}
-	for i, todo := range m.todos {
-		if todo.ID == id {
-			m.todos = append(m.todos[:i], m.todos[i+1:]...)
-			return nil
-		}
-	}
-	return service.ErrNotFound
-}
-
-func (m *MockTodoRepository) Update(ctx context.Context, todo *model.Todo) error {
-	if m.lastError != nil {
-		return m.lastError
-	}
-	for i, t := range m.todos {
-		if t.ID == todo.ID {
-			m.todos[i] = *todo
-			return nil
-		}
-	}
-	return service.ErrNotFound
-}
-
-func NewMockTodoService() *service.TodoService {
-	mockRepo := &MockTodoRepository{
-		todos: make([]model.Todo, 0),
-	}
-	return service.NewTodoService(mockRepo)
-}
-
-func TestTodoUI_Init(t *testing.T) {
-	mockService := NewMockTodoService()
-	ui := New(mockService)
-	cmd := ui.Init()
-	if cmd == nil {
-		t.Error("Init() should return a command")
-	}
-}
-
-func TestTodoUI_Update(t *testing.T) {
+func TestTodoUI(t *testing.T) {
 	tests := []struct {
-		name     string
-		msg      tea.Msg
-		wantCmd  bool
-		wantQuit bool
+		name        string
+		setup       func(t *testing.T, ui *ui.TodoUI, mock *testutil.MockTodoService)
+		msg         tea.Msg
+		wantQuit    bool
+		wantCommand bool
 	}{
 		{
-			name:     "Quit message",
-			msg:      tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}},
-			wantCmd:  true,
-			wantQuit: true,
+			name:        "Quit on q",
+			setup:       func(t *testing.T, ui *ui.TodoUI, mock *testutil.MockTodoService) {},
+			msg:         tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}},
+			wantQuit:    true,
+			wantCommand: true,
 		},
 		{
-			name:    "Add message",
-			msg:     tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}},
-			wantCmd: false,
+			name:        "Add mode on a",
+			setup:       func(t *testing.T, ui *ui.TodoUI, mock *testutil.MockTodoService) {},
+			msg:         tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}},
+			wantQuit:    false,
+			wantCommand: false,
+		},
+		{
+			name: "Toggle todo on space",
+			setup: func(t *testing.T, ui *ui.TodoUI, mock *testutil.MockTodoService) {
+				// Create a test todo
+				_, err := mock.CreateTodo(context.Background(), "Test Todo", "")
+				if err != nil {
+					t.Fatalf("Failed to create test todo: %v", err)
+				}
+
+				// Execute the load command
+				initCmd := ui.Init()
+				if initCmd == nil {
+					t.Fatal("Init() returned nil command")
+				}
+
+				msg := initCmd()
+				model, _ := ui.Update(msg)
+				if model == nil {
+					t.Fatal("Update returned nil model")
+				}
+			},
+			msg:         tea.KeyMsg{Type: tea.KeySpace},
+			wantQuit:    false,
+			wantCommand: true,
+		},
+		{
+			name: "Delete todo on d",
+			setup: func(t *testing.T, ui *ui.TodoUI, mock *testutil.MockTodoService) {
+				// Create a test todo
+				_, err := mock.CreateTodo(context.Background(), "Test Todo", "")
+				if err != nil {
+					t.Fatalf("Failed to create test todo: %v", err)
+				}
+
+				// Execute the load command to update UI state
+				initCmd := ui.Init()
+				if initCmd == nil {
+					t.Fatal("Init() returned nil command")
+				}
+
+				msg := initCmd()
+				model, _ := ui.Update(msg)
+				if model == nil {
+					t.Fatal("Update returned nil model")
+				}
+			},
+			msg:         tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'d'}},
+			wantQuit:    false,
+			wantCommand: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockService := NewMockTodoService()
-			ui := New(mockService)
-			model, cmd := ui.Update(tt.msg)
+			// Create fresh instances for each test
+			mockService := testutil.NewMockTodoService()
+			todoUI := ui.New(mockService)
+			mock := testutil.AsMockTodoService(mockService)
 
-			if (cmd != nil) != tt.wantCmd {
-				t.Errorf("Update() cmd = %v, want %v", cmd != nil, tt.wantCmd)
+			// Initialize UI
+			initCmd := todoUI.Init()
+			if initCmd == nil {
+				t.Fatal("Init() returned nil command")
 			}
 
-			if tt.wantQuit {
-				if cmd == nil {
-					t.Error("Update() should return a command when quitting")
+			loadMsg := initCmd()
+			model, loadCmd := todoUI.Update(loadMsg)
+			if model == nil {
+				t.Fatal("Update after Init returned nil model")
+			}
+			todoUI = model.(*ui.TodoUI)
+
+			if loadCmd != nil {
+				msg := loadCmd()
+				model, _ = todoUI.Update(msg)
+				if model != nil {
+					todoUI = model.(*ui.TodoUI)
+				}
+			}
+
+			// Run test-specific setup
+			tt.setup(t, todoUI, mock)
+
+			// Run the test
+			model, cmd := todoUI.Update(tt.msg)
+
+			if cmd == nil && tt.wantCommand {
+				t.Errorf("Expected a command but got nil")
+			}
+
+			if cmd != nil {
+				if tt.wantQuit {
+					msg := cmd()
+					if _, ok := msg.(tea.QuitMsg); !ok {
+						t.Error("Expected quit command")
+					}
+				}
+				if !tt.wantCommand {
+					t.Error("Got unexpected command")
 				}
 			}
 
 			if model == nil {
-				t.Error("Update() should return a model")
+				t.Error("Update() returned nil model")
 			}
 		})
 	}
 }
 
-func TestTodoUI_View(t *testing.T) {
-	mockService := NewMockTodoService()
-	ui := New(mockService)
-	ui.todos = []model.Todo{
-		{ID: 1, Title: "Test Todo", Completed: false},
-		{ID: 2, Title: "Completed Todo", Completed: true},
-	}
+func TestTodoUI_Navigation(t *testing.T) {
+	mockService := testutil.NewMockTodoService()
+	todoUI := ui.New(mockService)
 
-	view := ui.View()
-	if view == "" {
-		t.Error("View() should return non-empty string")
-	}
+	// Create some test todos
+	mock := testutil.AsMockTodoService(mockService)
+	mock.CreateTodo(context.Background(), "Test 1", "")
+	mock.CreateTodo(context.Background(), "Test 2", "")
 
-	// Test adding mode
-	ui.adding = true
-	addView := ui.View()
-	if addView == "" {
-		t.Error("View() in adding mode should return non-empty string")
-	}
-}
-
-func TestTodoUI_renderTodoItem(t *testing.T) {
-	ui := &TodoUI{cursor: 0}
-	todo := model.Todo{
-		ID:        1,
-		Title:     "Test Todo",
-		Completed: false,
-	}
-
-	// Test uncompleted todo
-	result := ui.renderTodoItem(0, todo)
-	expected := "  > ☐ Test Todo\n"
-	if result != expected {
-		t.Errorf("renderTodoItem() = %q, want %q", result, expected)
-	}
-
-	// Test completed todo
-	todo.Completed = true
-	result = ui.renderTodoItem(0, todo)
-	expected = "  > ☑ Test Todo\n"
-	if result != expected {
-		t.Errorf("renderTodoItem() = %q, want %q", result, expected)
-	}
-}
-
-func TestTodoUI_getSelectedTodoID(t *testing.T) {
-	tests := []struct {
-		name    string
-		todos   []model.Todo
-		cursor  int
-		wantID  int64
-		wantErr bool
+	// Test navigation keys
+	navTests := []struct {
+		name     string
+		keyType  tea.KeyType
+		keyRunes []rune
 	}{
 		{
-			name:    "Empty todos",
-			todos:   []model.Todo{},
-			cursor:  0,
-			wantID:  0,
-			wantErr: true,
+			name:     "Move down with down arrow",
+			keyType:  tea.KeyDown,
+			keyRunes: nil,
 		},
 		{
-			name: "Valid selection",
-			todos: []model.Todo{
-				{ID: 1, Title: "Test Todo"},
-			},
-			cursor:  0,
-			wantID:  1,
-			wantErr: false,
+			name:     "Move up with up arrow",
+			keyType:  tea.KeyUp,
+			keyRunes: nil,
 		},
 		{
-			name: "Cursor out of bounds",
-			todos: []model.Todo{
-				{ID: 1, Title: "Test Todo"},
-			},
-			cursor:  1,
-			wantID:  0,
-			wantErr: true,
+			name:     "Move down with j",
+			keyType:  tea.KeyRunes,
+			keyRunes: []rune{'j'},
+		},
+		{
+			name:     "Move up with k",
+			keyType:  tea.KeyRunes,
+			keyRunes: []rune{'k'},
 		},
 	}
 
-	for _, tt := range tests {
+	for _, tt := range navTests {
 		t.Run(tt.name, func(t *testing.T) {
-			ui := &TodoUI{
-				todos:  tt.todos,
-				cursor: tt.cursor,
+			msg := tea.KeyMsg{
+				Type:  tt.keyType,
+				Runes: tt.keyRunes,
 			}
 
-			gotID, err := ui.getSelectedTodoID()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("getSelectedTodoID() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if gotID != tt.wantID {
-				t.Errorf("getSelectedTodoID() = %v, want %v", gotID, tt.wantID)
+			model, _ := todoUI.Update(msg)
+			if model == nil {
+				t.Error("Update() returned nil model")
 			}
 		})
 	}

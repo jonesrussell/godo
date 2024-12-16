@@ -86,13 +86,22 @@
   - [ ] Transparent/floating window
   - [ ] Position near cursor
 - [ ] Implement quick-note workflow
-  - [ ] Hotkey triggers QuickNoteUI
-  - [ ] Focus input immediately
-  - [ ] Enter saves note and closes
-  - [ ] Esc cancels and closes
-  - [ ] Return to previous window focus
+  - [x] Hotkey triggers QuickNoteUI
+  - [x] Focus input immediately
+  - [x] Enter saves note and closes
+  - [x] Esc cancels and closes
+  - [x] Return to previous window focus
 - [ ] Add quick-note settings
   - [ ] Window position (cursor/center/custom)
   - [ ] Window opacity
   - [ ] Custom hotkey binding
+    - [ ] Make Ctrl+Alt+G configurable via config file
+    - [ ] Add hotkey configuration UI
+    - [ ] Validate hotkey combinations
+    - [ ] Save/load hotkey preferences
   - [ ] Auto-categorization rules
+- [ ] Error Handling Improvements
+  - [ ] Handle "The operation completed successfully" error message
+  - [ ] Add retry mechanism for failed note saves
+  - [ ] Improve error messages in UI
+  - [ ] Add notification for successful saves

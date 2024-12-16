@@ -17,14 +17,14 @@ type ShowMsg struct{}
 
 type TodoUI struct {
 	todos   []model.Todo
-	service *service.TodoService
+	service service.TodoServicer
 	cursor  int
 	input   textinput.Model
 	adding  bool
 	err     error
 }
 
-func New(service *service.TodoService) *TodoUI {
+func New(service service.TodoServicer) *TodoUI {
 	input := textinput.New()
 	input.Placeholder = "Enter todo title..."
 	input.Focus()
@@ -179,4 +179,12 @@ func (ui *TodoUI) getSelectedTodoID() (int64, error) {
 		return 0, service.ErrNotFound
 	}
 	return ui.todos[ui.cursor].ID, nil
+}
+
+func (ui *TodoUI) Reset() {
+	ui.todos = nil
+	ui.cursor = 0
+	ui.adding = false
+	ui.err = nil
+	ui.input.Reset()
 }

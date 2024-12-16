@@ -12,11 +12,11 @@ import (
 
 type QuickNoteUI struct {
 	input   textinput.Model
-	service *service.TodoService
+	service service.TodoServicer
 	err     error
 }
 
-func NewQuickNote(service *service.TodoService) *QuickNoteUI {
+func NewQuickNote(service service.TodoServicer) *QuickNoteUI {
 	input := textinput.New()
 	input.Placeholder = "Type your note and press Enter..."
 	input.Focus()

@@ -1,4 +1,4 @@
-package service
+package service_test
 
 import (
 	"context"
@@ -6,63 +6,130 @@ import (
 	"time"
 
 	"github.com/jonesrussell/godo/internal/model"
-	"github.com/jonesrussell/godo/internal/repository"
+	"github.com/jonesrussell/godo/internal/service"
 )
 
-// MockTodoRepository implements TodoRepository interface for testing
+// MockTodoRepository implements repository.TodoRepository for testing
 type MockTodoRepository struct {
-	todos  map[int64]*model.Todo
-	nextID int64
+	Todos     map[int64]*model.Todo
+	NextID    int64
+	LastError error
 }
 
 func NewMockTodoRepository() *MockTodoRepository {
 	return &MockTodoRepository{
-		todos:  make(map[int64]*model.Todo),
-		nextID: 1,
+		Todos:  make(map[int64]*model.Todo),
+		NextID: 1,
 	}
 }
 
 func (m *MockTodoRepository) Create(ctx context.Context, todo *model.Todo) error {
-	todo.ID = m.nextID
-	m.todos[todo.ID] = todo
-	m.nextID++
+	if m.LastError != nil {
+		return m.LastError
+	}
+	todo.ID = m.NextID
+	m.Todos[todo.ID] = todo
+	m.NextID++
 	return nil
 }
 
 func (m *MockTodoRepository) GetByID(ctx context.Context, id int64) (*model.Todo, error) {
-	if todo, exists := m.todos[id]; exists {
+	if m.LastError != nil {
+		return nil, m.LastError
+	}
+	if todo, exists := m.Todos[id]; exists {
 		return todo, nil
 	}
 	return nil, nil
 }
 
 func (m *MockTodoRepository) List(ctx context.Context) ([]model.Todo, error) {
-	todos := make([]model.Todo, 0, len(m.todos))
-	for _, todo := range m.todos {
+	if m.LastError != nil {
+		return nil, m.LastError
+	}
+	todos := make([]model.Todo, 0, len(m.Todos))
+	for _, todo := range m.Todos {
 		todos = append(todos, *todo)
 	}
 	return todos, nil
 }
 
 func (m *MockTodoRepository) Update(ctx context.Context, todo *model.Todo) error {
-	if _, exists := m.todos[todo.ID]; !exists {
-		return ErrNotFound
+	if m.LastError != nil {
+		return m.LastError
 	}
-	m.todos[todo.ID] = todo
+	if _, exists := m.Todos[todo.ID]; !exists {
+		return service.ErrNotFound
+	}
+	m.Todos[todo.ID] = todo
 	return nil
 }
 
 func (m *MockTodoRepository) Delete(ctx context.Context, id int64) error {
-	if _, exists := m.todos[id]; !exists {
-		return ErrNotFound
+	if m.LastError != nil {
+		return m.LastError
 	}
-	delete(m.todos, id)
+	if _, exists := m.Todos[id]; !exists {
+		return service.ErrNotFound
+	}
+	delete(m.Todos, id)
 	return nil
 }
 
+// MockTodoService implements TodoServicer for testing
+type MockTodoService struct {
+	todos       map[int64]*model.Todo
+	nextID      int64
+	createCalls int
+	lastTitle   string
+	shouldErr   bool
+}
+
+func NewMockTodoService() *MockTodoService {
+	return &MockTodoService{
+		todos:  make(map[int64]*model.Todo),
+		nextID: 1,
+	}
+}
+
+func (m *MockTodoService) CreateTodo(ctx context.Context, title, description string) (*model.Todo, error) {
+	m.createCalls++
+	m.lastTitle = title
+
+	if m.shouldErr {
+		return nil, service.ErrEmptyTitle
+	}
+
+	todo := &model.Todo{
+		ID:          m.nextID,
+		Title:       title,
+		Description: description,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
+	}
+	m.todos[todo.ID] = todo
+	m.nextID++
+	return todo, nil
+}
+
+// ... implement other interface methods ...
+
+// Helper methods for testing
+func (m *MockTodoService) SetError(shouldErr bool) {
+	m.shouldErr = shouldErr
+}
+
+func (m *MockTodoService) GetCreateCalls() int {
+	return m.createCalls
+}
+
+func (m *MockTodoService) GetLastTitle() string {
+	return m.lastTitle
+}
+
 func TestCreateTodo(t *testing.T) {
-	var repo repository.TodoRepository = NewMockTodoRepository()
-	service := NewTodoService(repo)
+	mockRepo := NewMockTodoRepository()
+	svc := service.NewTodoService(mockRepo)
 	ctx := context.Background()
 
 	tests := []struct {
@@ -87,7 +154,7 @@ func TestCreateTodo(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			todo, err := service.CreateTodo(ctx, tt.title, tt.description)
+			todo, err := svc.CreateTodo(ctx, tt.title, tt.description)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CreateTodo() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -108,8 +175,8 @@ func TestCreateTodo(t *testing.T) {
 }
 
 func TestGetTodo(t *testing.T) {
-	var repo repository.TodoRepository = NewMockTodoRepository()
-	service := NewTodoService(repo)
+	mockRepo := NewMockTodoRepository()
+	svc := service.NewTodoService(mockRepo)
 	ctx := context.Background()
 
 	// Create a test todo
@@ -119,7 +186,7 @@ func TestGetTodo(t *testing.T) {
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
 	}
-	if err := repo.Create(ctx, testTodo); err != nil {
+	if err := mockRepo.Create(ctx, testTodo); err != nil {
 		t.Fatalf("Failed to create test todo: %v", err)
 	}
 
@@ -142,7 +209,7 @@ func TestGetTodo(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			todo, err := service.GetTodo(ctx, tt.id)
+			todo, err := svc.GetTodo(ctx, tt.id)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetTodo() error = %v, wantErr %v", err, tt.wantErr)
 				return

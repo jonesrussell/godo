@@ -12,6 +12,9 @@ import (
 	"github.com/jonesrussell/godo/internal/service"
 )
 
+// ShowMsg is sent when the global hotkey is pressed
+type ShowMsg struct{}
+
 type TodoUI struct {
 	todos   []model.Todo
 	service *service.TodoService

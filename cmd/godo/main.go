@@ -2,16 +2,21 @@ package main
 
 import (
 	"context"
+	"flag"
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/jonesrussell/godo/internal/di"
 	"github.com/jonesrussell/godo/internal/logger"
+	"github.com/jonesrussell/godo/internal/service"
+	"github.com/jonesrussell/godo/internal/ui"
 )
 
-const shutdownTimeout = 30 * time.Second
+var (
+	fullUI = flag.Bool("ui", false, "Launch full todo management interface")
+)
 
 // setupLogger configures and manages logger lifecycle
 func setupLogger() func() {
@@ -22,8 +27,9 @@ func setupLogger() func() {
 	}
 }
 
-// setupSignalHandler creates a signal handler and returns a cancel function
-func setupSignalHandler(ctx context.Context, cancel context.CancelFunc) {
+// setupSignalHandler creates a signal handler
+func setupSignalHandler() context.Context {
+	ctx, cancel := context.WithCancel(context.Background())
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
@@ -32,6 +38,8 @@ func setupSignalHandler(ctx context.Context, cancel context.CancelFunc) {
 		logger.Info("Received signal: %v", sig)
 		cancel()
 	}()
+
+	return ctx
 }
 
 // initializeApplication handles app initialization
@@ -45,25 +53,57 @@ func initializeApplication() (*di.App, error) {
 	return app, nil
 }
 
+// runQuickNoteMode starts the application in quick-note mode
+func runQuickNoteMode(app *di.App) {
+	// Get the hotkey channel from the manager
+	hotkeyEvents := app.GetHotkeyManager().GetEventChannel()
+
+	// Start hotkey listener in background
+	go func() {
+		for {
+			select {
+			case <-hotkeyEvents:
+				showQuickNote(app.GetTodoService())
+			}
+		}
+	}()
+
+	// Keep the application running
+	select {}
+}
+
+// showQuickNote displays the quick-note UI
+func showQuickNote(service *service.TodoService) {
+	p := tea.NewProgram(ui.NewQuickNote(service))
+	if _, err := p.Run(); err != nil {
+		logger.Error("Quick note error: %v", err)
+	}
+}
+
 func main() {
+	flag.Parse()
 	defer setupLogger()()
 
 	logger.Info("Starting Godo application...")
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := setupSignalHandler()
 
 	app, err := initializeApplication()
 	if err != nil {
 		logger.Fatal("Failed to initialize application: %v", err)
 	}
 
-	setupSignalHandler(ctx, cancel)
-
-	logger.Info("Starting application run...")
-	if err := app.Run(ctx); err != nil {
-		logger.Fatal("Application error: %v", err)
+	if *fullUI {
+		// Run full UI mode
+		p := tea.NewProgram(ui.New(app.GetTodoService()))
+		if _, err := p.Run(); err != nil {
+			logger.Fatal("UI error: %v", err)
+		}
+	} else {
+		// Run quick-note mode (default)
+		runQuickNoteMode(app)
 	}
 
+	<-ctx.Done()
 	logger.Info("Starting graceful shutdown...")
 }

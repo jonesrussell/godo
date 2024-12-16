@@ -3,8 +3,8 @@ package hotkey
 import (
 	"context"
 	"syscall"
-	"unsafe"
 	"time"
+	"unsafe"
 
 	"github.com/jonesrussell/godo/internal/logger"
 )
@@ -14,14 +14,14 @@ var (
 	procRegisterHotKey   = user32.NewProc("RegisterHotKey")
 	procUnregisterHotKey = user32.NewProc("UnregisterHotKey")
 	procGetMessage       = user32.NewProc("GetMessageW")
-	procPeekMessage     = user32.NewProc("PeekMessageW")
+	procPeekMessage      = user32.NewProc("PeekMessageW")
 )
 
 const (
-	MOD_ALT     = 0x0001
-	MOD_CONTROL = 0x0002
-	WM_HOTKEY   = 0x0312
-	PM_REMOVE   = 0x0001
+	MOD_ALT                         = 0x0001
+	MOD_CONTROL                     = 0x0002
+	WM_HOTKEY                       = 0x0312
+	PM_REMOVE                       = 0x0001
 	ERROR_HOTKEY_ALREADY_REGISTERED = 0x0402
 )
 
@@ -35,29 +35,28 @@ type MSG struct {
 }
 
 type HotkeyManager struct {
-	showCallback func()
+	hotkeyPressed chan struct{}
 }
 
-func New(showCallback func()) *HotkeyManager {
-	logger.Info("Creating new HotkeyManager...")
-	if showCallback == nil {
-		logger.Error("showCallback is nil!")
-		return nil
-	}
+func NewHotkeyManager() *HotkeyManager {
 	return &HotkeyManager{
-		showCallback: showCallback,
+		hotkeyPressed: make(chan struct{}),
 	}
+}
+
+func (h *HotkeyManager) GetEventChannel() <-chan struct{} {
+	return h.hotkeyPressed
 }
 
 func (h *HotkeyManager) Start(ctx context.Context) error {
 	logger.Info("Starting hotkey manager...")
-	
+
 	// Unregister any existing hotkey first
 	logger.Debug("Cleaning up any existing hotkey registration...")
 	procUnregisterHotKey.Call(0, 1)
 
 	logger.Debug("Attempting to register Ctrl+Alt+T (modifiers=0x%X, key='T')", MOD_CONTROL|MOD_ALT)
-	
+
 	// Register Ctrl+Alt+T with more detailed error handling
 	ret, _, err := procRegisterHotKey.Call(
 		0, // NULL window handle
@@ -65,7 +64,7 @@ func (h *HotkeyManager) Start(ctx context.Context) error {
 		uintptr(MOD_CONTROL|MOD_ALT),
 		uintptr('T'),
 	)
-	
+
 	if ret == 0 {
 		lastErr := syscall.GetLastError()
 		logger.Error("Failed to register hotkey: %v (ret=%d, lastErr=%d)", err, ret, lastErr)
@@ -117,12 +116,7 @@ func (h *HotkeyManager) Start(ctx context.Context) error {
 
 				if msg.Message == WM_HOTKEY {
 					logger.Info("Hotkey triggered! (ID=%d)", msg.WParam)
-					if h.showCallback != nil {
-						logger.Debug("Executing showCallback...")
-						h.showCallback()
-					} else {
-						logger.Error("showCallback is nil!")
-					}
+					h.hotkeyPressed <- struct{}{}
 				}
 			}
 		}
@@ -142,7 +136,7 @@ func (h *HotkeyManager) IsHotkeyRegistered() bool {
 		uintptr(MOD_CONTROL|MOD_ALT),
 		uintptr('T'),
 	)
-	
+
 	if ret == 0 {
 		lastErr := syscall.GetLastError()
 		if lastErr == syscall.Errno(ERROR_HOTKEY_ALREADY_REGISTERED) {
@@ -150,12 +144,12 @@ func (h *HotkeyManager) IsHotkeyRegistered() bool {
 			return true
 		}
 	}
-	
+
 	// Clean up test registration if it succeeded
 	if ret != 0 {
 		procUnregisterHotKey.Call(0, 1)
 	}
-	
+
 	logger.Debug("Hotkey is not currently registered")
 	return false
 }

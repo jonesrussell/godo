@@ -4,20 +4,23 @@
 
 package di
 
-import "github.com/google/wire"
-import "github.com/jonesrussell/godo/internal/service"
+import (
+	"github.com/google/wire"
+)
 
 // DefaultSet defines the provider set for wire
 var DefaultSet = wire.NewSet(
-    NewSQLiteDB,
-    provideTodoRepository,
-    service.NewTodoService,
-    provideUI,
-    NewApp,
+	NewSQLiteDB,
+	provideTodoRepository,
+	provideTodoService,
+	provideUI,
+	provideProgram,
+	provideHotkeyManager,
+	provideApp,
 )
 
 // InitializeApp sets up the dependency injection
 func InitializeApp() (*App, error) {
-    wire.Build(DefaultSet)
-    return nil, nil
+	wire.Build(DefaultSet)
+	return &App{}, nil
 }

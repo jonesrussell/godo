@@ -74,3 +74,21 @@
 - [ ] Recurring tasks
 - [ ] Multiple todo lists
 - [ ] Cloud sync support
+
+## Quick-Note Feature (High Priority)
+- [ ] Create QuickNoteUI component
+  - [ ] Single-line input field
+  - [ ] Minimal window decoration
+  - [ ] Transparent/floating window
+  - [ ] Position near cursor
+- [ ] Implement quick-note workflow
+  - [ ] Hotkey triggers QuickNoteUI
+  - [ ] Focus input immediately
+  - [ ] Enter saves note and closes
+  - [ ] Esc cancels and closes
+  - [ ] Return to previous window focus
+- [ ] Add quick-note settings
+  - [ ] Window position (cursor/center/custom)
+  - [ ] Window opacity
+  - [ ] Custom hotkey binding
+  - [ ] Auto-categorization rules

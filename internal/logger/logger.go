@@ -3,89 +3,91 @@ package logger
 import (
 	"os"
 	"path/filepath"
+	"sync/atomic"
+	"time"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
 var (
-	log *zap.SugaredLogger
-	uiActive bool
+	log        *zap.Logger
+	sugar      *zap.SugaredLogger
+	isUIActive atomic.Bool
 )
 
-func SetUIActive(active bool) {
-	uiActive = active
-}
-
 func init() {
-	// Create logs directory if it doesn't exist
-	if err := os.MkdirAll("logs", 0755); err != nil {
-		panic("Failed to create logs directory: " + err.Error())
+	// Ensure logs directory exists in project root
+	logsDir := filepath.Join("logs")
+	if err := os.MkdirAll(logsDir, 0755); err != nil {
+		panic("failed to create logs directory: " + err.Error())
 	}
 
-	// Open log file
-	logFile, err := os.OpenFile(filepath.Join("logs", "godo.log"),
-		os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	// Configure logging to file
+	logFile := filepath.Join(logsDir, "godo.log")
+	writer, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		panic("Failed to open log file: " + err.Error())
+		panic("failed to open log file: " + err.Error())
 	}
 
-	// Create encoder config
-	encoderConfig := zapcore.EncoderConfig{
-		TimeKey:        "time",
-		LevelKey:       "level",
-		NameKey:        "logger",
-		CallerKey:      "caller",
-		FunctionKey:    "func",
-		MessageKey:     "msg",
-		StacktraceKey:  "stacktrace",
-		LineEnding:     zapcore.DefaultLineEnding,
-		EncodeLevel:    zapcore.LowercaseLevelEncoder,
-		EncodeTime:     zapcore.ISO8601TimeEncoder,
-		EncodeCaller:   zapcore.ShortCallerEncoder,
-		EncodeDuration: zapcore.StringDurationEncoder,
+	// Custom encoder config
+	config := zapcore.EncoderConfig{
+		TimeKey:    "T",
+		LevelKey:   "L",
+		MessageKey: "M",
+		EncodeLevel: func(l zapcore.Level, enc zapcore.PrimitiveArrayEncoder) {
+			enc.AppendString(l.CapitalString())
+		},
+		EncodeTime: func(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
+			enc.AppendString(t.Format("2006-01-02T15:04:05-07:00"))
+		},
 	}
 
-	// Create file core
-	fileCore := zapcore.NewCore(
-		zapcore.NewJSONEncoder(encoderConfig),
-		zapcore.AddSync(logFile),
-		zapcore.DebugLevel,
+	fileEncoder := zapcore.NewJSONEncoder(config)
+	core := zapcore.NewTee(
+		zapcore.NewCore(fileEncoder, zapcore.AddSync(writer), zapcore.DebugLevel),
 	)
 
-	// Create logger
-	logger := zap.New(fileCore, zap.AddCaller(), zap.AddStacktrace(zapcore.ErrorLevel))
-	log = logger.Sugar()
+	log = zap.New(core)
+	sugar = log.Sugar()
+}
+
+// SetUIActive sets the UI active state
+func SetUIActive(active bool) {
+	isUIActive.Store(active)
+}
+
+// IsUIActive returns whether the UI is currently active
+func IsUIActive() bool {
+	return isUIActive.Load()
 }
 
 func Info(format string, args ...interface{}) {
-	log.Infof(format, args...)
+	sugar.Infof(format, args...)
 }
 
 func Error(format string, args ...interface{}) {
-	log.Errorf(format, args...)
+	sugar.Errorf(format, args...)
 }
 
 func Debug(format string, args ...interface{}) {
-	log.Debugf(format, args...)
+	sugar.Debugf(format, args...)
 }
 
 func Fatal(format string, args ...interface{}) {
-	log.Fatalf(format, args...)
+	sugar.Fatalf(format, args...)
 }
 
 func Warn(format string, args ...interface{}) {
-	log.Warnf(format, args...)
+	sugar.Warnf(format, args...)
 }
 
 // WithFields adds structured context to the logger
 func WithFields(fields map[string]interface{}) *zap.SugaredLogger {
-	return log.With(fields)
+	return sugar.With(fields)
 }
 
 // Sync flushes any buffered log entries
 func Sync() error {
-	// Ignore sync errors on stdout/stderr
-	_ = log.Sync()
-	return nil
+	return sugar.Sync()
 }

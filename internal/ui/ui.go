@@ -5,30 +5,20 @@ import (
 	"fmt"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/bubbles/textinput"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/model"
 	"github.com/jonesrussell/godo/internal/service"
 )
 
-// todoItem represents a todo in the list
-type todoItem struct {
-	todo model.Todo
-}
-
-// implement list.Item interface
-func (i todoItem) Title() string       { return i.todo.Title }
-func (i todoItem) Description() string { return i.todo.Description }
-func (i todoItem) FilterValue() string { return i.todo.Title }
-
 type TodoUI struct {
-	todos    []model.Todo
-	service  *service.TodoService
-	cursor   int
-	input    textinput.Model
-	adding   bool
-	err      error
+	todos   []model.Todo
+	service *service.TodoService
+	cursor  int
+	input   textinput.Model
+	adding  bool
+	err     error
 }
 
 func New(service *service.TodoService) *TodoUI {
@@ -81,7 +71,7 @@ func (ui *TodoUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if ui.adding {
 			var cmd tea.Cmd
 			ui.input, cmd = ui.input.Update(msg)
-			
+
 			if msg.String() == "enter" {
 				title := ui.input.Value()
 				if title != "" {
@@ -134,7 +124,7 @@ func (ui *TodoUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 	}
-	
+
 	return ui, nil
 }
 
@@ -150,7 +140,7 @@ func (ui *TodoUI) View() string {
 
 	// Show todos
 	s.WriteString("\n  Todos:\n\n")
-	
+
 	if len(ui.todos) == 0 {
 		s.WriteString("  No items\n")
 	} else {
@@ -160,7 +150,7 @@ func (ui *TodoUI) View() string {
 	}
 
 	s.WriteString("\n")
-	
+
 	// Help text
 	if !ui.adding {
 		s.WriteString("  a: add • d: delete • space: toggle • q: quit\n")
@@ -187,4 +177,3 @@ func (ui *TodoUI) getSelectedTodoID() (int64, error) {
 	}
 	return ui.todos[ui.cursor].ID, nil
 }
-

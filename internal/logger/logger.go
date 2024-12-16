@@ -8,7 +8,14 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-var log *zap.SugaredLogger
+var (
+	log *zap.SugaredLogger
+	uiActive bool
+)
+
+func SetUIActive(active bool) {
+	uiActive = active
+}
 
 func init() {
 	// Create logs directory if it doesn't exist
@@ -33,20 +40,14 @@ func init() {
 		MessageKey:     "msg",
 		StacktraceKey:  "stacktrace",
 		LineEnding:     zapcore.DefaultLineEnding,
-		
 		EncodeLevel:    zapcore.CapitalColorLevelEncoder,
 		EncodeTime:     zapcore.ISO8601TimeEncoder,
 		EncodeCaller:   zapcore.ShortCallerEncoder,
 		EncodeDuration: zapcore.StringDurationEncoder,
 	}
 
-	// Create core that writes to both file and console
+	// Create core that only writes to file when UI is active
 	core := zapcore.NewTee(
-		zapcore.NewCore(
-			zapcore.NewConsoleEncoder(encoderConfig),
-			zapcore.AddSync(os.Stdout),
-			zapcore.DebugLevel,
-		),
 		zapcore.NewCore(
 			zapcore.NewJSONEncoder(encoderConfig),
 			zapcore.AddSync(logFile),
@@ -54,13 +55,8 @@ func init() {
 		),
 	)
 
-	// Create logger with development options
-	logger := zap.New(
-		core,
-		zap.AddCaller(),
-		zap.AddStacktrace(zapcore.ErrorLevel),
-		zap.Development(),
-	)
+	// Create logger
+	logger := zap.New(core, zap.AddCaller(), zap.AddStacktrace(zapcore.ErrorLevel))
 	log = logger.Sugar()
 }
 

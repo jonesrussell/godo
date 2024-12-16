@@ -50,51 +50,85 @@ func (ui *TodoUI) Init() tea.Cmd {
 	return ui.loadTodos
 }
 
+type todosMsg struct {
+	todos []model.Todo
+	err   error
+}
+
 func (ui *TodoUI) loadTodos() tea.Msg {
 	logger.Debug("Loading todos from service")
 	todos, err := ui.service.ListTodos(context.Background())
-	if err != nil {
-		logger.Error("Failed to load todos: %v", err)
-		return errMsg{err}
-	}
-
-	items := make([]list.Item, len(todos))
-	for i, todo := range todos {
-		items[i] = todoItem{todo: todo}
-	}
-	logger.Debug("Loaded %d todos", len(todos))
-	return todosLoadedMsg{items}
+	return todosMsg{todos: todos, err: err}
 }
-
-// Custom messages
-type errMsg struct{ error }
-type todosLoadedMsg struct{ items []list.Item }
 
 func (ui *TodoUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch msg.String() {
-		case "a":
-			ui.adding = true
-			ui.input.Focus()
+	case todosMsg:
+		if msg.err != nil {
+			ui.err = msg.err
 			return ui, nil
-		case "enter":
-			if ui.adding {
+		}
+		ui.todos = msg.todos
+		return ui, nil
+	case ShowMsg:
+		logger.SetUIActive(true)
+		return ui, ui.loadTodos
+	case tea.KeyMsg:
+		if ui.adding {
+			var cmd tea.Cmd
+			ui.input, cmd = ui.input.Update(msg)
+			
+			if msg.String() == "enter" {
 				title := ui.input.Value()
-				if err := ui.service.CreateTodo(context.Background(), title, ""); err != nil {
+				todo, err := ui.service.CreateTodo(context.Background(), title, "")
+				if err != nil {
 					ui.err = err
+					ui.adding = false
+					ui.input.Reset()
+					return ui, nil
 				}
 				ui.adding = false
 				ui.input.Reset()
 				return ui, ui.loadTodos
 			}
+			return ui, cmd
 		}
-	}
-	
-	if ui.adding {
-		var cmd tea.Cmd
-		ui.input, cmd = ui.input.Update(msg)
-		return ui, cmd
+
+		switch msg.String() {
+		case "q":
+			logger.SetUIActive(false)
+			return ui, tea.Quit
+		case "a":
+			ui.adding = true
+			ui.input.Focus()
+			return ui, nil
+		case "d":
+			if len(ui.todos) > 0 {
+				todoID := ui.todos[ui.cursor].ID
+				if err := ui.service.DeleteTodo(context.Background(), todoID); err != nil {
+					ui.err = err
+					return ui, nil
+				}
+				return ui, ui.loadTodos
+			}
+		case " ":
+			if len(ui.todos) > 0 {
+				todoID := ui.todos[ui.cursor].ID
+				if err := ui.service.ToggleTodoStatus(context.Background(), todoID); err != nil {
+					ui.err = err
+					return ui, nil
+				}
+				return ui, ui.loadTodos
+			}
+		case "up", "k":
+			if ui.cursor > 0 {
+				ui.cursor--
+			}
+		case "down", "j":
+			if ui.cursor < len(ui.todos)-1 {
+				ui.cursor++
+			}
+		}
 	}
 	
 	return ui, nil
@@ -110,9 +144,32 @@ func (ui *TodoUI) View() string {
 		return s.String()
 	}
 
-	if ui.err != nil {
-		logger.Error("Error in view: %v", ui.err)
-		return fmt.Sprintf("Error: %v\n", ui.err)
+	// Show todos
+	s.WriteString("\n  Todos:\n\n")
+	
+	if len(ui.todos) == 0 {
+		s.WriteString("  No items\n")
+	} else {
+		for i, todo := range ui.todos {
+			cursor := " "
+			if ui.cursor == i {
+				cursor = ">"
+			}
+			checkbox := "☐"
+			if todo.Completed {
+				checkbox = "☑"
+			}
+			s.WriteString(fmt.Sprintf("  %s %s %s\n", cursor, checkbox, todo.Title))
+		}
 	}
-	return "\n" + ui.list.View()
+
+	s.WriteString("\n")
+	
+	// Help text
+	if !ui.adding {
+		s.WriteString("  a: add • d: delete • space: toggle • q: quit\n")
+	}
+
+	return s.String()
 }
+

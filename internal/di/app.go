@@ -28,6 +28,26 @@ func (a *App) Run(ctx context.Context) error {
     return a.startServices(ctx)
 }
 
+func (a *App) initializeServices(ctx context.Context) error {
+    logger.Info("Initializing services...")
+
+    // Verify database connection
+    testTodo, err := a.todoService.CreateTodo(ctx, "Test Todo", "Testing service initialization")
+    if err != nil {
+        logger.Error("Failed to verify database connection: %v", err)
+        return fmt.Errorf("failed to verify database connection: %w", err)
+    }
+
+    // Clean up test todo
+    if err := a.todoService.DeleteTodo(ctx, testTodo.ID); err != nil {
+        logger.Error("Failed to cleanup test todo: %v", err)
+        return fmt.Errorf("failed to cleanup test todo: %w", err)
+    }
+
+    logger.Info("Services initialized successfully")
+    return nil
+}
+
 func (a *App) startServices(ctx context.Context) error {
     // Start hotkey listener
     go a.startHotkeyListener(ctx)

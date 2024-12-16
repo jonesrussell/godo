@@ -5,6 +5,7 @@
 package di
 
 import "github.com/google/wire"
+import "github.com/jonesrussell/godo/internal/service"
 
 // DefaultSet defines the provider set for wire
 var DefaultSet = wire.NewSet(

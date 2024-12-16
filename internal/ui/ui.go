@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/jonesrussell/godo/internal/logger"
@@ -46,7 +45,6 @@ func New(service *service.TodoService) *TodoUI {
 
 func (ui *TodoUI) Init() tea.Cmd {
 	logger.Debug("Initializing TodoUI")
-	// Initial command to load todos
 	return ui.loadTodos
 }
 
@@ -80,7 +78,7 @@ func (ui *TodoUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			
 			if msg.String() == "enter" {
 				title := ui.input.Value()
-				todo, err := ui.service.CreateTodo(context.Background(), title, "")
+				_, err := ui.service.CreateTodo(context.Background(), title, "")
 				if err != nil {
 					ui.err = err
 					ui.adding = false

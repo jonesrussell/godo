@@ -109,8 +109,7 @@ func (ui *TodoUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			ui.input.Focus()
 			return ui, nil
 		case "d":
-			if len(ui.todos) > 0 && ui.cursor < len(ui.todos) {
-				todoID := ui.todos[ui.cursor].ID
+			if todoID, err := ui.getSelectedTodoID(); err == nil {
 				if err := ui.service.DeleteTodo(context.Background(), todoID); err != nil {
 					ui.err = err
 					return ui, nil
@@ -118,8 +117,7 @@ func (ui *TodoUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return ui, ui.loadTodos
 			}
 		case " ":
-			if len(ui.todos) > 0 && ui.cursor < len(ui.todos) {
-				todoID := ui.todos[ui.cursor].ID
+			if todoID, err := ui.getSelectedTodoID(); err == nil {
 				if err := ui.service.ToggleTodoStatus(context.Background(), todoID); err != nil {
 					ui.err = err
 					return ui, nil
@@ -157,15 +155,7 @@ func (ui *TodoUI) View() string {
 		s.WriteString("  No items\n")
 	} else {
 		for i, todo := range ui.todos {
-			cursor := " "
-			if ui.cursor == i {
-				cursor = ">"
-			}
-			checkbox := "☐"
-			if todo.Completed {
-				checkbox = "☑"
-			}
-			s.WriteString(fmt.Sprintf("  %s %s %s\n", cursor, checkbox, todo.Title))
+			s.WriteString(ui.renderTodoItem(i, todo))
 		}
 	}
 
@@ -177,5 +167,24 @@ func (ui *TodoUI) View() string {
 	}
 
 	return s.String()
+}
+
+func (ui *TodoUI) renderTodoItem(i int, todo model.Todo) string {
+	cursor := " "
+	if ui.cursor == i {
+		cursor = ">"
+	}
+	checkbox := "☐"
+	if todo.Completed {
+		checkbox = "☑"
+	}
+	return fmt.Sprintf("  %s %s %s\n", cursor, checkbox, todo.Title)
+}
+
+func (ui *TodoUI) getSelectedTodoID() (int64, error) {
+	if len(ui.todos) == 0 || ui.cursor >= len(ui.todos) {
+		return 0, service.ErrNotFound
+	}
+	return ui.todos[ui.cursor].ID, nil
 }
 

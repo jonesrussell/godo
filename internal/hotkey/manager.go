@@ -9,6 +9,10 @@ import (
 	"github.com/jonesrussell/godo/internal/logger"
 )
 
+const (
+	ERROR_SUCCESS = 0
+)
+
 // HotkeyManager handles global hotkey registration and events
 type HotkeyManager struct {
 	hotkeyPressed chan struct{}
@@ -47,7 +51,7 @@ func (h *HotkeyManager) Start(ctx context.Context) error {
 
 	// Start message loop in a goroutine
 	go func() {
-		if err := h.startMessageLoop(ctx); err != nil {
+		if err := h.startMessageLoop(ctx); err != nil && err != context.Canceled {
 			logger.Error("Message loop error: %v", err)
 		}
 	}()
@@ -68,7 +72,10 @@ func (h *HotkeyManager) startMessageLoop(ctx context.Context) error {
 			return ctx.Err()
 		case <-ticker.C:
 			if err := h.processMessage(&msg); err != nil {
-				logger.Error("Error processing messages: %v", err)
+				// Check if it's a Windows success code
+				if e, ok := err.(syscall.Errno); !ok || e != ERROR_SUCCESS {
+					logger.Error("Error processing messages: %v", err)
+				}
 			}
 		}
 	}
@@ -82,7 +89,13 @@ func (h *HotkeyManager) processMessage(msg *MSG) error {
 
 	if msg.Message == WM_HOTKEY {
 		logger.Debug("🎯 Hotkey triggered! (ID=%d)", msg.WParam)
-		h.hotkeyPressed <- struct{}{}
+		select {
+		case h.hotkeyPressed <- struct{}{}:
+			// Message sent successfully
+		default:
+			// Channel is full, skip this event
+			logger.Debug("Skipping hotkey event - channel full")
+		}
 	}
 
 	return err

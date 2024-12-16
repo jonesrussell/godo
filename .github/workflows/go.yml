@@ -1,0 +1,103 @@
+name: Go CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+
+    services:
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MARIADB_ROOT_PASSWORD: rootpassword
+          MARIADB_USER: goforms_test
+          MARIADB_PASSWORD: goforms_test
+          MARIADB_DATABASE: goforms_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+          cache: true
+          cache-dependency-path: go.sum
+
+      - name: Install Task
+        uses: arduino/setup-task@v2
+        with:
+          version: "3.x"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install dependencies
+        run: task install
+
+      - name: Run linter
+        uses: golangci/golangci-lint-action@v4
+        with:
+          version: latest
+
+      - name: Install golang-migrate
+        run: |
+          curl -L https://github.com/golang-migrate/migrate/releases/download/v4.17.0/migrate.linux-amd64.tar.gz | tar xvz
+          sudo mv migrate /usr/local/bin/migrate
+          which migrate
+
+      - name: Run migrations
+        run: task migrate:up
+        env:
+          MARIADB_ROOT_PASSWORD: rootpassword
+          MARIADB_USER: goforms
+          MARIADB_PASSWORD: goforms
+          MARIADB_DATABASE: goforms_test
+          DB_HOST: localhost
+          DB_PORT: 3306
+
+      - name: Run tests
+        run: task test:coverage
+        env:
+          MARIADB_ROOT_PASSWORD: rootpassword
+          MARIADB_USER: goforms
+          MARIADB_PASSWORD: goforms
+          MARIADB_DATABASE: goforms_test
+          DB_HOST: localhost
+          DB_PORT: 3306
+
+  build:
+    name: Build
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+          cache: true
+          cache-dependency-path: go.sum
+
+      - name: Install Task
+        uses: arduino/setup-task@v2
+        with:
+          version: "3.x"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build
+        run: task build

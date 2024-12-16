@@ -2,67 +2,70 @@ package ui
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/service"
 )
 
-type QuickNoteUI struct {
-	input   textinput.Model
-	service service.TodoServicer
-	err     error
+type QuickNote struct {
+	textInput textinput.Model
+	service   *service.TodoService
+	err       error
 }
 
-func NewQuickNote(service service.TodoServicer) *QuickNoteUI {
-	input := textinput.New()
-	input.Placeholder = "Type your todo and press Enter..."
-	input.Focus()
-	input.Width = 50
+func NewQuickNote(service *service.TodoService) *QuickNote {
+	ti := textinput.New()
+	ti.Placeholder = "Enter quick note..."
+	ti.Focus()
+	ti.Width = 40
 
-	return &QuickNoteUI{
-		input:   input,
-		service: service,
+	return &QuickNote{
+		textInput: ti,
+		service:   service,
 	}
 }
 
-func (qn *QuickNoteUI) Init() tea.Cmd {
+func (qn *QuickNote) Init() tea.Cmd {
+	logger.Debug("Initializing QuickNote UI")
 	return textinput.Blink
 }
 
-func (qn *QuickNoteUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (qn *QuickNote) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.Type {
 		case tea.KeyEnter:
-			if text := qn.input.Value(); text != "" {
-				_, err := qn.service.CreateTodo(context.Background(), text, "")
+			if text := qn.textInput.Value(); text != "" {
+				todo, err := qn.service.CreateTodo(context.Background(), "quick", text)
 				if err != nil {
+					logger.Error("Failed to create todo: %v", err)
 					qn.err = err
 					return qn, tea.Quit
 				}
+				logger.Debug("Created quick note: %s (ID: %d)", text, todo.ID)
 				return qn, tea.Quit
 			}
-			return qn, tea.Quit
-
+			return qn, nil
 		case tea.KeyEsc:
-			return qn, tea.Quit
-
-		case tea.KeyCtrlC:
+			logger.Debug("Quick note cancelled")
 			return qn, tea.Quit
 		}
 	}
 
-	qn.input, cmd = qn.input.Update(msg)
+	qn.textInput, cmd = qn.textInput.Update(msg)
 	return qn, cmd
 }
 
-func (qn *QuickNoteUI) View() string {
+func (qn *QuickNote) View() string {
 	if qn.err != nil {
-		return fmt.Sprintf("\n  Error: %v\n\n", qn.err)
+		return "Error: " + qn.err.Error() + "\nPress any key to exit."
 	}
-	return "\n  " + qn.input.View() + "\n\n"
+
+	return "\n  🗒️  Quick Note\n\n" +
+		"  " + qn.textInput.View() + "\n\n" +
+		"  (Enter to save • Esc to cancel)\n"
 }

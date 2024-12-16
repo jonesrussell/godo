@@ -8,6 +8,7 @@ import (
 	"syscall"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/getlantern/systray"
 	"github.com/jonesrussell/godo/internal/di"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/service"
@@ -42,46 +43,86 @@ func setupSignalHandler() context.Context {
 	return ctx
 }
 
-// initializeApplication handles app initialization
-func initializeApplication() (*di.App, error) {
-	logger.Info("Initializing dependency injection...")
-	app, err := di.InitializeApp()
-	if err != nil {
-		return nil, err
-	}
-	logger.Info("Dependency injection initialized successfully")
-	return app, nil
+// showQuickNote displays a minimal quick-note UI
+func showQuickNote(service *service.TodoService) {
+	p := tea.NewProgram(
+		ui.NewQuickNote(service),
+		tea.WithAltScreen(),        // Use alternate screen
+		tea.WithMouseCellMotion(),  // Enable mouse support
+		tea.WithoutSignalHandler(), // Don't handle signals
+	)
+
+	// Run in a goroutine to not block
+	go func() {
+		if _, err := p.Run(); err != nil {
+			logger.Error("Quick note error: %v", err)
+		}
+	}()
 }
 
-// runQuickNoteMode starts the application in quick-note mode
-func runQuickNoteMode(ctx context.Context, app *di.App) {
-	logger.Info("Starting quick note mode...")
+// runBackgroundService handles hotkey events and background operations
+func runBackgroundService(ctx context.Context, app *di.App) {
+	logger.Info("Starting background service...")
 
-	// Get the hotkey channel from the manager
+	// Get hotkey channel
 	hotkeyEvents := app.GetHotkeyManager().GetEventChannel()
 
-	// Use select to handle both hotkey events and context cancellation
 	for {
 		select {
 		case <-ctx.Done():
-			logger.Info("Quick note mode shutting down...")
+			logger.Info("Background service shutting down...")
 			return
 		case <-hotkeyEvents:
-			logger.Debug("Received hotkey event in quick note mode")
+			logger.Debug("Received hotkey event")
 			showQuickNote(app.GetTodoService())
 		}
 	}
 }
 
-// showQuickNote displays the quick-note UI
-func showQuickNote(service *service.TodoService) {
+// onReady is called when systray is ready
+func onReady(ctx context.Context, app *di.App) func() {
+	return func() {
+		systray.SetIcon(nil) // Set your icon here
+		systray.SetTitle("Godo")
+		systray.SetTooltip("Quick Todo Manager")
+
+		mOpen := systray.AddMenuItem("Open Manager", "Open todo manager")
+		mQuit := systray.AddMenuItem("Quit", "Quit application")
+
+		// Handle menu items
+		go func() {
+			for {
+				select {
+				case <-mQuit.ClickedCh:
+					systray.Quit()
+					return
+				case <-mOpen.ClickedCh:
+					showFullUI(app.GetTodoService())
+				case <-ctx.Done():
+					return
+				}
+			}
+		}()
+
+		// Start background service
+		go runBackgroundService(ctx, app)
+	}
+}
+
+// onExit is called when systray is quitting
+func onExit() {
+	logger.Info("Cleaning up...")
+}
+
+// showFullUI displays the full todo management interface
+func showFullUI(service *service.TodoService) {
 	p := tea.NewProgram(
-		ui.NewQuickNote(service),
-		tea.WithAltScreen(),       // Use alternate screen
-		tea.WithMouseCellMotion(), // Enable mouse support
+		ui.New(service),
+		tea.WithAltScreen(),
+		tea.WithMouseCellMotion(),
 	)
 	if _, err := p.Run(); err != nil {
-		logger.Error("Quick note error: %v", err)
+		logger.Error("UI error: %v", err)
 	}
 }
 
@@ -93,27 +134,19 @@ func main() {
 
 	ctx := setupSignalHandler()
 
-	app, err := initializeApplication()
+	app, err := di.InitializeApp()
 	if err != nil {
 		logger.Fatal("Failed to initialize application: %v", err)
 	}
 
 	if *fullUI {
-		// Run full UI mode
-		p := tea.NewProgram(ui.New(app.GetTodoService()))
-		if _, err := p.Run(); err != nil {
-			logger.Fatal("UI error: %v", err)
-		}
+		showFullUI(app.GetTodoService())
 	} else {
-		// Start quick note listener before running the app
-		go runQuickNoteMode(ctx, app)
+		// Run in system tray
+		go systray.Run(onReady(ctx, app), onExit)
 
-		// Run quick-note mode (default)
-		if err := app.Run(ctx); err != nil {
-			logger.Fatal("Application error: %v", err)
-		}
+		// Wait for context cancellation
+		<-ctx.Done()
+		logger.Info("Starting graceful shutdown...")
 	}
-
-	<-ctx.Done()
-	logger.Info("Starting graceful shutdown...")
 }

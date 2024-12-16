@@ -30,6 +30,11 @@ func (a *App) GetHotkeyManager() *hotkey.HotkeyManager {
 	return a.hotkeyManager
 }
 
+// GetProgram returns the Bubble Tea program instance
+func (a *App) GetProgram() *tea.Program {
+	return a.program
+}
+
 // Run starts the application
 func (a *App) Run(ctx context.Context) error {
 	logger.Info("Starting application services...")
@@ -42,6 +47,28 @@ func (a *App) Run(ctx context.Context) error {
 	if err := a.hotkeyManager.Start(ctx); err != nil {
 		return fmt.Errorf("failed to start hotkey manager: %w", err)
 	}
+
+	// Start background service to handle hotkey events
+	go func() {
+		hotkeyEvents := a.hotkeyManager.GetEventChannel()
+		for {
+			select {
+			case <-ctx.Done():
+				logger.Info("Stopping hotkey listener...")
+				return
+			case <-hotkeyEvents:
+				logger.Info("Hotkey triggered - showing quick note")
+				// Create and run quick note program
+				p := tea.NewProgram(
+					ui.NewQuickNote(a.todoService),
+					tea.WithAltScreen(),
+				)
+				if _, err := p.Run(); err != nil {
+					logger.Error("Quick note error: %v", err)
+				}
+			}
+		}
+	}()
 
 	// Wait for context cancellation
 	<-ctx.Done()

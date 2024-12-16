@@ -2,11 +2,10 @@ package ui
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
-	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/service"
 )
 
@@ -18,13 +17,9 @@ type QuickNoteUI struct {
 
 func NewQuickNote(service service.TodoServicer) *QuickNoteUI {
 	input := textinput.New()
-	input.Placeholder = "Type your note and press Enter..."
+	input.Placeholder = "Type your todo and press Enter..."
 	input.Focus()
-	input.Width = 80 // Wider for better visibility
-
-	// Add styling for better visibility
-	input.PromptStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
-	input.TextStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("252"))
+	input.Width = 50
 
 	return &QuickNoteUI{
 		input:   input,
@@ -33,7 +28,6 @@ func NewQuickNote(service service.TodoServicer) *QuickNoteUI {
 }
 
 func (qn *QuickNoteUI) Init() tea.Cmd {
-	logger.Debug("Initializing QuickNote UI")
 	return textinput.Blink
 }
 
@@ -42,30 +36,22 @@ func (qn *QuickNoteUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		logger.Debug("Received key event: %v (type: %v)", msg.String(), msg.Type)
 		switch msg.Type {
 		case tea.KeyEnter:
-			logger.Debug("Enter key pressed")
-			if title := qn.input.Value(); title != "" {
-				logger.Debug("Creating todo with title: %s", title)
-				_, err := qn.service.CreateTodo(context.Background(), title, "")
+			if text := qn.input.Value(); text != "" {
+				_, err := qn.service.CreateTodo(context.Background(), text, "")
 				if err != nil {
-					logger.Error("Failed to create todo: %v", err)
 					qn.err = err
 					return qn, tea.Quit
 				}
-				logger.Info("Quick note created: %s", title)
+				return qn, tea.Quit
 			}
 			return qn, tea.Quit
 
 		case tea.KeyEsc:
-			logger.Debug("Escape key pressed")
-			logger.Info("Quick note cancelled")
 			return qn, tea.Quit
 
 		case tea.KeyCtrlC:
-			logger.Debug("Ctrl+C pressed")
-			logger.Info("Quick note interrupted")
 			return qn, tea.Quit
 		}
 	}
@@ -76,7 +62,7 @@ func (qn *QuickNoteUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (qn *QuickNoteUI) View() string {
 	if qn.err != nil {
-		return "\n  Error: " + qn.err.Error() + "\n"
+		return fmt.Sprintf("\n  Error: %v\n\n", qn.err)
 	}
-	return "\n  " + qn.input.View() + "\n  (Enter to save, Esc to cancel)\n"
+	return "\n  " + qn.input.View() + "\n\n"
 }

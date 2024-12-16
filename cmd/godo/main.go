@@ -20,15 +20,6 @@ var (
 	fullUI = flag.Bool("ui", false, "Launch full todo management interface")
 )
 
-// setupLogger configures and manages logger lifecycle
-func setupLogger() func() {
-	return func() {
-		if err := logger.Sync(); err != nil {
-			os.Stderr.WriteString("Failed to sync logger: " + err.Error() + "\n")
-		}
-	}
-}
-
 // setupSignalHandler creates a signal handler
 func setupSignalHandler(parentCtx context.Context) context.Context {
 	// Use the parent context
@@ -54,34 +45,40 @@ func setupSignalHandler(parentCtx context.Context) context.Context {
 func showQuickNote(service *service.TodoService) {
 	p := tea.NewProgram(
 		ui.NewQuickNote(service),
-		tea.WithAltScreen(),        // Use alternate screen
-		tea.WithMouseCellMotion(),  // Enable mouse support
-		tea.WithoutSignalHandler(), // Don't handle signals
+		tea.WithAltScreen(),
+		tea.WithMouseCellMotion(),
 	)
 
-	// Run in a goroutine to not block
-	go func() {
-		if _, err := p.Run(); err != nil {
-			logger.Error("Quick note error: %v", err)
-		}
-	}()
+	if _, err := p.Run(); err != nil {
+		logger.Error("Quick note error: %v", err)
+	}
 }
 
 // runBackgroundService handles hotkey events and background operations
 func runBackgroundService(ctx context.Context, app *di.App) {
 	logger.Info("Starting background service...")
 
-	// Get hotkey channel
+	// Start the hotkey manager with context
+	if err := app.GetHotkeyManager().Start(ctx); err != nil {
+		logger.Error("Failed to start hotkey manager: %v", err)
+		return
+	}
+
 	hotkeyEvents := app.GetHotkeyManager().GetEventChannel()
+	logger.Info("Listening for hotkey events (Ctrl+Alt+G)...")
 
 	for {
 		select {
 		case <-ctx.Done():
 			logger.Info("Background service shutting down...")
+			if err := app.GetHotkeyManager().Cleanup(); err != nil {
+				logger.Error("Error cleaning up hotkey: %v", err)
+			}
 			return
 		case <-hotkeyEvents:
-			logger.Debug("Received hotkey event")
+			logger.Info("Hotkey triggered - showing quick note")
 			showQuickNote(app.GetTodoService())
+			logger.Debug("Quick note window closed")
 		}
 	}
 }
@@ -93,32 +90,28 @@ func onReady(ctx context.Context, app *di.App, cancel context.CancelFunc) func()
 		systray.SetTitle("Godo")
 		systray.SetTooltip("Quick Todo Manager")
 
-		// Add separator for better visual organization
 		systray.AddSeparator()
-
 		mOpen := systray.AddMenuItem("Open Manager", "Open todo manager")
 		systray.AddSeparator()
 		mQuit := systray.AddMenuItem("Quit", "Quit application")
 
-		// Handle menu items
-		go func() {
-			for {
-				select {
-				case <-mQuit.ClickedCh:
-					cancel() // Cancel the context
-					systray.Quit()
-					return
-				case <-mOpen.ClickedCh:
-					showFullUI(app.GetTodoService())
-				case <-ctx.Done():
-					systray.Quit()
-					return
-				}
-			}
-		}()
-
 		// Start background service
 		go runBackgroundService(ctx, app)
+
+		// Handle menu items
+		for {
+			select {
+			case <-mQuit.ClickedCh:
+				cancel()
+				systray.Quit()
+				return
+			case <-mOpen.ClickedCh:
+				showFullUI(app.GetTodoService())
+			case <-ctx.Done():
+				systray.Quit()
+				return
+			}
+		}
 	}
 }
 
@@ -141,14 +134,16 @@ func showFullUI(service *service.TodoService) {
 }
 
 func main() {
+	// Initialize logger first
+	cleanup := logger.Initialize()
+	defer cleanup()
+
 	flag.Parse()
-	defer setupLogger()()
 
 	logger.Info("Starting Godo application...")
 
-	// Create a cancellable context
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel() // Ensure the root context is cancelled
+	defer cancel()
 
 	// Setup signal handler with the cancellable context
 	sigCtx := setupSignalHandler(ctx)

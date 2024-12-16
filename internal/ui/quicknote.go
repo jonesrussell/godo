@@ -28,6 +28,7 @@ func NewQuickNote(service *service.TodoService) *QuickNoteUI {
 }
 
 func (qn *QuickNoteUI) Init() tea.Cmd {
+	logger.Debug("Initializing QuickNote UI")
 	return textinput.Blink
 }
 
@@ -36,24 +37,29 @@ func (qn *QuickNoteUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
+		logger.Debug("Received key event: %v (type: %v)", msg.String(), msg.Type)
 		switch msg.Type {
 		case tea.KeyEnter:
+			logger.Debug("Enter key pressed")
 			if title := qn.input.Value(); title != "" {
+				logger.Debug("Creating todo with title: %s", title)
 				_, err := qn.service.CreateTodo(context.Background(), title, "")
 				if err != nil {
-					logger.Error("Failed to create todo", err)
+					logger.Error("Failed to create todo: %v", err)
 					qn.err = err
 					return qn, tea.Quit
 				}
-				logger.Info("Quick note created: " + title)
+				logger.Info("Quick note created: %s", title)
 			}
 			return qn, tea.Quit
 
 		case tea.KeyEsc:
+			logger.Debug("Escape key pressed")
 			logger.Info("Quick note cancelled")
 			return qn, tea.Quit
 
 		case tea.KeyCtrlC:
+			logger.Debug("Ctrl+C pressed")
 			logger.Info("Quick note interrupted")
 			return qn, tea.Quit
 		}

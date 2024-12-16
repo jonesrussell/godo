@@ -23,9 +23,37 @@
   - [x] Research cross-platform hotkey libraries
   - [x] Implement hotkey registration
   - [ ] Add user-configurable shortcuts
-- [ ] Separate quick-note and management UIs
+- [x] Separate quick-note and management UIs
   - [x] Quick-note: Minimal, instant input
   - [x] Management: Full featured todo interface
+
+## Quick-Note Feature (High Priority)
+- [x] Create QuickNoteUI component
+  - [x] Single-line input field
+  - [x] Minimal window decoration
+  - [x] Window positioning (centered)
+  - [x] Fixed window size
+- [x] Implement quick-note workflow
+  - [x] Hotkey triggers QuickNoteUI
+  - [x] Focus input immediately
+  - [x] Enter saves note and closes
+  - [x] Esc cancels and closes
+  - [x] Return to previous window focus
+- [ ] Add quick-note settings
+  - [ ] Window position (cursor/center/custom)
+  - [ ] Window opacity
+  - [ ] Custom hotkey binding
+    - [ ] Make Ctrl+Alt+G configurable via config file
+    - [ ] Add hotkey configuration UI
+    - [ ] Validate hotkey combinations
+    - [ ] Save/load hotkey preferences
+  - [ ] Auto-categorization rules
+- [x] Error Handling Improvements
+  - [x] Handle "The operation completed successfully" error message
+  - [x] Add error logging
+  - [x] Add success verification
+  - [ ] Add retry mechanism for failed note saves
+  - [ ] Add notification for successful saves
 
 ## Core Functionality
 - [x] Set up basic database structure
@@ -85,33 +113,6 @@
 - [ ] Recurring tasks
 - [ ] Multiple todo lists
 - [ ] Cloud sync support
-
-## Quick-Note Feature (High Priority)
-- [x] Create QuickNoteUI component
-  - [x] Single-line input field
-  - [x] Minimal window decoration
-  - [ ] Transparent/floating window
-  - [ ] Position near cursor
-- [x] Implement quick-note workflow
-  - [x] Hotkey triggers QuickNoteUI
-  - [x] Focus input immediately
-  - [x] Enter saves note and closes
-  - [x] Esc cancels and closes
-  - [x] Return to previous window focus
-- [ ] Add quick-note settings
-  - [ ] Window position (cursor/center/custom)
-  - [ ] Window opacity
-  - [ ] Custom hotkey binding
-    - [ ] Make Ctrl+Alt+G configurable via config file
-    - [ ] Add hotkey configuration UI
-    - [ ] Validate hotkey combinations
-    - [ ] Save/load hotkey preferences
-  - [ ] Auto-categorization rules
-- [x] Error Handling Improvements
-  - [x] Handle "The operation completed successfully" error message
-  - [ ] Add retry mechanism for failed note saves
-  - [ ] Improve error messages in UI
-  - [ ] Add notification for successful saves
 
 ## System Tray Integration (Completed)
 - [x] Add system tray icon support

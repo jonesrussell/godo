@@ -67,7 +67,7 @@ func runQuickNoteMode(ctx context.Context, app *di.App) {
 			logger.Info("Quick note mode shutting down...")
 			return
 		case <-hotkeyEvents:
-			logger.Info("Hotkey triggered, showing quick note...")
+			logger.Debug("Received hotkey event in quick note mode")
 			showQuickNote(app.GetTodoService())
 		}
 	}
@@ -101,13 +101,13 @@ func main() {
 			logger.Fatal("UI error: %v", err)
 		}
 	} else {
+		// Start quick note listener before running the app
+		go runQuickNoteMode(ctx, app)
+
 		// Run quick-note mode (default)
 		if err := app.Run(ctx); err != nil {
 			logger.Fatal("Application error: %v", err)
 		}
-
-		// Start quick note listener after app is running
-		go runQuickNoteMode(ctx, app)
 	}
 
 	<-ctx.Done()

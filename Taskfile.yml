@@ -1,0 +1,50 @@
+version: '3'
+
+tasks:
+  default:
+    cmds:
+      - task --list
+
+  build:
+    desc: Build the application
+    cmds:
+      - go build -o bin/godo cmd/godo/main.go
+
+  run:
+    desc: Run the application
+    cmds:
+      - go run cmd/godo/main.go
+
+  test:
+    desc: Run tests
+    cmds:
+      - go test -v ./...
+
+  lint:
+    desc: Run linters
+    cmds:
+      - golangci-lint run
+
+  fmt:
+    desc: Format code
+    cmds:
+      - gofmt -s -w .
+
+  clean:
+    desc: Clean build artifacts
+    cmds:
+      - rm -rf bin/
+
+  dev:
+    desc: Run development tasks (fmt, lint, test, build)
+    cmds:
+      - task: fmt
+      - task: lint
+      - task: test
+      - task: build
+
+  install:
+    desc: Install project dependencies
+    cmds:
+      - go mod tidy
+      - go mod download 

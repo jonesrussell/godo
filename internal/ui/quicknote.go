@@ -13,11 +13,16 @@ import (
 
 type QuickNote struct {
 	service service.TodoServicer
+	app     fyne.App
+	window  fyne.Window
 }
 
 func NewQuickNote(service service.TodoServicer) *QuickNote {
+	a := app.New()
 	return &QuickNote{
 		service: service,
+		app:     a,
+		window:  a.NewWindow("Quick Note"),
 	}
 }
 
@@ -28,10 +33,9 @@ func (qn *QuickNote) Update() {
 func (qn *QuickNote) Show() {
 	logger.Debug("Opening quick note window...")
 
-	a := app.New()
-	w := a.NewWindow("Quick Note")
-	w.Resize(fyne.NewSize(300, 100))
-	w.CenterOnScreen()
+	qn.window.Resize(fyne.NewSize(300, 100))
+	qn.window.CenterOnScreen()
+	qn.window.RequestFocus()
 
 	input := widget.NewEntry()
 	input.SetPlaceHolder("Enter quick note...")
@@ -44,7 +48,7 @@ func (qn *QuickNote) Show() {
 			}
 			logger.Debug("Created quick note: %s (ID: %d)", text, todo.ID)
 		}
-		w.Close()
+		qn.window.Close()
 	}
 
 	content := container.NewVBox(
@@ -53,18 +57,19 @@ func (qn *QuickNote) Show() {
 		widget.NewLabel("Press Enter to save • Esc to cancel"),
 	)
 
-	w.SetContent(content)
+	qn.window.SetContent(content)
 
 	// Handle Escape key
-	w.Canvas().SetOnTypedKey(func(ev *fyne.KeyEvent) {
+	qn.window.Canvas().SetOnTypedKey(func(ev *fyne.KeyEvent) {
 		if ev.Name == fyne.KeyEscape {
 			logger.Debug("Quick note cancelled")
-			w.Close()
+			qn.window.Close()
 		}
 	})
 
 	// Focus the input field
-	w.Canvas().Focus(input)
+	qn.window.Canvas().Focus(input)
 
-	w.Show()
+	qn.window.Show()
+	logger.Debug("Quick note window should now be visible")
 }

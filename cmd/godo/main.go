@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"fyne.io/fyne/v2/app"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/getlantern/systray"
 	"github.com/jonesrussell/godo/internal/di"
@@ -22,13 +23,12 @@ var (
 
 // setupSignalHandler creates a signal handler
 func setupSignalHandler(parentCtx context.Context) context.Context {
-	// Use the parent context
 	ctx, cancel := context.WithCancel(parentCtx)
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
 	go func() {
-		defer cancel() // Ensure cancel is called when the goroutine exits
+		defer cancel()
 		select {
 		case sig := <-sigChan:
 			logger.Info("Received signal: %v", sig)
@@ -39,41 +39,6 @@ func setupSignalHandler(parentCtx context.Context) context.Context {
 	}()
 
 	return ctx
-}
-
-// showQuickNote displays a minimal quick-note window
-func showQuickNote(service *service.TodoService) {
-	qn := ui.NewQuickNote(service)
-	qn.Show()
-}
-
-// runBackgroundService handles hotkey events and background operations
-func runBackgroundService(ctx context.Context, app *di.App) {
-	logger.Info("Starting background service...")
-
-	// Start the hotkey manager with context
-	if err := app.GetHotkeyManager().Start(ctx); err != nil {
-		logger.Error("Failed to start hotkey manager: %v", err)
-		return
-	}
-
-	hotkeyEvents := app.GetHotkeyManager().GetEventChannel()
-	logger.Info("Listening for hotkey events (Ctrl+Alt+G)...")
-
-	for {
-		select {
-		case <-ctx.Done():
-			logger.Info("Background service shutting down...")
-			if err := app.GetHotkeyManager().Cleanup(); err != nil {
-				logger.Error("Error cleaning up hotkey: %v", err)
-			}
-			return
-		case <-hotkeyEvents:
-			logger.Info("Hotkey triggered - showing quick note")
-			showQuickNote(app.GetTodoService())
-			logger.Debug("Quick note window closed")
-		}
-	}
 }
 
 // onReady is called when systray is ready
@@ -89,7 +54,29 @@ func onReady(ctx context.Context, app *di.App, cancel context.CancelFunc) func()
 		mQuit := systray.AddMenuItem("Quit", "Quit application")
 
 		// Start background service
-		go runBackgroundService(ctx, app)
+		go func() {
+			if err := app.GetHotkeyManager().Start(ctx); err != nil {
+				logger.Error("Failed to start hotkey manager: %v", err)
+				return
+			}
+
+			hotkeyEvents := app.GetHotkeyManager().GetEventChannel()
+			logger.Info("Listening for hotkey events (Ctrl+Alt+G)...")
+
+			for {
+				select {
+				case <-ctx.Done():
+					if err := app.GetHotkeyManager().Cleanup(); err != nil {
+						logger.Error("Error cleaning up hotkey: %v", err)
+					}
+					return
+				case <-hotkeyEvents:
+					logger.Info("Hotkey triggered - showing quick note")
+					quickNote := ui.NewQuickNote(app.GetTodoService())
+					quickNote.Show()
+				}
+			}
+		}()
 
 		// Handle menu items
 		for {
@@ -111,7 +98,7 @@ func onReady(ctx context.Context, app *di.App, cancel context.CancelFunc) func()
 // onExit is called when systray is quitting
 func onExit() {
 	logger.Info("Cleaning up...")
-	os.Exit(0) // Ensure the process exits
+	os.Exit(0)
 }
 
 // showFullUI displays the full todo management interface
@@ -127,7 +114,6 @@ func showFullUI(service *service.TodoService) {
 }
 
 func main() {
-	// Initialize logger first
 	cleanup := logger.Initialize()
 	defer cleanup()
 
@@ -138,22 +124,24 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// Setup signal handler with the cancellable context
 	sigCtx := setupSignalHandler(ctx)
 
-	app, err := di.InitializeApp()
+	diApp, err := di.InitializeApp()
 	if err != nil {
 		logger.Fatal("Failed to initialize application: %v", err)
 	}
 
-	if *fullUI {
-		showFullUI(app.GetTodoService())
-	} else {
-		// Run in system tray with quit handler
-		go systray.Run(onReady(sigCtx, app, cancel), onExit)
+	fyneApp := app.New()
+	mainWindow := fyneApp.NewWindow("Godo")
 
-		// Wait for context cancellation
+	if *fullUI {
+		showFullUI(diApp.GetTodoService())
+	} else {
+		go systray.Run(onReady(sigCtx, diApp, cancel), onExit)
+
 		<-sigCtx.Done()
 		logger.Info("Starting graceful shutdown...")
 	}
+
+	mainWindow.ShowAndRun()
 }

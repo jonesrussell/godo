@@ -114,7 +114,15 @@ func showFullUI(service *service.TodoService) {
 }
 
 func main() {
-	cleanup := logger.Initialize()
+	// Initialize logger with different settings based on mode
+	var cleanup func()
+	if *fullUI {
+		// In full UI mode, log to file only
+		cleanup = logger.InitializeFileOnly()
+	} else {
+		// In systray mode, normal logging
+		cleanup = logger.Initialize()
+	}
 	defer cleanup()
 
 	flag.Parse()

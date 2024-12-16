@@ -49,6 +49,31 @@ func Initialize() func() {
 	}
 }
 
+// InitializeFileOnly sets up logging to file only (no stdout)
+func InitializeFileOnly() func() {
+	// Create logger configuration
+	cfg := zap.NewProductionConfig()
+
+	// Set output paths to file only (no stdout)
+	cfg.OutputPaths = []string{"logs/godo.log"}
+	cfg.ErrorOutputPaths = []string{"logs/godo.log"}
+
+	// Create logger
+	zapLogger, err := cfg.Build()
+	if err != nil {
+		fmt.Printf("Failed to initialize logger: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Replace global logger
+	zap.ReplaceGlobals(zapLogger)
+
+	// Return cleanup function
+	return func() {
+		_ = zapLogger.Sync()
+	}
+}
+
 // Sync flushes any buffered log entries
 func Sync() error {
 	if log == nil {

@@ -2,9 +2,10 @@ package hotkey
 
 import (
 	"context"
-	"log"
 	"syscall"
 	"unsafe"
+
+	"github.com/jonesrussell/godo/internal/logger"
 )
 
 var (
@@ -34,14 +35,14 @@ type HotkeyManager struct {
 }
 
 func New(showCallback func()) *HotkeyManager {
-	log.Println("Creating new HotkeyManager...")
+	logger.Info("Creating new HotkeyManager...")
 	return &HotkeyManager{
 		showCallback: showCallback,
 	}
 }
 
 func (h *HotkeyManager) Start(ctx context.Context) error {
-	log.Println("Registering hotkey Ctrl+Alt+T...")
+	logger.Info("Registering hotkey Ctrl+Alt+T...")
 
 	// Register Ctrl+Alt+T
 	ret, _, err := procRegisterHotKey.Call(
@@ -51,35 +52,58 @@ func (h *HotkeyManager) Start(ctx context.Context) error {
 		uintptr('T'),
 	)
 	if ret == 0 {
+		logger.Error("Failed to register hotkey: %v (ret=%d)", err, ret)
 		return err
 	}
+	logger.Info("Successfully registered hotkey (ret=%d)", ret)
 
 	var msg MSG
 	done := make(chan struct{})
 
 	go func() {
+		logger.Info("Starting Windows message loop")
 		defer close(done)
+		defer func() {
+			ret, _, err := procUnregisterHotKey.Call(0, 1)
+			if ret == 0 {
+				logger.Error("Failed to unregister hotkey: %v", err)
+			} else {
+				logger.Info("Unregistered hotkey Ctrl+Alt+T")
+			}
+		}()
+
 		for {
 			select {
 			case <-ctx.Done():
-				procUnregisterHotKey.Call(0, 1)
-				log.Println("Unregistered hotkey Ctrl+Alt+T")
+				logger.Info("Context cancelled, stopping hotkey listener")
 				return
 			default:
-				ret, _, _ := procGetMessage.Call(
+				logger.Debug("Waiting for message...")
+				ret, _, err := procGetMessage.Call(
 					uintptr(unsafe.Pointer(&msg)),
 					0,
 					0,
 					0,
 				)
-				if ret != 0 && msg.Message == WM_HOTKEY {
-					log.Println("Hotkey triggered!")
+				if ret == 0 {
+					logger.Info("Message loop ended (ret=0)")
+					return
+				}
+				if int32(ret) < 0 {
+					logger.Error("Error getting message: %v (ret=%d)", err, ret)
+					continue
+				}
+				logger.Debug("Got message: type=%d, wparam=%d, lparam=%d",
+					msg.Message, msg.WParam, msg.LParam)
+				if msg.Message == WM_HOTKEY {
+					logger.Info("Hotkey triggered! ID=%d", msg.WParam)
 					h.showCallback()
 				}
 			}
 		}
 	}()
 
+	logger.Info("Hotkey manager initialized and waiting for events")
 	<-done
 	return nil
 }

@@ -7,7 +7,6 @@ require (
 	github.com/charmbracelet/bubbletea v1.2.4
 	github.com/google/wire v0.6.0
 	github.com/mattn/go-sqlite3 v1.14.24
-	github.com/micmonay/keybd_event v1.1.2
 )
 
 require (

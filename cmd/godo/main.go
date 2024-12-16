@@ -2,29 +2,27 @@ package main
 
 import (
 	"context"
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/jonesrussell/godo/internal/di"
+	"github.com/jonesrussell/godo/internal/logger"
 )
 
 func main() {
-	// Set up logging
-	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
-	log.Println("Starting Godo application...")
+	logger.Info("Starting Godo application...")
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	// Initialize dependency injection container
-	log.Println("Initializing dependency injection...")
+	logger.Info("Initializing dependency injection...")
 	app, err := di.InitializeApp()
 	if err != nil {
-		log.Fatalf("Failed to initialize application: %v", err)
+		logger.Fatal("Failed to initialize application: %v", err)
 	}
-	log.Println("Dependency injection initialized successfully")
+	logger.Info("Dependency injection initialized successfully")
 
 	// Handle graceful shutdown
 	sigChan := make(chan os.Signal, 1)
@@ -32,12 +30,12 @@ func main() {
 
 	go func() {
 		sig := <-sigChan
-		log.Printf("Received signal: %v", sig)
+		logger.Info("Received signal: %v", sig)
 		cancel()
 	}()
 
-	log.Println("Starting application run...")
+	logger.Info("Starting application run...")
 	if err := app.Run(ctx); err != nil {
-		log.Fatalf("Application error: %v", err)
+		logger.Fatal("Application error: %v", err)
 	}
 }

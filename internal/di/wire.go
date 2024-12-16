@@ -13,6 +13,7 @@ import (
 	"github.com/google/wire"
 	"github.com/jonesrussell/godo/internal/database"
 	"github.com/jonesrussell/godo/internal/hotkey"
+	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/repository"
 	"github.com/jonesrussell/godo/internal/service"
 	"github.com/jonesrussell/godo/internal/ui"
@@ -47,17 +48,23 @@ func (a *App) Run(ctx context.Context) error {
 }
 
 func (a *App) initializeServices(ctx context.Context) error {
+	logger.Info("Initializing services...")
+
 	// Verify database connection
-	// We can do this by creating a test todo
 	testTodo, err := a.todoService.CreateTodo(ctx, "Test Todo", "Testing service initialization")
 	if err != nil {
+		logger.Error("Failed to verify database connection: %v", err)
 		return fmt.Errorf("failed to verify database connection: %w", err)
 	}
 
 	// Clean up test todo
 	if err := a.todoService.DeleteTodo(ctx, testTodo.ID); err != nil {
+		logger.Error("Failed to cleanup test todo: %v", err)
 		return fmt.Errorf("failed to cleanup test todo: %w", err)
 	}
+
+	logger.Info("Services initialized successfully")
+	logger.Info("Starting hotkey listener...")
 
 	return nil
 }

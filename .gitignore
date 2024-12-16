@@ -2,3 +2,5 @@
 *.db
 
 *.log
+gofmt
+golangci-lint

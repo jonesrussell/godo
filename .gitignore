@@ -1,9 +1,11 @@
 *_gen.go
 *.db
 *.log
+*.out
 
 gofmt
 golangci-lint
 
 bin/
 vendor/
+coverage

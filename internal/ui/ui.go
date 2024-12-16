@@ -67,6 +67,12 @@ func (ui *TodoUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return ui, nil
 		}
 		ui.todos = msg.todos
+		if ui.cursor >= len(ui.todos) {
+			ui.cursor = len(ui.todos) - 1
+			if ui.cursor < 0 {
+				ui.cursor = 0
+			}
+		}
 		return ui, nil
 	case ShowMsg:
 		logger.SetUIActive(true)
@@ -78,12 +84,14 @@ func (ui *TodoUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			
 			if msg.String() == "enter" {
 				title := ui.input.Value()
-				_, err := ui.service.CreateTodo(context.Background(), title, "")
-				if err != nil {
-					ui.err = err
-					ui.adding = false
-					ui.input.Reset()
-					return ui, nil
+				if title != "" {
+					_, err := ui.service.CreateTodo(context.Background(), title, "")
+					if err != nil {
+						ui.err = err
+						ui.adding = false
+						ui.input.Reset()
+						return ui, nil
+					}
 				}
 				ui.adding = false
 				ui.input.Reset()
@@ -101,7 +109,7 @@ func (ui *TodoUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			ui.input.Focus()
 			return ui, nil
 		case "d":
-			if len(ui.todos) > 0 {
+			if len(ui.todos) > 0 && ui.cursor < len(ui.todos) {
 				todoID := ui.todos[ui.cursor].ID
 				if err := ui.service.DeleteTodo(context.Background(), todoID); err != nil {
 					ui.err = err
@@ -110,7 +118,7 @@ func (ui *TodoUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return ui, ui.loadTodos
 			}
 		case " ":
-			if len(ui.todos) > 0 {
+			if len(ui.todos) > 0 && ui.cursor < len(ui.todos) {
 				todoID := ui.todos[ui.cursor].ID
 				if err := ui.service.ToggleTodoStatus(context.Background(), todoID); err != nil {
 					ui.err = err

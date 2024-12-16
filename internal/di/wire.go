@@ -67,13 +67,10 @@ func NewApp(todoService *service.TodoService, ui *ui.TodoUI) (*App, error) {
 	program := tea.NewProgram(ui)
 
 	showUI := func() {
-		program.Send(ui.ShowMsg{})
+		program.Send(struct{}{})
 	}
 
-	hotkeyManager, err := hotkey.New(showUI)
-	if err != nil {
-		return nil, fmt.Errorf("failed to initialize hotkey manager: %w", err)
-	}
+	hotkeyManager := hotkey.New(showUI)
 
 	return &App{
 		todoService:   todoService,

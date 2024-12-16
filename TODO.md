@@ -7,14 +7,17 @@
 - [x] Add necessary dependencies to go.mod
   - github.com/mattn/go-sqlite3
   - github.com/google/wire
+  - github.com/charmbracelet/bubbletea
+  - go.uber.org/zap
 
 ## User Interface
-- [ ] Research and choose TUI library (e.g., Bubble Tea, termui)
-- [ ] Design minimal UI layout
+- [x] Research and choose TUI library (e.g., Bubble Tea, termui)
+- [x] Design minimal UI layout
+- [x] Implement basic UI with Bubble Tea
 - [ ] Implement system tray integration
-- [ ] Add global hotkey support
-  - [ ] Research cross-platform hotkey libraries
-  - [ ] Implement hotkey registration
+- [x] Add global hotkey support
+  - [x] Research cross-platform hotkey libraries
+  - [x] Implement hotkey registration
   - [ ] Add user-configurable shortcuts
 
 ## Core Functionality
@@ -22,16 +25,21 @@
   - [x] Define schema
   - [x] Implement repository pattern
   - [x] Create service layer
-- [ ] Set up logging system
-  - [ ] Choose logging library
-  - [ ] Implement structured logging
+- [x] Set up logging system
+  - [x] Choose logging library (zap)
+  - [x] Implement structured logging
   - [ ] Add log rotation
 - [ ] Create configuration management
   - [ ] Define config file structure
   - [ ] Implement config file loading
   - [ ] Add config validation
+- [ ] Add version information
+  - [ ] Create version package
+  - [ ] Add build-time version injection
+  - [ ] Display version in UI and logs
 
 ## System Integration
+- [x] Implement graceful shutdown
 - [ ] Implement system service functionality
   - [ ] Windows service support
   - [ ] Linux systemd support
@@ -40,9 +48,9 @@
 - [ ] Implement update mechanism
 
 ## Testing
-- [ ] Write unit tests for existing components
+- [x] Write initial unit tests
+  - [x] Service tests
   - [ ] Repository tests
-  - [ ] Service tests
   - [ ] Database tests
 - [ ] Set up integration tests
 - [ ] Add CI pipeline
@@ -60,4 +68,6 @@
 - [ ] Due dates and reminders
 - [ ] Data export/import
 - [ ] Task priority levels
-- [ ] Recurring tasks 
+- [ ] Recurring tasks
+- [ ] Multiple todo lists
+- [ ] Cloud sync support

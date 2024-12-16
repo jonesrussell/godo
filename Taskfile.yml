@@ -3,23 +3,21 @@ version: '3'
 tasks:
   default:
     cmds:
-      - task --list
+      - task: run
 
   wire:
-    desc: Generate wire dependency injection code
-    dir: internal/di
     cmds:
-      - wire
-
-  build:
-    desc: Build the application
-    deps: [wire]
-    cmds:
-      - go build -o bin/godo cmd/godo/main.go
+      - cd internal/di && wire
 
   run:
-    desc: Run the application
     deps: [wire]
+    cmds:
+      - go run cmd/godo/main.go
+
+  debug:
+    deps: [wire]
+    env:
+      DEBUG: "1"
     cmds:
       - go run cmd/godo/main.go
 

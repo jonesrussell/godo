@@ -60,15 +60,8 @@ func (ui *TodoUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return ui, nil
 		}
 		ui.todos = msg.todos
-		if ui.cursor >= len(ui.todos) {
-			ui.cursor = len(ui.todos) - 1
-			if ui.cursor < 0 {
-				ui.cursor = 0
-			}
-		}
 		return ui, nil
 	case ShowMsg:
-		logger.SetUIActive(true)
 		return ui, ui.loadTodos
 	case tea.KeyMsg:
 		if ui.adding {
@@ -95,7 +88,6 @@ func (ui *TodoUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		switch msg.String() {
 		case "q":
-			logger.SetUIActive(false)
 			return ui, tea.Quit
 		case "a":
 			ui.adding = true

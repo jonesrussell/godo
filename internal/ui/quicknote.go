@@ -3,80 +3,82 @@ package ui
 import (
 	"context"
 
-	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/widget"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/service"
 )
 
-type QuickNoteUI struct {
-	input   textinput.Model
+type QuickNote struct {
 	service service.TodoServicer
-	err     error
+	app     fyne.App
+	window  fyne.Window
 }
 
-func NewQuickNote(service service.TodoServicer) *QuickNoteUI {
-	input := textinput.New()
-	input.Placeholder = "Type your note and press Enter..."
-	input.Focus()
-	input.Width = 80 // Wider for better visibility
-
-	// Add styling for better visibility
-	input.PromptStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
-	input.TextStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("252"))
-
-	return &QuickNoteUI{
-		input:   input,
+// NewQuickNote creates a new QuickNote instance using an existing Fyne app
+func NewQuickNote(service service.TodoServicer, app fyne.App) *QuickNote {
+	return &QuickNote{
 		service: service,
+		app:     app,
+		window:  app.NewWindow("Quick Note"),
 	}
 }
 
-func (qn *QuickNoteUI) Init() tea.Cmd {
-	logger.Debug("Initializing QuickNote UI")
-	return textinput.Blink
+func (qn *QuickNote) Update() {
+	logger.Debug("Updating quick note window...")
 }
 
-func (qn *QuickNoteUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	var cmd tea.Cmd
+func (qn *QuickNote) Show() {
+	logger.Debug("Opening quick note window...")
 
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		logger.Debug("Received key event: %v (type: %v)", msg.String(), msg.Type)
-		switch msg.Type {
-		case tea.KeyEnter:
-			logger.Debug("Enter key pressed")
-			if title := qn.input.Value(); title != "" {
-				logger.Debug("Creating todo with title: %s", title)
-				_, err := qn.service.CreateTodo(context.Background(), title, "")
-				if err != nil {
-					logger.Error("Failed to create todo: %v", err)
-					qn.err = err
-					return qn, tea.Quit
-				}
-				logger.Info("Quick note created: %s", title)
+	qn.window.Resize(fyne.NewSize(300, 100))
+	qn.window.SetFixedSize(true)
+	qn.window.CenterOnScreen()
+
+	input := widget.NewEntry()
+	input.SetPlaceHolder("Enter quick note...")
+	input.OnSubmitted = func(text string) {
+		if text != "" {
+			todo, err := qn.service.CreateTodo(context.Background(), "quick", text)
+			if err != nil {
+				logger.Error("Failed to create todo: %v", err)
+				return
 			}
-			return qn, tea.Quit
-
-		case tea.KeyEsc:
-			logger.Debug("Escape key pressed")
-			logger.Info("Quick note cancelled")
-			return qn, tea.Quit
-
-		case tea.KeyCtrlC:
-			logger.Debug("Ctrl+C pressed")
-			logger.Info("Quick note interrupted")
-			return qn, tea.Quit
+			logger.Debug("Created quick note: %s (ID: %d)", text, todo.ID)
 		}
+		qn.window.Hide()
 	}
 
-	qn.input, cmd = qn.input.Update(msg)
-	return qn, cmd
-}
+	title := widget.NewLabel("🗒️ Quick Note")
+	title.TextStyle = fyne.TextStyle{Bold: true}
 
-func (qn *QuickNoteUI) View() string {
-	if qn.err != nil {
-		return "\n  Error: " + qn.err.Error() + "\n"
-	}
-	return "\n  " + qn.input.View() + "\n  (Enter to save, Esc to cancel)\n"
+	hint := widget.NewLabel("Press Enter to save • Esc to cancel")
+	hint.TextStyle = fyne.TextStyle{Italic: true}
+
+	content := container.NewVBox(
+		title,
+		input,
+		hint,
+	)
+
+	paddedContent := container.NewPadded(content)
+	qn.window.SetContent(paddedContent)
+
+	qn.window.Canvas().SetOnTypedKey(func(ev *fyne.KeyEvent) {
+		if ev.Name == fyne.KeyEscape {
+			logger.Debug("Quick note cancelled")
+			qn.window.Hide()
+		}
+	})
+
+	qn.window.SetCloseIntercept(func() {
+		qn.window.Hide()
+	})
+
+	qn.window.Show()
+	qn.window.RequestFocus()
+	qn.window.Canvas().Focus(input)
+
+	logger.Debug("Quick note window should now be visible")
 }

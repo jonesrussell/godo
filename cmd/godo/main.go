@@ -3,12 +3,16 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"fyne.io/fyne/v2/app"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/getlantern/systray"
 	"github.com/jonesrussell/godo/internal/di"
+	"github.com/jonesrussell/godo/internal/icon"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/service"
 	"github.com/jonesrussell/godo/internal/ui"
@@ -18,102 +22,148 @@ var (
 	fullUI = flag.Bool("ui", false, "Launch full todo management interface")
 )
 
-// setupLogger configures and manages logger lifecycle
-func setupLogger() func() {
-	return func() {
-		if err := logger.Sync(); err != nil {
-			os.Stderr.WriteString("Failed to sync logger: " + err.Error() + "\n")
-		}
-	}
-}
-
 // setupSignalHandler creates a signal handler
-func setupSignalHandler() context.Context {
-	ctx, cancel := context.WithCancel(context.Background())
+func setupSignalHandler(parentCtx context.Context) context.Context {
+	ctx, cancel := context.WithCancel(parentCtx)
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
 	go func() {
-		sig := <-sigChan
-		logger.Info("Received signal: %v", sig)
-		cancel()
+		defer cancel()
+		select {
+		case sig := <-sigChan:
+			logger.Info("Received signal: %v", sig)
+			cancel()
+		case <-parentCtx.Done():
+			// Parent context was cancelled
+		}
 	}()
 
 	return ctx
 }
 
-// initializeApplication handles app initialization
-func initializeApplication() (*di.App, error) {
-	logger.Info("Initializing dependency injection...")
-	app, err := di.InitializeApp()
-	if err != nil {
-		return nil, err
-	}
-	logger.Info("Dependency injection initialized successfully")
-	return app, nil
-}
+// onReady is called when systray is ready
+func onReady(ctx context.Context, app *di.App, cancel context.CancelFunc) func() {
+	return func() {
+		systray.SetIcon(icon.Data)
+		systray.SetTitle("Godo")
+		systray.SetTooltip("Quick Todo Manager")
 
-// runQuickNoteMode starts the application in quick-note mode
-func runQuickNoteMode(ctx context.Context, app *di.App) {
-	logger.Info("Starting quick note mode...")
+		systray.AddSeparator()
+		mOpen := systray.AddMenuItem("Open Manager", "Open todo manager")
+		systray.AddSeparator()
+		mQuit := systray.AddMenuItem("Quit", "Quit application")
 
-	// Get the hotkey channel from the manager
-	hotkeyEvents := app.GetHotkeyManager().GetEventChannel()
+		// Start background service
+		go func() {
+			if err := app.GetHotkeyManager().Start(ctx); err != nil {
+				logger.Error("Failed to start hotkey manager: %v", err)
+				return
+			}
 
-	// Use select to handle both hotkey events and context cancellation
-	for {
-		select {
-		case <-ctx.Done():
-			logger.Info("Quick note mode shutting down...")
-			return
-		case <-hotkeyEvents:
-			logger.Debug("Received hotkey event in quick note mode")
-			showQuickNote(app.GetTodoService())
+			hotkeyEvents := app.GetHotkeyManager().GetEventChannel()
+			logger.Info("Listening for hotkey events (Ctrl+Alt+G)...")
+
+			for {
+				select {
+				case <-ctx.Done():
+					if err := app.GetHotkeyManager().Cleanup(); err != nil {
+						logger.Error("Error cleaning up hotkey: %v", err)
+					}
+					return
+				case <-hotkeyEvents:
+					logger.Info("Hotkey triggered - showing quick note")
+					quickNote := ui.NewQuickNote(app.GetTodoService(), app.GetFyneApp())
+					quickNote.Show()
+				}
+			}
+		}()
+
+		// Handle menu items
+		for {
+			select {
+			case <-mQuit.ClickedCh:
+				cancel()
+				systray.Quit()
+				return
+			case <-mOpen.ClickedCh:
+				showFullUI(app.GetTodoService())
+			case <-ctx.Done():
+				systray.Quit()
+				return
+			}
 		}
 	}
 }
 
-// showQuickNote displays the quick-note UI
-func showQuickNote(service *service.TodoService) {
+// onExit is called when systray is quitting
+func onExit() {
+	logger.Info("Cleaning up...")
+	os.Exit(0)
+}
+
+// showFullUI displays the full todo management interface
+func showFullUI(service *service.TodoService) {
+	// Switch to file-only logging before showing UI
+	cleanup := logger.InitializeFileOnly()
+	defer cleanup()
+
+	// Clear the screen before starting UI
+	fmt.Print("\033[H\033[2J")
+
 	p := tea.NewProgram(
-		ui.NewQuickNote(service),
-		tea.WithAltScreen(),       // Use alternate screen
+		ui.New(service),
+		tea.WithAltScreen(),       // Use alternate screen buffer
 		tea.WithMouseCellMotion(), // Enable mouse support
 	)
+
 	if _, err := p.Run(); err != nil {
-		logger.Error("Quick note error: %v", err)
+		logger.Error("UI error: %v", err)
 	}
 }
 
 func main() {
+	// Initialize normal logging by default
+	cleanup := logger.Initialize()
+	defer cleanup()
+
 	flag.Parse()
-	defer setupLogger()()
 
 	logger.Info("Starting Godo application...")
 
-	ctx := setupSignalHandler()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	app, err := initializeApplication()
+	sigCtx := setupSignalHandler(ctx)
+
+	diApp, err := di.InitializeApp()
 	if err != nil {
 		logger.Fatal("Failed to initialize application: %v", err)
 	}
 
+	fyneApp := app.New()
+	diApp.SetFyneApp(fyneApp)
+
+	// Create main window but don't show it
+	mainWindow := fyneApp.NewWindow("Godo")
+	mainWindow.SetCloseIntercept(func() {
+		mainWindow.Hide()
+	})
+
 	if *fullUI {
-		// Run full UI mode
-		p := tea.NewProgram(ui.New(app.GetTodoService()))
-		if _, err := p.Run(); err != nil {
-			logger.Fatal("UI error: %v", err)
-		}
+		showFullUI(diApp.GetTodoService())
 	} else {
-		// Start quick note listener before running the app
-		go runQuickNoteMode(ctx, app)
+		// Start systray first
+		go systray.Run(onReady(sigCtx, diApp, cancel), onExit)
 
-		// Run quick-note mode (default)
-		if err := app.Run(ctx); err != nil {
-			logger.Fatal("Application error: %v", err)
-		}
+		// Run Fyne app in the main thread
+		go func() {
+			<-sigCtx.Done()
+			logger.Info("Starting graceful shutdown...")
+			fyneApp.Quit()
+		}()
+
+		// This will block until the app quits
+		fyneApp.Run()
 	}
-
-	<-ctx.Done()
-	logger.Info("Starting graceful shutdown...")
 }

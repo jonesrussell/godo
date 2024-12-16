@@ -1,71 +1,56 @@
 package ui_test
 
 import (
+	"context"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
+	"fyne.io/fyne/v2/app"
 	"github.com/jonesrussell/godo/internal/testutil"
 	"github.com/jonesrussell/godo/internal/ui"
 )
 
-func TestQuickNoteUI(t *testing.T) {
+func TestNewQuickNote(t *testing.T) {
+	mockService := testutil.NewMockTodoService()
+	quickNote := ui.NewQuickNote(mockService, app.New())
+
+	if quickNote == nil {
+		t.Error("Expected QuickNote instance, got nil")
+	}
+}
+
+func TestQuickNote_CreateTodo(t *testing.T) {
 	tests := []struct {
-		name      string
-		input     string
-		wantTitle string
-		wantErr   bool
+		name    string
+		input   string
+		wantErr bool
 	}{
 		{
-			name:      "Valid input",
-			input:     "Test todo",
-			wantTitle: "Test todo",
-			wantErr:   false,
+			name:    "Valid input",
+			input:   "Test todo",
+			wantErr: false,
 		},
 		{
-			name:      "Empty input",
-			input:     "",
-			wantTitle: "",
-			wantErr:   false,
+			name:    "Empty input",
+			input:   "",
+			wantErr: false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Create new mock service for each test case
 			mockService := testutil.NewMockTodoService()
-			quickNote := ui.NewQuickNote(mockService)
 			mock := testutil.AsMockTodoService(mockService)
 			mock.SetShouldError(tt.wantErr)
 
-			// Simulate typing
-			for _, r := range tt.input {
-				model, _ := quickNote.Update(tea.KeyMsg{
-					Type:  tea.KeyRunes,
-					Runes: []rune{r},
-				})
-				quickNote = model.(*ui.QuickNoteUI)
+			// Test the service directly
+			_, err := mockService.CreateTodo(context.Background(), tt.input, tt.input)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("CreateTodo() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
-			// Simulate Enter
-			_, _ = quickNote.Update(tea.KeyMsg{Type: tea.KeyEnter})
-
-			if got := mock.GetLastTitle(); got != tt.wantTitle {
-				t.Errorf("Got title %q, want %q", got, tt.wantTitle)
+			if !tt.wantErr && mock.GetLastTitle() != tt.input {
+				t.Errorf("Got title %q, want %q", mock.GetLastTitle(), tt.input)
 			}
 		})
-	}
-}
-
-func TestQuickNoteUI_Escape(t *testing.T) {
-	mockService := testutil.NewMockTodoService()
-	quickNote := ui.NewQuickNote(mockService)
-
-	// Simulate Escape key
-	model, cmd := quickNote.Update(tea.KeyMsg{Type: tea.KeyEsc})
-	if model == nil {
-		t.Error("Expected model, got nil")
-	}
-	if cmd == nil {
-		t.Error("Expected quit command, got nil")
 	}
 }

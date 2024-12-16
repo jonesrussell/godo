@@ -1,93 +1,116 @@
 package logger
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
-	"sync/atomic"
-	"time"
 
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
-var (
-	log        *zap.Logger
-	sugar      *zap.SugaredLogger
-	isUIActive atomic.Bool
-)
+var log *zap.Logger
 
-func init() {
-	// Ensure logs directory exists in project root
-	logsDir := filepath.Join("logs")
+// Initialize sets up the logger with the specified configuration
+func Initialize() func() {
+	// Create logs directory in the application root
+	logsDir := filepath.Join(".", "logs")
 	if err := os.MkdirAll(logsDir, 0755); err != nil {
-		panic("failed to create logs directory: " + err.Error())
+		fmt.Printf("Failed to create logs directory: %v\n", err)
+		os.Exit(1)
 	}
 
-	// Configure logging to file
-	logFile := filepath.Join(logsDir, "godo.log")
-	writer, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	// Configure logging to both file and console
+	config := zap.NewProductionConfig()
+	config.OutputPaths = []string{
+		filepath.Join(logsDir, "godo.log"),
+		"stdout",
+	}
+	config.ErrorOutputPaths = []string{
+		filepath.Join(logsDir, "godo_error.log"),
+		"stderr",
+	}
+
+	// Set log level based on environment
+	config.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
+	if os.Getenv("DEBUG") == "1" {
+		config.Level = zap.NewAtomicLevelAt(zap.DebugLevel)
+	}
+
+	// Create logger
+	logger, err := config.Build(zap.AddCallerSkip(1))
 	if err != nil {
-		panic("failed to open log file: " + err.Error())
+		fmt.Printf("Failed to initialize logger: %v\n", err)
+		os.Exit(1)
 	}
 
-	// Custom encoder config
-	config := zapcore.EncoderConfig{
-		TimeKey:    "T",
-		LevelKey:   "L",
-		MessageKey: "M",
-		EncodeLevel: func(l zapcore.Level, enc zapcore.PrimitiveArrayEncoder) {
-			enc.AppendString(l.CapitalString())
-		},
-		EncodeTime: func(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
-			enc.AppendString(t.Format("2006-01-02T15:04:05-07:00"))
-		},
+	log = logger
+	return func() {
+		_ = log.Sync()
+	}
+}
+
+// InitializeFileOnly sets up logging to file only (no stdout)
+func InitializeFileOnly() func() {
+	// Create logger configuration
+	cfg := zap.NewProductionConfig()
+
+	// Set output paths to file only (no stdout)
+	cfg.OutputPaths = []string{"logs/godo.log"}
+	cfg.ErrorOutputPaths = []string{"logs/godo.log"}
+
+	// Create logger
+	zapLogger, err := cfg.Build()
+	if err != nil {
+		fmt.Printf("Failed to initialize logger: %v\n", err)
+		os.Exit(1)
 	}
 
-	fileEncoder := zapcore.NewJSONEncoder(config)
-	core := zapcore.NewTee(
-		zapcore.NewCore(fileEncoder, zapcore.AddSync(writer), zapcore.DebugLevel),
-	)
+	// Replace global logger
+	zap.ReplaceGlobals(zapLogger)
 
-	log = zap.New(core)
-	sugar = log.Sugar()
-}
-
-// SetUIActive sets the UI active state
-func SetUIActive(active bool) {
-	isUIActive.Store(active)
-}
-
-// IsUIActive returns whether the UI is currently active
-func IsUIActive() bool {
-	return isUIActive.Load()
-}
-
-func Info(format string, args ...interface{}) {
-	sugar.Infof(format, args...)
-}
-
-func Error(format string, args ...interface{}) {
-	sugar.Errorf(format, args...)
-}
-
-func Debug(format string, args ...interface{}) {
-	sugar.Debugf(format, args...)
-}
-
-func Fatal(format string, args ...interface{}) {
-	sugar.Fatalf(format, args...)
-}
-
-func Warn(format string, args ...interface{}) {
-	sugar.Warnf(format, args...)
-}
-
-// WithFields adds structured context to the logger
-func WithFields(fields map[string]interface{}) *zap.SugaredLogger {
-	return sugar.With(fields)
+	// Return cleanup function
+	return func() {
+		_ = zapLogger.Sync()
+	}
 }
 
 // Sync flushes any buffered log entries
 func Sync() error {
-	return sugar.Sync()
+	if log == nil {
+		return nil
+	}
+	return log.Sync()
+}
+
+// Debug logs a debug message
+func Debug(template string, args ...interface{}) {
+	if log == nil {
+		return
+	}
+	log.Sugar().Debugf(template, args...)
+}
+
+// Info logs an info message
+func Info(template string, args ...interface{}) {
+	if log == nil {
+		return
+	}
+	log.Sugar().Infof(template, args...)
+}
+
+// Error logs an error message
+func Error(template string, args ...interface{}) {
+	if log == nil {
+		return
+	}
+	log.Sugar().Errorf(template, args...)
+}
+
+// Fatal logs a fatal message and exits
+func Fatal(template string, args ...interface{}) {
+	if log == nil {
+		fmt.Printf(template+"\n", args...)
+		os.Exit(1)
+	}
+	log.Sugar().Fatalf(template, args...)
 }

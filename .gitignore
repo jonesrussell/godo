@@ -6,3 +6,4 @@ gofmt
 golangci-lint
 
 bin/
+vendor/

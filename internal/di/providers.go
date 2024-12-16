@@ -7,6 +7,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/jonesrussell/godo/internal/database"
 	"github.com/jonesrussell/godo/internal/hotkey"
+	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/repository"
 	"github.com/jonesrussell/godo/internal/service"
 	"github.com/jonesrussell/godo/internal/ui"
@@ -32,8 +33,10 @@ func provideProgram(ui *ui.TodoUI) *tea.Program {
 	return tea.NewProgram(ui)
 }
 
-func provideHotkeyManager() *hotkey.HotkeyManager {
-	return hotkey.NewHotkeyManager()
+func provideHotkeyManager() (*hotkey.HotkeyManager, error) {
+	logger.Debug("Initializing hotkey manager...")
+	manager := hotkey.NewHotkeyManager()
+	return manager, nil
 }
 
 func provideApp(
@@ -42,6 +45,7 @@ func provideApp(
 	program *tea.Program,
 	ui *ui.TodoUI,
 ) *App {
+	logger.Debug("Creating application instance...")
 	return &App{
 		todoService:   todoService,
 		hotkeyManager: hotkeyManager,

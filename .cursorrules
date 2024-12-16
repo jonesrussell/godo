@@ -1,0 +1,80 @@
+# Project: Godo - A Todo Application with Quick-Note Support
+
+## Project Overview
+- Todo application with two main features:
+  1. Quick-note capture via global hotkey
+  2. Full-featured todo management interface
+- Built with Go and SQLite
+- Uses Bubble Tea for TUI
+- Cross-platform compatibility (Windows, Linux, macOS)
+
+## Technical Requirements
+- Go 1.23+
+- SQLite3
+- MinGW-w64 GCC (for Windows)
+
+## Code Style & Standards
+- Follow standard Go formatting guidelines
+- Implement dependency injection using Wire
+- Use structured logging with Zap
+- Keep functions small and focused
+- Use meaningful variable and function names
+
+## Project Structure
+- cmd/godo/ - Main application entry point
+- internal/
+  - di/ - Dependency injection
+  - logger/ - Logging system
+  - service/ - Business logic
+  - ui/ - User interface components
+- pkg/ - Public libraries (if needed)
+
+## Core Features
+- Quick-Note System
+  - Global hotkey registration
+  - Minimal input interface
+  - Instant task capture
+- Full UI Mode
+  - Task organization
+  - Task completion tracking
+  - Task deletion
+- Database
+  - SQLite3 storage
+  - Repository pattern
+  - Service layer abstraction
+
+## Testing Requirements
+- Unit tests for all packages
+  - Service tests
+  - Repository tests
+  - Database tests
+  - Hotkey system tests
+- Integration tests
+- CI pipeline integration
+
+## System Integration
+- Graceful shutdown handling
+- System service support
+  - Windows service
+  - Linux systemd
+  - macOS launchd
+- Auto-start capability
+- Update mechanism
+
+## Documentation
+- Comprehensive README
+- API documentation
+- Usage examples
+- Installation guides
+- Hotkey documentation
+
+## Future Considerations
+- Task categories/tags
+- Due dates and reminders
+- Data export/import
+- Task priorities
+- Recurring tasks
+- Multiple lists
+- Cloud sync
+
+Remember: Focus on reliability, user experience, and cross-platform compatibility while maintaining clean, maintainable code.

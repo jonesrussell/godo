@@ -9,19 +9,23 @@
   - github.com/google/wire
   - github.com/charmbracelet/bubbletea
   - go.uber.org/zap
+  - github.com/getlantern/systray
 
 ## User Interface
 - [x] Research and choose TUI library (e.g., Bubble Tea, termui)
 - [x] Design minimal UI layout
 - [x] Implement basic UI with Bubble Tea
-- [ ] Implement system tray integration
+- [x] Implement system tray integration
+  - [x] Add system tray icon
+  - [x] Add basic menu (Open Manager, Quit)
+  - [x] Implement clean shutdown
 - [x] Add global hotkey support
   - [x] Research cross-platform hotkey libraries
   - [x] Implement hotkey registration
   - [ ] Add user-configurable shortcuts
 - [ ] Separate quick-note and management UIs
-  - [ ] Quick-note: Minimal, instant input
-  - [ ] Management: Full featured todo interface
+  - [x] Quick-note: Minimal, instant input
+  - [x] Management: Full featured todo interface
 
 ## Core Functionality
 - [x] Set up basic database structure
@@ -43,6 +47,9 @@
 
 ## System Integration
 - [x] Implement graceful shutdown
+  - [x] Handle context cancellation
+  - [x] Clean systray removal
+  - [x] Proper process termination
 - [ ] Implement system service functionality
   - [ ] Windows service support
   - [ ] Linux systemd support
@@ -80,12 +87,12 @@
 - [ ] Cloud sync support
 
 ## Quick-Note Feature (High Priority)
-- [ ] Create QuickNoteUI component
-  - [ ] Single-line input field
-  - [ ] Minimal window decoration
+- [x] Create QuickNoteUI component
+  - [x] Single-line input field
+  - [x] Minimal window decoration
   - [ ] Transparent/floating window
   - [ ] Position near cursor
-- [ ] Implement quick-note workflow
+- [x] Implement quick-note workflow
   - [x] Hotkey triggers QuickNoteUI
   - [x] Focus input immediately
   - [x] Enter saves note and closes
@@ -100,8 +107,16 @@
     - [ ] Validate hotkey combinations
     - [ ] Save/load hotkey preferences
   - [ ] Auto-categorization rules
-- [ ] Error Handling Improvements
-  - [ ] Handle "The operation completed successfully" error message
+- [x] Error Handling Improvements
+  - [x] Handle "The operation completed successfully" error message
   - [ ] Add retry mechanism for failed note saves
   - [ ] Improve error messages in UI
   - [ ] Add notification for successful saves
+
+## System Tray Integration (Completed)
+- [x] Add system tray icon support
+- [x] Create basic menu structure
+- [x] Implement proper shutdown handling
+- [x] Add Open Manager option
+- [x] Handle icon loading
+- [x] Implement clean exit

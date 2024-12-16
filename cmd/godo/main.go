@@ -30,15 +30,21 @@ func setupLogger() func() {
 }
 
 // setupSignalHandler creates a signal handler
-func setupSignalHandler() context.Context {
-	ctx, cancel := context.WithCancel(context.Background())
+func setupSignalHandler(parentCtx context.Context) context.Context {
+	// Use the parent context
+	ctx, cancel := context.WithCancel(parentCtx)
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
 	go func() {
-		sig := <-sigChan
-		logger.Info("Received signal: %v", sig)
-		cancel()
+		defer cancel() // Ensure cancel is called when the goroutine exits
+		select {
+		case sig := <-sigChan:
+			logger.Info("Received signal: %v", sig)
+			cancel()
+		case <-parentCtx.Done():
+			// Parent context was cancelled
+		}
 	}()
 
 	return ctx
@@ -81,7 +87,7 @@ func runBackgroundService(ctx context.Context, app *di.App) {
 }
 
 // onReady is called when systray is ready
-func onReady(ctx context.Context, app *di.App) func() {
+func onReady(ctx context.Context, app *di.App, cancel context.CancelFunc) func() {
 	return func() {
 		systray.SetIcon(icon.Data)
 		systray.SetTitle("Godo")
@@ -99,11 +105,13 @@ func onReady(ctx context.Context, app *di.App) func() {
 			for {
 				select {
 				case <-mQuit.ClickedCh:
+					cancel() // Cancel the context
 					systray.Quit()
 					return
 				case <-mOpen.ClickedCh:
 					showFullUI(app.GetTodoService())
 				case <-ctx.Done():
+					systray.Quit()
 					return
 				}
 			}
@@ -117,6 +125,7 @@ func onReady(ctx context.Context, app *di.App) func() {
 // onExit is called when systray is quitting
 func onExit() {
 	logger.Info("Cleaning up...")
+	os.Exit(0) // Ensure the process exits
 }
 
 // showFullUI displays the full todo management interface
@@ -137,7 +146,12 @@ func main() {
 
 	logger.Info("Starting Godo application...")
 
-	ctx := setupSignalHandler()
+	// Create a cancellable context
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel() // Ensure the root context is cancelled
+
+	// Setup signal handler with the cancellable context
+	sigCtx := setupSignalHandler(ctx)
 
 	app, err := di.InitializeApp()
 	if err != nil {
@@ -147,11 +161,11 @@ func main() {
 	if *fullUI {
 		showFullUI(app.GetTodoService())
 	} else {
-		// Run in system tray
-		go systray.Run(onReady(ctx, app), onExit)
+		// Run in system tray with quit handler
+		go systray.Run(onReady(sigCtx, app, cancel), onExit)
 
 		// Wait for context cancellation
-		<-ctx.Done()
+		<-sigCtx.Done()
 		logger.Info("Starting graceful shutdown...")
 	}
 }

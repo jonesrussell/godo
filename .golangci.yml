@@ -1,0 +1,63 @@
+# .golangci.yml
+linters-settings:
+  govet:
+    check-shadowing: true
+  golint:
+    min-confidence: 0
+  gocyclo:
+    min-complexity: 15
+  maligned:
+    suggest-new: true
+  dupl:
+    threshold: 100
+  goconst:
+    min-len: 2
+    min-occurrences: 2
+
+linters:
+  enable:
+    - gofmt
+    - govet
+    - errcheck
+    - staticcheck
+    - gosimple
+    - goconst
+    - goimports
+    - revive
+    - gosec
+    - unconvert
+    - gocritic
+    - misspell
+    - prealloc
+    - exportloopref
+    - gocyclo
+    - bodyclose
+    - nilerr
+
+issues:
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - gocyclo
+        - errcheck
+        - dupl
+        - gosec
+
+run:
+  deadline: 5m
+  tests: true
+  skip-dirs:
+    - vendor/
+    - third_party/
+
+# output configuration options
+output:
+  format: colored-line-number
+  print-issued-lines: true
+  print-linter-name: true
+
+# severity configuration
+severity:
+  default-severity: error
+  case-sensitive: false
+  

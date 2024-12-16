@@ -54,22 +54,23 @@ func initializeApplication() (*di.App, error) {
 }
 
 // runQuickNoteMode starts the application in quick-note mode
-func runQuickNoteMode(app *di.App) {
+func runQuickNoteMode(ctx context.Context, app *di.App) {
+	logger.Info("Starting quick note mode...")
+
 	// Get the hotkey channel from the manager
 	hotkeyEvents := app.GetHotkeyManager().GetEventChannel()
 
-	// Start hotkey listener in background
-	go func() {
-		for {
-			select {
-			case <-hotkeyEvents:
-				showQuickNote(app.GetTodoService())
-			}
+	// Use select to handle both hotkey events and context cancellation
+	for {
+		select {
+		case <-ctx.Done():
+			logger.Info("Quick note mode shutting down...")
+			return
+		case <-hotkeyEvents:
+			logger.Info("Hotkey triggered, showing quick note...")
+			showQuickNote(app.GetTodoService())
 		}
-	}()
-
-	// Keep the application running
-	select {}
+	}
 }
 
 // showQuickNote displays the quick-note UI
@@ -101,7 +102,12 @@ func main() {
 		}
 	} else {
 		// Run quick-note mode (default)
-		runQuickNoteMode(app)
+		if err := app.Run(ctx); err != nil {
+			logger.Fatal("Application error: %v", err)
+		}
+
+		// Start quick note listener after app is running
+		go runQuickNoteMode(ctx, app)
 	}
 
 	<-ctx.Done()

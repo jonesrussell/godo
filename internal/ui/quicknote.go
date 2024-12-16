@@ -40,12 +40,20 @@ func (qn *QuickNote) Show() {
 	input.SetPlaceHolder("Enter quick note...")
 	input.OnSubmitted = func(text string) {
 		if text != "" {
-			todo, err := qn.service.CreateTodo(context.Background(), "quick", text)
+			todo, err := qn.service.CreateTodo(context.Background(), text, "")
 			if err != nil {
 				logger.Error("Failed to create todo: %v", err)
 				return
 			}
 			logger.Debug("Created quick note: %s (ID: %d)", text, todo.ID)
+
+			// Verify the todo was created
+			fetchedTodo, err := qn.service.GetTodo(context.Background(), todo.ID)
+			if err != nil {
+				logger.Error("Failed to verify todo creation: %v", err)
+			} else {
+				logger.Debug("Verified todo creation: %+v", fetchedTodo)
+			}
 		}
 		qn.window.Hide()
 	}

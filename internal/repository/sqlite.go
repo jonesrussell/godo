@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"time"
 
+	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/model"
 )
 
@@ -16,6 +17,7 @@ func NewSQLiteTodoRepository(db *sql.DB) TodoRepository {
 }
 
 func (r *SQLiteDB) Create(todo *model.Todo) error {
+	logger.Debug("Creating todo: %+v", todo)
 	query := `
         INSERT INTO todos (title, description, completed, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?)
@@ -29,17 +31,20 @@ func (r *SQLiteDB) Create(todo *model.Todo) error {
 		now,
 	)
 	if err != nil {
+		logger.Error("Failed to create todo: %v", err)
 		return err
 	}
 
 	id, err := result.LastInsertId()
 	if err != nil {
+		logger.Error("Failed to get last insert ID: %v", err)
 		return err
 	}
 
 	todo.ID = id
 	todo.CreatedAt = now
 	todo.UpdatedAt = now
+	logger.Debug("Successfully created todo with ID: %d", id)
 	return nil
 }
 
@@ -68,6 +73,7 @@ func (r *SQLiteDB) GetByID(id int64) (*model.Todo, error) {
 }
 
 func (r *SQLiteDB) List() ([]model.Todo, error) {
+	logger.Debug("Listing todos")
 	query := `
         SELECT id, title, description, completed, created_at, updated_at
         FROM todos
@@ -75,6 +81,7 @@ func (r *SQLiteDB) List() ([]model.Todo, error) {
     `
 	rows, err := r.db.Query(query)
 	if err != nil {
+		logger.Error("Failed to query todos: %v", err)
 		return nil, err
 	}
 	defer rows.Close()
@@ -91,10 +98,12 @@ func (r *SQLiteDB) List() ([]model.Todo, error) {
 			&todo.UpdatedAt,
 		)
 		if err != nil {
+			logger.Error("Failed to scan todo: %v", err)
 			return nil, err
 		}
 		todos = append(todos, todo)
 	}
+	logger.Debug("Found %d todos", len(todos))
 	return todos, rows.Err()
 }
 

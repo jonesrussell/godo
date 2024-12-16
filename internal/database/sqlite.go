@@ -118,3 +118,13 @@ func initSchema(db *sql.DB) error {
 
 	return nil
 }
+
+func TestConnection(db *sql.DB) error {
+	var count int
+	err := db.QueryRow("SELECT COUNT(*) FROM todos").Scan(&count)
+	if err != nil {
+		return fmt.Errorf("database test query failed: %w", err)
+	}
+	logger.Debug("Current todo count in database: %d", count)
+	return nil
+}

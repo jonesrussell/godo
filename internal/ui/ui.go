@@ -163,7 +163,13 @@ func (ui *TodoUI) renderTodoItem(i int, todo model.Todo) string {
 	if todo.Completed {
 		checkbox = "☑"
 	}
-	return fmt.Sprintf("  %s %s %s\n", cursor, checkbox, todo.Title)
+
+	text := todo.Title
+	if todo.Description != "" {
+		text = fmt.Sprintf("%s: %s", todo.Title, todo.Description)
+	}
+
+	return fmt.Sprintf("  %s %s %s\n", cursor, checkbox, text)
 }
 
 func (ui *TodoUI) getSelectedTodoID() (int64, error) {

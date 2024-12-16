@@ -18,7 +18,9 @@ func provideTodoRepository(db *sql.DB) repository.TodoRepository {
 }
 
 func NewSQLiteDB() (*sql.DB, error) {
-	return database.NewSQLiteDB("./godo.db")
+	dbPath := "./godo.db"
+	logger.Debug("Opening database at: %s", dbPath)
+	return database.NewSQLiteDB(dbPath)
 }
 
 func provideTodoService(repo repository.TodoRepository) *service.TodoService {

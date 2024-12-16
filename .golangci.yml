@@ -3,10 +3,26 @@ linters:
   disable-all: true
   enable:
     - gofmt
+    - govet
+    - staticcheck
+    - gosimple
+    - ineffassign
+    - misspell
+    - unconvert
 
 run:
   go: '1.23'
 
 output:
-  format: colored-line-number
+  formats:
+    - format: colored-line-number
+
+linters-settings:
+  gofmt:
+    simplify: true
+
+issues:
+  exclude-use-default: false
+  max-issues-per-linter: 0
+  max-same-issues: 0
   

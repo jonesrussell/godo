@@ -7,10 +7,12 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/google/wire"
 	"github.com/jonesrussell/godo/internal/database"
+	"github.com/jonesrussell/godo/internal/hotkey"
 	"github.com/jonesrussell/godo/internal/repository"
 	"github.com/jonesrussell/godo/internal/service"
 	"github.com/jonesrussell/godo/internal/ui"
@@ -18,25 +20,32 @@ import (
 
 // App represents the main application
 type App struct {
-	todoService *service.TodoService
+	todoService   *service.TodoService
+	hotkeyManager *hotkey.HotkeyManager
+	program       *tea.Program
+	ui            *ui.TodoUI
 }
 
 // Run starts the application
 func (a *App) Run(ctx context.Context) error {
+	log.Println("Initializing services...")
 	if err := a.initializeServices(ctx); err != nil {
 		return fmt.Errorf("failed to initialize services: %w", err)
 	}
+	log.Println("Services initialized successfully")
 
-	ui := ui.New(a.todoService)
-	p := tea.NewProgram(ui)
-
-	// Run UI in a goroutine
+	// Start hotkey listener in a goroutine
+	log.Println("Starting hotkey listener...")
 	go func() {
-		<-ctx.Done()
-		p.Quit()
+		if err := a.hotkeyManager.Start(ctx); err != nil {
+			log.Printf("Hotkey error: %v\n", err)
+		}
 	}()
+	log.Println("Hotkey listener started")
 
-	if err := p.Start(); err != nil {
+	// Run the Bubble Tea program
+	log.Println("Starting UI...")
+	if err := a.program.Start(); err != nil {
 		return fmt.Errorf("failed to start UI: %w", err)
 	}
 
@@ -60,9 +69,21 @@ func (a *App) initializeServices(ctx context.Context) error {
 }
 
 // NewApp creates a new App instance
-func NewApp(todoService *service.TodoService) *App {
+func NewApp(todoService *service.TodoService, ui *ui.TodoUI) *App {
+	program := tea.NewProgram(ui)
+
+	// Create a closure that captures the UI instance
+	showUI := func() {
+		program.Send(struct{}{}) // We'll handle the actual message type in the UI
+	}
+
+	hotkeyManager := hotkey.New(showUI)
+
 	return &App{
-		todoService: todoService,
+		todoService:   todoService,
+		ui:            ui,
+		program:       program,
+		hotkeyManager: hotkeyManager,
 	}
 }
 
@@ -76,12 +97,17 @@ var DefaultSet = wire.NewSet(
 	NewSQLiteDB,
 	provideTodoRepository,
 	service.NewTodoService,
+	provideUI,
 	NewApp,
 )
 
 // Add database provider
 func NewSQLiteDB() (*sql.DB, error) {
 	return database.NewSQLiteDB("./godo.db")
+}
+
+func provideUI(todoService *service.TodoService) *ui.TodoUI {
+	return ui.New(todoService)
 }
 
 // InitializeApp sets up the dependency injection

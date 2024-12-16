@@ -5,17 +5,20 @@ go 1.23
 require (
 	github.com/google/wire v0.6.0
 	github.com/mattn/go-sqlite3 v1.14.24
+	github.com/robotn/gohook v0.41.0
 )
 
 require (
 	github.com/atotto/clipboard v0.1.4 // indirect
 	github.com/sahilm/fuzzy v0.1.1 // indirect
+	github.com/vcaesar/keycode v0.10.1 // indirect
+	github.com/vcaesar/tt v0.20.1 // indirect
 )
 
 require (
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/charmbracelet/bubbles v0.20.0
-	github.com/charmbracelet/bubbletea v1.2.4 // indirect
+	github.com/charmbracelet/bubbletea v1.2.4
 	github.com/charmbracelet/lipgloss v1.0.0 // indirect
 	github.com/charmbracelet/x/ansi v0.4.5 // indirect
 	github.com/charmbracelet/x/term v0.2.1 // indirect
@@ -30,5 +33,5 @@ require (
 	github.com/rivo/uniseg v0.4.7 // indirect
 	golang.org/x/sync v0.9.0 // indirect
 	golang.org/x/sys v0.27.0 // indirect
-	golang.org/x/text v0.14.0 // indirect
+	golang.org/x/text v0.19.0 // indirect
 )

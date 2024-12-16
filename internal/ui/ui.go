@@ -83,6 +83,10 @@ func (ui *TodoUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case todosLoadedMsg:
 		ui.list.SetItems(msg.items)
+
+	case ShowMsg:
+		// Handle showing the UI
+		return ui, ui.loadTodos
 	}
 
 	var cmd tea.Cmd

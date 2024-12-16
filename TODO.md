@@ -53,8 +53,12 @@
 ## Testing
 - [x] Write initial unit tests
   - [x] Service tests
-  - [ ] Repository tests
+  - [x] Repository tests
   - [ ] Database tests
+  - [x] Hotkey system tests
+    - [x] Constants validation
+    - [x] Type definitions
+    - [x] Win32 API wrappers
 - [ ] Set up integration tests
 - [ ] Add CI pipeline
 

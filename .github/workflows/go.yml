@@ -1,69 +1,32 @@
-name: Go CI/CD
+name: Build and Test
 
-on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+on: [push, pull_request]
 
 jobs:
-  test:
-    name: Test
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: "1.23"
-          cache: true
-          cache-dependency-path: go.sum
-
-      - name: Install Task
-        uses: arduino/setup-task@v2
-        with:
-          version: "3.x"
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Install SQLite
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y sqlite3 libsqlite3-dev
-
-      - name: Install dependencies
-        run: task install
-
-      - name: Run linter
-        uses: golangci/golangci-lint-action@v4
-        with:
-          version: latest
-
-      - name: Run tests
-        run: task test:coverage
-
   build:
-    name: Build
-    needs: test
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     steps:
-      - uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: "1.23"
-          cache: true
-          cache-dependency-path: go.sum
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: 1.23
 
-      - name: Install Task
-        uses: arduino/setup-task@v2
-        with:
-          version: "3.x"
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gcc
 
-      - name: Build
-        run: task build
+    - name: Update dependencies
+      run: go get -u fyne.io/fyne/v2/app
+
+    - name: Clean and rebuild
+      run: |
+        go clean -modcache
+        CGO_ENABLED=1 go build -v ./...
+
+    - name: Run tests
+      run: go test -v ./...

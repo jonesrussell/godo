@@ -19,6 +19,9 @@
   - [x] Research cross-platform hotkey libraries
   - [x] Implement hotkey registration
   - [ ] Add user-configurable shortcuts
+- [ ] Separate quick-note and management UIs
+  - [ ] Quick-note: Minimal, instant input
+  - [ ] Management: Full featured todo interface
 
 ## Core Functionality
 - [x] Set up basic database structure

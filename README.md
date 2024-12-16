@@ -1,17 +1,26 @@
 # Godo
 
-A minimalist todo application with global hotkey support.
+A minimalist todo application with quick-note hotkey support.
 
 ## Overview
 
-Godo is a lightweight todo application that runs as a system service, allowing quick access to your tasks through convenient hotkeys. Built with Go and SQLite, it provides a seamless task management experience.
+Godo combines two powerful features:
+1. A global hotkey system for instantly capturing thoughts and tasks
+2. A full-featured todo management interface
+
+The quick-note feature allows you to jot down tasks without interrupting your workflow - just hit the hotkey, type your note, and get back to work. For more detailed task management, the full interface provides all the organization tools you need.
 
 ## Features
 
+- Instant note capture with global hotkey
+  - Press hotkey → Type note → Press enter → Back to work
+  - Zero-friction task capture
+- Full todo management interface
+  - Organize and manage tasks
+  - Mark tasks as complete
+  - Delete tasks when done
 - Runs as a system service
-- Global hotkey support for quick access
 - SQLite database for reliable data storage
-- Minimalist interface
 - Cross-platform compatibility
 
 ## Prerequisites

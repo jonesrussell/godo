@@ -7,7 +7,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"log"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/google/wire"
@@ -29,20 +28,20 @@ type App struct {
 
 // Run starts the application
 func (a *App) Run(ctx context.Context) error {
-	log.Println("Initializing services...")
+	logger.Info("Initializing services...")
 	if err := a.initializeServices(ctx); err != nil {
 		return fmt.Errorf("failed to initialize services: %w", err)
 	}
-	log.Println("Services initialized successfully")
+	logger.Info("Services initialized successfully")
 
 	// Start hotkey listener in a goroutine
-	log.Println("Starting hotkey listener...")
+	logger.Info("Starting hotkey listener...")
 	go func() {
 		if err := a.hotkeyManager.Start(ctx); err != nil {
-			log.Printf("Hotkey error: %v\n", err)
+			logger.Error("Hotkey error: %v", err)
 		}
 	}()
-	log.Println("Hotkey listener started")
+	logger.Info("Hotkey listener started")
 
 	return nil
 }
@@ -64,20 +63,23 @@ func (a *App) initializeServices(ctx context.Context) error {
 	}
 
 	logger.Info("Services initialized successfully")
-	logger.Info("Starting hotkey listener...")
-
 	return nil
 }
 
 // NewApp creates a new App instance
 func NewApp(todoService *service.TodoService, ui *ui.TodoUI) (*App, error) {
+	logger.Debug("Creating new App instance")
 	program := tea.NewProgram(ui)
 
 	showUI := func() {
+		logger.Debug("ShowUI callback triggered")
 		program.Send(struct{}{})
 	}
 
 	hotkeyManager := hotkey.New(showUI)
+	if hotkeyManager == nil {
+		return nil, fmt.Errorf("failed to create hotkey manager")
+	}
 
 	return &App{
 		todoService:   todoService,
@@ -89,6 +91,7 @@ func NewApp(todoService *service.TodoService, ui *ui.TodoUI) (*App, error) {
 
 // Provide TodoRepository interface implementation
 func provideTodoRepository(db *sql.DB) repository.TodoRepository {
+	logger.Debug("Creating new TodoRepository")
 	return repository.NewSQLiteTodoRepository(db)
 }
 
@@ -103,10 +106,12 @@ var DefaultSet = wire.NewSet(
 
 // Add database provider
 func NewSQLiteDB() (*sql.DB, error) {
+	logger.Debug("Creating new SQLite database connection")
 	return database.NewSQLiteDB("./godo.db")
 }
 
 func provideUI(todoService *service.TodoService) *ui.TodoUI {
+	logger.Debug("Creating new TodoUI")
 	return ui.New(todoService)
 }
 

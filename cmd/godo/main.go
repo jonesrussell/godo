@@ -11,6 +11,14 @@ import (
 )
 
 func main() {
+	// Ensure logger is synced on exit
+	defer func() {
+		if err := logger.Sync(); err != nil {
+			// Can't use logger here as we're shutting it down
+			os.Stderr.WriteString("Failed to sync logger: " + err.Error() + "\n")
+		}
+	}()
+
 	logger.Info("Starting Godo application...")
 
 	ctx, cancel := context.WithCancel(context.Background())

@@ -5,18 +5,27 @@ tasks:
     cmds:
       - task --list
 
+  wire:
+    desc: Generate wire dependency injection code
+    dir: internal/di
+    cmds:
+      - wire
+
   build:
     desc: Build the application
+    deps: [wire]
     cmds:
       - go build -o bin/godo cmd/godo/main.go
 
   run:
     desc: Run the application
+    deps: [wire]
     cmds:
       - go run cmd/godo/main.go
 
   test:
     desc: Run tests
+    deps: [wire]
     cmds:
       - go test -v ./...
 
@@ -39,6 +48,7 @@ tasks:
     desc: Run development tasks (fmt, lint, test, build)
     cmds:
       - task: fmt
+      - task: wire
       - task: lint
       - task: test
       - task: build
@@ -46,5 +56,13 @@ tasks:
   install:
     desc: Install project dependencies
     cmds:
+      - go install github.com/google/wire/cmd/wire@latest
+      - go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
       - go mod tidy
-      - go mod download 
+      - go mod download
+
+  logs:
+    desc: Watch application logs
+    platforms: [windows]
+    cmds:
+      - cmd /C "type logs\godo.log"

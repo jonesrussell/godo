@@ -42,7 +42,7 @@ func TestQuickNote_CreateTodo(t *testing.T) {
 			mock.SetShouldError(tt.wantErr)
 
 			// Test the service directly
-			_, err := mockService.CreateTodo(context.Background(), "quick", tt.input)
+			_, err := mockService.CreateTodo(context.Background(), tt.input, tt.input)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CreateTodo() error = %v, wantErr %v", err, tt.wantErr)
 			}

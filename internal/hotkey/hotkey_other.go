@@ -5,8 +5,10 @@ package hotkey
 
 import (
 	"context"
+	"fmt"
+	"runtime"
 
-	hook "github.com/robotn/gohook"
+	"github.com/robotn/gohook"
 )
 
 // HotkeyManager handles global hotkey registration and events
@@ -15,25 +17,39 @@ type HotkeyManager struct {
 }
 
 // NewHotkeyManager creates a new instance of HotkeyManager
-func NewHotkeyManager() *HotkeyManager {
+func NewHotkeyManager() (*HotkeyManager, error) {
+	// Check for supported platforms
+	switch runtime.GOOS {
+	case "darwin", "linux":
+		// These platforms are supported
+	default:
+		return nil, fmt.Errorf("unsupported platform: %s", runtime.GOOS)
+	}
+
 	return &HotkeyManager{
 		eventChan: make(chan struct{}, 1),
-	}
+	}, nil
 }
 
 // Start begins listening for hotkey events
 func (h *HotkeyManager) Start(ctx context.Context) error {
+	// Add platform-specific key combinations
+	keyCombo := []string{"ctrl", "alt", "g"}
+	if runtime.GOOS == "darwin" {
+		keyCombo = []string{"cmd", "alt", "g"} // Use cmd instead of ctrl on macOS
+	}
+
 	go func() {
-		hook.Register(hook.KeyDown, []string{"ctrl", "alt", "g"}, func(e hook.Event) {
+		gohook.Register(gohook.KeyDown, keyCombo, func(e gohook.Event) {
 			select {
 			case h.eventChan <- struct{}{}:
 			default:
 				// Channel is full, skip this event
 			}
 		})
-		s := hook.Start()
+		s := gohook.Start()
 		<-ctx.Done()
-		hook.End()
+		gohook.End()
 		<-s
 	}()
 	return nil

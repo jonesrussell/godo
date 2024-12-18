@@ -7,7 +7,6 @@ linters:
     - ineffassign
     - misspell
     - unconvert
-    - goimports
     - gocritic
     - bodyclose
     - depguard

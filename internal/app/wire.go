@@ -9,22 +9,6 @@ import (
 	"github.com/jonesrussell/godo/internal/config"
 )
 
-// DefaultSet defines the provider set for wire without config
-var DefaultSet = wire.NewSet(
-	provideTodoRepository,
-	provideTodoService,
-	provideUI,
-	provideProgram,
-	provideHotkeyManager,
-	provideApp,
-)
-
-// ConfiguredSet defines the provider set that requires configuration
-var ConfiguredSet = wire.NewSet(
-	DefaultSet,
-	NewSQLiteDB,
-)
-
 // InitializeApp sets up the dependency injection
 //
 // Deprecated: Use InitializeAppWithConfig instead. This function will be removed in a future version.

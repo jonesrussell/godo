@@ -5,23 +5,28 @@ A minimalist todo application with quick-note hotkey support.
 ## Overview
 
 Godo combines two powerful features:
-1. A global hotkey system for instantly capturing thoughts and tasks
-2. A full-featured todo management interface
+1. A global hotkey that triggers a lightweight graphical popup for instantly capturing thoughts and tasks
+2. A terminal-based (TUI) interface for detailed todo management
 
-The quick-note feature allows you to jot down tasks without interrupting your workflow - just hit the hotkey, type your note, and get back to work. For more detailed task management, the full interface provides all the organization tools you need.
+The quick-note feature uses a minimal graphical window that appears when you press the hotkey - type your note, hit enter, and it disappears. The main todo management interface uses a terminal UI for efficient keyboard-driven task organization.
 
 ## Features
 
 - Instant note capture with global hotkey
-  - Press hotkey → Type note → Press enter → Back to work
-  - Zero-friction task capture
-- Full todo management interface
+  - Press hotkey → Graphical popup appears
+  - Type note → Press enter → Window disappears
+  - Zero-friction task capture with minimal visual interruption
+- Terminal-based todo management interface
   - Organize and manage tasks
   - Mark tasks as complete
   - Delete tasks when done
 - Runs as a system service
 - SQLite database for reliable data storage
 - Cross-platform compatibility
+  - Windows: Native Win32 API for quick-note window
+  - macOS: Cocoa/NSWindow for quick-note window
+  - Linux: GTK for quick-note window
+  - Terminal UI works consistently across all platforms
 
 ## Prerequisites
 

@@ -21,6 +21,23 @@ type App struct {
 	quickNote     ui.QuickNoteUI
 }
 
+// NewApp creates a new application instance
+func NewApp(
+	todoService *service.TodoService,
+	hotkeyManager hotkey.HotkeyManager,
+	program *tea.Program,
+	ui *ui.TodoUI,
+	quickNote ui.QuickNoteUI,
+) *App {
+	return &App{
+		todoService:   todoService,
+		hotkeyManager: hotkeyManager,
+		program:       program,
+		ui:            ui,
+		quickNote:     quickNote,
+	}
+}
+
 // GetTodoService returns the todo service instance
 func (a *App) GetTodoService() *service.TodoService {
 	return a.todoService

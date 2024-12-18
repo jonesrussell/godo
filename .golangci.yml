@@ -17,11 +17,6 @@ run:
 issues:
   exclude-dirs:
     - vendor
-  exclude-rules:
-    - linters: [typecheck]
-      path: cmd/godo/main\.go
-    - linters: [typecheck]
-      path: internal/ui/
 
 linters-settings:
   gofmt:

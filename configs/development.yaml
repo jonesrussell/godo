@@ -1,0 +1,6 @@
+# Development-specific overrides
+logging:
+  level: "debug"
+
+database:
+  path: "./data/godo_dev.db" 

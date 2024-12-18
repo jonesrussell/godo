@@ -1,11 +1,12 @@
 // providers.go
-package di
+package app
 
 import (
 	"database/sql"
-	"fmt"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/google/wire"
+	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/database"
 	"github.com/jonesrussell/godo/internal/hotkey"
 	"github.com/jonesrussell/godo/internal/logger"
@@ -14,14 +15,26 @@ import (
 	"github.com/jonesrussell/godo/internal/ui"
 )
 
+// DefaultSet defines the provider set for wire without config
+var DefaultSet = wire.NewSet(
+	provideTodoRepository,
+	provideTodoService,
+	provideUI,
+	provideProgram,
+	provideHotkeyManager,
+	provideQuickNoteUI,
+	provideApp,
+)
+
+// ConfiguredSet defines the provider set that requires configuration
+var ConfiguredSet = wire.NewSet(
+	DefaultSet,
+	NewSQLiteDB,
+)
+
+// Provider functions
 func provideTodoRepository(db *sql.DB) repository.TodoRepository {
 	return repository.NewSQLiteTodoRepository(db)
-}
-
-func NewSQLiteDB() (*sql.DB, error) {
-	dbPath := "./godo.db"
-	logger.Debug("Opening database at: %s", dbPath)
-	return database.NewSQLiteDB(dbPath)
 }
 
 func provideTodoService(repo repository.TodoRepository) *service.TodoService {
@@ -37,12 +50,11 @@ func provideProgram(ui *ui.TodoUI) *tea.Program {
 }
 
 func provideHotkeyManager() (hotkey.HotkeyManager, error) {
-	logger.Debug("Initializing hotkey manager...")
-	manager, err := hotkey.NewHotkeyManager()
-	if err != nil {
-		return nil, fmt.Errorf("failed to create hotkey manager: %w", err)
-	}
-	return manager, nil
+	return hotkey.NewHotkeyManager()
+}
+
+func provideQuickNoteUI() (ui.QuickNoteUI, error) {
+	return ui.NewQuickNoteUI()
 }
 
 func provideApp(
@@ -50,12 +62,13 @@ func provideApp(
 	hotkeyManager hotkey.HotkeyManager,
 	program *tea.Program,
 	ui *ui.TodoUI,
+	quickNote ui.QuickNoteUI,
 ) *App {
-	logger.Debug("Creating application instance...")
-	return &App{
-		todoService:   todoService,
-		hotkeyManager: hotkeyManager,
-		program:       program,
-		ui:            ui,
-	}
+	return NewApp(todoService, hotkeyManager, program, ui, quickNote)
+}
+
+// NewSQLiteDB creates a new SQLite database connection
+func NewSQLiteDB(cfg *config.Config) (*sql.DB, error) {
+	logger.Debug("Opening database at: %s", cfg.Database.Path)
+	return database.NewSQLiteDB(cfg.Database.Path)
 }

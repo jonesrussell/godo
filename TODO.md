@@ -3,7 +3,7 @@
 ## Immediate Tasks
 - [x] Run wire command to generate DI implementation  ```bash
   go install github.com/google/wire/cmd/wire@latest
-  cd internal/di && wire  ```
+  cd internal/app && wire  ```
 - [x] Add necessary dependencies to go.mod
   - github.com/mattn/go-sqlite3
   - github.com/google/wire
@@ -28,25 +28,28 @@
   - [x] Management: Full featured todo interface
 
 ## Quick-Note Feature (High Priority)
-- [x] Create QuickNoteUI component
-  - [x] Single-line input field
-  - [x] Minimal window decoration
-  - [x] Window positioning (centered)
-  - [x] Fixed window size
-- [x] Implement quick-note workflow
-  - [x] Hotkey triggers QuickNoteUI
-  - [x] Focus input immediately
-  - [x] Enter saves note and closes
-  - [x] Esc cancels and closes
-  - [x] Return to previous window focus
+- [ ] Create platform-specific graphical QuickNoteUI
+  - [ ] Windows implementation (Win32 API)
+    - [ ] Create borderless window
+    - [ ] Handle input focus
+    - [ ] Implement window positioning
+  - [ ] macOS implementation (Cocoa/NSWindow)
+    - [ ] Create NSWindow instance
+    - [ ] Handle input and window management
+  - [ ] Linux implementation (GTK)
+    - [ ] Create GTK window
+    - [ ] Handle input events
+- [ ] Implement quick-note workflow
+  - [ ] Hotkey triggers graphical window
+  - [ ] Auto-focus text input
+  - [ ] Enter saves note and closes window
+  - [ ] Esc cancels and closes window
+  - [ ] Return focus to previous window
 - [ ] Add quick-note settings
   - [ ] Window position (cursor/center/custom)
-  - [ ] Window opacity
+  - [ ] Window opacity/transparency
+  - [ ] Window animation options
   - [ ] Custom hotkey binding
-    - [ ] Make Ctrl+Alt+G configurable via config file
-    - [ ] Add hotkey configuration UI
-    - [ ] Validate hotkey combinations
-    - [ ] Save/load hotkey preferences
   - [ ] Auto-categorization rules
 - [x] Error Handling Improvements
   - [x] Handle "The operation completed successfully" error message

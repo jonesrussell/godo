@@ -4,27 +4,28 @@ package ui
 
 import (
 	"context"
-	"fmt"
 )
 
+// DarwinQuickNote implements QuickNoteUI for macOS
 type DarwinQuickNote struct {
-	inputChan chan string
+	base *BubbleTeaQuickNote
 }
 
-func NewQuickNoteUI() (QuickNoteUI, error) {
-	return &DarwinQuickNote{
-		inputChan: make(chan string, 1),
-	}, nil
+// newPlatformQuickNoteUI creates a new macOS-specific quick note UI
+func newPlatformQuickNoteUI() (QuickNoteUI, error) {
+	base, err := newBubbleTeaQuickNote()
+	if err != nil {
+		return nil, err
+	}
+	return &DarwinQuickNote{base: base}, nil
 }
 
+// Show displays the quick note UI
 func (d *DarwinQuickNote) Show(ctx context.Context) error {
-	return fmt.Errorf("macOS implementation not yet available")
+	return d.base.Show(ctx)
 }
 
-func (d *DarwinQuickNote) Hide() error {
-	return nil
-}
-
+// GetInput returns the input channel
 func (d *DarwinQuickNote) GetInput() <-chan string {
-	return d.inputChan
+	return d.base.GetInput()
 }

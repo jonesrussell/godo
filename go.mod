@@ -5,22 +5,20 @@ go 1.23
 require (
 	github.com/charmbracelet/bubbles v0.20.0
 	github.com/charmbracelet/bubbletea v1.2.4
+	github.com/charmbracelet/lipgloss v1.0.0
 	github.com/getlantern/systray v1.2.2
 	github.com/google/wire v0.6.0
-	github.com/gotk3/gotk3 v0.6.4
-	github.com/lxn/walk v0.0.0-20210112085537-c389da54e794
-	github.com/lxn/win v0.0.0-20210218163916-a377121e959e
 	github.com/mattn/go-sqlite3 v1.14.24
 	github.com/robotn/gohook v0.41.0
 	github.com/stretchr/testify v1.10.0
 	go.uber.org/zap v1.27.0
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require github.com/atotto/clipboard v0.1.4 // indirect
 
 require (
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
-	github.com/charmbracelet/lipgloss v1.0.0 // indirect
 	github.com/charmbracelet/x/ansi v0.6.0 // indirect
 	github.com/charmbracelet/x/term v0.2.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -53,6 +51,4 @@ require (
 	golang.org/x/sync v0.10.0 // indirect
 	golang.org/x/sys v0.28.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
-	gopkg.in/Knetic/govaluate.v3 v3.0.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

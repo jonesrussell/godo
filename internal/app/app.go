@@ -1,5 +1,5 @@
 // app.go
-package di
+package app
 
 import (
 	"context"
@@ -18,6 +18,24 @@ type App struct {
 	hotkeyManager hotkey.HotkeyManager
 	program       *tea.Program
 	ui            *ui.TodoUI
+	quickNote     ui.QuickNoteUI
+}
+
+// NewApp creates a new application instance
+func NewApp(
+	todoService *service.TodoService,
+	hotkeyManager hotkey.HotkeyManager,
+	program *tea.Program,
+	ui *ui.TodoUI,
+	quickNote ui.QuickNoteUI,
+) *App {
+	return &App{
+		todoService:   todoService,
+		hotkeyManager: hotkeyManager,
+		program:       program,
+		ui:            ui,
+		quickNote:     quickNote,
+	}
 }
 
 // GetTodoService returns the todo service instance
@@ -60,7 +78,7 @@ func (a *App) Run(ctx context.Context) error {
 				logger.Info("Hotkey triggered - showing quick note")
 				// Handle quick note through platform-specific UI
 				// This will be implemented separately
-				a.handleQuickNote()
+				a.handleQuickNote(ctx)
 			}
 		}
 	}()
@@ -70,10 +88,14 @@ func (a *App) Run(ctx context.Context) error {
 	return ctx.Err()
 }
 
-func (a *App) handleQuickNote() {
-	// This will be implemented separately for each platform
-	// For now, just log the event
-	logger.Info("Quick note triggered - implementation pending")
+func (a *App) handleQuickNote(ctx context.Context) error {
+	logger.Info("Quick note triggered")
+
+	if err := a.quickNote.Show(ctx); err != nil {
+		return fmt.Errorf("failed to show quick note: %w", err)
+	}
+
+	return nil
 }
 
 func (a *App) initializeServices(ctx context.Context) error {

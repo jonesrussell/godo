@@ -8,6 +8,24 @@
 - Uses Bubble Tea for TUI
 - Cross-platform compatibility (Windows, Linux, macOS)
 
+## Core Features
+- Quick-Note System
+  - Global hotkey registration
+  - Minimal graphical popup window
+    - Platform-specific implementations
+    - Windows: Win32 API
+    - macOS: Cocoa/NSWindow
+    - Linux: GTK
+  - Instant task capture
+- Full UI Mode (Terminal-based)
+  - Task organization
+  - Task completion tracking
+  - Task deletion
+- Database
+  - SQLite3 storage
+  - Repository pattern
+  - Service layer abstraction
+
 ## Technical Requirements
 - Go 1.23+
 - SQLite3
@@ -28,20 +46,6 @@
   - service/ - Business logic
   - ui/ - User interface components
 - pkg/ - Public libraries (if needed)
-
-## Core Features
-- Quick-Note System
-  - Global hotkey registration
-  - Minimal input interface
-  - Instant task capture
-- Full UI Mode
-  - Task organization
-  - Task completion tracking
-  - Task deletion
-- Database
-  - SQLite3 storage
-  - Repository pattern
-  - Service layer abstraction
 
 ## Testing Requirements
 - Unit tests for all packages

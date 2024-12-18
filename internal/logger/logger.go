@@ -5,112 +5,94 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/jonesrussell/godo/internal/config"
 	"go.uber.org/zap"
 )
 
 var log *zap.Logger
 
-// Initialize sets up the logger with the specified configuration
-func Initialize() func() {
-	// Create logs directory in the application root
-	logsDir := filepath.Join(".", "logs")
-	if err := os.MkdirAll(logsDir, 0755); err != nil {
-		fmt.Printf("Failed to create logs directory: %v\n", err)
-		os.Exit(1)
-	}
+// InitializeWithConfig sets up the logger with the provided configuration
+func InitializeWithConfig(cfg config.LoggingConfig) error {
+	zapConfig := zap.NewProductionConfig()
 
-	// Configure logging to both file and console
-	config := zap.NewProductionConfig()
-	config.OutputPaths = []string{
-		filepath.Join(logsDir, "godo.log"),
-		"stdout",
-	}
-	config.ErrorOutputPaths = []string{
-		filepath.Join(logsDir, "godo_error.log"),
-		"stderr",
-	}
-
-	// Set log level based on environment
-	config.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
-	if os.Getenv("DEBUG") == "1" {
-		config.Level = zap.NewAtomicLevelAt(zap.DebugLevel)
-	}
-
-	// Create logger
-	logger, err := config.Build(zap.AddCallerSkip(1))
+	// Configure log level
+	level, err := zap.ParseAtomicLevel(cfg.Level)
 	if err != nil {
-		fmt.Printf("Failed to initialize logger: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("invalid log level: %w", err)
+	}
+	zapConfig.Level = level
+
+	// Ensure log directories exist
+	if err := ensureLogDirectories(cfg.Output); err != nil {
+		return fmt.Errorf("failed to create log directories: %w", err)
+	}
+
+	// Configure output paths
+	zapConfig.OutputPaths = cfg.Output
+	zapConfig.ErrorOutputPaths = cfg.ErrorOutput
+
+	logger, err := zapConfig.Build(zap.AddCallerSkip(1))
+	if err != nil {
+		return fmt.Errorf("failed to build logger: %w", err)
 	}
 
 	log = logger
-	return func() {
-		_ = log.Sync()
+	return nil
+}
+
+// ensureLogDirectories creates directories for log files if they don't exist
+func ensureLogDirectories(paths []string) error {
+	for _, path := range paths {
+		if path == "stdout" || path == "stderr" {
+			continue
+		}
+		dir := filepath.Dir(path)
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Debug logs a debug message
+func Debug(msg string, args ...interface{}) {
+	if log != nil {
+		log.Sugar().Debugf(msg, args...)
 	}
 }
 
-// InitializeFileOnly sets up logging to file only (no stdout)
-func InitializeFileOnly() func() {
-	// Create logger configuration
-	cfg := zap.NewProductionConfig()
-
-	// Set output paths to file only (no stdout)
-	cfg.OutputPaths = []string{"logs/godo.log"}
-	cfg.ErrorOutputPaths = []string{"logs/godo.log"}
-
-	// Create logger
-	zapLogger, err := cfg.Build()
-	if err != nil {
-		fmt.Printf("Failed to initialize logger: %v\n", err)
-		os.Exit(1)
+// Info logs an info message
+func Info(msg string, args ...interface{}) {
+	if log != nil {
+		log.Sugar().Infof(msg, args...)
 	}
+}
 
-	// Replace global logger
-	zap.ReplaceGlobals(zapLogger)
+// Warn logs a warning message
+func Warn(msg string, args ...interface{}) {
+	if log != nil {
+		log.Sugar().Warnf(msg, args...)
+	}
+}
 
-	// Return cleanup function
-	return func() {
-		_ = zapLogger.Sync()
+// Error logs an error message
+func Error(msg string, args ...interface{}) {
+	if log != nil {
+		log.Sugar().Errorf(msg, args...)
+	}
+}
+
+// Fatal logs a fatal message and exits
+func Fatal(msg string, args ...interface{}) {
+	if log != nil {
+		log.Sugar().Fatalf(msg, args...)
 	}
 }
 
 // Sync flushes any buffered log entries
 func Sync() error {
-	if log == nil {
-		return nil
+	if log != nil {
+		return log.Sync()
 	}
-	return log.Sync()
-}
-
-// Debug logs a debug message
-func Debug(template string, args ...interface{}) {
-	if log == nil {
-		return
-	}
-	log.Sugar().Debugf(template, args...)
-}
-
-// Info logs an info message
-func Info(template string, args ...interface{}) {
-	if log == nil {
-		return
-	}
-	log.Sugar().Infof(template, args...)
-}
-
-// Error logs an error message
-func Error(template string, args ...interface{}) {
-	if log == nil {
-		return
-	}
-	log.Sugar().Errorf(template, args...)
-}
-
-// Fatal logs a fatal message and exits
-func Fatal(template string, args ...interface{}) {
-	if log == nil {
-		fmt.Printf(template+"\n", args...)
-		os.Exit(1)
-	}
-	log.Sugar().Fatalf(template, args...)
+	return nil
 }

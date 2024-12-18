@@ -3,6 +3,8 @@ package database
 import (
 	"database/sql"
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/jonesrussell/godo/internal/logger"
 	_ "github.com/mattn/go-sqlite3"
@@ -26,8 +28,24 @@ type Config struct {
 	Path string
 }
 
+// ensureDataDir creates the directory for the database if it doesn't exist
+func ensureDataDir(dbPath string) error {
+	dir := filepath.Dir(dbPath)
+	if dir != "." {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			return fmt.Errorf("failed to create database directory: %w", err)
+		}
+	}
+	return nil
+}
+
 func NewSQLiteDB(dbPath string) (*sql.DB, error) {
 	logger.Info("Opening database at: %s", dbPath)
+
+	// Ensure the data directory exists
+	if err := ensureDataDir(dbPath); err != nil {
+		return nil, err
+	}
 
 	db, err := sql.Open("sqlite3", dbPath)
 	if err != nil {

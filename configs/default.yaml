@@ -1,0 +1,32 @@
+# Default configuration
+app:
+  name: "Godo"
+  version: "1.0.0"
+
+database:
+  path: "./data/godo.db"
+  max_open_conns: 1
+  max_idle_conns: 1
+
+hotkeys:
+  quick_note:
+    modifiers: ["ctrl", "alt"]
+    key: "g"
+  open_app:
+    modifiers: ["ctrl", "alt"]
+    key: "o"
+
+logging:
+  level: "info"
+  output:
+    - "./logs/godo.log"
+    - "stdout"
+  error_output:
+    - "./logs/godo_error.log"
+    - "stderr"
+
+ui:
+  quick_note:
+    width: 400
+    height: 60
+    title: "Quick Note" 

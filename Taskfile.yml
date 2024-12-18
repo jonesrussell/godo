@@ -7,7 +7,7 @@ tasks:
 
   wire:
     cmds:
-      - cd internal/di && wire
+      - cd internal/app && wire
 
   run:
     deps: [wire]
@@ -64,9 +64,17 @@ tasks:
         platforms: [linux, darwin]
 
   fmt:
-    desc: Format code
+    desc: Format all Go code
     cmds:
+      - goimports -w .
       - gofmt -s -w .
+      - go mod tidy
+
+  fmt-check:
+    desc: Check if files need formatting
+    cmds:
+      - goimports -l .
+      - test -z "$(gofmt -l .)"
 
   clean:
     desc: Clean build artifacts

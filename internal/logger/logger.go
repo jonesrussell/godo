@@ -5,14 +5,14 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/jonesrussell/godo/internal/config"
+	"github.com/jonesrussell/godo/internal/types"
 	"go.uber.org/zap"
 )
 
 var log *zap.Logger
 
 // InitializeWithConfig sets up the logger with the provided configuration
-func InitializeWithConfig(cfg config.LoggingConfig) error {
+func InitializeWithConfig(cfg types.LogConfig) error {
 	zapConfig := zap.NewProductionConfig()
 
 	// Configure log level

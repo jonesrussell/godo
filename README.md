@@ -42,6 +42,19 @@ The quick-note feature uses a minimal graphical window that appears when you pre
     4. Verify installation by running `gcc --version` in Command Prompt
 - Being cool 😎
 
+### Additional Development Prerequisites
+
+For Windows developers:
+- GNU diffutils (required for code linting)
+  ```powershell
+  # Install using Chocolatey
+  choco install diffutils
+  
+  # Add to PATH (in PowerShell)
+  $env:PATH += ";C:\ProgramData\chocolatey\lib\diffutils\tools\bin"
+  refreshenv
+  ```
+
 ## Development Notes
 
 - This project uses CGO dependencies (specifically `github.com/robotn/gohook`)

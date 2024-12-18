@@ -10,6 +10,7 @@ import (
 	"github.com/getlantern/systray"
 	"github.com/jonesrussell/godo/internal/app"
 	"github.com/jonesrussell/godo/internal/config"
+	"github.com/jonesrussell/godo/internal/hotkey"
 	"github.com/jonesrussell/godo/internal/logger"
 	internalsystray "github.com/jonesrussell/godo/internal/systray"
 	"github.com/jonesrussell/godo/internal/ui"
@@ -38,6 +39,21 @@ func main() {
 		return
 	}
 
+	// Create application instance with config
+	application, err := app.InitializeAppWithConfig(cfg)
+	if err != nil {
+		logger.Error("Failed to initialize application: %v", err)
+		return
+	}
+	defer cleanup(application)
+
+	// Initialize QuickNoteUI
+	quickNote, err := ui.NewQuickNoteUI()
+	if err != nil {
+		logger.Error("Failed to create quick note UI: %v", err)
+		return
+	}
+
 	// Set up systray
 	tray, err := internalsystray.SetupSystray()
 	if err != nil {
@@ -49,28 +65,20 @@ func main() {
 	// Add menu items in order
 	mOpen := tray.AddMenuItem("Open", "Open Godo")
 	mQuickNote := tray.AddMenuItem("Quick Note", "Add a quick note")
-	systray.AddSeparator() // Add a separator line
+	systray.AddSeparator()
 	mQuit := tray.AddMenuItem("Quit", "Quit the application")
-
-	// Initialize QuickNoteUI
-	quickNote, err := ui.NewQuickNoteUI()
-	if err != nil {
-		logger.Error("Failed to create quick note UI: %v", err)
-		return
-	}
-
-	// Create application instance with config
-	application, err := app.InitializeAppWithConfig(cfg)
-	if err != nil {
-		logger.Error("Failed to initialize application: %v", err)
-		return
-	}
-	defer cleanup(application)
 
 	// Create error channel for goroutines
 	errChan := make(chan error, 1)
 
-	// Start menu item handler in a goroutine
+	// Start hotkey handler
+	go func() {
+		if err := handleHotkeys(ctx, application.GetHotkeyManager(), quickNote); err != nil {
+			errChan <- fmt.Errorf("hotkey handler error: %w", err)
+		}
+	}()
+
+	// Start menu item handler
 	go func() {
 		if err := handleMenuItems(ctx, cancel, quickNote, mOpen, mQuickNote, mQuit, application); err != nil {
 			errChan <- err
@@ -122,6 +130,23 @@ func handleMenuItems(ctx context.Context, cancel context.CancelFunc, quickNote u
 					logger.Error("Failed to create todo: %v", err)
 					return fmt.Errorf("failed to create todo: %w", err)
 				}
+			}
+		}
+	}
+}
+
+func handleHotkeys(ctx context.Context, hotkeyManager hotkey.HotkeyManager, quickNote ui.QuickNoteUI) error {
+	eventChan := hotkeyManager.GetEventChannel()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case <-eventChan:
+			logger.Debug("Hotkey triggered")
+			if err := quickNote.Show(ctx); err != nil {
+				logger.Error("Failed to show quick note from hotkey: %v", err)
+				return fmt.Errorf("quick note error: %w", err)
 			}
 		}
 	}

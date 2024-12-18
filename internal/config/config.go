@@ -4,16 +4,16 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/jonesrussell/godo/internal/hotkey"
+	"github.com/jonesrussell/godo/internal/types"
 	yaml "gopkg.in/yaml.v3"
 )
 
 type Config struct {
-	App      AppConfig      `yaml:"app"`
-	Database DatabaseConfig `yaml:"database"`
-	Hotkeys  HotkeyConfig   `yaml:"hotkeys"`
-	Logging  LoggingConfig  `yaml:"logging"`
-	UI       UIConfig       `yaml:"ui"`
+	App      AppConfig       `yaml:"app"`
+	Database DatabaseConfig  `yaml:"database"`
+	Hotkeys  HotkeyConfig    `yaml:"hotkeys"`
+	Logging  types.LogConfig `yaml:"logging"`
+	UI       UIConfig        `yaml:"ui"`
 }
 
 type AppConfig struct {
@@ -28,14 +28,8 @@ type DatabaseConfig struct {
 }
 
 type HotkeyConfig struct {
-	QuickNote hotkey.HotkeyBinding `yaml:"quick_note"`
-	OpenApp   hotkey.HotkeyBinding `yaml:"open_app"`
-}
-
-type LoggingConfig struct {
-	Level       string   `yaml:"level"`
-	Output      []string `yaml:"output"`
-	ErrorOutput []string `yaml:"error_output"`
+	QuickNote *types.HotkeyBinding `yaml:"quick_note"`
+	OpenApp   *types.HotkeyBinding `yaml:"open_app"`
 }
 
 type UIConfig struct {

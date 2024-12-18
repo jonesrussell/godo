@@ -61,13 +61,24 @@ func (a *App) GetProgram() *tea.Program {
 func (a *App) Run(ctx context.Context) error {
 	logger.Info("Starting application services...")
 
-	if err := a.initializeServices(ctx); err != nil {
-		return fmt.Errorf("failed to initialize services: %w", err)
-	}
-
-	// Start hotkey manager
+	// Start the hotkey manager
 	if err := a.hotkeyManager.Start(ctx); err != nil {
 		return fmt.Errorf("failed to start hotkey manager: %w", err)
+	}
+
+	// Register the quick note hotkey
+	if a.config.Hotkeys.QuickNote == nil {
+		return fmt.Errorf("quick note hotkey configuration is missing")
+	}
+
+	if err := a.hotkeyManager.RegisterHotkey(*a.config.Hotkeys.QuickNote); err != nil {
+		return fmt.Errorf("failed to register quick note hotkey: %w", err)
+	}
+
+	logger.Info("Hotkey registered successfully: %v", a.config.Hotkeys.QuickNote)
+
+	if err := a.initializeServices(ctx); err != nil {
+		return fmt.Errorf("failed to initialize services: %w", err)
 	}
 
 	// Start background service to handle hotkey events
@@ -104,13 +115,6 @@ func (a *App) handleQuickNote(ctx context.Context) error {
 
 func (a *App) initializeServices(ctx context.Context) error {
 	logger.Info("Initializing services...")
-
-	// Register global hotkey
-	if err := a.hotkeyManager.RegisterHotkey(a.config.Hotkeys.QuickNote); err != nil {
-		logger.Error("Failed to register hotkey", "error", err)
-		return fmt.Errorf("failed to register hotkey: %w", err)
-	}
-	logger.Info("Hotkey registered successfully", "hotkey", a.config.Hotkeys.QuickNote)
 
 	// Verify database connection
 	testTodo, err := a.todoService.CreateTodo(ctx, "test", "Testing service initialization")

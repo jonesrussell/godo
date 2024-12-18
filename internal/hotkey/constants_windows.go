@@ -1,4 +1,5 @@
 //go:build windows
+// +build windows
 
 package hotkey
 
@@ -14,3 +15,22 @@ const (
 	ERROR_HOTKEY_ALREADY_REGISTERED = 0x0402
 	ERROR_SUCCESS                   = 0
 )
+
+// Map platform-independent modifiers to Windows-specific modifiers
+var WindowsModifierMap = map[uint]uint{
+	MOD_ALT:     WIN_MOD_ALT,
+	MOD_CONTROL: WIN_MOD_CONTROL,
+	MOD_SHIFT:   WIN_MOD_SHIFT,
+	MOD_WIN:     WIN_MOD_WIN,
+}
+
+// Helper function to convert platform-independent modifiers to Windows modifiers
+func ToWindowsModifiers(mods uint) uint {
+	var result uint
+	for platformMod, winMod := range WindowsModifierMap {
+		if mods&platformMod != 0 {
+			result |= winMod
+		}
+	}
+	return result
+}

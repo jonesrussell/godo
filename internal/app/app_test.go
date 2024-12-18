@@ -7,6 +7,7 @@ import (
 	"github.com/jonesrussell/godo/internal/app"
 	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/logger"
+	"github.com/jonesrussell/godo/internal/types"
 )
 
 // MockQuickNoteUI implements ui.QuickNoteUI for testing
@@ -17,7 +18,7 @@ func (m *MockQuickNoteUI) GetInput() <-chan string        { return make(chan str
 
 func TestAppInitialization(t *testing.T) {
 	// Initialize logger for tests
-	if err := logger.InitializeWithConfig(config.LoggingConfig{
+	if err := logger.InitializeWithConfig(types.LogConfig{
 		Level:  "debug",
 		Output: []string{"stdout"},
 	}); err != nil {
@@ -29,7 +30,7 @@ func TestAppInitialization(t *testing.T) {
 		Database: config.DatabaseConfig{
 			Path: ":memory:", // Use in-memory SQLite for tests
 		},
-		Logging: config.LoggingConfig{
+		Logging: types.LogConfig{
 			Level:  "debug",
 			Output: []string{"stdout"},
 		},

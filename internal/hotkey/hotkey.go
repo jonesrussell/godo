@@ -1,13 +1,17 @@
 package hotkey
 
-import "context"
+import (
+	"context"
+
+	"github.com/jonesrussell/godo/internal/types"
+)
 
 // HotkeyManager defines the interface for platform-specific hotkey implementations
 type HotkeyManager interface {
 	Start(ctx context.Context) error
 	Stop() error
 	GetEventChannel() <-chan struct{}
-	RegisterHotkey(binding HotkeyBinding) error
+	RegisterHotkey(binding types.HotkeyBinding) error
 }
 
 // BaseHotkeyConfig holds the common configuration for hotkeys
@@ -47,13 +51,7 @@ func (m *defaultHotkeyManager) GetEventChannel() <-chan struct{} {
 	return m.eventChan
 }
 
-func (m *defaultHotkeyManager) RegisterHotkey(binding HotkeyBinding) error {
+func (m *defaultHotkeyManager) RegisterHotkey(binding types.HotkeyBinding) error {
 	// Default implementation
 	return nil
-}
-
-// HotkeyBinding represents a keyboard shortcut configuration
-type HotkeyBinding struct {
-	Modifiers []string `yaml:"modifiers"`
-	Key       string   `yaml:"key"`
 }

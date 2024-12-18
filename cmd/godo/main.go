@@ -38,18 +38,19 @@ func main() {
 		return
 	}
 
-	// Create application instance with config
-	application, err := app.InitializeAppWithConfig(cfg)
+	// Set up systray
+	tray, err := internalsystray.SetupSystray()
 	if err != nil {
-		logger.Error("Failed to initialize application: %v", err)
+		logger.Error("Failed to setup systray: %v", err)
 		return
 	}
+	defer tray.Quit()
 
-	// Run the application
-	if err := application.Run(ctx); err != nil {
-		logger.Error("Application error: %v", err)
-		return
-	}
+	// Add menu items in order
+	mOpen := tray.AddMenuItem("Open", "Open Godo")
+	mQuickNote := tray.AddMenuItem("Quick Note", "Add a quick note")
+	systray.AddSeparator() // Add a separator line
+	mQuit := tray.AddMenuItem("Quit", "Quit the application")
 
 	// Initialize QuickNoteUI
 	quickNote, err := ui.NewQuickNoteUI()
@@ -58,66 +59,77 @@ func main() {
 		return
 	}
 
-	// Set up systray
-	tray, err := internalsystray.SetupSystray()
+	// Create application instance with config
+	application, err := app.InitializeAppWithConfig(cfg)
 	if err != nil {
-		logger.Error("Failed to setup systray: %v", err)
+		logger.Error("Failed to initialize application: %v", err)
 		return
 	}
+	defer cleanup(application)
 
-	// Add menu items
-	mQuickNote := tray.AddMenuItem("Quick Note", "Add a quick note")
-	mQuit := tray.AddMenuItem("Quit", "Quit the application")
+	// Create error channel for goroutines
+	errChan := make(chan error, 1)
 
-	// Handle menu items
-	go handleMenuItems(ctx, quickNote, mQuickNote, mQuit, tray, application)
+	// Start menu item handler in a goroutine
+	go func() {
+		if err := handleMenuItems(ctx, cancel, quickNote, mOpen, mQuickNote, mQuit, application); err != nil {
+			errChan <- err
+		}
+	}()
+
+	// Run the application in a goroutine
+	go func() {
+		if err := application.Run(ctx); err != nil {
+			errChan <- fmt.Errorf("application error: %w", err)
+		}
+	}()
 
 	// Set up signal handling
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
-	// Wait for signal
+	// Wait for either signal, error, or context cancellation
 	select {
 	case sig := <-sigChan:
 		logger.Info("Received signal: %v", sig)
+	case err := <-errChan:
+		logger.Error("Error occurred: %v", err)
 	case <-ctx.Done():
 		logger.Info("Context cancelled")
 	}
-
-	// Cleanup
-	if err := cleanup(application); err != nil {
-		logger.Error("Error during cleanup: %v", err)
-	}
 }
 
-func handleMenuItems(ctx context.Context, quickNote ui.QuickNoteUI, mQuickNote, mQuit *systray.MenuItem, tray internalsystray.Manager, application *app.App) {
+func handleMenuItems(ctx context.Context, cancel context.CancelFunc, quickNote ui.QuickNoteUI, mOpen, mQuickNote, mQuit *systray.MenuItem, application *app.App) error {
 	for {
 		select {
 		case <-ctx.Done():
-			return
+			return nil
+		case <-mOpen.ClickedCh:
+			// Handle opening the main application window
+			logger.Debug("Open menu item clicked")
+			// TODO: Implement opening main window
 		case <-mQuickNote.ClickedCh:
 			if err := quickNote.Show(ctx); err != nil {
 				logger.Error("Failed to show quick note: %v", err)
+				return fmt.Errorf("quick note error: %w", err)
 			}
 		case <-mQuit.ClickedCh:
-			tray.Quit()
-			return
+			cancel()
+			return nil
 		case note := <-quickNote.GetInput():
 			if note != "" {
-				_, err := application.GetTodoService().CreateTodo(ctx, "Quick Note", note)
-				if err != nil {
+				if _, err := application.GetTodoService().CreateTodo(ctx, "Quick Note", note); err != nil {
 					logger.Error("Failed to create todo: %v", err)
+					return fmt.Errorf("failed to create todo: %w", err)
 				}
 			}
 		}
 	}
 }
 
-func cleanup(application *app.App) error {
+func cleanup(application *app.App) {
 	logger.Info("Cleaning up application...")
 	if err := application.Cleanup(); err != nil {
 		logger.Error("Failed to cleanup: %v", err)
-		return fmt.Errorf("cleanup failed: %w", err)
 	}
-	return nil
 }

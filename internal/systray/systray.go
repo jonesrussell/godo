@@ -17,9 +17,11 @@ type Manager interface {
 
 // SetupSystray is a convenience function for setting up the systray
 func SetupSystray() (Manager, error) {
+	logger.Debug("Setting up systray")
 	manager := newManager()
 	if err := manager.Setup(); err != nil {
-		return nil, err
+		logger.Error("Failed to setup systray: %v", err)
+		return nil, fmt.Errorf("failed to setup systray: %w", err)
 	}
 	return manager, nil
 }

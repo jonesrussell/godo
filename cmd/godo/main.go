@@ -42,12 +42,16 @@ func main() {
 	}
 
 	fyneApp := fyneapp.New()
-	fyneWin := fyneApp.NewWindow("Godo Quick Note")
+	fyneWin := fyneApp.NewWindow("Godo")
 	fyneWin.Resize(fyne.NewSize(800, 600))
 	fyneWin.CenterOnScreen()
 
+	// Set up the content
 	content := widget.NewLabel("Welcome to Godo")
 	fyneWin.SetContent(content)
+
+	// Show the window initially
+	fyneWin.Show()
 
 	// Set application icon if available
 	if iconBytes != nil {
@@ -66,6 +70,7 @@ func main() {
 			fyne.NewMenuItem("Open", func() {
 				fyneWin.Show()
 				fyneWin.RequestFocus()
+				fyneWin.CenterOnScreen() // Re-center when showing
 			}),
 			fyne.NewMenuItem("Quick Note", func() { showQuickNote(ctx, application) }),
 			fyne.NewMenuItemSeparator(),

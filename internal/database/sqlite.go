@@ -40,7 +40,7 @@ func ensureDataDir(dbPath string) error {
 }
 
 func NewSQLiteDB(dbPath string) (*sql.DB, error) {
-	logger.Info("Opening database at: %s", dbPath)
+	logger.Info("Opening database", "path", dbPath)
 
 	// Ensure the data directory exists
 	if err := ensureDataDir(dbPath); err != nil {
@@ -102,7 +102,7 @@ func initSchema(db *sql.DB) error {
 		return fmt.Errorf("failed to get schema version: %w", err)
 	}
 
-	logger.Debug("Current schema version: %d, Target version: %d", version, SchemaVersion)
+	logger.Debug("Schema versions", "current", version, "target", SchemaVersion)
 
 	if version < SchemaVersion {
 		tx, err := db.Begin()

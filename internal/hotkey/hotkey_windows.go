@@ -19,23 +19,27 @@ var (
 	procGetMessage       = user32.NewProc("GetMessageW")
 )
 
-// HotkeyManager handles global hotkey registration and events
-type HotkeyManager struct {
+var DefaultConfig = HotkeyConfig{
+	WindowHandle: 0,
+	ID:           1,
+	Modifiers:    MOD_CONTROL | MOD_ALT,
+	Key:          'G',
+}
+
+type windowsHotkeyManager struct {
 	eventChan chan struct{}
 	config    HotkeyConfig
 }
 
-// NewHotkeyManager creates a new instance of HotkeyManager
-func NewHotkeyManager() (*HotkeyManager, error) {
-	manager := &HotkeyManager{
+func newPlatformHotkeyManager() (HotkeyManager, error) {
+	return &windowsHotkeyManager{
 		eventChan: make(chan struct{}, 1),
 		config:    DefaultConfig,
-	}
-	return manager, nil
+	}, nil
 }
 
 // Start begins listening for hotkey events
-func (h *HotkeyManager) Start(ctx context.Context) error {
+func (h *windowsHotkeyManager) Start(ctx context.Context) error {
 	ret, _, err := procRegisterHotKey.Call(
 		uintptr(h.config.WindowHandle),
 		uintptr(h.config.ID),
@@ -93,12 +97,12 @@ func (h *HotkeyManager) Start(ctx context.Context) error {
 }
 
 // GetEventChannel returns the channel that emits hotkey events
-func (h *HotkeyManager) GetEventChannel() <-chan struct{} {
+func (h *windowsHotkeyManager) GetEventChannel() <-chan struct{} {
 	return h.eventChan
 }
 
 // Cleanup performs any necessary cleanup
-func (h *HotkeyManager) Cleanup() error {
+func (h *windowsHotkeyManager) Cleanup() error {
 	ret, _, err := procUnregisterHotKey.Call(
 		uintptr(h.config.WindowHandle),
 		uintptr(h.config.ID),

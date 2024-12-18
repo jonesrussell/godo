@@ -61,9 +61,7 @@ func onSystrayReady(ctx context.Context, app *di.App) {
 	}
 
 	// Set up systray icon and menu
-	systray.SetIcon(getIcon())
-	systray.SetTitle("Godo")
-	systray.SetTooltip("Godo - Quick Notes & Tasks")
+	ui.SetupSystray(getIcon())
 
 	mQuickNote := systray.AddMenuItem("Quick Note", "Add a quick note")
 	mQuit := systray.AddMenuItem("Quit", "Quit the application")

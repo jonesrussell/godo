@@ -52,7 +52,7 @@ func (w *WindowsQuickNote) Show(ctx context.Context) error {
 	// Get primary monitor work area
 	var mi win.MONITORINFO
 	mi.CbSize = uint32(unsafe.Sizeof(mi))
-	monitor := win.MonitorFromWindow(win.HWND(w.window.Handle()), win.MONITOR_DEFAULTTOPRIMARY)
+	monitor := win.MonitorFromWindow(w.window.Handle(), win.MONITOR_DEFAULTTOPRIMARY)
 	if !win.GetMonitorInfo(monitor, &mi) {
 		return fmt.Errorf("failed to get monitor info")
 	}

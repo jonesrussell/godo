@@ -15,7 +15,7 @@ import (
 // App represents the main application
 type App struct {
 	todoService   *service.TodoService
-	hotkeyManager *hotkey.HotkeyManager
+	hotkeyManager hotkey.HotkeyManager
 	program       *tea.Program
 	ui            *ui.TodoUI
 }
@@ -26,7 +26,7 @@ func (a *App) GetTodoService() *service.TodoService {
 }
 
 // GetHotkeyManager returns the hotkey manager instance
-func (a *App) GetHotkeyManager() *hotkey.HotkeyManager {
+func (a *App) GetHotkeyManager() hotkey.HotkeyManager {
 	return a.hotkeyManager
 }
 

@@ -28,9 +28,40 @@ tasks:
       - go test -v ./...
 
   lint:
-    desc: Run linters
+    desc: Run linters for current platform
     cmds:
       - golangci-lint run
+
+  lint-all:
+    desc: Run linters for all platforms
+    cmds:
+      - task: lint-windows
+      - task: lint-darwin
+      - task: lint-linux
+
+  lint-windows:
+    desc: Run linters for Windows
+    cmds:
+      - cmd: set "GOOS=windows" && golangci-lint run
+        platforms: [windows]
+      - cmd: GOOS=windows golangci-lint run
+        platforms: [linux, darwin]
+
+  lint-darwin:
+    desc: Run linters for macOS
+    cmds:
+      - cmd: set "GOOS=darwin" && golangci-lint run
+        platforms: [windows]
+      - cmd: GOOS=darwin golangci-lint run
+        platforms: [linux, darwin]
+
+  lint-linux:
+    desc: Run linters for Linux
+    cmds:
+      - cmd: set "GOOS=linux" && golangci-lint run
+        platforms: [windows]
+      - cmd: GOOS=linux golangci-lint run
+        platforms: [linux, darwin]
 
   fmt:
     desc: Format code
@@ -40,7 +71,10 @@ tasks:
   clean:
     desc: Clean build artifacts
     cmds:
-      - rm -rf bin/
+      - cmd: rd /s /q bin 2>nul || exit 0
+        platforms: [windows]
+      - cmd: rm -rf bin/
+        platforms: [linux, darwin]
 
   dev:
     desc: Run development tasks (fmt, lint, test, build)
@@ -81,3 +115,44 @@ tasks:
         platforms: [windows]
       - cmd: ./scripts/test-coverage.sh
         platforms: [linux, darwin]
+
+  build:
+    desc: Build for current platform
+    deps: [wire]
+    cmds:
+      - go build -o bin/godo cmd/godo/main.go
+
+  build-all:
+    desc: Build for all platforms
+    deps: [wire]
+    cmds:
+      - task: build-windows
+      - task: build-darwin
+      - task: build-linux
+
+  build-windows:
+    desc: Build for Windows
+    deps: [wire]
+    env:
+      GOOS: windows
+      GOARCH: amd64
+    cmds:
+      - go build -o bin/godo.exe cmd/godo/main.go
+
+  build-darwin:
+    desc: Build for macOS
+    deps: [wire]
+    env:
+      GOOS: darwin
+      GOARCH: amd64
+    cmds:
+      - go build -o bin/godo-darwin cmd/godo/main.go
+
+  build-linux:
+    desc: Build for Linux
+    deps: [wire]
+    env:
+      GOOS: linux
+      GOARCH: amd64
+    cmds:
+      - go build -o bin/godo-linux cmd/godo/main.go

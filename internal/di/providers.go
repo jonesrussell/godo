@@ -36,7 +36,7 @@ func provideProgram(ui *ui.TodoUI) *tea.Program {
 	return tea.NewProgram(ui)
 }
 
-func provideHotkeyManager() (*hotkey.HotkeyManager, error) {
+func provideHotkeyManager() (hotkey.HotkeyManager, error) {
 	logger.Debug("Initializing hotkey manager...")
 	manager, err := hotkey.NewHotkeyManager()
 	if err != nil {
@@ -47,7 +47,7 @@ func provideHotkeyManager() (*hotkey.HotkeyManager, error) {
 
 func provideApp(
 	todoService *service.TodoService,
-	hotkeyManager *hotkey.HotkeyManager,
+	hotkeyManager hotkey.HotkeyManager,
 	program *tea.Program,
 	ui *ui.TodoUI,
 ) *App {

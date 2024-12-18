@@ -1,26 +1,16 @@
+//go:build darwin
+
 package hotkey
 
 import (
 	"context"
-
-	"github.com/robotn/gohook"
 )
 
 func (h *HotkeyManager) Start(ctx context.Context) error {
-	keyCombo := []string{"cmd", "alt", "g"}
-
+	// For now, let's implement a placeholder that satisfies the interface
+	// TODO: Implement proper macOS hotkey support
 	go func() {
-		gohook.Register(gohook.KeyDown, keyCombo, func(e gohook.Event) {
-			select {
-			case h.eventChan <- struct{}{}:
-			default:
-				// Channel is full, skip this event
-			}
-		})
-		s := gohook.Start()
 		<-ctx.Done()
-		gohook.End()
-		<-s
 	}()
 	return nil
 }

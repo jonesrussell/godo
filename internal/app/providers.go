@@ -15,14 +15,16 @@ import (
 	"go.uber.org/zap"
 )
 
-// DefaultSet is the Wire provider set for the application
-var DefaultSet = wire.NewSet(
-	provideRepository,
-	provideTodoService,
-	provideTodoUI,
-	provideQuickNoteUI,
-	provideFyneApp,
-)
+// ProvideDefaultSet returns the Wire provider set for the application
+func ProvideDefaultSet() wire.ProviderSet {
+	return wire.NewSet(
+		provideRepository,
+		provideTodoService,
+		provideTodoUI,
+		provideQuickNoteUI,
+		provideFyneApp,
+	)
+}
 
 // provideRepository initializes and returns a SQLite-backed TodoRepository
 func provideRepository(cfg *config.Config) (repository.TodoRepository, error) {

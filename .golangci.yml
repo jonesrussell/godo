@@ -89,6 +89,7 @@ linters-settings:
           - pkg: "github.com/charmbracelet/bubbles"
             desc: "use fyne.io/fyne/v2 for GUI instead"
       logger:
+        files: ["internal/logger/.*\\.go$"]
         path: "github.com/jonesrussell/godo/internal/logger"
         allow:
           - $gostd

@@ -22,13 +22,13 @@ type App struct {
 func NewApp(
 	todoService service.TodoServicer,
 	quickNote quicknote.UI,
-	ui *ui.TodoUI,
+	todoUI *ui.TodoUI,
 	logger *zap.Logger,
 ) *App {
 	return &App{
 		todoService: todoService,
 		quickNote:   quickNote,
-		ui:          ui,
+		ui:          todoUI,
 		logger:      logger,
 	}
 }

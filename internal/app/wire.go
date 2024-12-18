@@ -12,10 +12,21 @@ import (
 
 // ConfiguredSet is the provider set for the application
 var ConfiguredSet = wire.NewSet(
-	NewApp,
-	DefaultSet,
+	// Core dependencies
 	provideLogger,
+	provideRepository,
+	provideFyneApp,
+
+	// Service layer
+	provideTodoService,
 	wire.Bind(new(service.TodoServicer), new(*service.TodoService)),
+
+	// UI components
+	provideQuickNoteUI,
+	provideTodoUI,
+
+	// Application
+	NewApp,
 )
 
 // InitializeAppWithConfig sets up the dependency injection with configuration

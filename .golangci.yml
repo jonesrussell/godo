@@ -48,10 +48,10 @@ linters-settings:
     severity: "medium"
   lll:
     line-length: 120
-  goanalysis:
-    disabled: true
   govet:
     checks: ["fieldalignment"]
+  goimports:
+    local-prefixes: github.com/jonesrussell/godo
   depguard:
     rules:
       main:

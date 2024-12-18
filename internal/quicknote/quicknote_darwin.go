@@ -6,7 +6,7 @@ package quicknote
 import "context"
 
 func init() {
-	newPlatformQuickNoteUI = func() (QuickNoteUI, error) {
+	platformConstructor = func() (UI, error) {
 		base, err := newBubbleTeaQuickNote()
 		if err != nil {
 			return nil, err

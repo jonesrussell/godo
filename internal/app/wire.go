@@ -7,7 +7,6 @@ package app
 import (
 	"github.com/google/wire"
 	"github.com/jonesrussell/godo/internal/config"
-	"github.com/jonesrussell/godo/internal/quicknote"
 	"github.com/jonesrussell/godo/internal/service"
 )
 
@@ -16,15 +15,10 @@ var ConfiguredSet = wire.NewSet(
 	NewApp,
 	DefaultSet,
 	wire.Bind(new(service.TodoServicer), new(*service.TodoService)),
-	provideQuickNoteUI,
 )
 
 // InitializeAppWithConfig sets up the dependency injection with configuration
 func InitializeAppWithConfig(cfg *config.Config) (*App, error) {
 	wire.Build(ConfiguredSet)
 	return &App{}, nil
-}
-
-func provideQuickNoteUI() (quicknote.UI, error) {
-	return quicknote.New()
 }

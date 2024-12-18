@@ -7,6 +7,7 @@ import (
 	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/database"
 	"github.com/jonesrussell/godo/internal/hotkey"
+	"github.com/jonesrussell/godo/internal/quicknote"
 	"github.com/jonesrussell/godo/internal/repository"
 	"github.com/jonesrussell/godo/internal/service"
 	"github.com/jonesrussell/godo/internal/ui"
@@ -46,6 +47,6 @@ func provideTodoUI(svc *service.TodoService) *ui.TodoUI {
 	return ui.New(svc)
 }
 
-func provideQuickNoteUI() (ui.QuickNoteUI, error) {
-	return ui.NewQuickNoteUI()
+func provideQuickNoteUI() (quicknote.UI, error) {
+	return quicknote.New()
 }

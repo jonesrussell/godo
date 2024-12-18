@@ -3,7 +3,11 @@
 
 package hotkey
 
-import "context"
+import (
+	"context"
+
+	"github.com/jonesrussell/godo/internal/types"
+)
 
 func init() {
 	newPlatformHotkeyManager = func() (HotkeyManager, error) {
@@ -28,4 +32,11 @@ func (h *darwinHotkeyManager) Stop() error {
 
 func (h *darwinHotkeyManager) GetEventChannel() <-chan struct{} {
 	return h.eventChan
+}
+
+// RegisterHotkey implements the HotkeyManager interface
+func (h *darwinHotkeyManager) RegisterHotkey(binding types.HotkeyBinding) error {
+	// TODO: Implement Darwin-specific hotkey registration using CGEventTap
+	// For now, return nil as a placeholder
+	return nil
 }

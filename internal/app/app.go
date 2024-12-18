@@ -108,6 +108,7 @@ func (a *App) handleQuickNote(ctx context.Context) error {
 	logger.Info("Quick note triggered")
 
 	if err := a.quickNote.Show(ctx); err != nil {
+		logger.Error("Failed to show quick note: %v", err)
 		return fmt.Errorf("failed to show quick note: %w", err)
 	}
 
@@ -117,20 +118,26 @@ func (a *App) handleQuickNote(ctx context.Context) error {
 func (a *App) initializeServices(ctx context.Context) error {
 	logger.Info("Initializing services...")
 
-	// Verify database connection
+	if err := a.verifyDatabaseConnection(ctx); err != nil {
+		return err
+	}
+
+	logger.Info("Services initialized successfully")
+	return nil
+}
+
+func (a *App) verifyDatabaseConnection(ctx context.Context) error {
 	testTodo, err := a.todoService.CreateTodo(ctx, "test", "Testing service initialization")
 	if err != nil {
 		logger.Error("Failed to verify database connection: %v", err)
 		return fmt.Errorf("failed to verify database connection: %w", err)
 	}
 
-	// Clean up test todo
 	if err := a.todoService.DeleteTodo(ctx, testTodo.ID); err != nil {
 		logger.Error("Failed to cleanup test todo: %v", err)
 		return fmt.Errorf("failed to cleanup test todo: %w", err)
 	}
 
-	logger.Info("Services initialized successfully")
 	return nil
 }
 

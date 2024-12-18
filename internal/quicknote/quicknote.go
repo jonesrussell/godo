@@ -2,22 +2,22 @@ package quicknote
 
 import "context"
 
-// QuickNoteUI defines the interface for platform-specific quick note UI
-type QuickNoteUI interface {
+// UI defines the interface for platform-specific quick note UI
+type UI interface {
 	Show(ctx context.Context) error
 	GetInput() <-chan string
 }
 
 // Variable to hold the platform-specific quick note UI constructor
-var newPlatformQuickNoteUI = func() (QuickNoteUI, error) {
+var platformConstructor = func() (UI, error) {
 	return &defaultQuickNoteUI{
 		input: make(chan string),
 	}, nil
 }
 
-// NewQuickNoteUI creates a new platform-specific quick note UI
-func NewQuickNoteUI() (QuickNoteUI, error) {
-	return newPlatformQuickNoteUI()
+// New creates a new platform-specific quick note UI
+func New() (UI, error) {
+	return platformConstructor()
 }
 
 // defaultQuickNoteUI provides a default implementation

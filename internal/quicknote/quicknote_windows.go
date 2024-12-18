@@ -14,7 +14,7 @@ import (
 )
 
 func init() {
-	newPlatformQuickNoteUI = func() (QuickNoteUI, error) {
+	platformConstructor = func() (UI, error) {
 		return NewFyneQuickNote(), nil
 	}
 }

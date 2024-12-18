@@ -129,8 +129,11 @@ tasks:
   build:
     desc: Build for current platform
     deps: [wire]
+    vars:
+      VERSION:
+        sh: git describe --tags --always --dirty
     cmds:
-      - go build -o bin/godo cmd/godo/main.go
+      - go build -ldflags="-X main.Version={{.VERSION}}" -o bin/godo cmd/godo/main.go
 
   build-all:
     desc: Build for all platforms
@@ -166,3 +169,20 @@ tasks:
       GOARCH: amd64
     cmds:
       - go build -o bin/godo-linux cmd/godo/main.go
+
+  watch:
+    desc: Watch for file changes and rebuild
+    cmds:
+      - task: build
+      - watchexec -e go "task build"
+
+  docker:
+    desc: Build Docker image
+    cmds:
+      - docker build -t godo:latest .
+
+  generate:
+    desc: Run all code generation
+    cmds:
+      - task: wire
+      - go generate ./...

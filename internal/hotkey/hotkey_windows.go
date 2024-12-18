@@ -7,9 +7,16 @@ import (
 	"context"
 	"fmt"
 	"syscall"
-	"time"
+	"unsafe"
 
 	"github.com/jonesrussell/godo/internal/logger"
+)
+
+var (
+	user32               = syscall.NewLazyDLL("user32.dll")
+	procRegisterHotKey   = user32.NewProc("RegisterHotKey")
+	procUnregisterHotKey = user32.NewProc("UnregisterHotKey")
+	procGetMessage       = user32.NewProc("GetMessageW")
 )
 
 // HotkeyManager handles global hotkey registration and events
@@ -22,68 +29,67 @@ type HotkeyManager struct {
 func NewHotkeyManager() (*HotkeyManager, error) {
 	manager := &HotkeyManager{
 		eventChan: make(chan struct{}, 1),
+		config:    DefaultConfig,
 	}
 	return manager, nil
 }
 
 // Start begins listening for hotkey events
 func (h *HotkeyManager) Start(ctx context.Context) error {
-	// Cleanup any existing registration
-	_, _ = unregisterHotkey(h.config.WindowHandle, h.config.ID)
-	time.Sleep(100 * time.Millisecond)
+	ret, _, err := procRegisterHotKey.Call(
+		uintptr(h.config.WindowHandle),
+		uintptr(h.config.ID),
+		uintptr(h.config.Modifiers),
+		uintptr(h.config.Key),
+	)
 
-	success, err := registerHotkey(h.config)
-	if !success {
-		lastErr := syscall.GetLastError()
-		return fmt.Errorf("failed to register hotkey: %w (lastErr=%d)", err, lastErr)
+	if ret == 0 {
+		return fmt.Errorf("failed to register hotkey: %v", err)
 	}
 
 	logger.Info("Successfully registered hotkey (ID=%d, Key='%c', Mods=0x%X)",
 		h.config.ID, h.config.Key, h.config.Modifiers)
 
+	// Start message loop in a goroutine
 	go func() {
-		if err := h.startMessageLoop(ctx); err != nil && err != context.Canceled {
-			logger.Error("Message loop error: %v", err)
+		var msg MSG
+
+		for {
+			select {
+			case <-ctx.Done():
+				// Unregister hotkey when context is cancelled
+				ret, _, _ := procUnregisterHotKey.Call(
+					uintptr(h.config.WindowHandle),
+					uintptr(h.config.ID),
+				)
+				if ret == 0 {
+					logger.Error("Failed to unregister hotkey")
+				}
+				return
+			default:
+				// GetMessage blocks until a message is received
+				if ret, _, _ := procGetMessage.Call(
+					uintptr(unsafe.Pointer(&msg)),
+					0,
+					0,
+					0,
+				); ret == 0 {
+					// WM_QUIT received
+					return
+				}
+
+				if msg.Message == WM_HOTKEY && msg.WParam == uintptr(h.config.ID) {
+					select {
+					case h.eventChan <- struct{}{}:
+					default:
+						// Channel is full, skip this event
+					}
+				}
+			}
 		}
 	}()
 
 	return nil
-}
-
-func (h *HotkeyManager) startMessageLoop(ctx context.Context) error {
-	var msg MSG
-	ticker := time.NewTicker(50 * time.Millisecond)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-ticker.C:
-			if err := h.processMessage(&msg); err != nil {
-				if e, ok := err.(syscall.Errno); !ok || e != ERROR_SUCCESS {
-					logger.Error("Error processing messages: %v", err)
-				}
-			}
-		}
-	}
-}
-
-func (h *HotkeyManager) processMessage(msg *MSG) error {
-	success, err := peekMessage(msg)
-	if !success {
-		return nil
-	}
-
-	if msg.Message == WM_HOTKEY {
-		select {
-		case h.eventChan <- struct{}{}:
-		default:
-			logger.Debug("Skipping hotkey event - channel full")
-		}
-	}
-
-	return err
 }
 
 // GetEventChannel returns the channel that emits hotkey events
@@ -93,8 +99,11 @@ func (h *HotkeyManager) GetEventChannel() <-chan struct{} {
 
 // Cleanup performs any necessary cleanup
 func (h *HotkeyManager) Cleanup() error {
-	success, err := unregisterHotkey(h.config.WindowHandle, h.config.ID)
-	if !success {
+	ret, _, err := procUnregisterHotKey.Call(
+		uintptr(h.config.WindowHandle),
+		uintptr(h.config.ID),
+	)
+	if ret == 0 {
 		return fmt.Errorf("failed to unregister hotkey: %w", err)
 	}
 	return nil

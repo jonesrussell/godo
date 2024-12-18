@@ -6,6 +6,8 @@ import (
 	"context"
 
 	"github.com/progrium/macdriver/cocoa"
+	"github.com/progrium/macdriver/core"
+	"github.com/progrium/macdriver/objc"
 )
 
 type DarwinQuickNote struct {
@@ -30,19 +32,38 @@ func (d *DarwinQuickNote) Show(ctx context.Context) error {
 			cocoa.NSWindowStyleMaskClosable |
 			cocoa.NSWindowStyleMaskMiniaturizable,
 	)
-	d.window.SetFrame(cocoa.NSRect{
-		Origin: cocoa.NSPoint{X: 200, Y: 200},
-		Size:   cocoa.NSSize{Width: 400, Height: 60},
-	}, false)
 
+	// Create input field
 	d.input = cocoa.NSTextField_New()
 	d.input.SetFrame(cocoa.NSRect{
 		Origin: cocoa.NSPoint{X: 20, Y: 20},
 		Size:   cocoa.NSSize{Width: 360, Height: 24},
 	})
 
+	// Handle key events
+	d.input.SetTarget(core.Target(func(sender objc.Object) {
+		text := d.input.StringValue()
+		if text != "" {
+			d.inputChan <- text
+		}
+		d.window.Close()
+	}))
+	d.input.SetAction(objc.Sel("sendAction:"))
+
+	// Center the window
+	screenRect := cocoa.NSScreen_Main().Frame()
+	windowRect := cocoa.NSRect{
+		Origin: cocoa.NSPoint{
+			X: (screenRect.Size.Width - 400) / 2,
+			Y: (screenRect.Size.Height - 60) / 2,
+		},
+		Size: cocoa.NSSize{Width: 400, Height: 60},
+	}
+	d.window.SetFrame(windowRect, false)
+
 	d.window.SetContentView(d.input)
 	d.window.MakeKeyAndOrderFront(nil)
+	d.input.BecomeFirstResponder()
 
 	return nil
 }

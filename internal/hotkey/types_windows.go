@@ -1,5 +1,4 @@
 //go:build windows
-// +build windows
 
 package hotkey
 
@@ -17,7 +16,7 @@ type MSG struct {
 	Pt      struct{ X, Y int32 }
 }
 
-// HotkeyConfig defines the configuration for a hotkey
+// HotkeyConfig defines the configuration for a Windows hotkey
 type HotkeyConfig struct {
 	WindowHandle syscall.Handle
 	ID           int

@@ -36,7 +36,7 @@ func (w *MainWindow) handleOpen() {
 
 func (w *MainWindow) handleQuickNote() {
 	logger.Debug("Opening quick note from tray")
-	ShowQuickNote(w.gui.ctx, w.gui.app)
+	ShowQuickNote(w.gui.ctx, w.gui)
 }
 
 func (w *MainWindow) handleQuit() {

@@ -75,8 +75,11 @@ func onSystrayReady(ctx context.Context, app *di.App) {
 		return
 	}
 
-	// Set up systray icon and menu
-	ui.SetupSystray(getIcon())
+	// Set up systray
+	if err := ui.SetupSystray(); err != nil {
+		logger.Error("Failed to setup systray: %v", err)
+		// Continue running even if systray setup fails
+	}
 
 	mQuickNote := systray.AddMenuItem("Quick Note", "Add a quick note")
 	mQuit := systray.AddMenuItem("Quit", "Quit the application")
@@ -122,13 +125,4 @@ func cleanup(app *di.App) error {
 		return fmt.Errorf("cleanup failed: %w", err)
 	}
 	return nil
-}
-
-func getIcon() []byte {
-	// Replace with your actual icon data
-	// For now, return a minimal icon
-	return []byte{
-		0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
-		// ... rest of icon data ...
-	}
 }

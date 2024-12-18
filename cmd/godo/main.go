@@ -13,7 +13,6 @@ import (
 	"github.com/jonesrussell/godo/internal/app"
 	"github.com/jonesrussell/godo/internal/assets"
 	"github.com/jonesrussell/godo/internal/config"
-	"github.com/jonesrussell/godo/internal/hotkey"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/quicknote"
 )
@@ -71,6 +70,20 @@ func main() {
 	}
 
 	// Run the application
+	runApplication(ctx, cancel, application, fyneApp)
+}
+
+func runApplication(ctx context.Context, cancel context.CancelFunc, application *app.App, fyneApp fyne.App) {
+	errChan := make(chan error, 1)
+
+	go func() {
+		if err := application.Run(ctx); err != nil {
+			errChan <- fmt.Errorf("application error: %w", err)
+			cancel()
+		}
+	}()
+
+	handleSignals(ctx, errChan)
 	fyneApp.Run()
 }
 
@@ -98,43 +111,6 @@ func initializeApp(cfg *config.Config) (*app.App, error) {
 		return nil, fmt.Errorf("failed to initialize application: %w", err)
 	}
 	return application, nil
-}
-
-func runApplication(ctx context.Context, cancel context.CancelFunc, application *app.App, fyneApp fyne.App) {
-	errChan := make(chan error, 1)
-	go handleHotkeys(ctx, application.GetHotkeyManager(), errChan)
-
-	go func() {
-		if err := application.Run(ctx); err != nil {
-			errChan <- fmt.Errorf("application error: %w", err)
-			cancel()
-		}
-	}()
-
-	handleSignals(ctx, errChan)
-
-	fyneApp.Run()
-}
-
-func handleHotkeys(ctx context.Context, hotkeyManager hotkey.HotkeyManager, errChan chan<- error) {
-	eventChan := hotkeyManager.GetEventChannel()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-eventChan:
-			logger.Debug("Hotkey triggered")
-			if err := handleHotkeyEvent(); err != nil {
-				errChan <- fmt.Errorf("hotkey error: %w", err)
-			}
-		}
-	}
-}
-
-func handleHotkeyEvent() error {
-	// Implement hotkey handling logic
-	return nil
 }
 
 func handleSignals(ctx context.Context, errChan <-chan error) {

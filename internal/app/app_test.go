@@ -46,8 +46,4 @@ func TestAppInitialization(t *testing.T) {
 	if testApp.GetTodoService() == nil {
 		t.Error("TodoService not initialized")
 	}
-
-	if testApp.GetHotkeyManager() == nil {
-		t.Error("HotkeyManager not initialized")
-	}
 }

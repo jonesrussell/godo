@@ -8,7 +8,6 @@ require (
 	github.com/charmbracelet/bubbletea v1.2.4
 	github.com/google/wire v0.6.0
 	github.com/mattn/go-sqlite3 v1.14.24
-	github.com/robotn/gohook v0.41.0
 	github.com/stretchr/testify v1.10.0
 	go.uber.org/zap v1.27.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -53,7 +52,6 @@ require (
 	github.com/rymdport/portal v0.3.0 // indirect
 	github.com/srwiley/oksvg v0.0.0-20221011165216-be6e8873101c // indirect
 	github.com/srwiley/rasterx v0.0.0-20220730225603-2ab79fcdd4ef // indirect
-	github.com/vcaesar/keycode v0.10.1 // indirect
 	github.com/yuin/goldmark v1.7.1 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/image v0.18.0 // indirect

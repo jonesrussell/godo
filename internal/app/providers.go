@@ -1,5 +1,5 @@
 // providers.go
-package di
+package app
 
 import (
 	"database/sql"

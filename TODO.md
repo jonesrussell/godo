@@ -3,7 +3,7 @@
 ## Immediate Tasks
 - [x] Run wire command to generate DI implementation  ```bash
   go install github.com/google/wire/cmd/wire@latest
-  cd internal/di && wire  ```
+  cd internal/app && wire  ```
 - [x] Add necessary dependencies to go.mod
   - github.com/mattn/go-sqlite3
   - github.com/google/wire

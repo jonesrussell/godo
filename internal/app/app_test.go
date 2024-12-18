@@ -1,10 +1,10 @@
-package di_test
+package app_test
 
 import (
 	"testing"
 
+	"github.com/jonesrussell/godo/internal/app"
 	"github.com/jonesrussell/godo/internal/config"
-	"github.com/jonesrussell/godo/internal/di"
 )
 
 func TestAppInitialization(t *testing.T) {
@@ -20,17 +20,17 @@ func TestAppInitialization(t *testing.T) {
 	}
 
 	// Initialize app with config
-	app, err := di.InitializeAppWithConfig(cfg)
+	application, err := app.InitializeAppWithConfig(cfg)
 	if err != nil {
 		t.Fatalf("Failed to initialize app: %v", err)
 	}
 
 	// Verify app components
-	if app.GetTodoService() == nil {
+	if application.GetTodoService() == nil {
 		t.Error("TodoService not initialized")
 	}
 
-	if app.GetHotkeyManager() == nil {
+	if application.GetHotkeyManager() == nil {
 		t.Error("HotkeyManager not initialized")
 	}
 }

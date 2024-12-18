@@ -7,7 +7,7 @@ tasks:
 
   wire:
     cmds:
-      - cd internal/di && wire
+      - cd internal/app && wire
 
   run:
     deps: [wire]

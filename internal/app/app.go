@@ -1,5 +1,5 @@
 // app.go
-package di
+package app
 
 import (
 	"context"

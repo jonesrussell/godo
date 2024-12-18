@@ -8,8 +8,8 @@ import (
 	"syscall"
 
 	"github.com/getlantern/systray"
+	"github.com/jonesrussell/godo/internal/app"
 	"github.com/jonesrussell/godo/internal/config"
-	"github.com/jonesrussell/godo/internal/di"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/ui"
 )
@@ -34,7 +34,7 @@ func main() {
 	}
 
 	// Create application instance with config
-	app, err := di.InitializeAppWithConfig(cfg)
+	application, err := app.InitializeAppWithConfig(cfg)
 	if err != nil {
 		logger.Fatal("Failed to initialize application: %v", err)
 	}
@@ -49,7 +49,7 @@ func main() {
 
 	// Start systray
 	go systray.Run(func() {
-		onSystrayReady(ctx, app)
+		onSystrayReady(ctx, application)
 	}, onSystrayExit)
 
 	// Wait for signal
@@ -62,12 +62,12 @@ func main() {
 	}
 
 	// Cleanup
-	if err := cleanup(app); err != nil {
+	if err := cleanup(application); err != nil {
 		logger.Error("Error during cleanup: %v", err)
 	}
 }
 
-func onSystrayReady(ctx context.Context, app *di.App) {
+func onSystrayReady(ctx context.Context, application *app.App) {
 	// Initialize QuickNoteUI
 	quickNote, err := ui.NewQuickNoteUI()
 	if err != nil {
@@ -99,7 +99,7 @@ func onSystrayReady(ctx context.Context, app *di.App) {
 				return
 			case note := <-quickNote.GetInput():
 				if note != "" {
-					_, err := app.GetTodoService().CreateTodo(ctx, "Quick Note", note)
+					_, err := application.GetTodoService().CreateTodo(ctx, "Quick Note", note)
 					if err != nil {
 						logger.Error("Failed to create todo: %v", err)
 					}
@@ -109,7 +109,7 @@ func onSystrayReady(ctx context.Context, app *di.App) {
 	}()
 
 	// Start the application
-	if err := app.Run(ctx); err != nil {
+	if err := application.Run(ctx); err != nil {
 		logger.Error("Application error: %v", err)
 	}
 }
@@ -118,9 +118,9 @@ func onSystrayExit() {
 	logger.Info("Systray exiting")
 }
 
-func cleanup(app *di.App) error {
+func cleanup(application *app.App) error {
 	logger.Info("Cleaning up application...")
-	if err := app.Cleanup(); err != nil {
+	if err := application.Cleanup(); err != nil {
 		logger.Error("Failed to cleanup: %v", err)
 		return fmt.Errorf("cleanup failed: %w", err)
 	}

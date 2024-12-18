@@ -5,6 +5,15 @@ RUN apt-get update && apt-get install -y \
     gcc \
     libayatana-appindicator3-dev \
     libgtk-3-dev \
+    libx11-dev \
+    libxcb1-dev \
+    libxkbcommon-dev \
+    libxkbcommon-x11-dev \
+    libx11-xcb-dev \
+    libxcursor-dev \
+    libxrandr-dev \
+    libxinerama-dev \
+    libxi-dev \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

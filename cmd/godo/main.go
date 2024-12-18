@@ -11,6 +11,7 @@ import (
 	fyneapp "fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/driver/desktop"
 	"github.com/jonesrussell/godo/internal/app"
+	"github.com/jonesrussell/godo/internal/assets"
 	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/hotkey"
 	"github.com/jonesrussell/godo/internal/logger"
@@ -34,8 +35,22 @@ func main() {
 	}
 	defer cleanup(application)
 
+	// Load application icon
+	iconBytes, err := assets.GetIcon()
+	if err != nil {
+		logger.Error("Failed to load application icon: %v", err)
+		// Continue without icon
+	}
+
 	fyneApp := fyneapp.New()
 	fyneWin := fyneApp.NewWindow("Godo Quick Note")
+
+	// Set application icon if available
+	if iconBytes != nil {
+		icon := fyne.NewStaticResource("icon", iconBytes)
+		fyneApp.SetIcon(icon)
+	}
+
 	if desk, ok := fyneApp.(desktop.App); ok {
 		m := fyne.NewMenu("Godo",
 			fyne.NewMenuItem("Open", func() { fyneWin.Show() }),

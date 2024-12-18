@@ -3,8 +3,6 @@ package main
 import (
 	"context"
 	"os"
-	"os/signal"
-	"syscall"
 
 	"fyne.io/fyne/v2"
 	fyneapp "fyne.io/fyne/v2/app"
@@ -15,18 +13,34 @@ import (
 	"github.com/jonesrussell/godo/internal/common"
 	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/logger"
-	"github.com/jonesrussell/godo/internal/quicknote"
 	"github.com/marcsauter/single"
 )
 
 func main() {
-	// Create single instance lock
-	s := single.New("godo") // Creates a lock unique to "godo"
+	// Initialize logger first
+	if _, err := logger.Initialize(); err != nil {
+		os.Stderr.WriteString("Failed to initialize logger: " + err.Error() + "\n")
+		os.Exit(1)
+	}
 
-	// Try to acquire lock
-	if err := s.CheckLock(); err != nil && err == single.ErrAlreadyRunning {
-		logger.Error("Another instance of Godo is already running")
-		return
+	// Create single instance lock
+	s := single.New("godo")
+	if err := s.CheckLock(); err != nil {
+		if err == single.ErrAlreadyRunning {
+			// Try to clean up stale lock
+			if err := s.TryUnlock(); err != nil {
+				logger.Error("Failed to clean up stale lock", "error", err)
+				return
+			}
+			// Try locking again
+			if err := s.CheckLock(); err != nil {
+				logger.Error("Failed to acquire lock even after cleanup", "error", err)
+				return
+			}
+		} else {
+			logger.Error("Failed to check lock", "error", err)
+			return
+		}
 	}
 	defer func() {
 		if err := s.TryUnlock(); err != nil {
@@ -71,59 +85,33 @@ func main() {
 		fyneApp.SetIcon(icon)
 	}
 
-	// Register global shortcut
+	// Register system tray
 	if desk, ok := fyneApp.(desktop.App); ok {
-		shortcut := &desktop.CustomShortcut{
-			KeyName:  fyne.KeyG,
-			Modifier: fyne.KeyModifierControl | fyne.KeyModifierAlt,
-		}
-
-		desk.SetSystemTrayMenu(fyne.NewMenu("Godo",
+		menu := fyne.NewMenu("Godo",
 			fyne.NewMenuItem("Open", func() {
+				logger.Debug("Opening main window")
 				fyneWin.Show()
 				fyneWin.RequestFocus()
 				fyneWin.CenterOnScreen()
 			}),
-			fyne.NewMenuItem("Quick Note", func() { showQuickNote(ctx, application) }),
+			fyne.NewMenuItem("Quick Note", func() {
+				logger.Debug("Opening quick note from tray")
+				showQuickNote(ctx, application)
+			}),
 			fyne.NewMenuItemSeparator(),
-			fyne.NewMenuItem("Quit", func() { fyneApp.Quit() }),
-		))
-
-		fyneWin.Canvas().AddShortcut(shortcut, func(shortcut fyne.Shortcut) {
-			logger.Debug("Global hotkey triggered")
-			showQuickNote(ctx, application)
-		})
+			fyne.NewMenuItem("Quit", func() {
+				logger.Info("Quitting application")
+				fyneApp.Quit()
+			}),
+		)
+		desk.SetSystemTrayMenu(menu)
+		desk.SetSystemTrayIcon(fyneApp.Icon())
+	} else {
+		logger.Warn("System tray not supported on this platform")
 	}
 
 	// Run the application
-	if err := runApplication(application); err != nil {
-		logger.Error("Application error", "error", err)
-		return
-	}
-}
-
-func runApplication(application *app.App) error {
-	// Create a context that can be cancelled
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	// Set up signal handling
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
-
-	// Create an error channel
-	errChan := make(chan error, 1)
-
-	// Start the quick note feature in a goroutine
-	go func() {
-		if err := application.GetQuickNote().Show(ctx); err != nil {
-			logger.Error("Quick note error", "error", err)
-			errChan <- err
-		}
-	}()
-
-	// Run the main UI in the main goroutine
-	return application.Run(ctx)
+	fyneApp.Run()
 }
 
 func initializeConfig() (*config.Config, error) {
@@ -168,31 +156,37 @@ func cleanup(application *app.App) {
 func showQuickNote(ctx context.Context, application *app.App) {
 	logger.Debug("Opening quick note window")
 
-	quickNote, err := quicknote.New()
-	if err != nil {
-		logger.Error("Failed to create quick note UI", "error", err)
+	// Create a new context with cancellation for this quick note instance
+	qnCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	quickNote := application.GetQuickNote() // Use the existing QuickNote instance
+	if quickNote == nil {
+		logger.Error("Failed to get quick note instance")
 		return
 	}
 
-	inputChan := quickNote.GetInput()
+	// Show the quick note window in a goroutine
+	go func() {
+		if err := quickNote.Show(qnCtx); err != nil {
+			logger.Error("Failed to show quick note", "error", err)
+			return
+		}
+	}()
 
-	if err := quickNote.Show(ctx); err != nil {
-		logger.Error("Failed to show quick note", "error", err)
-		return
-	}
-
+	// Handle input in a separate goroutine
 	go func() {
 		select {
-		case input := <-inputChan:
-			logger.Debug("Received quick note input, creating todo")
+		case input := <-quickNote.GetInput():
+			logger.Debug("Received quick note input", "input", input)
 			todoService := application.GetTodoService()
-			_, err := todoService.CreateTodo(ctx, input, "")
+			_, err := todoService.CreateTodo(qnCtx, input, "")
 			if err != nil {
 				logger.Error("Failed to create todo from quick note", "error", err)
 			} else {
 				logger.Debug("Successfully created todo from quick note")
 			}
-		case <-ctx.Done():
+		case <-qnCtx.Done():
 			logger.Debug("Quick note context cancelled")
 			return
 		}

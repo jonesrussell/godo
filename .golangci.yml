@@ -77,7 +77,7 @@ linters-settings:
           - pkg: "github.com/jinzhu/gorm"
             desc: "use raw SQL with database/sql instead"
           - pkg: "fmt"
-            desc: "use github.com/jonesrussell/godo/internal/logger instead"
+            desc: "use github.com/jonesrussell/godo/internal/logger instead" # This line is the source of the error
           - pkg: "github.com/gotk3/gotk3"
             desc: "use fyne.io/fyne/v2 for GUI instead"
           - pkg: "github.com/lxn/win"
@@ -93,14 +93,10 @@ linters-settings:
         path: "github.com/jonesrussell/godo/internal/logger"
         allow:
           - $gostd
-          - log
-          - fmt
           - go.uber.org/zap
           - github.com/jonesrussell/godo/internal/common
         deny:
           - pkg: "github.com/sirupsen/logrus"
-            desc: "use go.uber.org/zap for logging instead"
-          - pkg: "log"
             desc: "use go.uber.org/zap for logging instead"
         ignore-files:
           - ".*_test.go$"

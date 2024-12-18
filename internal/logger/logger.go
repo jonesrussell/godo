@@ -1,78 +1,74 @@
 package logger
 
 import (
-	"fmt"
+	"os"
 
 	"github.com/jonesrussell/godo/internal/common"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 //nolint:gochecknoglobals // logger needs to be globally accessible for application-wide logging
 var log *zap.Logger
 
-// InitializeWithConfig sets up the logger with the provided configuration
+// Initialize sets up the logger with default configuration
+func Initialize() (*zap.Logger, error) {
+	config := zap.NewDevelopmentConfig()
+	var err error
+	log, err = config.Build()
+	if err != nil {
+		return nil, err
+	}
+	return log, nil
+}
+
+// InitializeWithConfig sets up the logger with custom configuration
 func InitializeWithConfig(cfg common.LogConfig) (*zap.Logger, error) {
-	config := zap.NewProductionConfig()
+	config := zap.NewDevelopmentConfig()
 
-	// Set log level from config
-	level, err := zapcore.ParseLevel(cfg.Level)
+	// Configure outputs
+	if len(cfg.Output) > 0 {
+		config.OutputPaths = cfg.Output
+	}
+	if len(cfg.ErrorOutput) > 0 {
+		config.ErrorOutputPaths = cfg.ErrorOutput
+	}
+
+	// Set log level
+	level, err := zap.ParseAtomicLevel(cfg.Level)
 	if err != nil {
 		return nil, err
 	}
-	config.Level = zap.NewAtomicLevelAt(level)
+	config.Level = level
 
-	// Initialize logger
-	logger, err := config.Build()
+	log, err = config.Build()
 	if err != nil {
 		return nil, err
 	}
-
-	log = logger
-	return logger, nil
+	return log, nil
 }
 
-// Debug logs a debug message
+// Debug logs a debug message with structured fields
 func Debug(msg string, keysAndValues ...interface{}) {
-	if log != nil {
-		sugar := log.Sugar()
-		sugar.Debugw(msg, keysAndValues...)
-	}
+	log.Sugar().Debugw(msg, keysAndValues...)
 }
 
-// Info logs an info message
+// Info logs an info message with structured fields
 func Info(msg string, keysAndValues ...interface{}) {
-	if log != nil {
-		sugar := log.Sugar()
-		sugar.Infow(msg, keysAndValues...)
-	}
+	log.Sugar().Infow(msg, keysAndValues...)
 }
 
-// Error logs an error message
+// Warn logs a warning message with structured fields
+func Warn(msg string, keysAndValues ...interface{}) {
+	log.Sugar().Warnw(msg, keysAndValues...)
+}
+
+// Error logs an error message with structured fields
 func Error(msg string, keysAndValues ...interface{}) {
-	if log != nil {
-		sugar := log.Sugar()
-		sugar.Errorw(msg, keysAndValues...)
-	}
+	log.Sugar().Errorw(msg, keysAndValues...)
 }
 
-// Fatal logs a fatal message and exits
+// Fatal logs a fatal message with structured fields and exits
 func Fatal(msg string, keysAndValues ...interface{}) {
-	if log != nil {
-		sugar := log.Sugar()
-		sugar.Fatalw(msg, keysAndValues...)
-	}
-}
-
-// Format returns a formatted string using the provided format and args
-func Format(format string, args ...interface{}) string {
-	return fmt.Sprintf(format, args...)
-}
-
-// Sync flushes any buffered log entries
-func Sync() error {
-	if log != nil {
-		return log.Sync()
-	}
-	return nil
+	log.Sugar().Fatalw(msg, keysAndValues...)
+	os.Exit(1)
 }

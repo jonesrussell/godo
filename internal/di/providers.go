@@ -3,6 +3,7 @@ package di
 
 import (
 	"database/sql"
+	"fmt"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/jonesrussell/godo/internal/database"
@@ -37,7 +38,10 @@ func provideProgram(ui *ui.TodoUI) *tea.Program {
 
 func provideHotkeyManager() (*hotkey.HotkeyManager, error) {
 	logger.Debug("Initializing hotkey manager...")
-	manager := hotkey.NewHotkeyManager()
+	manager, err := hotkey.NewHotkeyManager()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create hotkey manager: %w", err)
+	}
 	return manager, nil
 }
 

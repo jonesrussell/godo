@@ -5,8 +5,6 @@ import (
 	"context"
 	"fmt"
 
-	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/app"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/jonesrussell/godo/internal/hotkey"
 	"github.com/jonesrussell/godo/internal/logger"
@@ -20,7 +18,6 @@ type App struct {
 	hotkeyManager *hotkey.HotkeyManager
 	program       *tea.Program
 	ui            *ui.TodoUI
-	fyneApp       fyne.App
 }
 
 // GetTodoService returns the todo service instance
@@ -38,27 +35,12 @@ func (a *App) GetProgram() *tea.Program {
 	return a.program
 }
 
-// GetFyneApp returns the Fyne app instance
-func (a *App) GetFyneApp() fyne.App {
-	return a.fyneApp
-}
-
-// SetFyneApp sets the Fyne app instance
-func (a *App) SetFyneApp(app fyne.App) {
-	a.fyneApp = app
-}
-
 // Run starts the application
 func (a *App) Run(ctx context.Context) error {
 	logger.Info("Starting application services...")
 
 	if err := a.initializeServices(ctx); err != nil {
 		return fmt.Errorf("failed to initialize services: %w", err)
-	}
-
-	// Initialize Fyne app if not already set
-	if a.fyneApp == nil {
-		a.fyneApp = app.New()
 	}
 
 	// Start hotkey manager
@@ -76,9 +58,9 @@ func (a *App) Run(ctx context.Context) error {
 				return
 			case <-hotkeyEvents:
 				logger.Info("Hotkey triggered - showing quick note")
-				// Show quick note window
-				qn := ui.NewQuickNote(a.todoService, a.fyneApp)
-				qn.Show()
+				// Handle quick note through platform-specific UI
+				// This will be implemented separately
+				a.handleQuickNote()
 			}
 		}
 	}()
@@ -86,6 +68,12 @@ func (a *App) Run(ctx context.Context) error {
 	// Wait for context cancellation
 	<-ctx.Done()
 	return ctx.Err()
+}
+
+func (a *App) handleQuickNote() {
+	// This will be implemented separately for each platform
+	// For now, just log the event
+	logger.Info("Quick note triggered - implementation pending")
 }
 
 func (a *App) initializeServices(ctx context.Context) error {

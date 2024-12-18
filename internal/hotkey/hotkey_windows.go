@@ -19,11 +19,11 @@ type HotkeyManager struct {
 }
 
 // NewHotkeyManager creates a new instance of HotkeyManager
-func NewHotkeyManager() *HotkeyManager {
-	return &HotkeyManager{
+func NewHotkeyManager() (*HotkeyManager, error) {
+	manager := &HotkeyManager{
 		eventChan: make(chan struct{}, 1),
-		config:    DefaultConfig,
 	}
+	return manager, nil
 }
 
 // Start begins listening for hotkey events

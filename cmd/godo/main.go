@@ -27,20 +27,11 @@ func main() {
 	s := single.New("godo")
 	if err := s.CheckLock(); err != nil {
 		if err == single.ErrAlreadyRunning {
-			// Try to clean up stale lock
-			if err := s.TryUnlock(); err != nil {
-				logger.Error("Failed to clean up stale lock", "error", err)
-				return
-			}
-			// Try locking again
-			if err := s.CheckLock(); err != nil {
-				logger.Error("Failed to acquire lock even after cleanup", "error", err)
-				return
-			}
-		} else {
-			logger.Error("Failed to check lock", "error", err)
+			logger.Info("Godo is already running. Look for the icon in your system tray.")
 			return
 		}
+		logger.Error("Failed to check application lock", "error", err)
+		return
 	}
 	defer func() {
 		if err := s.TryUnlock(); err != nil {

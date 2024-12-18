@@ -28,7 +28,11 @@ func main() {
 		logger.Error("Another instance of Godo is already running")
 		return
 	}
-	defer s.TryUnlock()
+	defer func() {
+		if err := s.TryUnlock(); err != nil {
+			logger.Error("Failed to unlock single instance", "error", err)
+		}
+	}()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

@@ -93,6 +93,7 @@ linters-settings:
         path: "github.com/jonesrussell/godo/internal/logger"
         allow:
           - $gostd
+          - fmt
           - go.uber.org/zap
           - github.com/jonesrussell/godo/internal/common
         deny:

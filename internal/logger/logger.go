@@ -8,6 +8,7 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+//nolint:gochecknoglobals
 var log *zap.Logger
 
 // InitializeWithConfig sets up the logger with the provided configuration

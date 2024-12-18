@@ -14,6 +14,7 @@ require (
 	github.com/robotn/gohook v0.41.0
 	github.com/stretchr/testify v1.10.0
 	go.uber.org/zap v1.27.0
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require github.com/atotto/clipboard v0.1.4 // indirect
@@ -54,5 +55,4 @@ require (
 	golang.org/x/sys v0.28.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
 	gopkg.in/Knetic/govaluate.v3 v3.0.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

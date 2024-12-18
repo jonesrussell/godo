@@ -9,6 +9,7 @@ import (
 	"fyne.io/fyne/v2"
 	fyneapp "fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/widget"
 	"github.com/jonesrussell/godo/internal/app"
 	"github.com/jonesrussell/godo/internal/assets"
 	"github.com/jonesrussell/godo/internal/common"
@@ -42,6 +43,11 @@ func main() {
 
 	fyneApp := fyneapp.New()
 	fyneWin := fyneApp.NewWindow("Godo Quick Note")
+	fyneWin.Resize(fyne.NewSize(800, 600))
+	fyneWin.CenterOnScreen()
+
+	content := widget.NewLabel("Welcome to Godo")
+	fyneWin.SetContent(content)
 
 	// Set application icon if available
 	if iconBytes != nil {
@@ -57,7 +63,10 @@ func main() {
 		}
 
 		desk.SetSystemTrayMenu(fyne.NewMenu("Godo",
-			fyne.NewMenuItem("Open", func() { fyneWin.Show() }),
+			fyne.NewMenuItem("Open", func() {
+				fyneWin.Show()
+				fyneWin.RequestFocus()
+			}),
 			fyne.NewMenuItem("Quick Note", func() { showQuickNote(ctx, application) }),
 			fyne.NewMenuItemSeparator(),
 			fyne.NewMenuItem("Quit", func() { fyneApp.Quit() }),

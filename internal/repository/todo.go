@@ -37,22 +37,22 @@ func NewTodoRepository(db DB) TodoRepository {
 }
 
 // Implementation of TodoRepository interface
-func (r *Repository) Create(ctx context.Context, todo *model.Todo) error {
+func (r *Repository) Create(_ context.Context, todo *model.Todo) error {
 	return r.db.Create(todo)
 }
 
-func (r *Repository) GetByID(ctx context.Context, id int64) (*model.Todo, error) {
+func (r *Repository) GetByID(_ context.Context, id int64) (*model.Todo, error) {
 	return r.db.GetByID(id)
 }
 
-func (r *Repository) List(ctx context.Context) ([]model.Todo, error) {
+func (r *Repository) List(_ context.Context) ([]model.Todo, error) {
 	return r.db.List()
 }
 
-func (r *Repository) Update(ctx context.Context, todo *model.Todo) error {
+func (r *Repository) Update(_ context.Context, todo *model.Todo) error {
 	return r.db.Update(todo)
 }
 
-func (r *Repository) Delete(ctx context.Context, id int64) error {
+func (r *Repository) Delete(_ context.Context, id int64) error {
 	return r.db.Delete(id)
 }

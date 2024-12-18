@@ -23,7 +23,7 @@ func NewQuickNoteUI() (QuickNoteUI, error) {
 	}, nil
 }
 
-func (w *WindowsQuickNote) Show(ctx context.Context) error {
+func (w *WindowsQuickNote) Show(_ context.Context) error {
 	var err error
 	if w.window, err = walk.NewMainWindowWithName("Quick Note"); err != nil {
 		return err

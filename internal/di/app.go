@@ -95,3 +95,9 @@ func (a *App) initializeServices(ctx context.Context) error {
 	logger.Info("Services initialized successfully")
 	return nil
 }
+
+func (a *App) Cleanup() error {
+	logger.Info("Cleaning up application resources")
+	// Add any cleanup logic here
+	return nil
+}

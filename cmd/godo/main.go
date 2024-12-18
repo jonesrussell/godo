@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -101,8 +102,11 @@ func onSystrayExit() {
 }
 
 func cleanup(app *di.App) error {
-	logger.Info("Cleaning up...")
-	// Add any necessary cleanup here
+	logger.Info("Cleaning up application...")
+	if err := app.Cleanup(); err != nil {
+		logger.Error("Failed to cleanup: %v", err)
+		return fmt.Errorf("cleanup failed: %w", err)
+	}
 	return nil
 }
 

@@ -12,21 +12,21 @@ import (
 func TestTodoUI(t *testing.T) {
 	tests := []struct {
 		name        string
-		setup       func(t *testing.T, ui *ui.TodoUI, mock *testutil.MockTodoService)
+		setup       func(_ *testing.T, _ *ui.TodoUI, _ *testutil.MockTodoService)
 		msg         tea.Msg
 		wantQuit    bool
 		wantCommand bool
 	}{
 		{
 			name:        "Quit on q",
-			setup:       func(t *testing.T, ui *ui.TodoUI, mock *testutil.MockTodoService) {},
+			setup:       func(_ *testing.T, _ *ui.TodoUI, _ *testutil.MockTodoService) {},
 			msg:         tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}},
 			wantQuit:    true,
 			wantCommand: true,
 		},
 		{
 			name:        "Add mode on a",
-			setup:       func(t *testing.T, ui *ui.TodoUI, mock *testutil.MockTodoService) {},
+			setup:       func(_ *testing.T, _ *ui.TodoUI, _ *testutil.MockTodoService) {},
 			msg:         tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}},
 			wantQuit:    false,
 			wantCommand: false,

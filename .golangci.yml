@@ -9,6 +9,8 @@ linters:
     - ineffassign
     - misspell
     - unconvert
+    - revive
+    - unused
 
 run:
   go: '1.23'
@@ -20,6 +22,11 @@ output:
 linters-settings:
   gofmt:
     simplify: true
+  revive:
+    rules:
+      - name: unused-parameter
+        severity: warning
+        disabled: false
 
 issues:
   exclude-use-default: false

@@ -8,7 +8,7 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-//nolint:gochecknoglobals
+//nolint:gochecknoglobals // logger needs to be globally accessible for application-wide logging
 var log *zap.Logger
 
 // InitializeWithConfig sets up the logger with the provided configuration

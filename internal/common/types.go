@@ -15,7 +15,7 @@ type HotkeyBinding struct {
 
 // String implements the Stringer interface for HotkeyBinding
 func (h HotkeyBinding) String() string {
-	return string(h.Key) // Just return the key, or customize as needed
+	return h.Key
 }
 
 // Error represents a domain error

@@ -78,7 +78,7 @@ func onSystrayReady(ctx context.Context, application *app.App) {
 	// Set up systray
 	if err := ui.SetupSystray(); err != nil {
 		logger.Error("Failed to setup systray: %v", err)
-		// Continue running even if systray setup fails
+		os.Exit(1)
 	}
 
 	mQuickNote := systray.AddMenuItem("Quick Note", "Add a quick note")

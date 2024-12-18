@@ -2,11 +2,16 @@
 
 package hotkey
 
+import "context"
+
+// HotkeyManager defines the interface for platform-specific hotkey implementations
+type HotkeyManager interface {
+	Start(ctx context.Context) error
+	Stop() error
+	GetEventChannel() <-chan struct{}
+}
+
 // newPlatformHotkeyManager is implemented differently for each platform
-// The implementation is in the platform-specific files:
-// - hotkey_windows.go
-// - hotkey_darwin.go
-// - hotkey_linux.go
 func newPlatformHotkeyManager() (HotkeyManager, error) {
 	return nil, ErrUnsupportedPlatform
 }

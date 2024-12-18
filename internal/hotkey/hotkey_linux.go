@@ -47,3 +47,8 @@ func (h *linuxHotkeyManager) Start(ctx context.Context) error {
 func (h *linuxHotkeyManager) GetEventChannel() <-chan struct{} {
 	return h.eventChan
 }
+
+func (h *linuxHotkeyManager) Stop() error {
+	hook.End()
+	return nil
+}

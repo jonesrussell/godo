@@ -25,3 +25,12 @@ func (h *darwinHotkeyManager) Start(ctx context.Context) error {
 func (h *darwinHotkeyManager) GetEventChannel() <-chan struct{} {
 	return h.eventChan
 }
+
+func (m *darwinHotkeyManager) Stop() error {
+	// Cleanup and release any resources
+	// For Darwin, this might involve:
+	// - Unregistering hotkeys from the event tap
+	// - Stopping any running event loops
+	// - Releasing Cocoa/Carbon resources
+	return nil
+}

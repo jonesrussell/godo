@@ -23,6 +23,11 @@ func (h *windowsHotkeyManager) Start(ctx context.Context) error {
 	return nil
 }
 
+func (h *windowsHotkeyManager) Stop() error {
+	// TODO: Implement cleanup logic
+	return nil
+}
+
 func (h *windowsHotkeyManager) GetEventChannel() <-chan struct{} {
 	return h.eventChan
 }

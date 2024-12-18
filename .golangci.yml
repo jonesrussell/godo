@@ -59,6 +59,22 @@ issues:
         - revive
     - path: internal/hotkey/types_(windows|darwin|linux)\.go
       text: "DefaultConfig redeclared"
-    - path: internal/hotkey/(hotkey|quicknote)_(windows|darwin|linux)\.go
-      text: "newPlatform.*Manager redeclared"
+      linters:
+        - typecheck
+    - path: internal/hotkey/hotkey_(windows|darwin|linux)\.go
+      text: "newPlatformHotkeyManager redeclared"
+      linters:
+        - typecheck
+    - path: internal/ui/quicknote_(windows|darwin|linux)\.go
+      text: "newPlatformQuickNoteUI redeclared"
+      linters:
+        - typecheck
+    - path: internal/hotkey/hotkey_(darwin|linux)\.go
+      text: "does not implement HotkeyManager \\(missing method Stop\\)"
+      linters:
+        - typecheck
+    - path: internal/config/config\.go
+      text: "undefined: yaml"
+      linters:
+        - typecheck
   

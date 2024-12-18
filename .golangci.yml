@@ -15,19 +15,11 @@ run:
   timeout: 5m
 
 issues:
-  exclude-files:
-    - ".*_linux\\.go$"
-    - ".*_windows\\.go$"
-    - ".*_darwin\\.go$"
   exclude-dirs:
     - vendor
   exclude-rules:
     - linters: [typecheck]
       path: cmd/godo/main\.go
-    - linters: [typecheck]
-      path: internal/systray/systray\.go
-    - linters: [typecheck]
-      path: internal/hotkey/
     - linters: [typecheck]
       path: internal/ui/
 

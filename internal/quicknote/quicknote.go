@@ -1,34 +1,50 @@
 package quicknote
 
-import "context"
+import (
+	"context"
 
-// UI defines the interface for platform-specific quick note UI
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/widget"
+)
+
 type UI interface {
 	Show(ctx context.Context) error
 	GetInput() <-chan string
 }
 
-// Variable to hold the platform-specific quick note UI constructor
-var platformConstructor = func() (UI, error) {
-	return &defaultQuickNoteUI{
-		input: make(chan string),
+type fyneQuickNote struct {
+	window fyne.Window
+	input  chan string
+}
+
+func New() (UI, error) {
+	input := make(chan string)
+	return &fyneQuickNote{
+		input: input,
 	}, nil
 }
 
-// New creates a new platform-specific quick note UI
-func New() (UI, error) {
-	return platformConstructor()
-}
+func (f *fyneQuickNote) Show(ctx context.Context) error {
+	entry := widget.NewEntry()
+	entry.OnSubmitted = func(text string) {
+		f.input <- text
+		f.window.Close()
+	}
 
-// defaultQuickNoteUI provides a default implementation
-type defaultQuickNoteUI struct {
-	input chan string
-}
+	content := container.NewVBox(
+		widget.NewLabel("Quick Note:"),
+		entry,
+	)
 
-func (u *defaultQuickNoteUI) Show(ctx context.Context) error {
+	f.window.SetContent(content)
+	f.window.Resize(fyne.NewSize(300, 100))
+	f.window.CenterOnScreen()
+	f.window.Show()
+
 	return nil
 }
 
-func (u *defaultQuickNoteUI) GetInput() <-chan string {
-	return u.input
+func (f *fyneQuickNote) GetInput() <-chan string {
+	return f.input
 }

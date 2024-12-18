@@ -16,10 +16,9 @@ type MSG struct {
 	Pt      struct{ X, Y int32 }
 }
 
-// HotkeyConfig defines the configuration for a hotkey
-type HotkeyConfig struct {
-	WindowHandle syscall.Handle
-	ID           int
-	Modifiers    uint
-	Key          rune
+// DefaultConfig provides default hotkey configuration for Windows
+var DefaultConfig = BaseHotkeyConfig{
+	ID:        1,
+	Modifiers: MOD_CONTROL | MOD_ALT,
+	Key:       'G',
 }

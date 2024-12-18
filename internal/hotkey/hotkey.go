@@ -2,14 +2,15 @@ package hotkey
 
 import "context"
 
-// HotkeyManager handles global hotkey registration and events
+// HotkeyManager defines the interface for platform-specific hotkey implementations
 type HotkeyManager interface {
+	// Start begins listening for hotkey events
 	Start(ctx context.Context) error
+	// GetEventChannel returns a channel that receives events when the hotkey is pressed
 	GetEventChannel() <-chan struct{}
-	Cleanup() error
 }
 
-// NewHotkeyManager creates a platform-specific HotkeyManager instance
+// NewHotkeyManager creates a new platform-specific hotkey manager
 func NewHotkeyManager() (HotkeyManager, error) {
 	return newPlatformHotkeyManager()
 }

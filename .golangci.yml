@@ -11,13 +11,22 @@ linters:
     - unconvert
     - revive
     - unused
+    - goimports
+    - gocritic
 
 run:
   go: '1.23'
+  build-tags:
+    - windows
+    - linux
+    - darwin
+  allow-parallel-runners: true
+  modules-download-mode: readonly
 
 output:
   formats:
     - format: colored-line-number
+  sort-results: true
 
 linters-settings:
   gofmt:
@@ -27,9 +36,29 @@ linters-settings:
       - name: unused-parameter
         severity: warning
         disabled: false
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - style
+      - performance
+    disabled-checks:
+      - commentFormatting
+      - hugeParam
 
 issues:
   exclude-use-default: false
   max-issues-per-linter: 0
   max-same-issues: 0
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - gocritic
+    - path: internal/hotkey/
+      text: "unused-parameter"
+      linters:
+        - revive
+    - path: internal/hotkey/types_(windows|darwin|linux)\.go
+      text: "DefaultConfig redeclared"
+    - path: internal/hotkey/(hotkey|quicknote)_(windows|darwin|linux)\.go
+      text: "newPlatform.*Manager redeclared"
   

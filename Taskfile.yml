@@ -38,30 +38,32 @@ tasks:
       - task: lint-windows
       - task: lint-darwin
       - task: lint-linux
+      - |
+        echo "Cross-platform build check..."
+        GOOS=windows go build ./...
+        GOOS=darwin go build ./...
+        GOOS=linux go build ./...
 
   lint-windows:
     desc: Run linters for Windows
+    env:
+      GOOS: windows
     cmds:
-      - cmd: set "GOOS=windows" && golangci-lint run
-        platforms: [windows]
-      - cmd: GOOS=windows golangci-lint run
-        platforms: [linux, darwin]
+      - golangci-lint run
 
   lint-darwin:
     desc: Run linters for macOS
+    env:
+      GOOS: darwin
     cmds:
-      - cmd: set "GOOS=darwin" && golangci-lint run
-        platforms: [windows]
-      - cmd: GOOS=darwin golangci-lint run
-        platforms: [linux, darwin]
+      - golangci-lint run
 
   lint-linux:
     desc: Run linters for Linux
+    env:
+      GOOS: linux
     cmds:
-      - cmd: set "GOOS=linux" && golangci-lint run
-        platforms: [windows]
-      - cmd: GOOS=linux golangci-lint run
-        platforms: [linux, darwin]
+      - golangci-lint run
 
   fmt:
     desc: Format all Go code

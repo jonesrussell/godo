@@ -2,16 +2,9 @@
 
 package hotkey
 
-// HotkeyConfig defines the configuration for a Darwin hotkey
-type HotkeyConfig struct {
-	ID        int
-	Modifiers uint
-	Key       rune
-}
-
-// DefaultConfig provides a default hotkey configuration
-var DefaultConfig = HotkeyConfig{
+// DefaultConfig provides default hotkey configuration for macOS
+var DefaultConfig = BaseHotkeyConfig{
 	ID:        1,
-	Modifiers: MOD_CONTROL | MOD_ALT,
+	Modifiers: MOD_COMMAND | MOD_OPTION,
 	Key:       'G',
 }

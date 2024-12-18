@@ -1,4 +1,5 @@
 //go:build linux
+// +build linux
 
 package hotkey
 
@@ -13,17 +14,18 @@ type linuxHotkeyManager struct {
 	eventChan chan struct{}
 }
 
-func newPlatformHotkeyManager() (HotkeyManager, error) {
-	return &linuxHotkeyManager{
-		config:    DefaultConfig,
-		eventChan: make(chan struct{}, 1),
-	}, nil
+func init() {
+	newPlatformHotkeyManager = func() (HotkeyManager, error) {
+		return &defaultHotkeyManager{
+			eventChan: make(chan struct{}),
+		}, nil
+	}
 }
 
 func (h *linuxHotkeyManager) Start(ctx context.Context) error {
 	hook.Register(hook.KeyDown, []string{}, func(e hook.Event) {
 		// Check if the hotkey combination matches
-		if e.Keycode == int(h.config.Key) && e.Rawcode == h.config.Modifiers {
+		if e.Keycode == uint16(h.config.Key) && e.Rawcode == uint16(h.config.Modifiers) {
 			select {
 			case <-ctx.Done():
 				return

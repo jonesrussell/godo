@@ -1,9 +1,11 @@
 //go:build windows
+// +build windows
 
 package ui
 
 func init() {
-	setPlatformSpecificTitle = func() {
-		// Windows doesn't support SetTitle
+	// Windows uses the default implementation
+	newSystrayManager = func() SystrayManager {
+		return &defaultSystray{}
 	}
 }

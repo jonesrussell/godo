@@ -1,9 +1,11 @@
 //go:build linux
+// +build linux
 
 package ui
 
 func init() {
-	setPlatformSpecificTitle = func() {
-		// Linux typically doesn't use title
+	// Linux uses the default implementation
+	newSystrayManager = func() SystrayManager {
+		return &defaultSystray{}
 	}
 }

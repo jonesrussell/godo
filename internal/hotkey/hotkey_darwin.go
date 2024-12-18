@@ -1,36 +1,31 @@
 //go:build darwin
+// +build darwin
 
 package hotkey
 
 import "context"
 
+func init() {
+	newPlatformHotkeyManager = func() (HotkeyManager, error) {
+		return &darwinHotkeyManager{
+			eventChan: make(chan struct{}),
+		}, nil
+	}
+}
+
 type darwinHotkeyManager struct {
-	config    BaseHotkeyConfig
 	eventChan chan struct{}
 }
 
-func newPlatformHotkeyManager() (HotkeyManager, error) {
-	return &darwinHotkeyManager{
-		config:    DefaultConfig,
-		eventChan: make(chan struct{}, 1),
-	}, nil
+func (h *darwinHotkeyManager) Start(ctx context.Context) error {
+	<-ctx.Done()
+	return nil
 }
 
-func (h *darwinHotkeyManager) Start(ctx context.Context) error {
-	// TODO: Implement macOS-specific hotkey handling
-	<-ctx.Done()
+func (h *darwinHotkeyManager) Stop() error {
 	return nil
 }
 
 func (h *darwinHotkeyManager) GetEventChannel() <-chan struct{} {
 	return h.eventChan
-}
-
-func (m *darwinHotkeyManager) Stop() error {
-	// Cleanup and release any resources
-	// For Darwin, this might involve:
-	// - Unregistering hotkeys from the event tap
-	// - Stopping any running event loops
-	// - Releasing Cocoa/Carbon resources
-	return nil
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/jonesrussell/godo/internal/hotkey"
 	yaml "gopkg.in/yaml.v3"
 )
 
@@ -27,13 +28,8 @@ type DatabaseConfig struct {
 }
 
 type HotkeyConfig struct {
-	QuickNote HotkeyBinding `yaml:"quick_note"`
-	OpenApp   HotkeyBinding `yaml:"open_app"`
-}
-
-type HotkeyBinding struct {
-	Modifiers []string `yaml:"modifiers"`
-	Key       string   `yaml:"key"`
+	QuickNote hotkey.HotkeyBinding `yaml:"quick_note"`
+	OpenApp   hotkey.HotkeyBinding `yaml:"open_app"`
 }
 
 type LoggingConfig struct {

@@ -7,6 +7,7 @@ type HotkeyManager interface {
 	Start(ctx context.Context) error
 	Stop() error
 	GetEventChannel() <-chan struct{}
+	RegisterHotkey(binding HotkeyBinding) error
 }
 
 // BaseHotkeyConfig holds the common configuration for hotkeys
@@ -44,4 +45,15 @@ func (m *defaultHotkeyManager) Stop() error {
 
 func (m *defaultHotkeyManager) GetEventChannel() <-chan struct{} {
 	return m.eventChan
+}
+
+func (m *defaultHotkeyManager) RegisterHotkey(binding HotkeyBinding) error {
+	// Default implementation
+	return nil
+}
+
+// HotkeyBinding represents a keyboard shortcut configuration
+type HotkeyBinding struct {
+	Modifiers []string `yaml:"modifiers"`
+	Key       string   `yaml:"key"`
 }

@@ -166,3 +166,10 @@ tasks:
     cmds:
       - task: wire
       - go generate ./...
+
+  package-windows:
+    desc: Package Windows executable with Fyne
+    deps: [wire, build-windows]
+    dir: cmd/godo
+    cmds:
+      - fyne package -os windows

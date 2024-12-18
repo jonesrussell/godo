@@ -76,14 +76,19 @@ func main() {
 func runApplication(ctx context.Context, cancel context.CancelFunc, application *app.App, fyneApp fyne.App) {
 	errChan := make(chan error, 1)
 
+	// Start signal handling in a separate goroutine
+	go handleSignals(ctx, cancel, errChan)
+
+	// Run the application
 	go func() {
 		if err := application.Run(ctx); err != nil {
+			logger.Error("Application error: %v", err)
 			errChan <- fmt.Errorf("application error: %w", err)
 			cancel()
 		}
 	}()
 
-	handleSignals(ctx, errChan)
+	// Run the Fyne app in the main thread
 	fyneApp.Run()
 }
 
@@ -113,17 +118,36 @@ func initializeApp(cfg *config.Config) (*app.App, error) {
 	return application, nil
 }
 
-func handleSignals(ctx context.Context, errChan <-chan error) {
+func handleSignals(ctx context.Context, cancel context.CancelFunc, errChan <-chan error) {
 	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	signal.Notify(sigChan,
+		syscall.SIGINT,
+		syscall.SIGTERM,
+		syscall.SIGHUP,
+	)
+	defer signal.Stop(sigChan)
 
-	select {
-	case sig := <-sigChan:
-		logger.Info("Received signal: %v", sig)
-	case err := <-errChan:
-		logger.Error("Error occurred: %v", err)
-	case <-ctx.Done():
-		logger.Info("Context cancelled")
+	for {
+		select {
+		case sig := <-sigChan:
+			switch sig {
+			case syscall.SIGHUP:
+				logger.Info("Received SIGHUP, reloading configuration...")
+				// TODO: Implement config reload logic
+				continue
+			default:
+				logger.Info("Initiating shutdown, received signal: %v", sig)
+				cancel()
+				return
+			}
+		case err := <-errChan:
+			logger.Error("Initiating shutdown due to error: %v", err)
+			cancel()
+			return
+		case <-ctx.Done():
+			logger.Info("Shutdown initiated by context cancellation")
+			return
+		}
 	}
 }
 
@@ -135,6 +159,8 @@ func cleanup(application *app.App) {
 }
 
 func showQuickNote(ctx context.Context, application *app.App) {
+	logger.Debug("Opening quick note window")
+
 	quickNote, err := quicknote.New()
 	if err != nil {
 		logger.Error("Failed to create quick note UI: %v", err)
@@ -151,11 +177,15 @@ func showQuickNote(ctx context.Context, application *app.App) {
 	go func() {
 		select {
 		case input := <-inputChan:
+			logger.Debug("Received quick note input, creating todo")
 			_, err := application.GetTodoService().CreateTodo(ctx, input, "")
 			if err != nil {
 				logger.Error("Failed to create todo from quick note: %v", err)
+			} else {
+				logger.Debug("Successfully created todo from quick note")
 			}
 		case <-ctx.Done():
+			logger.Debug("Quick note context cancelled")
 			return
 		}
 	}()

@@ -16,9 +16,20 @@ import (
 	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/quicknote"
+	"github.com/marcsauter/single"
 )
 
 func main() {
+	// Create single instance lock
+	s := single.New("godo") // Creates a lock unique to "godo"
+
+	// Try to acquire lock
+	if err := s.CheckLock(); err != nil && err == single.ErrAlreadyRunning {
+		logger.Error("Another instance of Godo is already running")
+		return
+	}
+	defer s.TryUnlock()
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 

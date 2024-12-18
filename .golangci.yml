@@ -66,6 +66,7 @@ linters-settings:
           - fyne.io/fyne/v2
           - gopkg.in/yaml.v3
           - github.com/stretchr/testify
+          - github.com/marcsauter/single
           # Internal packages
           - github.com/jonesrussell/godo/internal
           - github.com/jonesrussell/godo/pkg

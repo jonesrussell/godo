@@ -12,7 +12,7 @@ import (
 
 // App represents the main application
 type App struct {
-	todoService service.TodoService
+	todoService service.TodoServicer
 	quickNote   quicknote.UI
 	ui          *ui.TodoUI
 	logger      *zap.Logger
@@ -20,7 +20,7 @@ type App struct {
 
 // NewApp creates a new App instance with all dependencies
 func NewApp(
-	todoService service.TodoService,
+	todoService service.TodoServicer,
 	quickNote quicknote.UI,
 	ui *ui.TodoUI,
 	logger *zap.Logger,
@@ -34,7 +34,7 @@ func NewApp(
 }
 
 // GetTodoService returns the todo service instance
-func (a *App) GetTodoService() service.TodoService {
+func (a *App) GetTodoService() service.TodoServicer {
 	return a.todoService
 }
 

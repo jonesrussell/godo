@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/database"
 	"github.com/jonesrussell/godo/internal/hotkey"
 	"github.com/jonesrussell/godo/internal/logger"
@@ -14,14 +15,14 @@ import (
 	"github.com/jonesrussell/godo/internal/ui"
 )
 
-func provideTodoRepository(db *sql.DB) repository.TodoRepository {
-	return repository.NewSQLiteTodoRepository(db)
+// NewSQLiteDB creates a new database connection using configuration
+func NewSQLiteDB(cfg *config.Config) (*sql.DB, error) {
+	logger.Debug("Opening database at: %s", cfg.Database.Path)
+	return database.NewSQLiteDB(cfg.Database.Path)
 }
 
-func NewSQLiteDB() (*sql.DB, error) {
-	dbPath := "./godo.db"
-	logger.Debug("Opening database at: %s", dbPath)
-	return database.NewSQLiteDB(dbPath)
+func provideTodoRepository(db *sql.DB) repository.TodoRepository {
+	return repository.NewSQLiteTodoRepository(db)
 }
 
 func provideTodoService(repo repository.TodoRepository) *service.TodoService {

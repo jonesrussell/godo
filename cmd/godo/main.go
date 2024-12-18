@@ -43,16 +43,21 @@ func main() {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
+	// Create context that can be cancelled
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	// Start systray
 	go systray.Run(func() {
-		onSystrayReady(context.Background(), app)
+		onSystrayReady(ctx, app)
 	}, onSystrayExit)
 
 	// Wait for signal
 	select {
 	case sig := <-sigChan:
 		logger.Info("Received signal: %v", sig)
-	case <-app.Context().Done():
+		cancel()
+	case <-ctx.Done():
 		logger.Info("Context cancelled")
 	}
 

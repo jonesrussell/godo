@@ -12,14 +12,18 @@ import (
 // Manager handles global hotkeys
 type Manager struct {
 	hotkeyPressed chan struct{}
-	config        HotkeyConfig
+	config        BaseHotkeyConfig
 }
 
 // NewManager creates a new hotkey manager
 func NewManager() *Manager {
 	return &Manager{
 		hotkeyPressed: make(chan struct{}),
-		config:        DefaultConfig,
+		config: BaseHotkeyConfig{
+			ID:        1,
+			Modifiers: MOD_CONTROL | MOD_ALT,
+			Key:       'G',
+		},
 	}
 }
 

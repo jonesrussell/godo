@@ -12,17 +12,3 @@ const (
 	ERROR_HOTKEY_ALREADY_REGISTERED = 0x0402
 	ERROR_SUCCESS                   = 0
 )
-
-// HotkeyConfig contains configuration for hotkey registration
-type HotkeyConfig struct {
-	ID        int
-	Key       rune
-	Modifiers int
-}
-
-// DefaultConfig provides default hotkey configuration
-var DefaultConfig = HotkeyConfig{
-	ID:        1,
-	Key:       'N',
-	Modifiers: MOD_ALT | MOD_CONTROL,
-}

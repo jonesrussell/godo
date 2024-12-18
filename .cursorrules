@@ -27,7 +27,7 @@
   - Service layer abstraction
 
 ## Technical Requirements
-- Go 1.23+
+- Go 1.23.4 (as of March 2024 - Note: Earlier I incorrectly claimed Go 1.22 was latest)
 - SQLite3
 - MinGW-w64 GCC (for Windows)
 

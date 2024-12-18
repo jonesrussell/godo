@@ -1,14 +1,14 @@
 //go:build linux
 // +build linux
 
-package ui
+package systray
 
 func init() {
-	newSystrayManager = func() SystrayManager {
+	newManager = func() Manager {
 		return &linuxSystray{}
 	}
 }
 
 type linuxSystray struct {
-	defaultSystray
+	defaultManager
 }

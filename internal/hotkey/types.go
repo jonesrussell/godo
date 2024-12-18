@@ -1,6 +1,11 @@
+//go:build windows
+// +build windows
+
 package hotkey
 
 import "syscall"
+
+type Handle syscall.Handle
 
 // MSG represents a Windows message structure
 type MSG struct {
@@ -20,7 +25,7 @@ type HotkeyConfig struct {
 	Key          rune
 }
 
-// DefaultConfig provides a different hotkey combination
+// DefaultConfig provides a default hotkey configuration
 var DefaultConfig = HotkeyConfig{
 	WindowHandle: 0,
 	ID:           1,

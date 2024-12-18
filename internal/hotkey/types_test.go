@@ -1,3 +1,6 @@
+//go:build windows
+// +build windows
+
 package hotkey
 
 import (
@@ -39,7 +42,6 @@ func TestDefaultConfig(t *testing.T) {
 }
 
 func TestMSGStructure(t *testing.T) {
-	// Test MSG structure size and alignment
 	msg := MSG{}
 
 	// Basic structure tests

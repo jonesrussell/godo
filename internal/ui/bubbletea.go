@@ -96,9 +96,8 @@ func (m *BubbleTeaQuickNote) Init() tea.Cmd {
 }
 
 func (m *BubbleTeaQuickNote) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch msg.Type {
+	if keyMsg, ok := msg.(tea.KeyMsg); ok {
+		switch keyMsg.Type {
 		case tea.KeyCtrlC, tea.KeyEsc:
 			m.input = ""
 			return m, tea.Quit
@@ -109,12 +108,12 @@ func (m *BubbleTeaQuickNote) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, tea.Quit
 		case tea.KeyBackspace:
-			if len(m.input) > 0 {
+			if m.input != "" {
 				m.input = m.input[:len(m.input)-1]
 			}
 		default:
-			if msg.Type == tea.KeyRunes {
-				m.input += string(msg.Runes)
+			if keyMsg.Type == tea.KeyRunes {
+				m.input += string(keyMsg.Runes)
 			}
 		}
 	}

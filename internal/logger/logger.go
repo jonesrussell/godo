@@ -47,7 +47,7 @@ func ensureLogDirectories(paths []string) error {
 			continue
 		}
 		dir := filepath.Dir(path)
-		if err := os.MkdirAll(dir, 0755); err != nil {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
 			return err
 		}
 	}

@@ -18,15 +18,39 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y gcc libayatana-appindicator3-dev libgtk-3-dev
+        sudo apt-get install -y \
+          gcc \
+          libayatana-appindicator3-dev \
+          libgtk-3-dev \
+          libx11-dev \
+          libxcb1-dev \
+          libxkbcommon-dev \
+          libxkbcommon-x11-dev \
+          libx11-xcb-dev \
+          libxcursor-dev \
+          libxrandr-dev \
+          libxinerama-dev \
+          libxi-dev
 
-    - name: Update dependencies
-      run: go get -u fyne.io/fyne/v2/app
+    - name: Install Task
+      uses: arduino/setup-task@v1
+      with:
+        version: 3.x
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Clean and rebuild
+    - name: Install project dependencies
+      run: task install
+
+    - name: Run tests and linting
       run: |
-        go clean -modcache
-        CGO_ENABLED=1 go build -v ./...
+        task lint
+        task test-coverage-threshold
 
-    - name: Run tests
-      run: go test -v ./...
+    - name: Build all platforms
+      run: task build-all
+
+    - name: Cross-platform build check
+      run: |
+        GOOS=darwin go build ./...
+        GOOS=linux go build ./...
+        GOOS=windows go build ./...

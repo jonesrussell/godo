@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/hotkey"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/service"
@@ -14,26 +15,29 @@ import (
 
 // App represents the main application
 type App struct {
+	config        *config.Config
 	todoService   *service.TodoService
 	hotkeyManager hotkey.HotkeyManager
 	program       *tea.Program
-	ui            *ui.TodoUI
+	todoUI        *ui.TodoUI
 	quickNote     ui.QuickNoteUI
 }
 
-// NewApp creates a new application instance
+// NewApp creates a new App instance with all dependencies
 func NewApp(
+	cfg *config.Config,
 	todoService *service.TodoService,
 	hotkeyManager hotkey.HotkeyManager,
 	program *tea.Program,
-	ui *ui.TodoUI,
+	todoUI *ui.TodoUI,
 	quickNote ui.QuickNoteUI,
 ) *App {
 	return &App{
+		config:        cfg,
 		todoService:   todoService,
 		hotkeyManager: hotkeyManager,
 		program:       program,
-		ui:            ui,
+		todoUI:        todoUI,
 		quickNote:     quickNote,
 	}
 }
@@ -76,9 +80,9 @@ func (a *App) Run(ctx context.Context) error {
 				return
 			case <-hotkeyEvents:
 				logger.Info("Hotkey triggered - showing quick note")
-				// Handle quick note through platform-specific UI
-				// This will be implemented separately
-				a.handleQuickNote(ctx)
+				if err := a.handleQuickNote(ctx); err != nil {
+					logger.Error("Failed to handle quick note", "error", err)
+				}
 			}
 		}
 	}()
@@ -101,6 +105,13 @@ func (a *App) handleQuickNote(ctx context.Context) error {
 func (a *App) initializeServices(ctx context.Context) error {
 	logger.Info("Initializing services...")
 
+	// Register global hotkey
+	if err := a.hotkeyManager.RegisterHotkey(a.config.Hotkeys.QuickNote); err != nil {
+		logger.Error("Failed to register hotkey", "error", err)
+		return fmt.Errorf("failed to register hotkey: %w", err)
+	}
+	logger.Info("Hotkey registered successfully", "hotkey", a.config.Hotkeys.QuickNote)
+
 	// Verify database connection
 	testTodo, err := a.todoService.CreateTodo(ctx, "test", "Testing service initialization")
 	if err != nil {
@@ -118,6 +129,7 @@ func (a *App) initializeServices(ctx context.Context) error {
 	return nil
 }
 
+// Cleanup performs any necessary cleanup before shutdown
 func (a *App) Cleanup() error {
 	logger.Info("Cleaning up application resources")
 	// Add any cleanup logic here

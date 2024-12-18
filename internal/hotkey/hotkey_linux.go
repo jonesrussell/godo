@@ -1,26 +1,58 @@
+//go:build linux
+// +build linux
+
 package hotkey
 
 import (
 	"context"
 
-	"github.com/robotn/gohook"
+	hook "github.com/robotn/gohook"
 )
 
-func (h *HotkeyManager) Start(ctx context.Context) error {
-	keyCombo := []string{"ctrl", "alt", "g"}
+type linuxHotkeyManager struct {
+	eventChan chan struct{}
+	stop      chan struct{}
+}
 
+func init() {
+	newPlatformHotkeyManager = func() (HotkeyManager, error) {
+		return &linuxHotkeyManager{
+			eventChan: make(chan struct{}),
+			stop:      make(chan struct{}),
+		}, nil
+	}
+}
+
+func (h *linuxHotkeyManager) Start(ctx context.Context) error {
 	go func() {
-		gohook.Register(gohook.KeyDown, keyCombo, func(e gohook.Event) {
+		evChan := hook.Start()
+		defer hook.End()
+
+		for {
 			select {
-			case h.eventChan <- struct{}{}:
-			default:
-				// Channel is full, skip this event
+			case <-h.stop:
+				return
+			case ev := <-evChan:
+				if ev.Kind == hook.KeyHold {
+					h.eventChan <- struct{}{}
+				}
 			}
-		})
-		s := gohook.Start()
-		<-ctx.Done()
-		gohook.End()
-		<-s
+		}
 	}()
+	return nil
+}
+
+func (h *linuxHotkeyManager) Stop() error {
+	close(h.stop)
+	return nil
+}
+
+func (h *linuxHotkeyManager) GetEventChannel() <-chan struct{} {
+	return h.eventChan
+}
+
+func (h *linuxHotkeyManager) RegisterHotkey(binding HotkeyBinding) error {
+	// gohook handles the registration automatically
+	// You might want to store the binding for reference
 	return nil
 }

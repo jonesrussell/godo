@@ -42,6 +42,12 @@ The quick-note feature uses a minimal graphical window that appears when you pre
     4. Verify installation by running `gcc --version` in Command Prompt
 - Being cool 😎
 
+## Development Notes
+
+- This project uses CGO dependencies (specifically `github.com/robotn/gohook`)
+- Do not use `go mod vendor` as it may break CGO dependencies
+- Always use `go mod tidy` to manage dependencies
+
 ## Installation
 
 1. Clone the repository

@@ -24,13 +24,13 @@ type TodoUI struct {
 	err     error
 }
 
-func New(service service.TodoServicer) *TodoUI {
+func New(svc service.TodoServicer) *TodoUI {
 	input := textinput.New()
 	input.Placeholder = "Enter todo title..."
 	input.Focus()
 
 	return &TodoUI{
-		service: service,
+		service: svc,
 		input:   input,
 		adding:  false,
 	}

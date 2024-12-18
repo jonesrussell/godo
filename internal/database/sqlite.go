@@ -32,7 +32,7 @@ type Config struct {
 func ensureDataDir(dbPath string) error {
 	dir := filepath.Dir(dbPath)
 	if dir != "." {
-		if err := os.MkdirAll(dir, 0755); err != nil {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
 			return fmt.Errorf("failed to create database directory: %w", err)
 		}
 	}
@@ -105,13 +105,17 @@ func initSchema(db *sql.DB) error {
 	logger.Debug("Current schema version: %d, Target version: %d", version, SchemaVersion)
 
 	if version < SchemaVersion {
-		// Begin transaction for schema updates
 		tx, err := db.Begin()
 		if err != nil {
 			logger.Error("Failed to begin transaction: %v", err)
 			return fmt.Errorf("failed to begin transaction: %w", err)
 		}
-		defer tx.Rollback()
+
+		defer func() {
+			if err := tx.Rollback(); err != nil && err != sql.ErrTxDone {
+				logger.Error("Failed to rollback transaction: %v", err)
+			}
+		}()
 
 		// Apply schema changes
 		if _, err := tx.Exec(Schema); err != nil {

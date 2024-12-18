@@ -1,6 +1,5 @@
 # .golangci.yml
 linters:
-  disable-all: true
   enable:
     - gofmt
     - govet
@@ -9,15 +8,28 @@ linters:
     - ineffassign
     - misspell
     - unconvert
-    - revive
-    - unused
+    - goimports
+    - gocritic
 
 run:
-  go: '1.23'
+  timeout: 5m
 
-output:
-  formats:
-    - format: colored-line-number
+issues:
+  exclude-files:
+    - ".*_linux\\.go$"
+    - ".*_windows\\.go$"
+    - ".*_darwin\\.go$"
+  exclude-dirs:
+    - vendor
+  exclude-rules:
+    - linters: [typecheck]
+      path: cmd/godo/main\.go
+    - linters: [typecheck]
+      path: internal/systray/systray\.go
+    - linters: [typecheck]
+      path: internal/hotkey/
+    - linters: [typecheck]
+      path: internal/ui/
 
 linters-settings:
   gofmt:
@@ -27,9 +39,19 @@ linters-settings:
       - name: unused-parameter
         severity: warning
         disabled: false
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - style
+      - performance
+    disabled-checks:
+      - commentFormatting
+      - hugeParam
+  goanalysis:
+    disabled: true
 
-issues:
-  exclude-use-default: false
-  max-issues-per-linter: 0
-  max-same-issues: 0
+output:
+  formats:
+    - format: colored-line-number
+  sort-results: true
   

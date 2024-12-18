@@ -11,10 +11,15 @@ import (
 	"github.com/jonesrussell/godo/internal/app"
 	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/logger"
+	internalsystray "github.com/jonesrussell/godo/internal/systray"
 	"github.com/jonesrussell/godo/internal/ui"
 )
 
 func main() {
+	// Create context that can be cancelled
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	// Load configuration
 	env := os.Getenv("GODO_ENV")
 	if env == "" {
@@ -23,40 +28,58 @@ func main() {
 
 	cfg, err := config.Load(env)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to load configuration: %v\n", err)
-		os.Exit(1)
+		logger.Error("Failed to load configuration: %v", err)
+		return
 	}
 
 	// Initialize logger with config
 	if err := logger.InitializeWithConfig(cfg.Logging); err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to initialize logger: %v\n", err)
-		os.Exit(1)
+		return
 	}
 
 	// Create application instance with config
 	application, err := app.InitializeAppWithConfig(cfg)
 	if err != nil {
-		logger.Fatal("Failed to initialize application: %v", err)
+		logger.Error("Failed to initialize application: %v", err)
+		return
 	}
+
+	// Run the application
+	if err := application.Run(ctx); err != nil {
+		logger.Error("Application error: %v", err)
+		return
+	}
+
+	// Initialize QuickNoteUI
+	quickNote, err := ui.NewQuickNoteUI()
+	if err != nil {
+		logger.Error("Failed to create quick note UI: %v", err)
+		return
+	}
+
+	// Set up systray
+	tray, err := internalsystray.SetupSystray()
+	if err != nil {
+		logger.Error("Failed to setup systray: %v", err)
+		return
+	}
+
+	// Add menu items
+	mQuickNote := tray.AddMenuItem("Quick Note", "Add a quick note")
+	mQuit := tray.AddMenuItem("Quit", "Quit the application")
+
+	// Handle menu items
+	go handleMenuItems(ctx, quickNote, mQuickNote, mQuit, tray, application)
 
 	// Set up signal handling
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
-	// Create context that can be cancelled
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	// Start systray
-	go systray.Run(func() {
-		onSystrayReady(ctx, application)
-	}, onSystrayExit)
-
 	// Wait for signal
 	select {
 	case sig := <-sigChan:
 		logger.Info("Received signal: %v", sig)
-		cancel()
 	case <-ctx.Done():
 		logger.Info("Context cancelled")
 	}
@@ -67,55 +90,27 @@ func main() {
 	}
 }
 
-func onSystrayReady(ctx context.Context, application *app.App) {
-	// Initialize QuickNoteUI
-	quickNote, err := ui.NewQuickNoteUI()
-	if err != nil {
-		logger.Error("Failed to create quick note UI: %v", err)
-		return
-	}
-
-	// Set up systray
-	if err := ui.SetupSystray(); err != nil {
-		logger.Error("Failed to setup systray: %v", err)
-		// Continue running even if systray setup fails
-	}
-
-	mQuickNote := systray.AddMenuItem("Quick Note", "Add a quick note")
-	mQuit := systray.AddMenuItem("Quit", "Quit the application")
-
-	// Handle menu items
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case <-mQuickNote.ClickedCh:
-				if err := quickNote.Show(ctx); err != nil {
-					logger.Error("Failed to show quick note: %v", err)
-				}
-			case <-mQuit.ClickedCh:
-				systray.Quit()
-				return
-			case note := <-quickNote.GetInput():
-				if note != "" {
-					_, err := application.GetTodoService().CreateTodo(ctx, "Quick Note", note)
-					if err != nil {
-						logger.Error("Failed to create todo: %v", err)
-					}
+func handleMenuItems(ctx context.Context, quickNote ui.QuickNoteUI, mQuickNote, mQuit *systray.MenuItem, tray internalsystray.Manager, application *app.App) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-mQuickNote.ClickedCh:
+			if err := quickNote.Show(ctx); err != nil {
+				logger.Error("Failed to show quick note: %v", err)
+			}
+		case <-mQuit.ClickedCh:
+			tray.Quit()
+			return
+		case note := <-quickNote.GetInput():
+			if note != "" {
+				_, err := application.GetTodoService().CreateTodo(ctx, "Quick Note", note)
+				if err != nil {
+					logger.Error("Failed to create todo: %v", err)
 				}
 			}
 		}
-	}()
-
-	// Start the application
-	if err := application.Run(ctx); err != nil {
-		logger.Error("Application error: %v", err)
 	}
-}
-
-func onSystrayExit() {
-	logger.Info("Systray exiting")
 }
 
 func cleanup(application *app.App) error {

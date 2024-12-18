@@ -2,187 +2,114 @@ package ui
 
 import (
 	"context"
-	"fmt"
-	"strings"
 
-	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/widget"
 	"github.com/jonesrussell/godo/internal/logger"
-	"github.com/jonesrussell/godo/internal/model"
 	"github.com/jonesrussell/godo/internal/service"
 )
 
-// ShowMsg is sent when the global hotkey is pressed
-type ShowMsg struct{}
-
 type TodoUI struct {
-	todos   []model.Todo
-	service service.TodoServicer
-	cursor  int
-	input   textinput.Model
-	adding  bool
-	err     error
+	todoService service.TodoService
+	window      fyne.Window
 }
 
-func New(svc service.TodoServicer) *TodoUI {
-	input := textinput.New()
-	input.Placeholder = "Enter todo title..."
-	input.Focus()
-
+func NewTodoUI(todoService service.TodoService, window fyne.Window) *TodoUI {
 	return &TodoUI{
-		service: svc,
-		input:   input,
-		adding:  false,
+		todoService: todoService,
+		window:      window,
 	}
 }
 
-func (ui *TodoUI) Init() tea.Cmd {
-	logger.Debug("Initializing TodoUI")
-	return ui.loadTodos
-}
+func (ui *TodoUI) Run() error {
+	var taskList *widget.List
 
-type todosMsg struct {
-	todos []model.Todo
-	err   error
-}
+	// Create main layout
+	taskList = widget.NewList(
+		// Length function returns the total number of items
+		func() int {
+			todos, err := ui.todoService.ListTodos(context.Background())
+			if err != nil {
+				logger.Error("Failed to get todos", "error", err)
+				return 0
+			}
+			return len(todos)
+		},
+		// CreateItem function returns a new template item
+		func() fyne.CanvasObject {
+			return container.NewHBox(
+				widget.NewCheck("", nil),
+				widget.NewLabel(""),
+				widget.NewButton("Delete", nil),
+			)
+		},
+		// UpdateItem function updates an item with real data
+		func(id widget.ListItemID, item fyne.CanvasObject) {
+			todos, err := ui.todoService.ListTodos(context.Background())
+			if err != nil {
+				logger.Error("Failed to get todos", "error", err)
+				return
+			}
+			if id >= len(todos) {
+				return
+			}
 
-func (ui *TodoUI) loadTodos() tea.Msg {
-	logger.Debug("Loading todos from service")
-	todos, err := ui.service.ListTodos(context.Background())
-	return todosMsg{todos: todos, err: err}
-}
+			todo := todos[id]
+			box := item.(*fyne.Container)
 
-func (ui *TodoUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case todosMsg:
-		if msg.err != nil {
-			ui.err = msg.err
-			return ui, nil
-		}
-		ui.todos = msg.todos
-		return ui, nil
-	case ShowMsg:
-		return ui, ui.loadTodos
-	case tea.KeyMsg:
-		if ui.adding {
-			var cmd tea.Cmd
-			ui.input, cmd = ui.input.Update(msg)
-
-			if msg.String() == "enter" {
-				title := ui.input.Value()
-				if title != "" {
-					_, err := ui.service.CreateTodo(context.Background(), title, "")
-					if err != nil {
-						ui.err = err
-						ui.adding = false
-						ui.input.Reset()
-						return ui, nil
-					}
+			// Update checkbox
+			check := box.Objects[0].(*widget.Check)
+			check.Checked = todo.Completed
+			check.OnChanged = func(checked bool) {
+				if err := ui.todoService.ToggleTodoStatus(context.Background(), todo.ID); err != nil {
+					logger.Error("Failed to toggle todo status",
+						"id", todo.ID,
+						"error", err)
 				}
-				ui.adding = false
-				ui.input.Reset()
-				return ui, ui.loadTodos
+				taskList.Refresh()
 			}
-			return ui, cmd
-		}
 
-		switch msg.String() {
-		case "q":
-			return ui, tea.Quit
-		case "a":
-			ui.adding = true
-			ui.input.Focus()
-			return ui, nil
-		case "d":
-			if todoID, err := ui.getSelectedTodoID(); err == nil {
-				if err := ui.service.DeleteTodo(context.Background(), todoID); err != nil {
-					ui.err = err
-					return ui, nil
+			// Update label
+			label := box.Objects[1].(*widget.Label)
+			label.SetText(todo.Title)
+
+			// Update delete button
+			deleteBtn := box.Objects[2].(*widget.Button)
+			deleteBtn.OnTapped = func() {
+				if err := ui.todoService.DeleteTodo(context.Background(), todo.ID); err != nil {
+					logger.Error("Failed to delete todo",
+						"id", todo.ID,
+						"error", err)
 				}
-				return ui, ui.loadTodos
+				taskList.Refresh()
 			}
-		case " ":
-			if todoID, err := ui.getSelectedTodoID(); err == nil {
-				if err := ui.service.ToggleTodoStatus(context.Background(), todoID); err != nil {
-					ui.err = err
-					return ui, nil
-				}
-				return ui, ui.loadTodos
-			}
-		case "up", "k":
-			if ui.cursor > 0 {
-				ui.cursor--
-			}
-		case "down", "j":
-			if ui.cursor < len(ui.todos)-1 {
-				ui.cursor++
-			}
+		},
+	)
+
+	input := widget.NewEntry()
+	input.SetPlaceHolder("Add new task...")
+	input.OnSubmitted = func(text string) {
+		if text == "" {
+			return
 		}
-	}
 
-	return ui, nil
-}
-
-func (ui *TodoUI) View() string {
-	var s strings.Builder
-
-	if ui.adding {
-		s.WriteString("\n  Add new todo:\n")
-		s.WriteString(ui.input.View())
-		s.WriteString("\n  (press enter to save)\n")
-		return s.String()
-	}
-
-	// Show todos
-	s.WriteString("\n  Todos:\n\n")
-
-	if len(ui.todos) == 0 {
-		s.WriteString("  No items\n")
-	} else {
-		for i, todo := range ui.todos {
-			s.WriteString(ui.renderTodoItem(i, todo))
+		_, err := ui.todoService.CreateTodo(context.Background(), text, "")
+		if err != nil {
+			logger.Error("Failed to create todo",
+				"title", text,
+				"error", err)
+			return
 		}
+
+		input.SetText("")
+		taskList.Refresh()
 	}
 
-	s.WriteString("\n")
+	content := container.NewBorder(input, nil, nil, nil, taskList)
+	ui.window.SetContent(content)
+	ui.window.Resize(fyne.NewSize(300, 500))
+	ui.window.ShowAndRun()
 
-	// Help text
-	if !ui.adding {
-		s.WriteString("  a: add • d: delete • space: toggle • q: quit\n")
-	}
-
-	return s.String()
-}
-
-func (ui *TodoUI) renderTodoItem(i int, todo model.Todo) string {
-	cursor := " "
-	if ui.cursor == i {
-		cursor = ">"
-	}
-	checkbox := "☐"
-	if todo.Completed {
-		checkbox = "☑"
-	}
-
-	text := todo.Title
-	if todo.Description != "" {
-		text = fmt.Sprintf("%s: %s", todo.Title, todo.Description)
-	}
-
-	return fmt.Sprintf("  %s %s %s\n", cursor, checkbox, text)
-}
-
-func (ui *TodoUI) getSelectedTodoID() (int64, error) {
-	if len(ui.todos) == 0 || ui.cursor >= len(ui.todos) {
-		return 0, service.ErrNotFound
-	}
-	return ui.todos[ui.cursor].ID, nil
-}
-
-func (ui *TodoUI) Reset() {
-	ui.todos = nil
-	ui.cursor = 0
-	ui.adding = false
-	ui.err = nil
-	ui.input.Reset()
+	return nil
 }

@@ -1,19 +1,19 @@
 package config
 
 import (
-	"fmt"
 	"os"
 
-	"github.com/jonesrussell/godo/internal/types"
+	"github.com/jonesrussell/godo/internal/common"
+	"github.com/jonesrussell/godo/internal/logger"
 	yaml "gopkg.in/yaml.v3"
 )
 
 type Config struct {
-	App      AppConfig       `yaml:"app"`
-	Database DatabaseConfig  `yaml:"database"`
-	Hotkeys  HotkeyConfig    `yaml:"hotkeys"`
-	Logging  types.LogConfig `yaml:"logging"`
-	UI       UIConfig        `yaml:"ui"`
+	App      AppConfig        `yaml:"app"`
+	Database DatabaseConfig   `yaml:"database"`
+	Hotkeys  HotkeyConfig     `yaml:"hotkeys"`
+	Logging  common.LogConfig `yaml:"logging"`
+	UI       UIConfig         `yaml:"ui"`
 }
 
 type AppConfig struct {
@@ -28,8 +28,8 @@ type DatabaseConfig struct {
 }
 
 type HotkeyConfig struct {
-	QuickNote *types.HotkeyBinding `yaml:"quick_note"`
-	OpenApp   *types.HotkeyBinding `yaml:"open_app"`
+	QuickNote *common.HotkeyBinding `yaml:"quick_note"`
+	OpenApp   *common.HotkeyBinding `yaml:"open_app"`
 }
 
 type UIConfig struct {
@@ -48,20 +48,25 @@ func Load(env string) (*Config, error) {
 
 	// Load default config
 	if err := loadConfigFile(config, "configs/default.yaml"); err != nil {
-		return nil, fmt.Errorf("loading default config: %w", err)
+		logger.Error("Failed loading default config", "error", err)
+		return nil, err
 	}
 
 	// Load environment-specific config if it exists
-	envConfig := fmt.Sprintf("configs/%s.yaml", env)
+	envConfig := "configs/" + env + ".yaml"
 	if _, err := os.Stat(envConfig); err == nil {
 		if err := loadConfigFile(config, envConfig); err != nil {
-			return nil, fmt.Errorf("loading %s config: %w", env, err)
+			logger.Error("Failed loading environment config",
+				"env", env,
+				"error", err)
+			return nil, err
 		}
 	}
 
 	// Override with environment variables
 	if err := loadEnvOverrides(config); err != nil {
-		return nil, fmt.Errorf("loading environment overrides: %w", err)
+		logger.Error("Failed loading environment overrides", "error", err)
+		return nil, err
 	}
 
 	return config, nil

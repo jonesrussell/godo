@@ -2,49 +2,34 @@ package quicknote
 
 import (
 	"context"
-
-	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/widget"
 )
 
+// UI defines the interface for quick note functionality
 type UI interface {
-	Show(ctx context.Context) error
+	Show(context.Context) error
 	GetInput() <-chan string
+	Close()
 }
 
-type fyneQuickNote struct {
-	window fyne.Window
-	input  chan string
+type QuickNote struct {
+	input chan string
 }
 
 func New() (UI, error) {
-	input := make(chan string)
-	return &fyneQuickNote{
-		input: input,
+	return &QuickNote{
+		input: make(chan string, 1),
 	}, nil
 }
 
-func (f *fyneQuickNote) Show(ctx context.Context) error {
-	entry := widget.NewEntry()
-	entry.OnSubmitted = func(text string) {
-		f.input <- text
-		f.window.Close()
-	}
-
-	content := container.NewVBox(
-		widget.NewLabel("Quick Note:"),
-		entry,
-	)
-
-	f.window.SetContent(content)
-	f.window.Resize(fyne.NewSize(300, 100))
-	f.window.CenterOnScreen()
-	f.window.Show()
-
+func (qn *QuickNote) Show(ctx context.Context) error {
+	// Implementation will be added later with Fyne
 	return nil
 }
 
-func (f *fyneQuickNote) GetInput() <-chan string {
-	return f.input
+func (qn *QuickNote) GetInput() <-chan string {
+	return qn.input
+}
+
+func (qn *QuickNote) Close() {
+	close(qn.input)
 }

@@ -4,10 +4,13 @@ import (
 	"context"
 	"errors"
 
+	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/model"
 )
 
 var ErrNotFound = errors.New("todo not found")
+var ErrInvalidTodo = errors.New("invalid todo")
+var ErrEmptyTitle = errors.New("todo title is empty")
 
 // TodoRepository defines the interface for todo storage operations
 type TodoRepository interface {
@@ -55,4 +58,19 @@ func (r *Repository) Update(_ context.Context, todo *model.Todo) error {
 
 func (r *Repository) Delete(_ context.Context, id int64) error {
 	return r.db.Delete(id)
+}
+
+// ValidateTodo checks if a todo is valid
+func ValidateTodo(todo *model.Todo) error {
+	if todo == nil {
+		logger.Error("Todo is nil")
+		return ErrInvalidTodo
+	}
+
+	if todo.Title == "" {
+		logger.Error("Todo title is empty")
+		return ErrEmptyTitle
+	}
+
+	return nil
 }

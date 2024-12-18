@@ -58,15 +58,17 @@ linters-settings:
         # List of allowed packages
         allow:
           - $gostd # Allows all Go standard library packages
-          - github.com/charmbracelet/bubbletea
           - github.com/mattn/go-sqlite3
           - go.uber.org/zap
           - github.com/google/wire
           - github.com/spf13/cobra
           - github.com/spf13/viper
-          # GUI package
           - fyne.io/fyne/v2
-        # Packages that are not allowed
+          - gopkg.in/yaml.v3
+          - github.com/stretchr/testify
+          # Internal packages
+          - github.com/jonesrussell/godo/internal
+          - github.com/jonesrussell/godo/pkg
         deny:
           - pkg: "github.com/sirupsen/logrus"
             desc: "use go.uber.org/zap for logging instead"
@@ -75,14 +77,28 @@ linters-settings:
           - pkg: "github.com/jinzhu/gorm"
             desc: "use raw SQL with database/sql instead"
           - pkg: "fmt"
-            desc: "use go.uber.org/zap for logging instead"
-          # Deny other GUI toolkits to ensure consistency
+            desc: "use github.com/jonesrussell/godo/internal/logger instead"
           - pkg: "github.com/gotk3/gotk3"
             desc: "use fyne.io/fyne/v2 for GUI instead"
           - pkg: "github.com/lxn/win"
             desc: "use fyne.io/fyne/v2 for GUI instead"
           - pkg: "github.com/progrium/macdriver"
             desc: "use fyne.io/fyne/v2 for GUI instead"
+          - pkg: "github.com/charmbracelet/bubbletea"
+            desc: "use fyne.io/fyne/v2 for GUI instead"
+          - pkg: "github.com/charmbracelet/bubbles"
+            desc: "use fyne.io/fyne/v2 for GUI instead"
+      logger:
+        path: "github.com/jonesrussell/godo/internal/logger"
+        allow:
+          - $gostd
+          - go.uber.org/zap
+          - github.com/jonesrussell/godo/internal/common
+        deny:
+          - pkg: "github.com/sirupsen/logrus"
+            desc: "use go.uber.org/zap for logging instead"
+          - pkg: "log"
+            desc: "use go.uber.org/zap for logging instead"
         ignore-files:
           - ".*_test.go$"
           - "examples/*"

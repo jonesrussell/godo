@@ -14,6 +14,7 @@ import (
 var ConfiguredSet = wire.NewSet(
 	NewApp,
 	DefaultSet,
+	provideLogger,
 	wire.Bind(new(service.TodoServicer), new(*service.TodoService)),
 )
 

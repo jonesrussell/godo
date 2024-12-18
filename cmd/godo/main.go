@@ -12,6 +12,7 @@ import (
 	"fyne.io/fyne/v2/driver/desktop"
 	"github.com/jonesrussell/godo/internal/app"
 	"github.com/jonesrussell/godo/internal/assets"
+	"github.com/jonesrussell/godo/internal/common"
 	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/quicknote"
@@ -23,13 +24,13 @@ func main() {
 
 	cfg, err := initializeConfig()
 	if err != nil {
-		logger.Error("Failed to initialize config: %v", err)
+		logger.Error("Failed to initialize config", "error", err)
 		return
 	}
 
 	application, err := initializeApp(cfg)
 	if err != nil {
-		logger.Error("Failed to initialize app: %v", err)
+		logger.Error("Failed to initialize app", "error", err)
 		return
 	}
 	defer cleanup(application)
@@ -37,7 +38,7 @@ func main() {
 	// Load application icon
 	iconBytes, err := assets.GetIcon()
 	if err != nil {
-		logger.Error("Failed to load application icon: %v", err)
+		logger.Error("Failed to load application icon", "error", err)
 	}
 
 	fyneApp := fyneapp.New()
@@ -82,7 +83,7 @@ func runApplication(ctx context.Context, cancel context.CancelFunc, application 
 	// Run the application
 	go func() {
 		if err := application.Run(ctx); err != nil {
-			logger.Error("Application error: %v", err)
+			logger.Error("Application error", "error", err)
 			errChan <- fmt.Errorf("application error: %w", err)
 			cancel()
 		}
@@ -103,7 +104,15 @@ func initializeConfig() (*config.Config, error) {
 		return nil, fmt.Errorf("failed to load config: %w", err)
 	}
 
-	if err := logger.InitializeWithConfig(cfg.Logging); err != nil {
+	// Convert config.LogConfig to common.LogConfig
+	logConfig := common.LogConfig{
+		Level:       cfg.Logging.Level,
+		Output:      cfg.Logging.Output,
+		ErrorOutput: cfg.Logging.ErrorOutput,
+	}
+
+	// Handle both return values from InitializeWithConfig
+	if _, err := logger.InitializeWithConfig(logConfig); err != nil {
 		return nil, fmt.Errorf("failed to initialize logger: %w", err)
 	}
 
@@ -136,12 +145,12 @@ func handleSignals(ctx context.Context, cancel context.CancelFunc, errChan <-cha
 				// TODO: Implement config reload logic
 				continue
 			default:
-				logger.Info("Initiating shutdown, received signal: %v", sig)
+				logger.Info("Initiating shutdown, received signal", "signal", sig)
 				cancel()
 				return
 			}
 		case err := <-errChan:
-			logger.Error("Initiating shutdown due to error: %v", err)
+			logger.Error("Initiating shutdown due to error", "error", err)
 			cancel()
 			return
 		case <-ctx.Done():
@@ -154,7 +163,7 @@ func handleSignals(ctx context.Context, cancel context.CancelFunc, errChan <-cha
 func cleanup(application *app.App) {
 	logger.Info("Cleaning up application...")
 	if err := application.Cleanup(); err != nil {
-		logger.Error("Failed to cleanup: %v", err)
+		logger.Error("Failed to cleanup", "error", err)
 	}
 }
 
@@ -163,14 +172,14 @@ func showQuickNote(ctx context.Context, application *app.App) {
 
 	quickNote, err := quicknote.New()
 	if err != nil {
-		logger.Error("Failed to create quick note UI: %v", err)
+		logger.Error("Failed to create quick note UI", "error", err)
 		return
 	}
 
 	inputChan := quickNote.GetInput()
 
 	if err := quickNote.Show(ctx); err != nil {
-		logger.Error("Failed to show quick note: %v", err)
+		logger.Error("Failed to show quick note", "error", err)
 		return
 	}
 
@@ -178,9 +187,11 @@ func showQuickNote(ctx context.Context, application *app.App) {
 		select {
 		case input := <-inputChan:
 			logger.Debug("Received quick note input, creating todo")
-			_, err := application.GetTodoService().CreateTodo(ctx, input, "")
+			// Get a pointer to TodoService before calling CreateTodo
+			todoService := application.GetTodoService()
+			_, err := todoService.CreateTodo(ctx, input, "")
 			if err != nil {
-				logger.Error("Failed to create todo from quick note: %v", err)
+				logger.Error("Failed to create todo from quick note", "error", err)
 			} else {
 				logger.Debug("Successfully created todo from quick note")
 			}

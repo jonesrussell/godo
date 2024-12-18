@@ -1,61 +1,60 @@
 package repository
 
 import (
+	"context"
 	"database/sql"
-	"time"
 
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/model"
 )
 
-type SQLiteDB struct {
+type SQLiteTodoRepository struct {
 	db *sql.DB
 }
 
 func NewSQLiteTodoRepository(db *sql.DB) TodoRepository {
-	return NewTodoRepository(&SQLiteDB{db: db})
+	return &SQLiteTodoRepository{db: db}
 }
 
-func (r *SQLiteDB) Create(todo *model.Todo) error {
-	logger.Debug("Creating todo: %+v", todo)
-	query := `
-        INSERT INTO todos (title, description, completed, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?)
-    `
-	now := time.Now()
-	result, err := r.db.Exec(query,
+func (r *SQLiteTodoRepository) Create(ctx context.Context, todo *model.Todo) error {
+	logger.Debug("Creating todo in repository",
+		"title", todo.Title,
+		"description", todo.Description)
+
+	query := `INSERT INTO todos (title, description, completed, created_at, updated_at) 
+			  VALUES (?, ?, ?, ?, ?)`
+
+	result, err := r.db.ExecContext(ctx, query,
 		todo.Title,
 		todo.Description,
 		todo.Completed,
-		now,
-		now,
+		todo.CreatedAt,
+		todo.UpdatedAt,
 	)
 	if err != nil {
-		logger.Error("Failed to create todo: %v", err)
+		logger.Error("Failed to create todo",
+			"title", todo.Title,
+			"error", err)
 		return err
 	}
 
 	id, err := result.LastInsertId()
 	if err != nil {
-		logger.Error("Failed to get last insert ID: %v", err)
+		logger.Error("Failed to get last insert ID", "error", err)
 		return err
 	}
 
 	todo.ID = id
-	todo.CreatedAt = now
-	todo.UpdatedAt = now
-	logger.Debug("Successfully created todo with ID: %d", id)
+	logger.Debug("Successfully created todo", "id", id)
 	return nil
 }
 
-func (r *SQLiteDB) GetByID(id int64) (*model.Todo, error) {
-	query := `
-        SELECT id, title, description, completed, created_at, updated_at
-        FROM todos
-        WHERE id = ?
-    `
+func (r *SQLiteTodoRepository) GetByID(ctx context.Context, id int64) (*model.Todo, error) {
+	query := `SELECT id, title, description, completed, created_at, updated_at
+			  FROM todos WHERE id = ?`
+
 	todo := &model.Todo{}
-	err := r.db.QueryRow(query, id).Scan(
+	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&todo.ID,
 		&todo.Title,
 		&todo.Description,
@@ -72,16 +71,12 @@ func (r *SQLiteDB) GetByID(id int64) (*model.Todo, error) {
 	return todo, nil
 }
 
-func (r *SQLiteDB) List() ([]model.Todo, error) {
-	logger.Debug("Listing todos")
-	query := `
-        SELECT id, title, description, completed, created_at, updated_at
-        FROM todos
-        ORDER BY created_at DESC
-    `
-	rows, err := r.db.Query(query)
+func (r *SQLiteTodoRepository) List(ctx context.Context) ([]model.Todo, error) {
+	query := `SELECT id, title, description, completed, created_at, updated_at
+			  FROM todos ORDER BY created_at DESC`
+
+	rows, err := r.db.QueryContext(ctx, query)
 	if err != nil {
-		logger.Error("Failed to query todos: %v", err)
 		return nil, err
 	}
 	defer rows.Close()
@@ -98,57 +93,50 @@ func (r *SQLiteDB) List() ([]model.Todo, error) {
 			&todo.UpdatedAt,
 		)
 		if err != nil {
-			logger.Error("Failed to scan todo: %v", err)
 			return nil, err
 		}
 		todos = append(todos, todo)
 	}
-	logger.Debug("Found %d todos", len(todos))
 	return todos, rows.Err()
 }
 
-func (r *SQLiteDB) Update(todo *model.Todo) error {
-	query := `
-        UPDATE todos
-        SET title = ?, description = ?, completed = ?, updated_at = ?
-        WHERE id = ?
-    `
-	now := time.Now()
-	result, err := r.db.Exec(query,
+func (r *SQLiteTodoRepository) Update(ctx context.Context, todo *model.Todo) error {
+	query := `UPDATE todos 
+			  SET title = ?, description = ?, completed = ?, updated_at = ?
+			  WHERE id = ?`
+
+	result, err := r.db.ExecContext(ctx, query,
 		todo.Title,
 		todo.Description,
 		todo.Completed,
-		now,
+		todo.UpdatedAt,
 		todo.ID,
 	)
 	if err != nil {
 		return err
 	}
 
-	rowsAffected, err := result.RowsAffected()
+	rows, err := result.RowsAffected()
 	if err != nil {
 		return err
 	}
-	if rowsAffected == 0 {
+	if rows == 0 {
 		return ErrNotFound
 	}
-
-	todo.UpdatedAt = now
 	return nil
 }
 
-func (r *SQLiteDB) Delete(id int64) error {
-	query := `DELETE FROM todos WHERE id = ?`
-	result, err := r.db.Exec(query, id)
+func (r *SQLiteTodoRepository) Delete(ctx context.Context, id int64) error {
+	result, err := r.db.ExecContext(ctx, "DELETE FROM todos WHERE id = ?", id)
 	if err != nil {
 		return err
 	}
 
-	rowsAffected, err := result.RowsAffected()
+	rows, err := result.RowsAffected()
 	if err != nil {
 		return err
 	}
-	if rowsAffected == 0 {
+	if rows == 0 {
 		return ErrNotFound
 	}
 	return nil

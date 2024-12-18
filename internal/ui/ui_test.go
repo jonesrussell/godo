@@ -146,8 +146,12 @@ func TestTodoUI_Navigation(t *testing.T) {
 
 	// Create some test todos
 	mock := testutil.AsMockTodoService(mockService)
-	mock.CreateTodo(context.Background(), "Test 1", "")
-	mock.CreateTodo(context.Background(), "Test 2", "")
+	if _, err := mock.CreateTodo(context.Background(), "Test 1", ""); err != nil {
+		t.Errorf("Failed to create test todo 1: %v", err)
+	}
+	if _, err := mock.CreateTodo(context.Background(), "Test 2", ""); err != nil {
+		t.Errorf("Failed to create test todo 2: %v", err)
+	}
 
 	// Test navigation keys
 	navTests := []struct {

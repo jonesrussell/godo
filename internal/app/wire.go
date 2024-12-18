@@ -7,32 +7,15 @@ package app
 import (
 	"github.com/google/wire"
 	"github.com/jonesrussell/godo/internal/config"
+	"github.com/jonesrussell/godo/internal/service"
 )
 
-// InitializeApp sets up the dependency injection
-//
-// Deprecated: Use InitializeAppWithConfig instead. This function will be removed in a future version.
-// It uses hardcoded defaults and doesn't support proper configuration management.
-// Migration guide:
-//  1. Load configuration using config.Load()
-//  2. Pass the config to InitializeAppWithConfig()
-//
-// Example:
-//
-//	cfg, err := config.Load("development")
-//	if err != nil {
-//	    // handle error
-//	}
-//	app, err := di.InitializeAppWithConfig(cfg)
-func InitializeApp() (*App, error) {
-	// For backwards compatibility, use default config
-	cfg := &config.Config{
-		Database: config.DatabaseConfig{
-			Path: "./godo.db",
-		},
-	}
-	return InitializeAppWithConfig(cfg)
-}
+// ConfiguredSet is the provider set for the application
+var ConfiguredSet = wire.NewSet(
+	NewApp,
+	DefaultSet,
+	wire.Bind(new(service.TodoServicer), new(*service.TodoService)),
+)
 
 // InitializeAppWithConfig sets up the dependency injection with configuration
 func InitializeAppWithConfig(cfg *config.Config) (*App, error) {

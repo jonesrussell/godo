@@ -16,6 +16,10 @@ import (
 )
 
 func main() {
+	// Create context that can be cancelled
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	// Load configuration
 	env := os.Getenv("GODO_ENV")
 	if env == "" {
@@ -24,38 +28,41 @@ func main() {
 
 	cfg, err := config.Load(env)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to load configuration: %v\n", err)
-		os.Exit(1)
+		logger.Error("Failed to load configuration: %v", err)
+		return
 	}
 
 	// Initialize logger with config
 	if err := logger.InitializeWithConfig(cfg.Logging); err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to initialize logger: %v\n", err)
-		os.Exit(1)
+		return
 	}
 
 	// Create application instance with config
 	application, err := app.InitializeAppWithConfig(cfg)
 	if err != nil {
-		logger.Fatal("Failed to initialize application: %v", err)
+		logger.Error("Failed to initialize application: %v", err)
+		return
 	}
 
-	// Create context that can be cancelled
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	// Run the application
+	if err := application.Run(ctx); err != nil {
+		logger.Error("Application error: %v", err)
+		return
+	}
 
 	// Initialize QuickNoteUI
 	quickNote, err := ui.NewQuickNoteUI()
 	if err != nil {
 		logger.Error("Failed to create quick note UI: %v", err)
-		os.Exit(1)
+		return
 	}
 
 	// Set up systray
 	tray, err := internalsystray.SetupSystray()
 	if err != nil {
 		logger.Error("Failed to setup systray: %v", err)
-		os.Exit(1)
+		return
 	}
 
 	// Add menu items
@@ -73,7 +80,6 @@ func main() {
 	select {
 	case sig := <-sigChan:
 		logger.Info("Received signal: %v", sig)
-		cancel()
 	case <-ctx.Done():
 		logger.Info("Context cancelled")
 	}

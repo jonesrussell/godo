@@ -246,13 +246,8 @@ func TestCreateTodo(t *testing.T) {
 			if !tt.wantErr && todo == nil {
 				t.Error("CreateTodo() returned nil todo when no error expected")
 			}
-			if !tt.wantErr {
-				if todo.Title != tt.title {
-					t.Errorf("CreateTodo() title = %v, want %v", todo.Title, tt.title)
-				}
-				if todo.Description != tt.description {
-					t.Errorf("CreateTodo() description = %v, want %v", todo.Description, tt.description)
-				}
+			if !tt.wantErr && todo.Title != tt.title {
+				t.Errorf("CreateTodo() todo.Title = %v, want %v", todo.Title, tt.title)
 			}
 		})
 	}

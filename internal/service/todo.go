@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/model"
@@ -23,22 +24,23 @@ func NewTodoService(repo repository.TodoRepository) *TodoService {
 }
 
 func (s *TodoService) CreateTodo(ctx context.Context, title, description string) (*model.Todo, error) {
-	logger.Debug("Creating new todo",
-		"title", title,
-		"description", description)
+	if title == "" {
+		return nil, ErrEmptyTitle
+	}
 
-	todo := model.NewTodo(title, description)
+	todo := &model.Todo{
+		Title:       title,
+		Description: description,
+		Completed:   false,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
+	}
 
 	if err := s.repo.Create(ctx, todo); err != nil {
-		logger.Error("Failed to create todo",
-			"title", title,
-			"error", err)
+		logger.Error("failed to create todo", "error", err)
 		return nil, err
 	}
 
-	logger.Info("Successfully created todo",
-		"id", todo.ID,
-		"title", todo.Title)
 	return todo, nil
 }
 

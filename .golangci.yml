@@ -1,4 +1,3 @@
-# .golangci.yml
 linters:
   enable:
     - gofmt
@@ -10,6 +9,16 @@ linters:
     - unconvert
     - goimports
     - gocritic
+    - bodyclose
+    - depguard
+    - errcheck
+    - gochecknoglobals
+    - gocognit
+    - gosec
+    - lll
+    - nakedret
+    - noctx
+    - nolintlint
 
 run:
   timeout: 5m
@@ -31,14 +40,51 @@ linters-settings:
       - diagnostic
       - style
       - performance
+      - experimental
     disabled-checks:
       - commentFormatting
       - hugeParam
+  gosec:
+    severity: "medium"
+  lll:
+    line-length: 120
   goanalysis:
     disabled: true
+  govet:
+    checks: ["fieldalignment"]
+  depguard:
+    rules:
+      main:
+        # List of allowed packages
+        allow:
+          - $gostd # Allows all Go standard library packages
+          - github.com/charmbracelet/bubbletea
+          - github.com/mattn/go-sqlite3
+          - go.uber.org/zap
+          - github.com/google/wire
+          - github.com/spf13/cobra
+          - github.com/spf13/viper
+          # GUI-related packages for different platforms
+          - github.com/gotk3/gotk3
+          - github.com/lxn/win
+          - github.com/progrium/macdriver
+        # Packages that are not allowed
+        deny:
+          - pkg: "github.com/sirupsen/logrus"
+            desc: "use go.uber.org/zap for logging instead"
+          - pkg: "log"
+            desc: "use go.uber.org/zap for logging instead"
+          - pkg: "github.com/jinzhu/gorm"
+            desc: "use raw SQL with database/sql instead"
+          - pkg: "fmt"
+            desc: "use go.uber.org/zap for logging instead"
+        # List of files to ignore
+        ignore-files:
+          - ".*_test.go$"
+          - "examples/*"
+          - "internal/testing/*"
 
 output:
   formats:
     - format: colored-line-number
   sort-results: true
-  

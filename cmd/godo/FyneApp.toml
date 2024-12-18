@@ -7,6 +7,16 @@ Website = "https://github.com/jonesrussell/godo"
   Version = "0.1.0"
   Build = 9
 
+[Source]
+  Repo = "https://github.com/jonesrussell/godo"
+  Dir = "cmd/godo"
+
+[Development]
+  HelperText = "Development build with debug symbols"
+
+[Release]
+  HelperText = "Release build without debug symbols"
+
 [LinuxAndBSD]
   GenericName = "Todo Application"
   Categories = ["Utility", "Office"]

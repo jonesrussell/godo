@@ -64,10 +64,8 @@ linters-settings:
           - github.com/google/wire
           - github.com/spf13/cobra
           - github.com/spf13/viper
-          # GUI-related packages for different platforms
-          - github.com/gotk3/gotk3
-          - github.com/lxn/win
-          - github.com/progrium/macdriver
+          # GUI package
+          - fyne.io/fyne/v2
         # Packages that are not allowed
         deny:
           - pkg: "github.com/sirupsen/logrus"
@@ -78,7 +76,13 @@ linters-settings:
             desc: "use raw SQL with database/sql instead"
           - pkg: "fmt"
             desc: "use go.uber.org/zap for logging instead"
-        # List of files to ignore
+          # Deny other GUI toolkits to ensure consistency
+          - pkg: "github.com/gotk3/gotk3"
+            desc: "use fyne.io/fyne/v2 for GUI instead"
+          - pkg: "github.com/lxn/win"
+            desc: "use fyne.io/fyne/v2 for GUI instead"
+          - pkg: "github.com/progrium/macdriver"
+            desc: "use fyne.io/fyne/v2 for GUI instead"
         ignore-files:
           - ".*_test.go$"
           - "examples/*"

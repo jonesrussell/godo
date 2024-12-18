@@ -9,6 +9,7 @@ import (
 	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/hotkey"
 	"github.com/jonesrussell/godo/internal/logger"
+	"github.com/jonesrussell/godo/internal/quicknote"
 	"github.com/jonesrussell/godo/internal/service"
 	"github.com/jonesrussell/godo/internal/ui"
 )
@@ -20,7 +21,7 @@ type App struct {
 	hotkeyManager hotkey.HotkeyManager
 	program       *tea.Program
 	todoUI        *ui.TodoUI
-	quickNote     ui.QuickNoteUI
+	quickNote     quicknote.UI
 }
 
 // NewApp creates a new App instance with all dependencies
@@ -30,7 +31,7 @@ func NewApp(
 	hotkeyManager hotkey.HotkeyManager,
 	program *tea.Program,
 	todoUI *ui.TodoUI,
-	quickNote ui.QuickNoteUI,
+	quickNote quicknote.UI,
 ) *App {
 	return &App{
 		config:        cfg,

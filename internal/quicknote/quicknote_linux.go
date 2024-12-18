@@ -1,7 +1,7 @@
 //go:build linux
 // +build linux
 
-package ui
+package quicknote
 
 import "context"
 

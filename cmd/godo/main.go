@@ -12,6 +12,7 @@ import (
 	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/hotkey"
 	"github.com/jonesrussell/godo/internal/logger"
+	"github.com/jonesrussell/godo/internal/quicknote"
 	internalsystray "github.com/jonesrussell/godo/internal/systray"
 	"github.com/jonesrussell/godo/internal/ui"
 )
@@ -107,7 +108,7 @@ func main() {
 	}
 }
 
-func handleMenuItems(ctx context.Context, cancel context.CancelFunc, quickNote ui.QuickNoteUI, mOpen, mQuickNote, mQuit *systray.MenuItem, application *app.App) error {
+func handleMenuItems(ctx context.Context, cancel context.CancelFunc, quickNote quicknote.UI, mOpen, mQuickNote, mQuit *systray.MenuItem, application *app.App) error {
 	for {
 		select {
 		case <-ctx.Done():
@@ -135,7 +136,7 @@ func handleMenuItems(ctx context.Context, cancel context.CancelFunc, quickNote u
 	}
 }
 
-func handleHotkeys(ctx context.Context, hotkeyManager hotkey.HotkeyManager, quickNote ui.QuickNoteUI) error {
+func handleHotkeys(ctx context.Context, hotkeyManager hotkey.HotkeyManager, quickNote quicknote.UI) error {
 	eventChan := hotkeyManager.GetEventChannel()
 
 	for {

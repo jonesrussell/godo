@@ -54,43 +54,50 @@ func (h *windowsHotkeyManager) Start(ctx context.Context) error {
 }
 
 func (h *windowsHotkeyManager) handleKeyEvent(ev hook.Event) {
+	// Convert key to proper name
 	keyName := strings.ToLower(hook.RawcodetoKeychar(ev.Rawcode))
-	logger.Debug("Key event received", "key", keyName, "kind", ev.Kind)
+
+	// Map special keys
+	switch keyName {
+	case "؛":
+		keyName = "ctrl"
+	case "$":
+		keyName = "alt"
+	}
+
+	logger.Debug("Key event received",
+		"key", keyName,
+		"kind", ev.Kind,
+		"active_keys", h.active)
 
 	if ev.Kind == hook.KeyDown {
 		h.active[keyName] = true
-		logger.Debug("Active keys", "keys", h.active)
 	} else if ev.Kind == hook.KeyUp {
 		delete(h.active, keyName)
-		logger.Debug("Active keys after release", "keys", h.active)
 	}
 
-	// Check if our hotkey combination is active
+	// Check if hotkey combination is active
 	if h.isHotkeyActive() {
-		logger.Debug("Hotkey combination detected", "binding", h.binding)
+		logger.Info("Hotkey combination detected", "binding", h.binding)
 		h.eventChan <- struct{}{}
-		// Clear the active keys to prevent repeated triggers
+		// Reset active keys
 		h.active = make(map[string]bool)
 	}
 }
 
 func (h *windowsHotkeyManager) isHotkeyActive() bool {
 	if h.binding.Key == "" {
-		logger.Debug("No key binding set")
 		return false
 	}
 
-	// Check if the main key is pressed
-	mainKey := strings.ToLower(h.binding.Key)
-	if !h.active[mainKey] {
+	// Check main key
+	if !h.active[strings.ToLower(h.binding.Key)] {
 		return false
 	}
 
-	// Check if all modifiers are pressed
+	// Check all modifiers
 	for _, mod := range h.binding.Modifiers {
-		modKey := strings.ToLower(mod)
-		if !h.active[modKey] {
-			logger.Debug("Missing modifier", "modifier", modKey)
+		if !h.active[strings.ToLower(mod)] {
 			return false
 		}
 	}

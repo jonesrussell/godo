@@ -1,0 +1,11 @@
+Package: godo
+Version: 1.0.0
+Section: utils
+Priority: optional
+Architecture: amd64
+Depends: libayatana-appindicator3-1, libgtk-3-0
+Maintainer: Russell Jones <jonesrussell42@gmail.com>
+Description: A minimalist todo application with quick-note hotkey support
+ Godo combines a global hotkey for quick note capture with
+ a terminal-based interface for detailed todo management. 
+ 

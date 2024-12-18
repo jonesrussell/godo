@@ -38,15 +38,14 @@ func (a *App) GetTodoService() service.TodoServicer {
 	return a.todoService
 }
 
+// GetQuickNote returns the quick note UI instance
+func (a *App) GetQuickNote() quicknote.UI {
+	return a.quickNote
+}
+
 // Run starts the application
 func (a *App) Run(ctx context.Context) error {
-	// Initialize quick note feature
-	if err := a.quickNote.Show(ctx); err != nil {
-		a.logger.Error("Failed to initialize quick note", zap.Error(err))
-		return err
-	}
-
-	// Run the main UI
+	// Start the UI in the main goroutine
 	return a.ui.Run()
 }
 

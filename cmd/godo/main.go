@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -71,26 +70,34 @@ func main() {
 	}
 
 	// Run the application
-	runApplication(ctx, cancel, application, fyneApp)
+	if err := runApplication(application); err != nil {
+		logger.Error("Application error", "error", err)
+		return
+	}
 }
 
-func runApplication(ctx context.Context, cancel context.CancelFunc, application *app.App, fyneApp fyne.App) {
+func runApplication(application *app.App) error {
+	// Create a context that can be cancelled
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Set up signal handling
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+
+	// Create an error channel
 	errChan := make(chan error, 1)
 
-	// Start signal handling in a separate goroutine
-	go handleSignals(ctx, cancel, errChan)
-
-	// Run the application
+	// Start the quick note feature in a goroutine
 	go func() {
-		if err := application.Run(ctx); err != nil {
-			logger.Error("Application error", "error", err)
-			errChan <- fmt.Errorf("application error: %w", err)
-			cancel()
+		if err := application.GetQuickNote().Show(ctx); err != nil {
+			logger.Error("Quick note error", "error", err)
+			errChan <- err
 		}
 	}()
 
-	// Run the Fyne app in the main thread
-	fyneApp.Run()
+	// Run the main UI in the main goroutine
+	return application.Run(ctx)
 }
 
 func initializeConfig() (*config.Config, error) {
@@ -101,19 +108,17 @@ func initializeConfig() (*config.Config, error) {
 
 	cfg, err := config.Load(env)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load config: %w", err)
+		return nil, err
 	}
 
-	// Convert config.LogConfig to common.LogConfig
 	logConfig := common.LogConfig{
 		Level:       cfg.Logging.Level,
 		Output:      cfg.Logging.Output,
 		ErrorOutput: cfg.Logging.ErrorOutput,
 	}
 
-	// Handle both return values from InitializeWithConfig
 	if _, err := logger.InitializeWithConfig(logConfig); err != nil {
-		return nil, fmt.Errorf("failed to initialize logger: %w", err)
+		return nil, err
 	}
 
 	return cfg, nil
@@ -122,42 +127,9 @@ func initializeConfig() (*config.Config, error) {
 func initializeApp(cfg *config.Config) (*app.App, error) {
 	application, err := app.InitializeAppWithConfig(cfg)
 	if err != nil {
-		return nil, fmt.Errorf("failed to initialize application: %w", err)
+		return nil, err
 	}
 	return application, nil
-}
-
-func handleSignals(ctx context.Context, cancel context.CancelFunc, errChan <-chan error) {
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan,
-		syscall.SIGINT,
-		syscall.SIGTERM,
-		syscall.SIGHUP,
-	)
-	defer signal.Stop(sigChan)
-
-	for {
-		select {
-		case sig := <-sigChan:
-			switch sig {
-			case syscall.SIGHUP:
-				logger.Info("Received SIGHUP, reloading configuration...")
-				// TODO: Implement config reload logic
-				continue
-			default:
-				logger.Info("Initiating shutdown, received signal", "signal", sig)
-				cancel()
-				return
-			}
-		case err := <-errChan:
-			logger.Error("Initiating shutdown due to error", "error", err)
-			cancel()
-			return
-		case <-ctx.Done():
-			logger.Info("Shutdown initiated by context cancellation")
-			return
-		}
-	}
 }
 
 func cleanup(application *app.App) {
@@ -187,7 +159,6 @@ func showQuickNote(ctx context.Context, application *app.App) {
 		select {
 		case input := <-inputChan:
 			logger.Debug("Received quick note input, creating todo")
-			// Get a pointer to TodoService before calling CreateTodo
 			todoService := application.GetTodoService()
 			_, err := todoService.CreateTodo(ctx, input, "")
 			if err != nil {

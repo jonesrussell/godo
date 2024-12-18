@@ -6,7 +6,6 @@ import (
 	"github.com/google/wire"
 	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/database"
-	"github.com/jonesrussell/godo/internal/hotkey"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/quicknote"
 	"github.com/jonesrussell/godo/internal/repository"
@@ -18,7 +17,6 @@ import (
 // It includes all necessary providers for creating a complete application instance.
 var DefaultSet = wire.NewSet(
 	provideTodoService,
-	provideHotkeyManager,
 	provideProgram,
 	provideTodoUI,
 	provideQuickNoteUI,
@@ -41,13 +39,6 @@ func provideRepository(cfg *config.Config) (repository.TodoRepository, error) {
 		return nil, err
 	}
 	return repository.NewSQLiteTodoRepository(db), nil
-}
-
-// provideHotkeyManager creates a new platform-specific hotkey manager.
-// It handles global hotkey registration and event management.
-func provideHotkeyManager() (hotkey.HotkeyManager, error) {
-	logger.Debug("Creating HotkeyManager")
-	return hotkey.NewHotkeyManager()
 }
 
 // provideProgram creates a new Bubble Tea program instance with the TodoUI.

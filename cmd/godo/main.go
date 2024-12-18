@@ -39,7 +39,6 @@ func main() {
 	iconBytes, err := assets.GetIcon()
 	if err != nil {
 		logger.Error("Failed to load application icon: %v", err)
-		// Continue without icon
 	}
 
 	fyneApp := fyneapp.New()
@@ -51,17 +50,28 @@ func main() {
 		fyneApp.SetIcon(icon)
 	}
 
+	// Register global shortcut
 	if desk, ok := fyneApp.(desktop.App); ok {
-		m := fyne.NewMenu("Godo",
+		shortcut := &desktop.CustomShortcut{
+			KeyName:  fyne.KeyG,
+			Modifier: fyne.KeyModifierControl | fyne.KeyModifierAlt,
+		}
+
+		desk.SetSystemTrayMenu(fyne.NewMenu("Godo",
 			fyne.NewMenuItem("Open", func() { fyneWin.Show() }),
 			fyne.NewMenuItem("Quick Note", func() { showQuickNote(ctx, application) }),
 			fyne.NewMenuItemSeparator(),
 			fyne.NewMenuItem("Quit", func() { fyneApp.Quit() }),
-		)
-		desk.SetSystemTrayMenu(m)
+		))
+
+		fyneWin.Canvas().AddShortcut(shortcut, func(shortcut fyne.Shortcut) {
+			logger.Debug("Global hotkey triggered")
+			showQuickNote(ctx, application)
+		})
 	}
 
-	runApplication(ctx, cancel, application, fyneApp)
+	// Run the application
+	fyneApp.Run()
 }
 
 func initializeConfig() (*config.Config, error) {

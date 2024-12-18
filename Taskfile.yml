@@ -64,9 +64,15 @@ tasks:
         platforms: [linux, darwin]
 
   fmt:
-    desc: Format code
     cmds:
-      - gofmt -s -w .
+      - goimports -w ./...
+      - gofmt -s -w ./...
+    desc: Format all Go code
+
+  fmt-check:
+    cmds:
+      - goimports -l ./...
+    desc: Check if files need formatting
 
   clean:
     desc: Clean build artifacts

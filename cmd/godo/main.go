@@ -8,23 +8,33 @@ import (
 	"syscall"
 
 	"github.com/getlantern/systray"
+	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/di"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/ui"
 )
 
 func main() {
-	// Initialize logger
-	if err := logger.Initialize(); err != nil {
-		logger.Fatal("Failed to initialize logger: %v", err)
+	// Load configuration
+	env := os.Getenv("GODO_ENV")
+	if env == "" {
+		env = "development"
 	}
 
-	// Create context that can be cancelled
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	cfg, err := config.Load(env)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to load configuration: %v\n", err)
+		os.Exit(1)
+	}
 
-	// Create application instance
-	app, err := di.InitializeApp()
+	// Initialize logger with config
+	if err := logger.InitializeWithConfig(cfg.Logging); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to initialize logger: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Create application instance with config
+	app, err := di.InitializeAppWithConfig(cfg)
 	if err != nil {
 		logger.Fatal("Failed to initialize application: %v", err)
 	}
@@ -35,15 +45,14 @@ func main() {
 
 	// Start systray
 	go systray.Run(func() {
-		onSystrayReady(ctx, app)
+		onSystrayReady(context.Background(), app)
 	}, onSystrayExit)
 
 	// Wait for signal
 	select {
 	case sig := <-sigChan:
 		logger.Info("Received signal: %v", sig)
-		cancel()
-	case <-ctx.Done():
+	case <-app.Context().Done():
 		logger.Info("Context cancelled")
 	}
 

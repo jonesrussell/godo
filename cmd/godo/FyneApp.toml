@@ -1,0 +1,14 @@
+Website = "https://github.com/jonesrussell/godo"
+
+[Details]
+  Icon = "Icon.png"
+  Name = "Godo"
+  ID = "com.jonesrussell.godo"
+  Version = "0.1.0"
+  Build = 8
+
+[LinuxAndBSD]
+  GenericName = "Todo Application"
+  Categories = ["Utility", "Office"]
+  Comment = "Quick-note and todo management application"
+  Keywords = ["todo", "notes", "tasks", "productivity"]

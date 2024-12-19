@@ -28,18 +28,15 @@ func logLifecycle(a fyne.App) {
 
 func setupSystemTray(myApp fyne.App, showQuickNote func()) {
 	if desk, ok := myApp.(desktop.App); ok {
-		// Load the icon
-		iconBytes, err := assets.GetIcon()
-		if err != nil {
-			logger.Error("Failed to load icon", "error", err)
-			return
-		}
+		// Use different icons for systray and app
+		systrayIcon := assets.GetSystrayIconResource()
+		appIcon := assets.GetAppIconResource()
 
-		// Create a static resource for the system tray icon
-		icon := fyne.NewStaticResource("icon", iconBytes)
+		// Set the application icon
+		myApp.SetIcon(appIcon)
 
 		quickNote := fyne.NewMenuItem("Quick Note", nil)
-		quickNote.Icon = icon
+		quickNote.Icon = systrayIcon
 		menu := fyne.NewMenu("Godo", quickNote)
 
 		quickNote.Action = func() {
@@ -49,7 +46,7 @@ func setupSystemTray(myApp fyne.App, showQuickNote func()) {
 		}
 
 		desk.SetSystemTrayMenu(menu)
-		desk.SetSystemTrayIcon(icon)
+		desk.SetSystemTrayIcon(systrayIcon)
 		logger.Info("System tray initialized")
 	} else {
 		logger.Warn("System tray not supported on this platform")
@@ -91,7 +88,7 @@ func main() {
 		form.Show()
 	}
 
-	// Set up system tray with the showQuickNote function
+	// Set up system tray
 	setupSystemTray(myApp, showQuickNote)
 
 	// Hide main window by default

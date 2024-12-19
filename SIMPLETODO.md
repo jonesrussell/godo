@@ -2,8 +2,9 @@
 
 ## Current State (main.go)
 - [x] Basic Fyne app with quick note functionality
-- [x] Main window visible with "Open Quick Note" button
-- [ ] No system tray integration
+- [x] Main window hidden by default
+- [x] System tray integration with proper icons
+- [x] Lifecycle logging implemented
 
 ## Step 1: Add Basic Logging
 - [x] Add zap logger initialization
@@ -12,17 +13,18 @@
 - [x] Reference: `internal/logger/logger.go`
 
 ## Step 2: Add System Tray
-- [ ] Add system tray icon
-- [ ] Hide main window by default
-- [ ] Move quick note trigger to system tray menu
-- [ ] Add logging for system tray events
-- [ ] Reference: `internal/gui/systray.go` (lines 11-28)
+- [x] Add system tray icon (using favicon.ico)
+- [x] Add application icon (using Icon.png)
+- [x] Hide main window by default
+- [x] Move quick note trigger to system tray menu
+- [x] Add logging for system tray events
+- [x] Reference: `cmd/godo/main.go`
 
 ## Step 3: Refactor Quick Note
 - [ ] Move quick note logic to separate package
 - [ ] Keep the same functionality but make it callable from system tray
 - [ ] Add logging for quick note operations (open, save, cancel)
-- [ ] Reference: `internal/gui/quicknote.go` (lines 12-36)
+- [ ] Reference: `internal/gui/quicknote.go`
 
 ## Step 4: Basic Todo Storage
 - [ ] Add simple in-memory todo storage initially

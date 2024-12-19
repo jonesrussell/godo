@@ -14,34 +14,8 @@ import (
 type QuickNote struct {
 	window fyne.Window
 	store  storage.Store
-	input  *customEntry
+	input  *widget.Entry
 	form   dialog.Dialog
-}
-
-// customEntry extends widget.Entry to handle keyboard shortcuts
-type customEntry struct {
-	widget.Entry
-	onCtrlEnter func()
-}
-
-func newCustomEntry(onCtrlEnter func()) *customEntry {
-	entry := &customEntry{
-		onCtrlEnter: onCtrlEnter,
-	}
-	entry.MultiLine = true
-	entry.ExtendBaseWidget(entry)
-	return entry
-}
-
-// TypedShortcut implements fyne.Shortcutable
-func (e *customEntry) TypedShortcut(shortcut fyne.Shortcut) {
-	if cs, ok := shortcut.(*desktop.CustomShortcut); ok {
-		if cs.KeyName == fyne.KeyReturn && cs.Modifier == fyne.KeyModifierControl {
-			e.onCtrlEnter()
-			return
-		}
-	}
-	e.Entry.TypedShortcut(shortcut)
 }
 
 // New creates a new QuickNote instance
@@ -49,48 +23,72 @@ func New(window fyne.Window, store storage.Store) *QuickNote {
 	qn := &QuickNote{
 		window: window,
 		store:  store,
+		input:  widget.NewMultiLineEntry(),
 	}
 
-	// Create custom entry with Ctrl+Enter handler
-	qn.input = newCustomEntry(func() {
-		if qn.input.Text != "" {
-			todo := model.NewTodo(qn.input.Text)
-			if err := qn.store.Add(todo); err != nil {
-				logger.Error("Failed to save todo", "error", err)
-				dialog.ShowError(err, qn.window)
-			} else {
-				logger.Debug("Saved note as todo", "id", todo.ID, "content", todo.Content)
-			}
-		}
-		qn.input.SetText("")
-		qn.window.Hide()
-	})
+	qn.setupInput()
+	qn.setupForm()
+	qn.setupShortcuts()
 
-	// Set up the input
+	return qn
+}
+
+func (qn *QuickNote) setupInput() {
 	qn.input.SetPlaceHolder("Enter your note here...")
+}
 
-	// Create the form once
+func (qn *QuickNote) setupForm() {
 	qn.form = dialog.NewForm("Quick Note", "Save", "Cancel",
 		[]*widget.FormItem{
 			widget.NewFormItem("Note", qn.input),
 		},
-		func(save bool) {
-			if save && qn.input.Text != "" {
-				todo := model.NewTodo(qn.input.Text)
-				if err := qn.store.Add(todo); err != nil {
-					logger.Error("Failed to save todo", "error", err)
-					dialog.ShowError(err, qn.window)
-				} else {
-					logger.Debug("Saved note as todo", "id", todo.ID, "content", todo.Content)
-				}
-			}
-			qn.input.SetText("")
-			qn.window.Hide()
-		},
+		qn.handleFormSubmit,
 		qn.window)
 
 	qn.form.Resize(fyne.NewSize(400, 200))
-	return qn
+}
+
+func (qn *QuickNote) setupShortcuts() {
+	// Ctrl+Enter to save
+	qn.window.Canvas().AddShortcut(&desktop.CustomShortcut{
+		KeyName:  fyne.KeyReturn,
+		Modifier: fyne.KeyModifierControl,
+	}, func(shortcut fyne.Shortcut) {
+		qn.saveTodo()
+	})
+
+	// Escape to cancel
+	qn.window.Canvas().AddShortcut(&desktop.CustomShortcut{
+		KeyName: fyne.KeyEscape,
+	}, func(shortcut fyne.Shortcut) {
+		qn.cancel()
+	})
+}
+
+func (qn *QuickNote) handleFormSubmit(save bool) {
+	if save {
+		qn.saveTodo()
+	} else {
+		qn.cancel()
+	}
+}
+
+func (qn *QuickNote) saveTodo() {
+	if qn.input.Text != "" {
+		todo := model.NewTodo(qn.input.Text)
+		if err := qn.store.Add(todo); err != nil {
+			logger.Error("Failed to save todo", "error", err)
+			dialog.ShowError(err, qn.window)
+		} else {
+			logger.Debug("Saved note as todo", "id", todo.ID, "content", todo.Content)
+		}
+	}
+	qn.cancel()
+}
+
+func (qn *QuickNote) cancel() {
+	qn.input.SetText("")
+	qn.window.Hide()
 }
 
 // Show displays the quick note dialog

@@ -1,93 +1,143 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/app"
+	fyneapp "fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/widget"
 	"github.com/jonesrussell/godo/internal/assets"
 	"github.com/jonesrussell/godo/internal/gui/quicknote"
 	"github.com/jonesrussell/godo/internal/logger"
+	"github.com/jonesrussell/godo/internal/storage"
 	"github.com/jonesrussell/godo/internal/storage/sqlite"
 	"golang.design/x/hotkey"
 )
 
-func logLifecycle(a fyne.App) {
-	a.Lifecycle().SetOnStarted(func() {
+type App struct {
+	fyneApp    fyne.App
+	mainWindow fyne.Window
+	quickNote  *quicknote.QuickNote
+	store      storage.Store
+}
+
+func NewApp() (*App, error) {
+	// Initialize SQLite storage
+	store, err := initializeStorage()
+	if err != nil {
+		return nil, err
+	}
+
+	fyneApp := fyneapp.NewWithID("io.github.jonesrussell.godo")
+	mainWindow := fyneApp.NewWindow("Godo")
+
+	app := &App{
+		fyneApp:    fyneApp,
+		mainWindow: mainWindow,
+		store:      store,
+	}
+
+	app.quickNote = quicknote.New(mainWindow, store)
+
+	return app, nil
+}
+
+func (a *App) setupUI() {
+	a.setupLifecycleLogging()
+	a.setupSystemTray()
+	a.setupMainWindow()
+	if err := a.setupGlobalHotkey(); err != nil {
+		logger.Error("Failed to setup global hotkey", "error", err)
+	}
+}
+
+func (a *App) setupLifecycleLogging() {
+	a.fyneApp.Lifecycle().SetOnStarted(func() {
 		logger.Info("Lifecycle: Started")
 	})
-	a.Lifecycle().SetOnStopped(func() {
+	a.fyneApp.Lifecycle().SetOnStopped(func() {
 		logger.Info("Lifecycle: Stopped")
-	})
-	a.Lifecycle().SetOnEnteredForeground(func() {
-		logger.Info("Lifecycle: Entered Foreground")
-	})
-	a.Lifecycle().SetOnExitedForeground(func() {
-		logger.Info("Lifecycle: Exited Foreground")
 	})
 }
 
-func setupSystemTray(myApp fyne.App, showQuickNote func()) {
-	if desk, ok := myApp.(desktop.App); ok {
+func (a *App) setupSystemTray() {
+	if desk, ok := a.fyneApp.(desktop.App); ok {
+		logger.Debug("Loading system tray icon")
 		systrayIcon := assets.GetSystrayIconResource()
 		appIcon := assets.GetAppIconResource()
-		myApp.SetIcon(appIcon)
-
-		// Create menu items
-		quickNote := fyne.NewMenuItem("Quick Note (Ctrl+Alt+G)", nil)
-		quickNote.Icon = systrayIcon
-		quickNote.Shortcut = &desktop.CustomShortcut{
-			KeyName:  fyne.KeyG,
-			Modifier: fyne.KeyModifierControl | fyne.KeyModifierAlt,
-		}
-
-		preferences := fyne.NewMenuItem("Preferences", func() {
-			logger.Debug("Opening preferences")
-			// TODO: Add preferences dialog
-		})
-
-		separator := fyne.NewMenuItemSeparator()
-
-		quit := fyne.NewMenuItem("Quit", func() {
-			logger.Info("Application shutdown requested")
-			myApp.Quit()
-		})
+		a.fyneApp.SetIcon(appIcon)
 
 		menu := fyne.NewMenu("Godo",
-			quickNote,
-			separator,
-			preferences,
-			separator,
-			quit,
+			fyne.NewMenuItem("Quick Note", a.quickNote.Show),
+			fyne.NewMenuItemSeparator(),
+			fyne.NewMenuItem("Quit", func() {
+				a.fyneApp.Quit()
+			}),
 		)
-
-		quickNote.Action = func() {
-			logger.Debug("Opening quick note from tray")
-			myApp.SendNotification(fyne.NewNotification("Quick Note", "Opening quick note..."))
-			showQuickNote()
-		}
 
 		desk.SetSystemTrayMenu(menu)
 		desk.SetSystemTrayIcon(systrayIcon)
 		logger.Info("System tray initialized")
-
-		// Register quick note shortcut
-		mainWindow := myApp.Driver().AllWindows()[0]
-		mainWindow.Canvas().AddShortcut(&desktop.CustomShortcut{
-			KeyName:  fyne.KeyG,
-			Modifier: fyne.KeyModifierControl | fyne.KeyModifierAlt,
-		}, func(shortcut fyne.Shortcut) {
-			logger.Debug("Quick Note shortcut triggered")
-			showQuickNote()
-		})
 	} else {
 		logger.Warn("System tray not supported on this platform")
 	}
+}
+
+func (a *App) setupMainWindow() {
+	a.mainWindow.SetContent(container.NewVBox(
+		widget.NewLabel("Welcome to Godo!"),
+		widget.NewButton("Open Quick Note", a.quickNote.Show),
+	))
+
+	a.mainWindow.SetCloseIntercept(func() {
+		logger.Debug("Window close intercepted, hiding instead")
+		a.mainWindow.Hide()
+	})
+
+	a.mainWindow.Resize(fyne.NewSize(800, 600))
+	a.mainWindow.CenterOnScreen()
+	a.mainWindow.Hide()
+}
+
+func (a *App) setupGlobalHotkey() error {
+	return setupGlobalHotkey(a.quickNote.Show)
+}
+
+func (a *App) Run() {
+	a.fyneApp.Run()
+}
+
+func (a *App) Cleanup() {
+	if db, ok := a.store.(*sqlite.Store); ok {
+		if err := db.Close(); err != nil {
+			logger.Error("Failed to close database", "error", err)
+		}
+	}
+}
+
+func main() {
+	// Initialize logger
+	if _, err := logger.Initialize(); err != nil {
+		panic(err)
+	}
+
+	app, err := NewApp()
+	if err != nil {
+		logger.Error("Failed to create application", "error", err)
+		panic(err)
+	}
+	defer app.Cleanup()
+
+	app.setupUI()
+	app.Run()
+}
+
+func initializeStorage() (storage.Store, error) {
+	dbPath := getDBPath()
+	return sqlite.New(dbPath)
 }
 
 func getDBPath() string {
@@ -107,81 +157,21 @@ func getDBPath() string {
 }
 
 func setupGlobalHotkey(callback func()) error {
-	// Create a new hotkey combination: Ctrl+Alt+G
 	hk := hotkey.New([]hotkey.Modifier{
 		hotkey.ModCtrl,
 		hotkey.ModAlt,
 	}, hotkey.KeyG)
 
-	// Register the hotkey
 	if err := hk.Register(); err != nil {
-		return fmt.Errorf("failed to register hotkey: %w", err)
+		return err
 	}
 
-	// Handle hotkey events in a goroutine
 	go func() {
-		for {
-			select {
-			case <-hk.Keydown():
-				logger.Debug("Global hotkey triggered")
-				callback()
-			}
+		for range hk.Keydown() {
+			logger.Debug("Global hotkey triggered")
+			callback()
 		}
 	}()
 
 	return nil
-}
-
-func main() {
-	// Initialize logger
-	_, err := logger.Initialize()
-	if err != nil {
-		panic(err)
-	}
-
-	// Initialize SQLite storage
-	dbPath := getDBPath()
-	store, err := sqlite.New(dbPath)
-	if err != nil {
-		logger.Error("Failed to initialize database", "error", err)
-		panic(err)
-	}
-	defer store.Close()
-
-	// Create app with unique ID
-	myApp := app.NewWithID("io.github.jonesrussell.godo")
-	logLifecycle(myApp)
-
-	mainWindow := myApp.NewWindow("Godo")
-
-	// Create quick note instance with store
-	qn := quicknote.New(mainWindow, store)
-
-	// Set up global hotkey
-	if err := setupGlobalHotkey(qn.Show); err != nil {
-		logger.Error("Failed to setup global hotkey", "error", err)
-	}
-
-	// Set up system tray with the quick note Show method
-	setupSystemTray(myApp, qn.Show)
-
-	mainWindow.SetContent(container.NewVBox(
-		widget.NewLabel("Welcome to the simplified Fyne app!"),
-		widget.NewButton("Open Quick Note", qn.Show),
-	))
-
-	// Hide main window by default
-	mainWindow.SetCloseIntercept(func() {
-		logger.Debug("Window close intercepted, hiding instead")
-		mainWindow.Hide()
-	})
-
-	mainWindow.Resize(fyne.NewSize(800, 600))
-	mainWindow.CenterOnScreen()
-
-	// Ensure window starts hidden
-	mainWindow.Hide()
-
-	// Run the application
-	myApp.Run()
 }

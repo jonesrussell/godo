@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"os"
 	"strings"
 
@@ -47,8 +48,33 @@ func (h HotkeyConfig) String() string {
 	return strings.Join(append(h.Modifiers, h.Key), "+")
 }
 
+// Validate checks if the hotkey configuration is valid
+func (h HotkeyConfig) Validate() error {
+	// Validate modifiers
+	for _, m := range h.Modifiers {
+		switch strings.ToLower(m) {
+		case "ctrl", "alt", "shift":
+			continue
+		default:
+			return errors.New("invalid modifier: " + m)
+		}
+	}
+
+	// Validate key
+	switch strings.ToLower(h.Key) {
+	case "space", "s":
+		return nil
+	default:
+		return errors.New("invalid key: " + h.Key)
+	}
+}
+
 // ToHotkey converts the config to a hotkey.Hotkey
 func (h HotkeyConfig) ToHotkey() (*hotkey.Hotkey, error) {
+	if err := h.Validate(); err != nil {
+		return nil, err
+	}
+
 	var mods []hotkey.Modifier
 	for _, m := range h.Modifiers {
 		switch strings.ToLower(m) {
@@ -62,9 +88,11 @@ func (h HotkeyConfig) ToHotkey() (*hotkey.Hotkey, error) {
 	}
 
 	var key hotkey.Key
-	if strings.EqualFold(h.Key, "CTRL+SPACE") {
-		key = hotkey.KeyG
-		// Add more keys as needed
+	switch strings.ToLower(h.Key) {
+	case "space":
+		key = hotkey.KeySpace
+	case "s":
+		key = hotkey.KeyS
 	}
 
 	return hotkey.New(mods, key), nil

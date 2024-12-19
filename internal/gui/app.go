@@ -2,7 +2,6 @@ package gui
 
 import (
 	"context"
-	"os"
 
 	"fyne.io/fyne/v2"
 	fyneapp "fyne.io/fyne/v2/app"
@@ -60,9 +59,4 @@ func (g *GUI) Cleanup() {
 	if err := g.app.Cleanup(); err != nil {
 		logger.Error("Failed to cleanup app", "error", err)
 	}
-
-	logger.Info("GUI cleanup completed")
-
-	// Force exit if needed
-	os.Exit(0)
 }

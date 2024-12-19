@@ -1,3 +1,4 @@
+// internal/gui/mainwindow.go
 package gui
 
 import (
@@ -42,8 +43,11 @@ func (w *MainWindow) Setup() error {
 		logger.Error("Failed to setup shortcuts", "error", err)
 	}
 
-	// Hide window initially
-	w.window.Hide()
+	// Show the quick note window after main window setup
+	ShowQuickNote(w.gui.ctx, w.gui)
+
+	// Show main window initially
+	w.window.Show()
 	return nil
 }
 

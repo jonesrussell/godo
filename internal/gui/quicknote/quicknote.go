@@ -10,11 +10,36 @@ import (
 	"github.com/jonesrussell/godo/internal/storage"
 )
 
+type customEntry struct {
+	widget.Entry
+	onCtrlEnter func()
+	onEscape    func()
+}
+
+func newCustomEntry() *customEntry {
+	entry := &customEntry{}
+	entry.ExtendBaseWidget(entry)
+	return entry
+}
+
+func (e *customEntry) TypedShortcut(shortcut fyne.Shortcut) {
+	if cs, ok := shortcut.(*desktop.CustomShortcut); ok {
+		if cs.KeyName == fyne.KeyReturn && cs.Modifier == fyne.KeyModifierControl {
+			e.onCtrlEnter()
+			return
+		} else if cs.KeyName == fyne.KeyEscape && cs.Modifier == 0 {
+			e.onEscape()
+			return
+		}
+	}
+	e.Entry.TypedShortcut(shortcut)
+}
+
 // QuickNote represents a quick note dialog
 type QuickNote struct {
 	window fyne.Window
 	store  storage.Store
-	input  *widget.Entry
+	input  *customEntry
 	form   dialog.Dialog
 }
 
@@ -23,7 +48,7 @@ func New(window fyne.Window, store storage.Store) *QuickNote {
 	qn := &QuickNote{
 		window: window,
 		store:  store,
-		input:  widget.NewMultiLineEntry(),
+		input:  newCustomEntry(),
 	}
 
 	qn.setupInput()
@@ -49,20 +74,25 @@ func (qn *QuickNote) setupForm() {
 }
 
 func (qn *QuickNote) setupShortcuts() {
-	// Ctrl+Enter to save
-	qn.window.Canvas().AddShortcut(&desktop.CustomShortcut{
-		KeyName:  fyne.KeyReturn,
-		Modifier: fyne.KeyModifierControl,
-	}, func(shortcut fyne.Shortcut) {
-		qn.saveTodo()
-	})
+	qn.input.onCtrlEnter = func() {
+		if qn.input.Text != "" {
+			todo := model.NewTodo(qn.input.Text)
+			if err := qn.store.Add(todo); err != nil {
+				logger.Error("Failed to save todo", "error", err)
+				dialog.ShowError(err, qn.window)
+			} else {
+				logger.Debug("Added todo", "id", todo.ID)
+				logger.Debug("Saved note as todo", "id", todo.ID, "content", todo.Content)
+			}
+		}
+		qn.input.SetText("")
+		qn.window.Hide()
+	}
 
-	// Escape to cancel
-	qn.window.Canvas().AddShortcut(&desktop.CustomShortcut{
-		KeyName: fyne.KeyEscape,
-	}, func(shortcut fyne.Shortcut) {
-		qn.cancel()
-	})
+	qn.input.onEscape = func() {
+		qn.input.SetText("")
+		qn.window.Hide()
+	}
 }
 
 func (qn *QuickNote) handleFormSubmit(save bool) {

@@ -3,6 +3,7 @@ package quicknote
 import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/widget"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/model"
@@ -13,8 +14,34 @@ import (
 type QuickNote struct {
 	window fyne.Window
 	store  storage.Store
-	input  *widget.Entry
+	input  *customEntry
 	form   dialog.Dialog
+}
+
+// customEntry extends widget.Entry to handle keyboard shortcuts
+type customEntry struct {
+	widget.Entry
+	onCtrlEnter func()
+}
+
+func newCustomEntry(onCtrlEnter func()) *customEntry {
+	entry := &customEntry{
+		onCtrlEnter: onCtrlEnter,
+	}
+	entry.MultiLine = true
+	entry.ExtendBaseWidget(entry)
+	return entry
+}
+
+// TypedShortcut implements fyne.Shortcutable
+func (e *customEntry) TypedShortcut(shortcut fyne.Shortcut) {
+	if cs, ok := shortcut.(*desktop.CustomShortcut); ok {
+		if cs.KeyName == fyne.KeyReturn && cs.Modifier == fyne.KeyModifierControl {
+			e.onCtrlEnter()
+			return
+		}
+	}
+	e.Entry.TypedShortcut(shortcut)
 }
 
 // New creates a new QuickNote instance
@@ -22,8 +49,22 @@ func New(window fyne.Window, store storage.Store) *QuickNote {
 	qn := &QuickNote{
 		window: window,
 		store:  store,
-		input:  widget.NewMultiLineEntry(),
 	}
+
+	// Create custom entry with Ctrl+Enter handler
+	qn.input = newCustomEntry(func() {
+		if qn.input.Text != "" {
+			todo := model.NewTodo(qn.input.Text)
+			if err := qn.store.Add(todo); err != nil {
+				logger.Error("Failed to save todo", "error", err)
+				dialog.ShowError(err, qn.window)
+			} else {
+				logger.Debug("Saved note as todo", "id", todo.ID, "content", todo.Content)
+			}
+		}
+		qn.input.SetText("")
+		qn.window.Hide()
+	})
 
 	// Set up the input
 	qn.input.SetPlaceHolder("Enter your note here...")
@@ -43,7 +84,7 @@ func New(window fyne.Window, store storage.Store) *QuickNote {
 					logger.Debug("Saved note as todo", "id", todo.ID, "content", todo.Content)
 				}
 			}
-			qn.input.SetText("") // Clear the input
+			qn.input.SetText("")
 			qn.window.Hide()
 		},
 		qn.window)

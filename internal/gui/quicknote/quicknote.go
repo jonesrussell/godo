@@ -25,6 +25,7 @@ func newCustomEntry() *customEntry {
 func (e *customEntry) TypedShortcut(shortcut fyne.Shortcut) {
 	if cs, ok := shortcut.(*desktop.CustomShortcut); ok {
 		if cs.KeyName == fyne.KeyReturn && cs.Modifier == fyne.KeyModifierControl {
+			logger.Debug("Ctrl+Enter shortcut triggered")
 			e.onCtrlEnter()
 			return
 		}
@@ -34,6 +35,7 @@ func (e *customEntry) TypedShortcut(shortcut fyne.Shortcut) {
 
 func (e *customEntry) TypedKey(key *fyne.KeyEvent) {
 	if key.Name == fyne.KeyEscape {
+		logger.Debug("Escape key pressed")
 		e.onEscape()
 		return
 	}
@@ -92,11 +94,13 @@ func (qn *QuickNote) setupShortcuts() {
 		}
 		qn.input.SetText("")
 		qn.window.Hide()
+		logger.Debug("Quick note saved and window hidden")
 	}
 
 	qn.input.onEscape = func() {
 		qn.input.SetText("")
 		qn.window.Hide()
+		logger.Debug("Quick note cancelled and window hidden")
 	}
 
 	// Register Ctrl+Enter with the window
@@ -104,6 +108,7 @@ func (qn *QuickNote) setupShortcuts() {
 		KeyName:  fyne.KeyReturn,
 		Modifier: fyne.KeyModifierControl,
 	}, func(shortcut fyne.Shortcut) {
+		logger.Debug("Window Ctrl+Enter shortcut triggered")
 		qn.input.onCtrlEnter()
 	})
 }

@@ -10,6 +10,7 @@ import (
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/widget"
 	"github.com/jonesrussell/godo/internal/assets"
+	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/gui/quicknote"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
@@ -22,9 +23,16 @@ type App struct {
 	mainWindow fyne.Window
 	quickNote  *quicknote.QuickNote
 	store      storage.Store
+	config     *config.Config
 }
 
 func NewApp() (*App, error) {
+	// Load configuration
+	cfg, err := config.Load("development")
+	if err != nil {
+		return nil, err
+	}
+
 	// Initialize SQLite storage
 	store, err := initializeStorage()
 	if err != nil {
@@ -32,12 +40,13 @@ func NewApp() (*App, error) {
 	}
 
 	fyneApp := fyneapp.NewWithID("io.github.jonesrussell.godo")
-	mainWindow := fyneApp.NewWindow("Godo")
+	mainWindow := fyneApp.NewWindow(cfg.App.Name)
 
 	app := &App{
 		fyneApp:    fyneApp,
 		mainWindow: mainWindow,
 		store:      store,
+		config:     cfg,
 	}
 
 	app.quickNote = quicknote.New(mainWindow, store)
@@ -87,13 +96,11 @@ func (a *App) setupSystemTray() {
 }
 
 func (a *App) setupMainWindow() {
-	// Create a more structured layout
 	header := container.NewHBox(
-		widget.NewLabel("Godo - Task Manager"),
+		widget.NewLabel(a.config.App.Name),
 		widget.NewSeparator(),
 	)
 
-	// Add a toolbar with common actions
 	toolbar := container.NewHBox(
 		widget.NewButton("New Todo", a.quickNote.Show),
 		widget.NewSeparator(),
@@ -103,25 +110,25 @@ func (a *App) setupMainWindow() {
 		}),
 	)
 
-	// Placeholder for the todo list (we'll implement this in Step 7)
 	content := container.NewVBox(
 		widget.NewLabel("Your todos will appear here"),
 	)
 
-	// Status bar with app info
+	hotkeyText := "Press " + a.config.Hotkeys.QuickNote.String() + " for quick notes"
+	versionText := "v" + a.config.App.Version
+
 	statusBar := container.NewHBox(
-		widget.NewLabel("Press Ctrl+Alt+G for quick notes"),
+		widget.NewLabel(hotkeyText),
 		widget.NewSeparator(),
-		widget.NewLabel("v0.1.0"),
+		widget.NewLabel(versionText),
 	)
 
-	// Combine all elements
 	mainContent := container.NewBorder(
-		container.NewVBox(header, toolbar), // top
-		statusBar,                          // bottom
-		nil,                                // left
-		nil,                                // right
-		content,                            // center
+		container.NewVBox(header, toolbar),
+		statusBar,
+		nil,
+		nil,
+		content,
 	)
 
 	a.mainWindow.SetContent(mainContent)

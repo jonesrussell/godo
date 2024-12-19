@@ -4,52 +4,44 @@ import (
 	"context"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 	"github.com/jonesrussell/godo/internal/logger"
 )
 
-type QuickNoteEntry struct {
-	widget.Entry
-	window fyne.Window
-}
-
-func NewQuickNoteEntry(win fyne.Window) *QuickNoteEntry {
-	entry := &QuickNoteEntry{window: win}
-	entry.ExtendBaseWidget(entry)
-	entry.SetPlaceHolder("Enter your quick note...")
-	return entry
-}
-
-// FocusGained implements fyne.Focusable
-func (e *QuickNoteEntry) FocusGained() {
-	e.Entry.FocusGained()
-}
-
-func (e *QuickNoteEntry) KeyDown(key *fyne.KeyEvent) {
-	if key.Name == fyne.KeyEscape {
-		if e.window != nil {
-			e.window.Close()
-		}
-		return
-	}
-	e.Entry.KeyDown(key)
-}
-
 func ShowQuickNote(ctx context.Context, gui *GUI) {
 	logger.Debug("Opening quick note window")
 
-	win := gui.fyneApp.NewWindow("Quick Note")
-	win.Resize(fyne.NewSize(400, 100))
-	win.SetFixedSize(true)
+	// Create window before other elements
+	w := gui.fyneApp.NewWindow("Quick Note")
+	w.SetFixedSize(true)
 
-	input := NewQuickNoteEntry(win)
-	win.SetContent(input)
+	// Create input field
+	entry := widget.NewMultiLineEntry()
+	entry.SetPlaceHolder("Enter your quick note here...")
+	// Make entry fill available space
+	entry.Resize(fyne.NewSize(380, 150))
+	entry.Move(fyne.NewPos(10, 10))
 
-	// Center before showing
-	win.CenterOnScreen()
+	submitBtn := widget.NewButton("Save", func() {
+		if entry.Text != "" {
+			logger.Debug("Saving note: " + entry.Text)
+		}
+		w.Close()
+	})
 
-	// Show and focus
-	win.Show()
-	input.FocusGained()
-	win.Canvas().Focus(input)
+	// Use a border container for better layout
+	content := container.NewBorder(
+		nil,       // top
+		submitBtn, // bottom
+		nil,       // left
+		nil,       // right
+		entry,     // center (fills remaining space)
+	)
+
+	w.SetContent(content)
+	w.Resize(fyne.NewSize(400, 200))
+	w.CenterOnScreen()
+	w.Canvas().Focus(entry)
+	w.Show()
 }

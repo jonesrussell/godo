@@ -24,8 +24,13 @@ func setupTestLogger(t *testing.T) logger.Logger {
 }
 
 func TestLoad(t *testing.T) {
-	// Initialize test logger
+	// Use the setupTestLogger function instead of inline creation
 	log := setupTestLogger(t)
+
+	// Test config loading
+	cfg, err := Load(log)
+	require.NoError(t, err)
+	assert.NotNil(t, cfg)
 
 	// Create temporary directory for test
 	tmpDir := t.TempDir()
@@ -42,7 +47,7 @@ database:
 logging:
   level: "info"
 `
-	err := os.WriteFile(filepath.Join(tmpDir, "default.yaml"), []byte(defaultConfig), 0o600)
+	err = os.WriteFile(filepath.Join(tmpDir, "default.yaml"), []byte(defaultConfig), 0o600)
 	require.NoError(t, err)
 
 	// Test environment config

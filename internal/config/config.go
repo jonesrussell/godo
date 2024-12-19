@@ -62,7 +62,7 @@ func (h HotkeyConfig) ToHotkey() (*hotkey.Hotkey, error) {
 	}
 
 	var key hotkey.Key
-	if strings.ToUpper(h.Key) == "CTRL+SPACE" {
+	if strings.EqualFold(h.Key, "CTRL+SPACE") {
 		key = hotkey.KeyG
 		// Add more keys as needed
 	}
@@ -70,10 +70,8 @@ func (h HotkeyConfig) ToHotkey() (*hotkey.Hotkey, error) {
 	return hotkey.New(mods, key), nil
 }
 
+// Load loads the configuration from files and environment
 func Load(log logger.Logger) (*Config, error) {
-	env := getEnv()
-	log.Info("Loading configuration", "environment", env)
-
 	v := viper.New()
 
 	// Set default values first
@@ -88,7 +86,12 @@ func Load(log logger.Logger) (*Config, error) {
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	v.AutomaticEnv()
 
-	// Bind environment variables
+	// Use loadHotkeys
+	hotkeys, err := loadHotkeys(v)
+	if err != nil {
+		return nil, err
+	}
+
 	if err := bindEnvVariables(v, log); err != nil {
 		return nil, err
 	}
@@ -101,7 +104,7 @@ func Load(log logger.Logger) (*Config, error) {
 	}
 
 	// Load environment specific config
-	if env != "development" {
+	if env := getEnv(); env != "development" {
 		v.SetConfigName(env)
 		if err := v.MergeInConfig(); err != nil {
 			log.Error("Failed to merge environment config", "error", err)
@@ -109,21 +112,23 @@ func Load(log logger.Logger) (*Config, error) {
 		}
 	}
 
-	var config Config
-	if err := v.Unmarshal(&config); err != nil {
-		log.Error("Failed to unmarshal config", "error", err)
-		return nil, err
-	}
-
-	// Ensure default values are set if not provided
-	if config.Database.MaxOpenConns == 0 {
-		config.Database.MaxOpenConns = 1
-	}
-	if config.Database.MaxIdleConns == 0 {
-		config.Database.MaxIdleConns = 1
-	}
-
-	return &config, nil
+	return &Config{
+		App: AppConfig{
+			Name:    v.GetString("app.name"),
+			Version: v.GetString("app.version"),
+		},
+		Database: DatabaseConfig{
+			Path:         v.GetString("database.path"),
+			MaxOpenConns: v.GetInt("database.max_open_conns"),
+			MaxIdleConns: v.GetInt("database.max_idle_conns"),
+		},
+		Hotkeys: HotkeysConfig{
+			QuickNote: *hotkeys,
+		},
+		Logging: common.LogConfig{
+			Level: v.GetString("logging.level"),
+		},
+	}, nil
 }
 
 func getEnv() string {
@@ -136,11 +141,10 @@ func getEnv() string {
 // loadHotkeys loads hotkey configuration
 func loadHotkeys(v *viper.Viper) (*HotkeyConfig, error) {
 	h := &HotkeyConfig{}
-	if err := v.UnmarshalKey("hotkeys", h); err != nil {
+	if err := v.UnmarshalKey("hotkeys.quick_note", h); err != nil {
 		return nil, err
 	}
 
-	// Use strings.EqualFold directly in the if condition
 	if strings.EqualFold(h.Key, "CTRL+SPACE") {
 		h.Key = "CTRL+SPACE"
 	}

@@ -21,7 +21,6 @@ type zapLogger struct {
 	log *zap.Logger
 }
 
-// Implement Logger interface for zapLogger
 func (l *zapLogger) Debug(msg string, keysAndValues ...interface{}) {
 	l.log.Sugar().Debugw(msg, keysAndValues...)
 }
@@ -42,13 +41,24 @@ func (l *zapLogger) Fatal(msg string, keysAndValues ...interface{}) {
 	l.log.Sugar().Fatalw(msg, keysAndValues...)
 }
 
-type defaultLoggerWrapper struct {
+type loggerManager struct {
 	sync.RWMutex
 	logger Logger
 }
 
-var instance = &defaultLoggerWrapper{}
+var (
+	manager *loggerManager
+	once    sync.Once
+)
 
+func getManager() *loggerManager {
+	once.Do(func() {
+		manager = &loggerManager{}
+	})
+	return manager
+}
+
+// Initialize creates and sets up the logger
 func Initialize(config *common.LogConfig) (Logger, error) {
 	var level zapcore.Level
 	if err := level.UnmarshalText([]byte(config.Level)); err != nil {
@@ -83,49 +93,55 @@ func Initialize(config *common.LogConfig) (Logger, error) {
 	}
 
 	zl := &zapLogger{log: logger}
-	instance.Lock()
-	instance.logger = zl
-	instance.Unlock()
+	m := getManager()
+	m.Lock()
+	m.logger = zl
+	m.Unlock()
 	return zl, nil
 }
 
-// Package-level functions use thread-safe instance
+// Package-level functions use thread-safe manager
 func Debug(msg string, keysAndValues ...interface{}) {
-	instance.RLock()
-	defer instance.RUnlock()
-	if instance.logger != nil {
-		instance.logger.Debug(msg, keysAndValues...)
+	m := getManager()
+	m.RLock()
+	defer m.RUnlock()
+	if m.logger != nil {
+		m.logger.Debug(msg, keysAndValues...)
 	}
 }
 
 func Info(msg string, keysAndValues ...interface{}) {
-	instance.RLock()
-	defer instance.RUnlock()
-	if instance.logger != nil {
-		instance.logger.Info(msg, keysAndValues...)
+	m := getManager()
+	m.RLock()
+	defer m.RUnlock()
+	if m.logger != nil {
+		m.logger.Info(msg, keysAndValues...)
 	}
 }
 
 func Warn(msg string, keysAndValues ...interface{}) {
-	instance.RLock()
-	defer instance.RUnlock()
-	if instance.logger != nil {
-		instance.logger.Warn(msg, keysAndValues...)
+	m := getManager()
+	m.RLock()
+	defer m.RUnlock()
+	if m.logger != nil {
+		m.logger.Warn(msg, keysAndValues...)
 	}
 }
 
 func Error(msg string, keysAndValues ...interface{}) {
-	instance.RLock()
-	defer instance.RUnlock()
-	if instance.logger != nil {
-		instance.logger.Error(msg, keysAndValues...)
+	m := getManager()
+	m.RLock()
+	defer m.RUnlock()
+	if m.logger != nil {
+		m.logger.Error(msg, keysAndValues...)
 	}
 }
 
 func Fatal(msg string, keysAndValues ...interface{}) {
-	instance.RLock()
-	defer instance.RUnlock()
-	if instance.logger != nil {
-		instance.logger.Fatal(msg, keysAndValues...)
+	m := getManager()
+	m.RLock()
+	defer m.RUnlock()
+	if m.logger != nil {
+		m.logger.Fatal(msg, keysAndValues...)
 	}
 }

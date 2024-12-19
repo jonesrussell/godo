@@ -38,7 +38,7 @@ database:
   max_open_conns: 1
   max_idle_conns: 1
 `
-	err := os.WriteFile(filepath.Join(tmpDir, "default.yaml"), []byte(defaultConfig), 0o644)
+	err := os.WriteFile(filepath.Join(tmpDir, "default.yaml"), []byte(defaultConfig), 0o600)
 	require.NoError(t, err)
 
 	// Test environment config
@@ -46,7 +46,7 @@ database:
 database:
   path: "test_env.db"
 `
-	err = os.WriteFile(filepath.Join(tmpDir, "test.yaml"), []byte(testConfig), 0o644)
+	err = os.WriteFile(filepath.Join(tmpDir, "test.yaml"), []byte(testConfig), 0o600)
 	require.NoError(t, err)
 
 	// Temporarily change working directory
@@ -61,9 +61,9 @@ database:
 	err = os.Mkdir("configs", 0o755)
 	require.NoError(t, err)
 
-	err = os.WriteFile(filepath.Join("configs", "default.yaml"), []byte(defaultConfig), 0o644)
+	err = os.WriteFile(filepath.Join("configs", "default.yaml"), []byte(defaultConfig), 0o600)
 	require.NoError(t, err)
-	err = os.WriteFile(filepath.Join("configs", "test.yaml"), []byte(testConfig), 0o644)
+	err = os.WriteFile(filepath.Join("configs", "test.yaml"), []byte(testConfig), 0o600)
 	require.NoError(t, err)
 
 	tests := []struct {

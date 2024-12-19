@@ -17,9 +17,9 @@ type customEntry struct {
 	logger      logger.Logger
 }
 
-func newCustomEntry(logger logger.Logger) *customEntry {
+func newCustomEntry(log logger.Logger) *customEntry {
 	entry := &customEntry{
-		logger: logger,
+		logger: log,
 	}
 	entry.ExtendBaseWidget(entry)
 	return entry
@@ -55,12 +55,12 @@ type QuickNote struct {
 }
 
 // New creates a new QuickNote instance
-func New(window fyne.Window, store storage.Store, logger logger.Logger) *QuickNote {
+func New(window fyne.Window, store storage.Store, log logger.Logger) *QuickNote {
 	qn := &QuickNote{
 		window: window,
 		store:  store,
-		input:  newCustomEntry(logger),
-		logger: logger,
+		input:  newCustomEntry(log),
+		logger: log,
 	}
 
 	qn.setupInput()

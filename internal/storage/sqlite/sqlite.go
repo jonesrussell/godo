@@ -67,27 +67,6 @@ func (s *Store) initialize() error {
 	return nil
 }
 
-// migrate creates the necessary database tables
-func (s *Store) migrate() error {
-	query := `
-	CREATE TABLE IF NOT EXISTS todos (
-		id TEXT PRIMARY KEY,
-		content TEXT NOT NULL,
-		done BOOLEAN NOT NULL DEFAULT 0,
-		created_at DATETIME NOT NULL,
-		updated_at DATETIME NOT NULL
-	);`
-
-	_, err := s.db.Exec(query)
-	if err != nil {
-		s.logger.Error("Failed to create todos table", "error", err)
-		return err
-	}
-
-	s.logger.Info("Database migration completed")
-	return nil
-}
-
 // Add adds a new todo to storage
 func (s *Store) Add(todo *model.Todo) error {
 	query := `
@@ -225,7 +204,7 @@ func (s *Store) Update(todo *model.Todo) error {
 // ensureDataDir creates the database directory if it doesn't exist
 func ensureDataDir(dbPath string) error {
 	dir := filepath.Dir(dbPath)
-	return os.MkdirAll(dir, 0755)
+	return os.MkdirAll(dir, 0o755)
 }
 
 // Add this method to the Store struct

@@ -1,106 +1,52 @@
 package main
 
 import (
-	"errors"
-	"os"
-
-	"github.com/jonesrussell/godo/internal/app"
-	"github.com/jonesrussell/godo/internal/common"
-	"github.com/jonesrussell/godo/internal/config"
-	"github.com/jonesrussell/godo/internal/gui"
-	"github.com/jonesrussell/godo/internal/logger"
-	"github.com/marcsauter/single"
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/app"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/widget"
 )
 
 func main() {
-	if err := run(); err != nil {
-		logger.Error("Application error", "error", err)
-		os.Exit(1)
-	}
-}
+	// Initialize the Fyne application
+	myApp := app.New()
+	mainWindow := myApp.NewWindow("Main Window")
 
-func run() error {
-	// Initialize logger
-	if _, err := logger.Initialize(); err != nil {
-		return err
-	}
+	// Function to show quick note
+	showQuickNote := func() {
+		// Create the entry widget for the note
+		entry := widget.NewMultiLineEntry()
+		entry.SetPlaceHolder("Enter your note here...")
 
-	// Single instance check
-	if err := checkSingleInstance(); err != nil {
-		return err
-	}
+		// Use a form dialog to display the quick note entry
+		form := dialog.NewForm("Quick Note", "Save", "Cancel", []*widget.FormItem{
+			widget.NewFormItem("Note", entry),
+		}, func(b bool) {
+			if b {
+				// Log the entered text (or handle save)
+				println("Saving note:", entry.Text)
+				// Implement save functionality here if needed
+			}
+		}, mainWindow)
 
-	// Initialize app
-	application, err := initializeApp()
-	if err != nil {
-		logger.Error("Failed to initialize app", "error", err)
-		return err
-	}
-	defer cleanup(application)
-
-	// Create and run GUI
-	uiApp := gui.New(application)
-	return uiApp.Run()
-}
-
-func checkSingleInstance() error {
-	// Create single instance lock
-	s := single.New("godo")
-	if err := s.CheckLock(); err != nil {
-		if err == single.ErrAlreadyRunning {
-			logger.Info("Godo is already running. Look for the icon in your system tray.")
-			return nil
-		}
-		return errors.New("failed to check application lock: " + err.Error())
-	}
-	defer func() {
-		if err := s.TryUnlock(); err != nil {
-			logger.Error("Failed to unlock single instance", "error", err)
-		}
-	}()
-	return nil
-}
-
-func initializeApp() (*app.App, error) {
-	cfg, err := initializeConfig()
-	if err != nil {
-		return nil, errors.New("failed to initialize config: " + err.Error())
+		form.Resize(fyne.NewSize(400, 200))
+		form.Show()
 	}
 
-	application, err := app.InitializeAppWithConfig(cfg)
-	if err != nil {
-		return nil, errors.New("failed to initialize app: " + err.Error())
-	}
-	return application, nil
-}
+	// Button to open the quick note window
+	btn := widget.NewButton("Open Quick Note", func() {
+		showQuickNote()
+	})
 
-func cleanup(application *app.App) {
-	logger.Info("Cleaning up application...")
-	if err := application.Cleanup(); err != nil {
-		logger.Error("Failed to cleanup", "error", err)
-	}
-}
+	// Set up the main window content
+	mainWindow.SetContent(container.NewVBox(
+		widget.NewLabel("Welcome to the simplified Fyne app!"),
+		btn,
+	))
+	mainWindow.Resize(fyne.NewSize(800, 600))
+	mainWindow.CenterOnScreen()
 
-func initializeConfig() (*config.Config, error) {
-	env := os.Getenv("GODO_ENV")
-	if env == "" {
-		env = "development"
-	}
-
-	cfg, err := config.Load(env)
-	if err != nil {
-		return nil, err
-	}
-
-	logConfig := common.LogConfig{
-		Level:       cfg.Logging.Level,
-		Output:      cfg.Logging.Output,
-		ErrorOutput: cfg.Logging.ErrorOutput,
-	}
-
-	if _, err := logger.InitializeWithConfig(logConfig); err != nil {
-		return nil, err
-	}
-
-	return cfg, nil
+	// Show the main window
+	mainWindow.ShowAndRun()
 }

@@ -11,6 +11,18 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+const (
+	SchemaVersion = 1
+	Schema        = `
+	CREATE TABLE IF NOT EXISTS todos (
+		id TEXT PRIMARY KEY,
+		content TEXT NOT NULL,
+		done BOOLEAN NOT NULL DEFAULT 0,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+	);`
+)
+
 type Store struct {
 	db     *sql.DB
 	logger logger.Logger
@@ -19,11 +31,19 @@ type Store struct {
 func New(dbPath string, log logger.Logger) (*Store, error) {
 	log.Info("Opening database", "path", dbPath)
 
+	// Try to create the database directory
 	if err := ensureDataDir(dbPath); err != nil {
 		log.Error("Failed to create database directory", "error", err)
 		return nil, err
 	}
 
+	// Verify we can write to the database path
+	if err := verifyDatabaseAccess(dbPath); err != nil {
+		log.Error("Failed to verify database access", "error", err)
+		return nil, err
+	}
+
+	// Open the database connection
 	db, err := sql.Open("sqlite3", dbPath)
 	if err != nil {
 		log.Error("Failed to open database", "error", err)
@@ -35,7 +55,12 @@ func New(dbPath string, log logger.Logger) (*Store, error) {
 		logger: log,
 	}
 
+	// Try to initialize the database
 	if err := store.initialize(); err != nil {
+		// Close the database connection before returning error
+		if closeErr := db.Close(); closeErr != nil {
+			log.Error("Failed to close database after initialization error", "error", closeErr)
+		}
 		return nil, err
 	}
 
@@ -63,6 +88,65 @@ func (s *Store) initialize() error {
 		return err
 	}
 	s.logger.Info("Schema initialized successfully")
+
+	return nil
+}
+
+func (s *Store) initSchema() error {
+	// Create schema_version table
+	_, err := s.db.Exec(`
+		CREATE TABLE IF NOT EXISTS schema_version (
+			version INTEGER PRIMARY KEY,
+			applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		)
+	`)
+	if err != nil {
+		s.logger.Error("Failed to create schema_version table", "error", err)
+		return err
+	}
+
+	// Check current version
+	var version int
+	err = s.db.QueryRow("SELECT COALESCE(MAX(version), 0) FROM schema_version").Scan(&version)
+	if err != nil {
+		s.logger.Error("Failed to get schema version", "error", err)
+		return err
+	}
+
+	s.logger.Debug("Schema versions", "current", version, "target", SchemaVersion)
+
+	if version < SchemaVersion {
+		tx, err := s.db.Begin()
+		if err != nil {
+			s.logger.Error("Failed to begin transaction", "error", err)
+			return err
+		}
+
+		defer func() {
+			if err := tx.Rollback(); err != nil && err != sql.ErrTxDone {
+				s.logger.Error("Failed to rollback transaction", "error", err)
+			}
+		}()
+
+		// Create or update tables
+		if _, err := tx.Exec(Schema); err != nil {
+			s.logger.Error("Failed to create todos table", "error", err)
+			return err
+		}
+
+		// Update schema version
+		if _, err := tx.Exec("INSERT INTO schema_version (version) VALUES (?)", SchemaVersion); err != nil {
+			s.logger.Error("Failed to update schema version", "error", err)
+			return err
+		}
+
+		if err := tx.Commit(); err != nil {
+			s.logger.Error("Failed to commit schema changes", "error", err)
+			return err
+		}
+
+		s.logger.Info("Schema updated", "version", SchemaVersion)
+	}
 
 	return nil
 }
@@ -204,26 +288,21 @@ func (s *Store) Update(todo *model.Todo) error {
 // ensureDataDir creates the database directory if it doesn't exist
 func ensureDataDir(dbPath string) error {
 	dir := filepath.Dir(dbPath)
-	return os.MkdirAll(dir, 0o755)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		// Check if the error is due to permissions or other issues
+		if !os.IsPermission(err) && !os.IsExist(err) {
+			return err
+		}
+	}
+	return nil
 }
 
-// Add this method to the Store struct
-func (s *Store) initSchema() error {
-	query := `
-	CREATE TABLE IF NOT EXISTS todos (
-		id TEXT PRIMARY KEY,
-		content TEXT NOT NULL,
-		done BOOLEAN NOT NULL DEFAULT 0,
-		created_at DATETIME NOT NULL,
-		updated_at DATETIME NOT NULL
-	);`
-
-	_, err := s.db.Exec(query)
+// verifyDatabaseAccess checks if we can write to the database file
+func verifyDatabaseAccess(dbPath string) error {
+	// Try to create/open the file
+	f, err := os.OpenFile(dbPath, os.O_RDWR|os.O_CREATE, 0o600)
 	if err != nil {
-		s.logger.Error("Failed to initialize schema", "error", err)
 		return err
 	}
-
-	s.logger.Info("Schema initialized successfully")
-	return nil
+	return f.Close()
 }

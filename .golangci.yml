@@ -66,6 +66,7 @@ linters-settings:
           - github.com/marcsauter/single
           - golang.design/x/hotkey
           - github.com/google/uuid
+          - github.com/spf13/viper
           # Internal packages
           - github.com/jonesrussell/godo/internal
           - github.com/jonesrussell/godo/pkg

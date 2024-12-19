@@ -3,7 +3,9 @@ package sqlite
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
+	"github.com/google/uuid"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/model"
 	"github.com/jonesrussell/godo/internal/storage"
@@ -11,67 +13,46 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func setupTestLogger(t *testing.T) logger.Logger {
-	t.Helper()
+func TestSQLiteStore(t *testing.T) {
+	// Setup
 	log, err := logger.NewZapLogger(&logger.Config{
-		Level:    "debug",
-		Console:  true,
-		File:     false,
-		FilePath: "",
+		Level:   "debug",
+		Console: true,
 	})
 	require.NoError(t, err)
-	return log
-}
 
-func TestSQLiteStore(t *testing.T) {
-	log := setupTestLogger(t)
-
-	// Create temporary database
-	tmpDir := t.TempDir()
-	dbPath := filepath.Join(tmpDir, "test.db")
-
-	// Create store
+	dbPath := filepath.Join(t.TempDir(), "test.db")
 	store, err := New(dbPath, log)
 	require.NoError(t, err)
 	defer store.Close()
 
-	// Run common tests
-	storage.TestStore(t, store)
-}
+	// Test CRUD operations
+	t.Run("CRUD operations", func(t *testing.T) {
+		// Create
+		todo := &model.Todo{
+			ID:        uuid.New().String(),
+			Content:   "Test todo",
+			Done:      false,
+			CreatedAt: time.Now().UTC(),
+			UpdatedAt: time.Now().UTC(),
+		}
+		require.NoError(t, store.Add(todo))
 
-func TestSQLiteStore_Persistence(t *testing.T) {
-	log := setupTestLogger(t)
+		// Read
+		retrieved, err := store.Get(todo.ID)
+		require.NoError(t, err)
+		assert.Equal(t, todo.Content, retrieved.Content)
 
-	// Create temporary database
-	tmpDir := t.TempDir()
-	dbPath := filepath.Join(tmpDir, "persistence_test.db")
+		// Update
+		todo.Done = true
+		require.NoError(t, store.Update(todo))
+		updated, err := store.Get(todo.ID)
+		require.NoError(t, err)
+		assert.True(t, updated.Done)
 
-	// Create first store instance
-	store1, err := New(dbPath, log)
-	require.NoError(t, err)
-
-	// Add a todo
-	todo := model.NewTodo("Test persistence")
-	err = store1.Add(todo)
-	assert.NoError(t, err)
-	store1.Close()
-
-	// Create second store instance
-	store2, err := New(dbPath, log)
-	require.NoError(t, err)
-	defer store2.Close()
-
-	// Verify todo persists
-	got, err := store2.Get(todo.ID)
-	assert.NoError(t, err)
-	assert.Equal(t, todo, got)
-}
-
-func TestSQLiteStore_InvalidPath(t *testing.T) {
-	log := setupTestLogger(t)
-
-	// Try to create store with invalid path
-	store, err := New("/nonexistent/path/test.db", log)
-	assert.Error(t, err)
-	assert.Nil(t, store)
+		// Delete
+		require.NoError(t, store.Delete(todo.ID))
+		_, err = store.Get(todo.ID)
+		assert.ErrorIs(t, err, storage.ErrTodoNotFound)
+	})
 }

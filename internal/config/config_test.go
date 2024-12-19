@@ -27,8 +27,10 @@ func TestLoad(t *testing.T) {
 	// Initialize test logger
 	log := setupTestLogger(t)
 
-	// Create test config files
+	// Create temporary directory for test
 	tmpDir := t.TempDir()
+
+	// Create test config files
 	defaultConfig := `
 app:
   name: "Godo"
@@ -37,6 +39,8 @@ database:
   path: "test.db"
   max_open_conns: 1
   max_idle_conns: 1
+logging:
+  level: "info"
 `
 	err := os.WriteFile(filepath.Join(tmpDir, "default.yaml"), []byte(defaultConfig), 0o600)
 	require.NoError(t, err)
@@ -45,6 +49,8 @@ database:
 	testConfig := `
 database:
   path: "test_env.db"
+  max_open_conns: 1
+  max_idle_conns: 1
 `
 	err = os.WriteFile(filepath.Join(tmpDir, "test.yaml"), []byte(testConfig), 0o600)
 	require.NoError(t, err)
@@ -58,12 +64,18 @@ database:
 		}
 	}()
 
-	err = os.Mkdir("configs", 0o755)
+	// Create configs directory in temp directory
+	configsDir := filepath.Join(tmpDir, "configs")
+	err = os.Mkdir(configsDir, 0o755)
 	require.NoError(t, err)
 
-	err = os.WriteFile(filepath.Join("configs", "default.yaml"), []byte(defaultConfig), 0o600)
+	err = os.Chdir(tmpDir)
 	require.NoError(t, err)
-	err = os.WriteFile(filepath.Join("configs", "test.yaml"), []byte(testConfig), 0o600)
+
+	// Copy test configs to configs directory
+	err = os.WriteFile(filepath.Join(configsDir, "default.yaml"), []byte(defaultConfig), 0o600)
+	require.NoError(t, err)
+	err = os.WriteFile(filepath.Join(configsDir, "test.yaml"), []byte(testConfig), 0o600)
 	require.NoError(t, err)
 
 	tests := []struct {
@@ -92,6 +104,9 @@ database:
 		{
 			name: "loads environment config",
 			env:  "test",
+			envVars: map[string]string{
+				"GODO_ENV": "test",
+			},
 			want: &Config{
 				App: AppConfig{
 					Name:    "Godo",
@@ -109,7 +124,7 @@ database:
 			env:  "development",
 			envVars: map[string]string{
 				"GODO_DATABASE_PATH": "env.db",
-				"GODO_LOG_LEVEL":     "debug",
+				"GODO_LOGGING_LEVEL": "debug",
 			},
 			want: &Config{
 				App: AppConfig{
@@ -130,15 +145,12 @@ database:
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Setup environment variables in a separate slice to handle cleanup
-			var envToClean []string
+			// Setup environment variables
 			for k, v := range tt.envVars {
 				os.Setenv(k, v)
-				envToClean = append(envToClean, k)
 			}
-			// Clean up environment variables after the test
 			t.Cleanup(func() {
-				for _, k := range envToClean {
+				for k := range tt.envVars {
 					os.Unsetenv(k)
 				}
 			})
@@ -155,7 +167,7 @@ database:
 				if tt.want != nil {
 					assert.Equal(t, tt.want.App, got.App)
 					assert.Equal(t, tt.want.Database, got.Database)
-					if tt.envVars != nil && tt.envVars["GODO_LOG_LEVEL"] != "" {
+					if tt.envVars != nil && tt.envVars["GODO_LOGGING_LEVEL"] != "" {
 						assert.Equal(t, tt.want.Logging.Level, got.Logging.Level)
 					}
 				}

@@ -1,59 +1,63 @@
 package container
 
 import (
-	"os"
 	"testing"
 
-	"github.com/jonesrussell/godo/internal/common"
+	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestProvideEnvironment(t *testing.T) {
-	// Initialize logger for testing
-	logConfig := &common.LogConfig{
-		Level:       "debug",
-		Output:      []string{"stdout"},
-		ErrorOutput: []string{"stderr"},
-	}
-
-	log, err := logger.New(logConfig)
-	if err != nil {
-		t.Fatalf("Failed to create logger: %v", err)
-	}
-
+func TestProviders(t *testing.T) {
 	tests := []struct {
-		name     string
-		envVar   string
-		expected string
+		name    string
+		setup   func() *config.Config
+		test    func(*testing.T, *config.Config)
+		cleanup func()
 	}{
 		{
-			name:     "returns development when GODO_ENV is not set",
-			envVar:   "",
-			expected: "development",
+			name: "BootstrapLogger creates basic logger",
+			setup: func() *config.Config {
+				return nil // BootstrapLogger doesn't need config
+			},
+			test: func(t *testing.T, _ *config.Config) {
+				log, err := BootstrapLogger()
+				require.NoError(t, err)
+				assert.NotNil(t, log)
+			},
 		},
 		{
-			name:     "returns GODO_ENV value when set",
-			envVar:   "production",
-			expected: "production",
+			name: "ProvideSQLite creates store with correct path",
+			setup: func() *config.Config {
+				return &config.Config{
+					Database: config.DatabaseConfig{
+						Path:         t.TempDir(),
+						MaxOpenConns: 1,
+						MaxIdleConns: 1,
+					},
+				}
+			},
+			test: func(t *testing.T, cfg *config.Config) {
+				log, _ := logger.NewZapLogger(&logger.Config{
+					Level:   "debug",
+					Console: true,
+				})
+				store, err := ProvideSQLite(cfg, log)
+				require.NoError(t, err)
+				assert.NotNil(t, store)
+				store.Close()
+			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Setup
-			if tt.envVar != "" {
-				os.Setenv("GODO_ENV", tt.envVar)
-				defer os.Unsetenv("GODO_ENV")
-			} else {
-				os.Unsetenv("GODO_ENV")
+			cfg := tt.setup()
+			tt.test(t, cfg)
+			if tt.cleanup != nil {
+				tt.cleanup()
 			}
-
-			// Test
-			result := provideEnvironment(log)
-
-			// Assert
-			assert.Equal(t, tt.expected, result)
 		})
 	}
 }

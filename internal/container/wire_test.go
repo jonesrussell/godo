@@ -2,6 +2,7 @@ package container
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/jonesrussell/godo/internal/common"
@@ -11,6 +12,44 @@ import (
 )
 
 func TestInitializeApp(t *testing.T) {
+	// Create temporary test directory
+	tmpDir := t.TempDir()
+	configsDir := filepath.Join(tmpDir, "configs")
+	require.NoError(t, os.MkdirAll(configsDir, 0o755))
+
+	// Create test config files
+	defaultConfig := `
+app:
+  name: "Godo"
+  version: "0.1.0"
+database:
+  path: "test.db"
+  max_open_conns: 1
+  max_idle_conns: 1
+logging:
+  level: "info"
+`
+	err := os.WriteFile(filepath.Join(configsDir, "default.yaml"), []byte(defaultConfig), 0o600)
+	require.NoError(t, err)
+
+	// Create production config
+	productionConfig := `
+database:
+  path: "prod.db"
+logging:
+  level: "warn"
+`
+	err = os.WriteFile(filepath.Join(configsDir, "production.yaml"), []byte(productionConfig), 0o600)
+	require.NoError(t, err)
+
+	// Set working directory to temp dir for config loading
+	originalWd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, os.Chdir(originalWd))
+	}()
+	require.NoError(t, os.Chdir(tmpDir))
+
 	// Initialize logger with test config
 	logConfig := &common.LogConfig{
 		Level:       "debug",
@@ -23,8 +62,7 @@ func TestInitializeApp(t *testing.T) {
 	require.NotNil(t, log)
 
 	tests := []struct {
-		name string
-
+		name    string
 		envVar  string
 		wantErr bool
 	}{
@@ -53,6 +91,13 @@ func TestInitializeApp(t *testing.T) {
 			// Test
 			app, cleanup, err := InitializeApp()
 
+			// Ensure cleanup runs at the end of each test
+			t.Cleanup(func() {
+				if cleanup != nil {
+					cleanup()
+				}
+			})
+
 			// Assert
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -62,11 +107,6 @@ func TestInitializeApp(t *testing.T) {
 				require.NoError(t, err)
 				assert.NotNil(t, app)
 				assert.NotNil(t, cleanup)
-			}
-
-			// Cleanup
-			if cleanup != nil {
-				cleanup()
 			}
 		})
 	}

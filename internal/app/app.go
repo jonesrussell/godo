@@ -155,3 +155,13 @@ func (a *App) Cleanup() {
 		}
 	}
 }
+
+// SetQuickNoteService allows injection of a QuickNoteService for testing
+func (a *App) SetQuickNoteService(service QuickNoteService) {
+	a.quickNote = service
+}
+
+// ShowQuickNote exposes the quick note functionality for testing
+func (a *App) ShowQuickNote() {
+	a.quickNote.Show()
+}

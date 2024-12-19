@@ -17,18 +17,18 @@ func TestProviders(t *testing.T) {
 		cleanup func()
 	}{
 		{
-			name: "BootstrapLogger creates basic logger",
+			name: "provideLogger creates basic logger",
 			setup: func() *config.Config {
-				return nil // BootstrapLogger doesn't need config
+				return nil // provideLogger doesn't need config
 			},
 			test: func(t *testing.T, _ *config.Config) {
-				log, err := BootstrapLogger()
+				log, err := provideLogger()
 				require.NoError(t, err)
 				assert.NotNil(t, log)
 			},
 		},
 		{
-			name: "ProvideSQLite creates store with correct path",
+			name: "provideSQLite creates store with correct path",
 			setup: func() *config.Config {
 				return &config.Config{
 					Database: config.DatabaseConfig{
@@ -43,10 +43,13 @@ func TestProviders(t *testing.T) {
 					Level:   "debug",
 					Console: true,
 				})
-				store, err := ProvideSQLite(cfg, log)
+				store, cleanup, err := provideSQLite(cfg, log)
 				require.NoError(t, err)
 				assert.NotNil(t, store)
-				store.Close()
+				assert.NotNil(t, cleanup)
+
+				// Call cleanup to close the database
+				cleanup()
 			},
 		},
 	}

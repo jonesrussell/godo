@@ -32,7 +32,7 @@
 - [x] Add simple in-memory todo storage
 - [x] Create basic todo model with UUID and timestamps
 - [x] Add logging for todo operations
-- [x] Reference: `internal/model/todo.go`, `internal/storage/memory.go`
+- [x] Reference: `internal/model/todo.go`, `internal/storage/memory/memory.go`
 
 ## Step 5: Persistence ✅
 - [x] Add SQLite storage implementation

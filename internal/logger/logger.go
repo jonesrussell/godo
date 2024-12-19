@@ -1,74 +1,102 @@
 package logger
 
 import (
-	"os"
-
 	"github.com/jonesrussell/godo/internal/common"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
-//nolint:gochecknoglobals // logger needs to be globally accessible for application-wide logging
-var log *zap.Logger
-
-// Initialize sets up the logger with default configuration
-func Initialize() (*zap.Logger, error) {
-	config := zap.NewDevelopmentConfig()
-	var err error
-	log, err = config.Build()
-	if err != nil {
-		return nil, err
-	}
-	return log, nil
+// Logger defines the logging interface
+type Logger interface {
+	Debug(msg string, keysAndValues ...interface{})
+	Info(msg string, keysAndValues ...interface{})
+	Warn(msg string, keysAndValues ...interface{})
+	Error(msg string, keysAndValues ...interface{})
+	Fatal(msg string, keysAndValues ...interface{})
 }
 
-// InitializeWithConfig sets up the logger with custom configuration
-func InitializeWithConfig(cfg common.LogConfig) (*zap.Logger, error) {
-	config := zap.NewDevelopmentConfig()
-
-	// Configure outputs
-	if len(cfg.Output) > 0 {
-		config.OutputPaths = cfg.Output
-	}
-	if len(cfg.ErrorOutput) > 0 {
-		config.ErrorOutputPaths = cfg.ErrorOutput
-	}
-
-	// Set log level
-	level, err := zap.ParseAtomicLevel(cfg.Level)
-	if err != nil {
-		return nil, err
-	}
-	config.Level = level
-
-	log, err = config.Build()
-	if err != nil {
-		return nil, err
-	}
-	return log, nil
+type zapLogger struct {
+	log *zap.Logger
 }
 
-// Debug logs a debug message with structured fields
+var defaultLogger = &zapLogger{}
+
+func Initialize(config *common.LogConfig) (Logger, error) {
+	var level zapcore.Level
+	if err := level.UnmarshalText([]byte(config.Level)); err != nil {
+		return nil, err
+	}
+
+	zapConfig := zap.Config{
+		Level:            zap.NewAtomicLevelAt(level),
+		Development:      false,
+		Encoding:         "json",
+		OutputPaths:      config.Output,
+		ErrorOutputPaths: config.ErrorOutput,
+		EncoderConfig: zapcore.EncoderConfig{
+			TimeKey:   "ts",
+			LevelKey:  "level",
+			NameKey:   "logger",
+			CallerKey: "caller",
+
+			FunctionKey:    zapcore.OmitKey,
+			MessageKey:     "msg",
+			StacktraceKey:  "stacktrace",
+			LineEnding:     zapcore.DefaultLineEnding,
+			EncodeLevel:    zapcore.LowercaseLevelEncoder,
+			EncodeTime:     zapcore.ISO8601TimeEncoder,
+			EncodeDuration: zapcore.SecondsDurationEncoder,
+			EncodeCaller:   zapcore.ShortCallerEncoder,
+		},
+	}
+
+	logger, err := zapConfig.Build()
+	if err != nil {
+		return nil, err
+	}
+
+	defaultLogger.log = logger
+	return defaultLogger, nil
+}
+
+// Implementation of Logger interface
+func (l *zapLogger) Debug(msg string, keysAndValues ...interface{}) {
+	l.log.Sugar().Debugw(msg, keysAndValues...)
+}
+
+func (l *zapLogger) Info(msg string, keysAndValues ...interface{}) {
+	l.log.Sugar().Infow(msg, keysAndValues...)
+}
+
+func (l *zapLogger) Warn(msg string, keysAndValues ...interface{}) {
+	l.log.Sugar().Warnw(msg, keysAndValues...)
+}
+
+func (l *zapLogger) Error(msg string, keysAndValues ...interface{}) {
+	l.log.Sugar().Errorw(msg, keysAndValues...)
+}
+
+func (l *zapLogger) Fatal(msg string, keysAndValues ...interface{}) {
+	l.log.Sugar().Fatalw(msg, keysAndValues...)
+}
+
+// Package-level functions use defaultLogger
 func Debug(msg string, keysAndValues ...interface{}) {
-	log.Sugar().Debugw(msg, keysAndValues...)
+	defaultLogger.Debug(msg, keysAndValues...)
 }
 
-// Info logs an info message with structured fields
 func Info(msg string, keysAndValues ...interface{}) {
-	log.Sugar().Infow(msg, keysAndValues...)
+	defaultLogger.Info(msg, keysAndValues...)
 }
 
-// Warn logs a warning message with structured fields
 func Warn(msg string, keysAndValues ...interface{}) {
-	log.Sugar().Warnw(msg, keysAndValues...)
+	defaultLogger.Warn(msg, keysAndValues...)
 }
 
-// Error logs an error message with structured fields
 func Error(msg string, keysAndValues ...interface{}) {
-	log.Sugar().Errorw(msg, keysAndValues...)
+	defaultLogger.Error(msg, keysAndValues...)
 }
 
-// Fatal logs a fatal message with structured fields and exits
 func Fatal(msg string, keysAndValues ...interface{}) {
-	log.Sugar().Fatalw(msg, keysAndValues...)
-	os.Exit(1)
+	defaultLogger.Fatal(msg, keysAndValues...)
 }

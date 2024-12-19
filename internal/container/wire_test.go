@@ -7,9 +7,10 @@ import (
 	"github.com/jonesrussell/godo/internal/common"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestProvideEnvironment(t *testing.T) {
+func TestInitializeApp(t *testing.T) {
 	// Initialize logger with test config
 	logConfig := &common.LogConfig{
 		Level:       "debug",
@@ -22,19 +23,20 @@ func TestProvideEnvironment(t *testing.T) {
 	}
 
 	tests := []struct {
-		name     string
-		envVar   string
-		expected string
+		name string
+
+		envVar  string
+		wantErr bool
 	}{
 		{
-			name:     "returns development when GODO_ENV is not set",
-			envVar:   "",
-			expected: "development",
+			name:    "initializes with development environment",
+			envVar:  "",
+			wantErr: false,
 		},
 		{
-			name:     "returns GODO_ENV value when set",
-			envVar:   "production",
-			expected: "production",
+			name:    "initializes with production environment",
+			envVar:  "production",
+			wantErr: false,
 		},
 	}
 
@@ -49,10 +51,23 @@ func TestProvideEnvironment(t *testing.T) {
 			}
 
 			// Test
-			result := provideEnvironment()
+			app, cleanup, err := InitializeApp()
 
 			// Assert
-			assert.Equal(t, tt.expected, result)
+			if tt.wantErr {
+				assert.Error(t, err)
+				assert.Nil(t, app)
+				assert.Nil(t, cleanup)
+			} else {
+				require.NoError(t, err)
+				assert.NotNil(t, app)
+				assert.NotNil(t, cleanup)
+			}
+
+			// Cleanup
+			if cleanup != nil {
+				cleanup()
+			}
 		})
 	}
 }

@@ -4,10 +4,16 @@ import (
 	"os"
 	"testing"
 
+	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestProvideEnvironment(t *testing.T) {
+	// Initialize logger before tests
+	if _, err := logger.Initialize(); err != nil {
+		t.Fatalf("Failed to initialize logger: %v", err)
+	}
+
 	tests := []struct {
 		name     string
 		envVar   string

@@ -60,13 +60,12 @@ linters-settings:
           - github.com/mattn/go-sqlite3
           - go.uber.org/zap
           - github.com/google/wire
-          - github.com/spf13/cobra
-          - github.com/spf13/viper
           - fyne.io/fyne/v2
           - gopkg.in/yaml.v3
           - github.com/stretchr/testify
           - github.com/marcsauter/single
           - golang.design/x/hotkey
+          - github.com/google/uuid
           # Internal packages
           - github.com/jonesrussell/godo/internal
           - github.com/jonesrussell/godo/pkg

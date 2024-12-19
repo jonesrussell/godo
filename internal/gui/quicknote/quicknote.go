@@ -27,12 +27,17 @@ func (e *customEntry) TypedShortcut(shortcut fyne.Shortcut) {
 		if cs.KeyName == fyne.KeyReturn && cs.Modifier == fyne.KeyModifierControl {
 			e.onCtrlEnter()
 			return
-		} else if cs.KeyName == fyne.KeyEscape && cs.Modifier == 0 {
-			e.onEscape()
-			return
 		}
 	}
 	e.Entry.TypedShortcut(shortcut)
+}
+
+func (e *customEntry) TypedKey(key *fyne.KeyEvent) {
+	if key.Name == fyne.KeyEscape {
+		e.onEscape()
+		return
+	}
+	e.Entry.TypedKey(key)
 }
 
 // QuickNote represents a quick note dialog
@@ -93,6 +98,14 @@ func (qn *QuickNote) setupShortcuts() {
 		qn.input.SetText("")
 		qn.window.Hide()
 	}
+
+	// Register Ctrl+Enter with the window
+	qn.window.Canvas().AddShortcut(&desktop.CustomShortcut{
+		KeyName:  fyne.KeyReturn,
+		Modifier: fyne.KeyModifierControl,
+	}, func(shortcut fyne.Shortcut) {
+		qn.input.onCtrlEnter()
+	})
 }
 
 func (qn *QuickNote) handleFormSubmit(save bool) {

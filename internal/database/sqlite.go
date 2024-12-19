@@ -2,7 +2,6 @@ package database
 
 import (
 	"database/sql"
-	"fmt"
 	"os"
 	"path/filepath"
 
@@ -33,7 +32,7 @@ func ensureDataDir(dbPath string) error {
 	dir := filepath.Dir(dbPath)
 	if dir != "." {
 		if err := os.MkdirAll(dir, 0o755); err != nil {
-			return fmt.Errorf("failed to create database directory: %w", err)
+			return err
 		}
 	}
 	return nil
@@ -42,39 +41,35 @@ func ensureDataDir(dbPath string) error {
 func NewSQLiteDB(dbPath string) (*sql.DB, error) {
 	logger.Info("Opening database", "path", dbPath)
 
-	// Ensure the data directory exists
 	if err := ensureDataDir(dbPath); err != nil {
+		logger.Error("Failed to create database directory", "error", err)
 		return nil, err
 	}
 
 	db, err := sql.Open("sqlite3", dbPath)
 	if err != nil {
-		logger.Error("Failed to open database: %v", err)
-		return nil, fmt.Errorf("failed to open database: %w", err)
+		logger.Error("Failed to open database", "error", err)
+		return nil, err
 	}
 
-	// Set connection pool settings
-	db.SetMaxOpenConns(1) // SQLite only supports one writer
+	db.SetMaxOpenConns(1)
 	db.SetMaxIdleConns(1)
 
-	// Enable foreign keys
 	if _, err := db.Exec("PRAGMA foreign_keys = ON"); err != nil {
-		logger.Error("Failed to enable foreign keys: %v", err)
-		return nil, fmt.Errorf("failed to enable foreign keys: %w", err)
+		logger.Error("Failed to enable foreign keys", "error", err)
+		return nil, err
 	}
 
-	// Test the connection
 	if err := db.Ping(); err != nil {
-		logger.Error("Error pinging database: %v", err)
-		return nil, fmt.Errorf("database ping failed: %w", err)
+		logger.Error("Database ping failed", "error", err)
+		return nil, err
 	}
 	logger.Info("Database connection successful")
 
-	// Initialize schema
 	logger.Info("Initializing database schema...")
 	if err := initSchema(db); err != nil {
-		logger.Error("Failed to initialize schema: %v", err)
-		return nil, fmt.Errorf("schema initialization failed: %w", err)
+		logger.Error("Schema initialization failed", "error", err)
+		return nil, err
 	}
 	logger.Info("Schema initialized successfully")
 
@@ -82,7 +77,6 @@ func NewSQLiteDB(dbPath string) (*sql.DB, error) {
 }
 
 func initSchema(db *sql.DB) error {
-	// Create schema_version table if it doesn't exist
 	_, err := db.Exec(`
         CREATE TABLE IF NOT EXISTS schema_version (
             version INTEGER PRIMARY KEY,
@@ -90,16 +84,15 @@ func initSchema(db *sql.DB) error {
         )
     `)
 	if err != nil {
-		logger.Error("Failed to create schema_version table: %v", err)
-		return fmt.Errorf("failed to create schema_version table: %w", err)
+		logger.Error("Failed to create schema_version table", "error", err)
+		return err
 	}
 
-	// Check current schema version
 	var version int
 	err = db.QueryRow("SELECT COALESCE(MAX(version), 0) FROM schema_version").Scan(&version)
 	if err != nil {
-		logger.Error("Failed to get schema version: %v", err)
-		return fmt.Errorf("failed to get schema version: %w", err)
+		logger.Error("Failed to get schema version", "error", err)
+		return err
 	}
 
 	logger.Debug("Schema versions", "current", version, "target", SchemaVersion)
@@ -107,35 +100,32 @@ func initSchema(db *sql.DB) error {
 	if version < SchemaVersion {
 		tx, err := db.Begin()
 		if err != nil {
-			logger.Error("Failed to begin transaction: %v", err)
-			return fmt.Errorf("failed to begin transaction: %w", err)
+			logger.Error("Failed to begin transaction", "error", err)
+			return err
 		}
 
 		defer func() {
 			if err := tx.Rollback(); err != nil && err != sql.ErrTxDone {
-				logger.Error("Failed to rollback transaction: %v", err)
+				logger.Error("Failed to rollback transaction", "error", err)
 			}
 		}()
 
-		// Apply schema changes
 		if _, err := tx.Exec(Schema); err != nil {
-			logger.Error("Failed to create todos table: %v", err)
-			return fmt.Errorf("failed to create todos table: %w", err)
+			logger.Error("Failed to create todos table", "error", err)
+			return err
 		}
 
-		// Update schema version
 		if _, err := tx.Exec("INSERT INTO schema_version (version) VALUES (?)", SchemaVersion); err != nil {
-			logger.Error("Failed to update schema version: %v", err)
-			return fmt.Errorf("failed to update schema version: %w", err)
+			logger.Error("Failed to update schema version", "error", err)
+			return err
 		}
 
-		// Commit transaction
 		if err := tx.Commit(); err != nil {
-			logger.Error("Failed to commit schema changes: %v", err)
-			return fmt.Errorf("failed to commit schema changes: %w", err)
+			logger.Error("Failed to commit schema changes", "error", err)
+			return err
 		}
 
-		logger.Info("Schema updated to version %d", SchemaVersion)
+		logger.Info("Schema updated", "version", SchemaVersion)
 	}
 
 	return nil
@@ -145,8 +135,9 @@ func TestConnection(db *sql.DB) error {
 	var count int
 	err := db.QueryRow("SELECT COUNT(*) FROM todos").Scan(&count)
 	if err != nil {
-		return fmt.Errorf("database test query failed: %w", err)
+		logger.Error("Database test query failed", "error", err)
+		return err
 	}
-	logger.Debug("Current todo count in database: %d", count)
+	logger.Debug("Current todo count", "count", count)
 	return nil
 }

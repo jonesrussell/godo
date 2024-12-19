@@ -1,185 +1,177 @@
 package main
 
 import (
-	"context"
 	"os"
-	"os/signal"
-	"syscall"
+	"path/filepath"
 
 	"fyne.io/fyne/v2"
 	fyneapp "fyne.io/fyne/v2/app"
+	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/widget"
-	"github.com/jonesrussell/godo/internal/app"
 	"github.com/jonesrussell/godo/internal/assets"
-	"github.com/jonesrussell/godo/internal/common"
-	"github.com/jonesrussell/godo/internal/config"
+	"github.com/jonesrussell/godo/internal/gui/quicknote"
 	"github.com/jonesrussell/godo/internal/logger"
-	"github.com/jonesrussell/godo/internal/quicknote"
+	"github.com/jonesrussell/godo/internal/storage"
+	"github.com/jonesrussell/godo/internal/storage/sqlite"
+	"golang.design/x/hotkey"
 )
 
-func main() {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+type App struct {
+	fyneApp    fyne.App
+	mainWindow fyne.Window
+	quickNote  *quicknote.QuickNote
+	store      storage.Store
+}
 
-	cfg, err := initializeConfig()
+func NewApp() (*App, error) {
+	// Initialize SQLite storage
+	store, err := initializeStorage()
 	if err != nil {
-		logger.Error("Failed to initialize config", "error", err)
-		return
+		return nil, err
 	}
 
-	application, err := initializeApp(cfg)
-	if err != nil {
-		logger.Error("Failed to initialize app", "error", err)
-		return
-	}
-	defer cleanup(application)
+	fyneApp := fyneapp.NewWithID("io.github.jonesrussell.godo")
+	mainWindow := fyneApp.NewWindow("Godo")
 
-	// Load application icon
-	iconBytes, err := assets.GetIcon()
-	if err != nil {
-		logger.Error("Failed to load application icon", "error", err)
+	app := &App{
+		fyneApp:    fyneApp,
+		mainWindow: mainWindow,
+		store:      store,
 	}
 
-	fyneApp := fyneapp.New()
-	fyneWin := fyneApp.NewWindow("Godo")
-	fyneWin.Resize(fyne.NewSize(800, 600))
-	fyneWin.CenterOnScreen()
+	app.quickNote = quicknote.New(mainWindow, store)
 
-	// Set up the content
-	content := widget.NewLabel("Welcome to Godo")
-	fyneWin.SetContent(content)
+	return app, nil
+}
 
-	// Set application icon if available
-	if iconBytes != nil {
-		icon := fyne.NewStaticResource("icon", iconBytes)
-		fyneApp.SetIcon(icon)
+func (a *App) setupUI() {
+	a.setupLifecycleLogging()
+	a.setupSystemTray()
+	a.setupMainWindow()
+	if err := a.setupGlobalHotkey(); err != nil {
+		logger.Error("Failed to setup global hotkey", "error", err)
 	}
+}
 
-	// Register global shortcut
-	if desk, ok := fyneApp.(desktop.App); ok {
-		shortcut := &desktop.CustomShortcut{
-			KeyName:  fyne.KeyG,
-			Modifier: fyne.KeyModifierControl | fyne.KeyModifierAlt,
-		}
+func (a *App) setupLifecycleLogging() {
+	a.fyneApp.Lifecycle().SetOnStarted(func() {
+		logger.Info("Lifecycle: Started")
+	})
+	a.fyneApp.Lifecycle().SetOnStopped(func() {
+		logger.Info("Lifecycle: Stopped")
+	})
+}
 
-		desk.SetSystemTrayMenu(fyne.NewMenu("Godo",
-			fyne.NewMenuItem("Open", func() {
-				fyneWin.Show()
-				fyneWin.RequestFocus()
-				fyneWin.CenterOnScreen()
-			}),
-			fyne.NewMenuItem("Quick Note", func() { showQuickNote(ctx, application) }),
+func (a *App) setupSystemTray() {
+	if desk, ok := a.fyneApp.(desktop.App); ok {
+		logger.Debug("Loading system tray icon")
+		systrayIcon := assets.GetSystrayIconResource()
+		appIcon := assets.GetAppIconResource()
+		a.fyneApp.SetIcon(appIcon)
+
+		menu := fyne.NewMenu("Godo",
+			fyne.NewMenuItem("Quick Note", a.quickNote.Show),
 			fyne.NewMenuItemSeparator(),
-			fyne.NewMenuItem("Quit", func() { fyneApp.Quit() }),
-		))
+			fyne.NewMenuItem("Quit", func() {
+				a.fyneApp.Quit()
+			}),
+		)
 
-		fyneWin.Canvas().AddShortcut(shortcut, func(shortcut fyne.Shortcut) {
+		desk.SetSystemTrayMenu(menu)
+		desk.SetSystemTrayIcon(systrayIcon)
+		logger.Info("System tray initialized")
+	} else {
+		logger.Warn("System tray not supported on this platform")
+	}
+}
+
+func (a *App) setupMainWindow() {
+	a.mainWindow.SetContent(container.NewVBox(
+		widget.NewLabel("Welcome to Godo!"),
+		widget.NewButton("Open Quick Note", a.quickNote.Show),
+	))
+
+	a.mainWindow.SetCloseIntercept(func() {
+		logger.Debug("Window close intercepted, hiding instead")
+		a.mainWindow.Hide()
+	})
+
+	a.mainWindow.Resize(fyne.NewSize(800, 600))
+	a.mainWindow.CenterOnScreen()
+	a.mainWindow.Hide()
+}
+
+func (a *App) setupGlobalHotkey() error {
+	return setupGlobalHotkey(a.quickNote.Show)
+}
+
+func (a *App) Run() {
+	a.fyneApp.Run()
+}
+
+func (a *App) Cleanup() {
+	if db, ok := a.store.(*sqlite.Store); ok {
+		if err := db.Close(); err != nil {
+			logger.Error("Failed to close database", "error", err)
+		}
+	}
+}
+
+func main() {
+	// Initialize logger
+	if _, err := logger.Initialize(); err != nil {
+		panic(err)
+	}
+
+	app, err := NewApp()
+	if err != nil {
+		logger.Error("Failed to create application", "error", err)
+		panic(err)
+	}
+	defer app.Cleanup()
+
+	app.setupUI()
+	app.Run()
+}
+
+func initializeStorage() (storage.Store, error) {
+	dbPath := getDBPath()
+	return sqlite.New(dbPath)
+}
+
+func getDBPath() string {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		logger.Error("Failed to get home directory", "error", err)
+		return "godo.db"
+	}
+
+	appDir := filepath.Join(homeDir, ".godo")
+	if err := os.MkdirAll(appDir, 0o755); err != nil {
+		logger.Error("Failed to create app directory", "error", err)
+		return "godo.db"
+	}
+
+	return filepath.Join(appDir, "godo.db")
+}
+
+func setupGlobalHotkey(callback func()) error {
+	hk := hotkey.New([]hotkey.Modifier{
+		hotkey.ModCtrl,
+		hotkey.ModAlt,
+	}, hotkey.KeyG)
+
+	if err := hk.Register(); err != nil {
+		return err
+	}
+
+	go func() {
+		for range hk.Keydown() {
 			logger.Debug("Global hotkey triggered")
-			showQuickNote(ctx, application)
-		})
-	}
-
-	// Run the application
-	if err := runApplication(application); err != nil {
-		logger.Error("Application error", "error", err)
-		return
-	}
-}
-
-func runApplication(application *app.App) error {
-	// Create a context that can be cancelled
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	// Set up signal handling
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
-
-	// Create an error channel
-	errChan := make(chan error, 1)
-
-	// Start the quick note feature in a goroutine
-	go func() {
-		if err := application.GetQuickNote().Show(ctx); err != nil {
-			logger.Error("Quick note error", "error", err)
-			errChan <- err
+			callback()
 		}
 	}()
 
-	// Run the main UI in the main goroutine
-	return application.Run(ctx)
-}
-
-func initializeConfig() (*config.Config, error) {
-	env := os.Getenv("GODO_ENV")
-	if env == "" {
-		env = "development"
-	}
-
-	cfg, err := config.Load(env)
-	if err != nil {
-		return nil, err
-	}
-
-	logConfig := common.LogConfig{
-		Level:       cfg.Logging.Level,
-		Output:      cfg.Logging.Output,
-		ErrorOutput: cfg.Logging.ErrorOutput,
-	}
-
-	if _, err := logger.InitializeWithConfig(logConfig); err != nil {
-		return nil, err
-	}
-
-	return cfg, nil
-}
-
-func initializeApp(cfg *config.Config) (*app.App, error) {
-	application, err := app.InitializeAppWithConfig(cfg)
-	if err != nil {
-		return nil, err
-	}
-	return application, nil
-}
-
-func cleanup(application *app.App) {
-	logger.Info("Cleaning up application...")
-	if err := application.Cleanup(); err != nil {
-		logger.Error("Failed to cleanup", "error", err)
-	}
-}
-
-func showQuickNote(ctx context.Context, application *app.App) {
-	logger.Debug("Opening quick note window")
-
-	quickNote, err := quicknote.New()
-	if err != nil {
-		logger.Error("Failed to create quick note UI", "error", err)
-		return
-	}
-
-	inputChan := quickNote.GetInput()
-
-	if err := quickNote.Show(ctx); err != nil {
-		logger.Error("Failed to show quick note", "error", err)
-		return
-	}
-
-	go func() {
-		select {
-		case input := <-inputChan:
-			logger.Debug("Received quick note input, creating todo")
-			todoService := application.GetTodoService()
-			_, err := todoService.CreateTodo(ctx, input, "")
-			if err != nil {
-				logger.Error("Failed to create todo from quick note", "error", err)
-			} else {
-				logger.Debug("Successfully created todo from quick note")
-			}
-		case <-ctx.Done():
-			logger.Debug("Quick note context cancelled")
-			return
-		}
-	}()
+	return nil
 }

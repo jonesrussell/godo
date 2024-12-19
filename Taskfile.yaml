@@ -129,8 +129,9 @@ tasks:
     env:
       GOOS: windows
       GOARCH: amd64
+    dir: cmd/godo
     cmds:
-      - go build -o bin/godo.exe cmd/godo/main.go
+      - go build -o ../../bin/godo.exe
 
   build-darwin:
     desc: Build for macOS
@@ -166,3 +167,14 @@ tasks:
     cmds:
       - task: wire
       - go generate ./...
+
+  package-windows:
+    desc: Package Windows executable with Fyne
+    deps: [build-windows]
+    dir: cmd/godo
+    cmds:
+      - fyne package -os windows
+      - cmd: cmd /c move /Y Godo.exe "..\..\bin\Godo.exe"
+        platforms: [windows]
+      - cmd: mv Godo.exe ../../bin/
+        platforms: [linux, darwin]

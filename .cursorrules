@@ -1,5 +1,7 @@
 # Project: Godo - A Todo Application with Quick-Note Support
 
+- Key.Modifier doesn't exist
+
 ## Project Overview
 - Todo application with two main features:
   1. Quick-note capture via global hotkey

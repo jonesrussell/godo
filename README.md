@@ -68,12 +68,17 @@ git clone https://github.com/jonesrussell/godo.git
 cd godo
 ```
 
-2. Build the application
+2. Build and package the application
 ```bash
-go build
+# For Windows
+task package-windows
+
+# The packaged executable will be in cmd/godo/
 ```
 
 3. Run the application
+- Double-click the packaged executable
+- Or run from command line:
 ```bash
 ./godo
 ```

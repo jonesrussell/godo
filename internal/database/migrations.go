@@ -6,7 +6,7 @@ import (
 	"github.com/jonesrussell/godo/internal/logger"
 )
 
-// Migrations holds all database migrations
+//nolint:gochecknoglobals // migrations need to be package-level for database initialization
 var migrations = []string{
 	`CREATE TABLE IF NOT EXISTS todos (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,

@@ -1,9 +1,5 @@
 package common
 
-import (
-	"fmt"
-)
-
 // LogConfig holds logging configuration
 type LogConfig struct {
 	Level       string   `yaml:"level"`
@@ -19,7 +15,7 @@ type HotkeyBinding struct {
 
 // String implements the Stringer interface for HotkeyBinding
 func (h HotkeyBinding) String() string {
-	return fmt.Sprintf("{%v %s}", h.Modifiers, h.Key)
+	return h.Key
 }
 
 // Error represents a domain error
@@ -31,13 +27,13 @@ type Error struct {
 
 func (e *Error) Error() string {
 	if e.Err != nil {
-		return fmt.Sprintf("[%s] %s: %v", e.Code, e.Message, e.Err)
+		return e.Code + ": " + e.Message + ": " + e.Err.Error()
 	}
-	return fmt.Sprintf("[%s] %s", e.Code, e.Message)
+	return e.Code + ": " + e.Message
 }
 
 // NewError creates a new domain error
-func NewError(code string, message string, err error) *Error {
+func NewError(code, message string, err error) *Error {
 	return &Error{
 		Code:    code,
 		Message: message,

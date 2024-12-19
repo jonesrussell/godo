@@ -9,7 +9,7 @@ import (
 
 // Store implements storage.Store interface with in-memory storage
 type Store struct {
-	sync.RWMutex
+	mu    sync.RWMutex
 	todos map[string]*model.Todo
 }
 
@@ -22,16 +22,16 @@ func New() *Store {
 
 // Add adds a new todo
 func (s *Store) Add(todo *model.Todo) error {
-	s.Lock()
-	defer s.Unlock()
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.todos[todo.ID] = todo
 	return nil
 }
 
 // Get retrieves a todo by ID
 func (s *Store) Get(id string) (*model.Todo, error) {
-	s.RLock()
-	defer s.RUnlock()
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	if todo, exists := s.todos[id]; exists {
 		return todo, nil
 	}
@@ -40,8 +40,8 @@ func (s *Store) Get(id string) (*model.Todo, error) {
 
 // List returns all todos
 func (s *Store) List() []*model.Todo {
-	s.RLock()
-	defer s.RUnlock()
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	todos := make([]*model.Todo, 0, len(s.todos))
 	for _, todo := range s.todos {
 		todos = append(todos, todo)
@@ -51,8 +51,8 @@ func (s *Store) List() []*model.Todo {
 
 // Update updates an existing todo
 func (s *Store) Update(todo *model.Todo) error {
-	s.Lock()
-	defer s.Unlock()
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	if _, exists := s.todos[todo.ID]; !exists {
 		return storage.ErrTodoNotFound
 	}
@@ -62,8 +62,8 @@ func (s *Store) Update(todo *model.Todo) error {
 
 // Delete removes a todo
 func (s *Store) Delete(id string) error {
-	s.Lock()
-	defer s.Unlock()
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	if _, exists := s.todos[id]; !exists {
 		return storage.ErrTodoNotFound
 	}

@@ -32,14 +32,17 @@ func TestStore(t *testing.T, s Store) {
 		// Clear existing todos
 		todos := s.List()
 		for _, todo := range todos {
-			s.Delete(todo.ID)
+			err := s.Delete(todo.ID)
+			assert.NoError(t, err)
 		}
 
 		// Add new todos
 		todo1 := model.NewTodo("First todo")
 		todo2 := model.NewTodo("Second todo")
-		s.Add(todo1)
-		s.Add(todo2)
+		err := s.Add(todo1)
+		assert.NoError(t, err)
+		err = s.Add(todo2)
+		assert.NoError(t, err)
 
 		// Get list
 		todos = s.List()
@@ -50,10 +53,11 @@ func TestStore(t *testing.T, s Store) {
 
 	t.Run("Update", func(t *testing.T) {
 		todo := model.NewTodo("Original content")
-		s.Add(todo)
+		err := s.Add(todo)
+		assert.NoError(t, err)
 
 		todo.UpdateContent("Updated content")
-		err := s.Update(todo)
+		err = s.Update(todo)
 		assert.NoError(t, err)
 
 		got, err := s.Get(todo.ID)
@@ -63,9 +67,10 @@ func TestStore(t *testing.T, s Store) {
 
 	t.Run("Delete", func(t *testing.T) {
 		todo := model.NewTodo("To be deleted")
-		s.Add(todo)
+		err := s.Add(todo)
+		assert.NoError(t, err)
 
-		err := s.Delete(todo.ID)
+		err = s.Delete(todo.ID)
 		assert.NoError(t, err)
 
 		got, err := s.Get(todo.ID)

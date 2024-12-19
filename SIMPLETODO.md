@@ -1,18 +1,20 @@
 # Simple Todo Integration Plan
 
-## Current State (main.go)
+## Current State
 - [x] Basic Fyne app with quick note functionality
 - [x] Main window hidden by default
 - [x] System tray integration with proper icons
 - [x] Lifecycle logging implemented
+- [x] Quick note in separate package
+- [x] SQLite persistence working
 
-## Step 1: Add Basic Logging
+## Step 1: Add Basic Logging ✅
 - [x] Add zap logger initialization
 - [x] Add basic logging to track application lifecycle
 - [x] Log startup, shutdown, and main operations
 - [x] Reference: `internal/logger/logger.go`
 
-## Step 2: Add System Tray
+## Step 2: Add System Tray ✅
 - [x] Add system tray icon (using favicon.ico)
 - [x] Add application icon (using Icon.png)
 - [x] Hide main window by default
@@ -20,37 +22,42 @@
 - [x] Add logging for system tray events
 - [x] Reference: `cmd/godo/main.go`
 
-## Step 3: Refactor Quick Note
-- [ ] Move quick note logic to separate package
-- [ ] Keep the same functionality but make it callable from system tray
-- [ ] Add logging for quick note operations (open, save, cancel)
-- [ ] Reference: `internal/gui/quicknote.go`
+## Step 3: Refactor Quick Note ✅
+- [x] Move quick note logic to separate package
+- [x] Keep the same functionality but callable from system tray
+- [x] Add logging for quick note operations
+- [x] Reference: `internal/gui/quicknote/quicknote.go`
 
-## Step 4: Basic Todo Storage
-- [ ] Add simple in-memory todo storage initially
-- [ ] Create basic todo model
-- [ ] Add logging for todo operations (create, read, update, delete)
-- [ ] Reference: `internal/model/todo.go` (lines 9-16)
+## Step 4: Basic Todo Storage ✅
+- [x] Add simple in-memory todo storage
+- [x] Create basic todo model with UUID and timestamps
+- [x] Add logging for todo operations
+- [x] Reference: `internal/model/todo.go`, `internal/storage/memory.go`
 
-## Step 5: Todo UI Components
-- [ ] Add minimal todo list view
-- [ ] Add task input field
-- [ ] Add complete/delete actions
-- [ ] Keep it hidden by default, accessible from tray
-- [ ] Add logging for UI interactions
+## Step 5: Persistence ✅
+- [x] Add SQLite storage implementation
+- [x] Implement basic CRUD operations
+- [x] Add migration support
+- [x] Add logging for database operations
+- [x] Reference: `internal/storage/sqlite/sqlite.go`
 
-## Step 6: Persistence
-- [ ] Add SQLite storage
-- [ ] Implement basic CRUD operations
-- [ ] Add logging for database operations
-- [ ] Keep it simple initially
-
-## Step 7: Polish
+## Step 6: Polish 👈 (Next)
 - [ ] Add keyboard shortcuts
 - [ ] Improve UI layout
 - [ ] Add basic error handling
 - [ ] Enhance logging with contextual information
 - [ ] Add log rotation
+- [ ] Add auto-start capability
+- [ ] Add update mechanism
+
+## Step 7: Todo List UI
+- [ ] Add a list view to display all todos
+- [ ] Add ability to mark todos as done
+- [ ] Add ability to delete todos
+- [ ] Show todo creation time and last update time
+- [ ] Reference: `internal/gui/todolist/todolist.go`
+
+Would you like to proceed with Step 6 and start polishing the application?
 
 ## Implementation Plan
 

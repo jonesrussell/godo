@@ -4,8 +4,8 @@ go 1.23
 
 require (
 	fyne.io/fyne/v2 v2.5.3
+	github.com/google/uuid v1.1.2
 	github.com/google/wire v0.6.0
-	github.com/marcsauter/single v0.0.0-20201009143647-9f8d81240be2
 	github.com/mattn/go-sqlite3 v1.14.24
 	github.com/stretchr/testify v1.10.0
 	go.uber.org/zap v1.27.0

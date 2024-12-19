@@ -1,14 +1,18 @@
 package main
 
 import (
+	"os"
+	"path/filepath"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/widget"
 	"github.com/jonesrussell/godo/internal/assets"
+	"github.com/jonesrussell/godo/internal/gui/quicknote"
 	"github.com/jonesrussell/godo/internal/logger"
+	"github.com/jonesrussell/godo/internal/storage/sqlite"
 )
 
 func logLifecycle(a fyne.App) {
@@ -53,6 +57,22 @@ func setupSystemTray(myApp fyne.App, showQuickNote func()) {
 	}
 }
 
+func getDBPath() string {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		logger.Error("Failed to get home directory", "error", err)
+		return "godo.db"
+	}
+
+	appDir := filepath.Join(homeDir, ".godo")
+	if err := os.MkdirAll(appDir, 0755); err != nil {
+		logger.Error("Failed to create app directory", "error", err)
+		return "godo.db"
+	}
+
+	return filepath.Join(appDir, "godo.db")
+}
+
 func main() {
 	// Initialize logger
 	_, err := logger.Initialize()
@@ -60,36 +80,26 @@ func main() {
 		panic(err)
 	}
 
+	// Initialize SQLite storage
+	dbPath := getDBPath()
+	store, err := sqlite.New(dbPath)
+	if err != nil {
+		logger.Error("Failed to initialize database", "error", err)
+		panic(err)
+	}
+	defer store.Close()
+
 	// Create app with unique ID
 	myApp := app.NewWithID("io.github.jonesrussell.godo")
 	logLifecycle(myApp)
 
 	mainWindow := myApp.NewWindow("Godo")
 
-	// Function to show quick note
-	showQuickNote := func() {
-		// Ensure the window is shown when needed
-		mainWindow.Show()
+	// Create quick note instance with store
+	qn := quicknote.New(mainWindow, store)
 
-		entry := widget.NewMultiLineEntry()
-		entry.SetPlaceHolder("Enter your note here...")
-
-		form := dialog.NewForm("Quick Note", "Save", "Cancel", []*widget.FormItem{
-			widget.NewFormItem("Note", entry),
-		}, func(b bool) {
-			if b {
-				logger.Debug("Saving note", "content", entry.Text)
-			}
-			// Hide the window after dialog is closed
-			mainWindow.Hide()
-		}, mainWindow)
-
-		form.Resize(fyne.NewSize(400, 200))
-		form.Show()
-	}
-
-	// Set up system tray
-	setupSystemTray(myApp, showQuickNote)
+	// Set up system tray with the quick note Show method
+	setupSystemTray(myApp, qn.Show)
 
 	// Hide main window by default
 	mainWindow.SetCloseIntercept(func() {
@@ -99,7 +109,7 @@ func main() {
 
 	mainWindow.SetContent(container.NewVBox(
 		widget.NewLabel("Welcome to the simplified Fyne app!"),
-		widget.NewButton("Open Quick Note", showQuickNote),
+		widget.NewButton("Open Quick Note", qn.Show),
 	))
 	mainWindow.Resize(fyne.NewSize(800, 600))
 	mainWindow.CenterOnScreen()

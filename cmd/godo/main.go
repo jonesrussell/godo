@@ -87,16 +87,44 @@ func (a *App) setupSystemTray() {
 }
 
 func (a *App) setupMainWindow() {
-	a.mainWindow.SetContent(container.NewVBox(
-		widget.NewLabel("Welcome to Godo!"),
-		widget.NewButton("Open Quick Note", a.quickNote.Show),
-	))
+	// Create a more structured layout
+	header := container.NewHBox(
+		widget.NewLabel("Godo - Task Manager"),
+		widget.NewSeparator(),
+	)
 
-	a.mainWindow.SetCloseIntercept(func() {
-		logger.Debug("Window close intercepted, hiding instead")
-		a.mainWindow.Hide()
-	})
+	// Add a toolbar with common actions
+	toolbar := container.NewHBox(
+		widget.NewButton("New Todo", a.quickNote.Show),
+		widget.NewSeparator(),
+		widget.NewButton("Show All", func() {
+			a.mainWindow.Show()
+			a.mainWindow.RequestFocus()
+		}),
+	)
 
+	// Placeholder for the todo list (we'll implement this in Step 7)
+	content := container.NewVBox(
+		widget.NewLabel("Your todos will appear here"),
+	)
+
+	// Status bar with app info
+	statusBar := container.NewHBox(
+		widget.NewLabel("Press Ctrl+Alt+G for quick notes"),
+		widget.NewSeparator(),
+		widget.NewLabel("v0.1.0"),
+	)
+
+	// Combine all elements
+	mainContent := container.NewBorder(
+		container.NewVBox(header, toolbar), // top
+		statusBar,                          // bottom
+		nil,                                // left
+		nil,                                // right
+		content,                            // center
+	)
+
+	a.mainWindow.SetContent(mainContent)
 	a.mainWindow.Resize(fyne.NewSize(800, 600))
 	a.mainWindow.CenterOnScreen()
 	a.mainWindow.Hide()

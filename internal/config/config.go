@@ -8,16 +8,7 @@ import (
 	yaml "gopkg.in/yaml.v3"
 )
 
-// Default environment
-var env = "development"
-
-func init() {
-	// Allow environment override through ENV var
-	if e := os.Getenv("GODO_ENV"); e != "" {
-		env = e
-	}
-}
-
+// Config holds application configuration
 type Config struct {
 	App      AppConfig        `yaml:"app"`
 	Database DatabaseConfig   `yaml:"database"`
@@ -52,13 +43,14 @@ type QuickNoteConfig struct {
 	Title  string `yaml:"title"`
 }
 
-// Load loads configuration from files
-func Load(logger logger.Logger) (*Config, error) {
+// Load loads the configuration from files and environment
+func Load(log logger.Logger) (*Config, error) {
+	env := "development"
 	config := &Config{}
 
 	// Load default config
 	if err := loadConfigFile(config, "configs/default.yaml"); err != nil {
-		logger.Error("Failed loading default config", "error", err)
+		log.Error("Failed loading default config", "error", err)
 		return nil, err
 	}
 
@@ -66,7 +58,7 @@ func Load(logger logger.Logger) (*Config, error) {
 	envConfig := "configs/" + env + ".yaml"
 	if _, err := os.Stat(envConfig); err == nil {
 		if err := loadConfigFile(config, envConfig); err != nil {
-			logger.Error("Failed loading environment config",
+			log.Error("Failed loading environment config",
 				"env", env,
 				"error", err)
 			return nil, err
@@ -75,7 +67,7 @@ func Load(logger logger.Logger) (*Config, error) {
 
 	// Override with environment variables
 	if err := loadEnvOverrides(config); err != nil {
-		logger.Error("Failed loading environment overrides", "error", err)
+		log.Error("Failed loading environment overrides", "error", err)
 		return nil, err
 	}
 

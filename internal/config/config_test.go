@@ -38,7 +38,7 @@ database:
   max_open_conns: 1
   max_idle_conns: 1
 `
-	err := os.WriteFile(filepath.Join(tmpDir, "default.yaml"), []byte(defaultConfig), 0644)
+	err := os.WriteFile(filepath.Join(tmpDir, "default.yaml"), []byte(defaultConfig), 0o644)
 	require.NoError(t, err)
 
 	// Test environment config
@@ -46,31 +46,31 @@ database:
 database:
   path: "test_env.db"
 `
-	err = os.WriteFile(filepath.Join(tmpDir, "test.yaml"), []byte(testConfig), 0644)
+	err = os.WriteFile(filepath.Join(tmpDir, "test.yaml"), []byte(testConfig), 0o644)
 	require.NoError(t, err)
 
 	// Temporarily change working directory
 	originalWd, err := os.Getwd()
 	require.NoError(t, err)
-	defer os.Chdir(originalWd)
+	defer func() {
+		if err := os.Chdir(originalWd); err != nil {
+			t.Errorf("Failed to restore working directory: %v", err)
+		}
+	}()
 
-	err = os.Chdir(tmpDir)
+	err = os.Mkdir("configs", 0o755)
 	require.NoError(t, err)
 
-	// Create configs directory
-	err = os.Mkdir("configs", 0755)
+	err = os.WriteFile(filepath.Join("configs", "default.yaml"), []byte(defaultConfig), 0o644)
 	require.NoError(t, err)
-
-	// Copy test configs
-	err = os.WriteFile(filepath.Join("configs", "default.yaml"), []byte(defaultConfig), 0644)
-	require.NoError(t, err)
-	err = os.WriteFile(filepath.Join("configs", "test.yaml"), []byte(testConfig), 0644)
+	err = os.WriteFile(filepath.Join("configs", "test.yaml"), []byte(testConfig), 0o644)
 	require.NoError(t, err)
 
 	tests := []struct {
 		name    string
 		env     string
 		envVars map[string]string
+
 		want    *Config
 		wantErr bool
 	}{
@@ -130,11 +130,18 @@ database:
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Setup environment variables
+			// Setup environment variables in a separate slice to handle cleanup
+			var envToClean []string
 			for k, v := range tt.envVars {
 				os.Setenv(k, v)
-				defer os.Unsetenv(k)
+				envToClean = append(envToClean, k)
 			}
+			// Clean up environment variables after the test
+			t.Cleanup(func() {
+				for _, k := range envToClean {
+					os.Unsetenv(k)
+				}
+			})
 
 			// Test with logger instance
 			got, err := Load(log)

@@ -1,21 +1,15 @@
-﻿#!/usr/bin/env bash
-
-set -e  # Exit on any error
+﻿#!/bin/bash
 
 # Run tests with coverage
-go test ./... -coverprofile=coverage.out
+go test -race -coverprofile=coverage.out -coverpkg=./... ./...
 
-# Generate HTML report
-go tool cover -html=coverage.out -o coverage.html
-
-# Display coverage statistics
-go tool cover -func=coverage.out
-
-# Check minimum coverage threshold
+# Check coverage percentage
 COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
 THRESHOLD=80
 
 if (( $(echo "$COVERAGE < $THRESHOLD" | bc -l) )); then
-    echo "Coverage is below threshold: $COVERAGE% < $THRESHOLD%"
+    echo "Test coverage is below threshold. Current: $COVERAGE%. Required: $THRESHOLD%"
     exit 1
+else
+    echo "Test coverage is good. Current: $COVERAGE%. Required: $THRESHOLD%"
 fi

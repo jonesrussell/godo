@@ -1,6 +1,9 @@
 # Project: Godo - A Todo Application with Quick-Note Support
 
-- Key.Modifier doesn't exist
+## Important Notes on GUI library
+- fyne.io/fyne/v2 v2.5.3
+  1. Key.Modifier doesn't exist
+  2. there is no RequestFocus() method
 
 ## Project Overview
 - Todo application with two main features:

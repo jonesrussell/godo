@@ -1,0 +1,16 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Go files should always use LF
+*.go text eol=lf
+
+# Taskfile should use LF
+*.yaml text eol=lf
+*.yml text eol=lf
+
+# Shell scripts should use LF
+*.sh text eol=lf
+
+# Windows scripts should use CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf

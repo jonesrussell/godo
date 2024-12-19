@@ -145,3 +145,10 @@ func (qn *QuickNote) Show() {
 	qn.form.Show()
 	qn.window.Canvas().Focus(qn.input)
 }
+
+// Hide hides the quick note dialog
+func (qn *QuickNote) Hide() {
+	qn.input.SetText("")
+	qn.window.Hide()
+	logger.Debug("Quick note hidden")
+}

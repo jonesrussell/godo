@@ -72,17 +72,17 @@ func TestApp(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			app, mockQuickNote := setupTestApp(t)
-			tt.fn(t, app, mockQuickNote)
+			testApp, mockQuickNote := setupTestApp(t)
+			tt.fn(t, testApp, mockQuickNote)
 		})
 	}
 }
 
 func TestApp_QuickNoteIntegration(t *testing.T) {
-	app, mockQuickNote := setupTestApp(t)
+	testApp, mockQuickNote := setupTestApp(t)
 
 	// Test that quick note service is properly integrated
 	assert.False(t, mockQuickNote.showCalled)
-	app.ShowQuickNote() // Add this method to App
+	testApp.ShowQuickNote() // Add this method to App
 	assert.True(t, mockQuickNote.showCalled)
 }

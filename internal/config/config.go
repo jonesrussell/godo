@@ -62,8 +62,7 @@ func (h HotkeyConfig) ToHotkey() (*hotkey.Hotkey, error) {
 	}
 
 	var key hotkey.Key
-	switch strings.ToUpper(h.Key) {
-	case "G":
+	if strings.ToUpper(h.Key) == "CTRL+SPACE" {
 		key = hotkey.KeyG
 		// Add more keys as needed
 	}
@@ -90,10 +89,9 @@ func Load(log logger.Logger) (*Config, error) {
 	v.AutomaticEnv()
 
 	// Bind environment variables
-	v.BindEnv("database.path", "GODO_DATABASE_PATH")
-	v.BindEnv("database.max_open_conns", "GODO_DATABASE_MAX_OPEN_CONNS")
-	v.BindEnv("database.max_idle_conns", "GODO_DATABASE_MAX_IDLE_CONNS")
-	v.BindEnv("logging.level", "GODO_LOGGING_LEVEL")
+	if err := bindEnvVariables(v, log); err != nil {
+		return nil, err
+	}
 
 	// Load default config
 	v.SetConfigName("default")
@@ -133,4 +131,44 @@ func getEnv() string {
 		return env
 	}
 	return "development"
+}
+
+// loadHotkeys loads hotkey configuration
+func loadHotkeys(v *viper.Viper) (*HotkeyConfig, error) {
+	h := &HotkeyConfig{}
+	if err := v.UnmarshalKey("hotkeys", h); err != nil {
+		return nil, err
+	}
+
+	// Use strings.EqualFold directly in the if condition
+	if strings.EqualFold(h.Key, "CTRL+SPACE") {
+		h.Key = "CTRL+SPACE"
+	}
+
+	return h, nil
+}
+
+// bindEnvVariables binds environment variables to configuration
+func bindEnvVariables(v *viper.Viper, log logger.Logger) error {
+	envVars := []struct {
+		key string
+		env string
+	}{
+		{"database.path", "GODO_DATABASE_PATH"},
+		{"database.max_open_conns", "GODO_DATABASE_MAX_OPEN_CONNS"},
+		{"database.max_idle_conns", "GODO_DATABASE_MAX_IDLE_CONNS"},
+		{"logging.level", "GODO_LOG_LEVEL"},
+	}
+
+	for _, ev := range envVars {
+		if err := v.BindEnv(ev.key, ev.env); err != nil {
+			log.Error("Failed to bind environment variable",
+				"key", ev.key,
+				"env", ev.env,
+				"error", err)
+			return err
+		}
+	}
+
+	return nil
 }

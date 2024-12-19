@@ -88,7 +88,6 @@ func (qn *QuickNote) setupShortcuts() {
 				logger.Error("Failed to save todo", "error", err)
 				dialog.ShowError(err, qn.window)
 			} else {
-				logger.Debug("Added todo", "id", todo.ID)
 				logger.Debug("Saved note as todo", "id", todo.ID, "content", todo.Content)
 			}
 		}

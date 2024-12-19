@@ -66,7 +66,6 @@ func (s *Store) Add(todo *model.Todo) error {
 		return err
 	}
 
-	logger.Debug("Added todo", "id", todo.ID)
 	return nil
 }
 

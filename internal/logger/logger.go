@@ -1,9 +1,10 @@
 package logger
 
 import (
+	"errors"
+
 	"github.com/jonesrussell/godo/internal/common"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 // Logger defines the logging interface
@@ -25,56 +26,57 @@ type Config struct {
 
 // ZapLogger is the concrete implementation of Logger using zap
 type ZapLogger struct {
-	log *zap.Logger
+	log *zap.SugaredLogger
 }
 
 func (l *ZapLogger) Debug(msg string, keysAndValues ...interface{}) {
-	l.log.Sugar().Debugw(msg, keysAndValues...)
+	l.log.Debugw(msg, keysAndValues...)
 }
 
 func (l *ZapLogger) Info(msg string, keysAndValues ...interface{}) {
-	l.log.Sugar().Infow(msg, keysAndValues...)
+	l.log.Infow(msg, keysAndValues...)
 }
 
 func (l *ZapLogger) Warn(msg string, keysAndValues ...interface{}) {
-	l.log.Sugar().Warnw(msg, keysAndValues...)
+	l.log.Warnw(msg, keysAndValues...)
 }
 
 func (l *ZapLogger) Error(msg string, keysAndValues ...interface{}) {
-	l.log.Sugar().Errorw(msg, keysAndValues...)
+	l.log.Errorw(msg, keysAndValues...)
 }
 
 func (l *ZapLogger) Fatal(msg string, keysAndValues ...interface{}) {
-	l.log.Sugar().Fatalw(msg, keysAndValues...)
+	l.log.Fatalw(msg, keysAndValues...)
 }
 
 // NewZapLogger creates a new ZapLogger instance
-func NewZapLogger(config *Config) (Logger, error) {
-	var level zapcore.Level
-	if err := level.UnmarshalText([]byte(config.Level)); err != nil {
-		return nil, err
-	}
+func NewZapLogger(cfg *Config) (Logger, error) {
+	// Create the basic configuration
+	zapCfg := zap.NewProductionConfig()
 
-	zapConfig := zap.NewDevelopmentConfig()
-	zapConfig.Level = zap.NewAtomicLevelAt(level)
-
-	// Configure output paths
-	if config.Console {
-		zapConfig.OutputPaths = append(zapConfig.OutputPaths, "stdout")
-		zapConfig.ErrorOutputPaths = append(zapConfig.ErrorOutputPaths, "stderr")
-	}
-
-	if config.File && config.FilePath != "" {
-		zapConfig.OutputPaths = append(zapConfig.OutputPaths, config.FilePath)
-		zapConfig.ErrorOutputPaths = append(zapConfig.ErrorOutputPaths, config.FilePath)
-	}
-
-	logger, err := zapConfig.Build()
+	// Set log level
+	level, err := zap.ParseAtomicLevel(cfg.Level)
 	if err != nil {
-		return nil, err
+		return nil, errors.New("invalid log level")
+	}
+	zapCfg.Level = level
+
+	// Configure output paths (avoid duplicates)
+	zapCfg.OutputPaths = []string{"stdout"}      // Single output path
+	zapCfg.ErrorOutputPaths = []string{"stderr"} // Single error output path
+
+	// Build the logger
+	logger, err := zapCfg.Build(
+		zap.AddCallerSkip(1),
+		zap.AddStacktrace(zap.ErrorLevel),
+	)
+	if err != nil {
+		return nil, errors.New("failed to build logger")
 	}
 
-	return &ZapLogger{log: logger}, nil
+	return &ZapLogger{
+		log: logger.Sugar(),
+	}, nil
 }
 
 // New creates a new logger instance (for backward compatibility)

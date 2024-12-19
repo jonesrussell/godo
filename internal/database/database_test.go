@@ -2,6 +2,7 @@ package database
 
 import (
 	"database/sql"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -39,7 +40,7 @@ func TestNewSQLiteDB(t *testing.T) {
 		},
 		{
 			name:    "fails with invalid path",
-			dbPath:  filepath.Join("/nonexistent", "path", "test.db"),
+			dbPath:  filepath.Join(os.TempDir(), "nonexistent", "path", "test.db"),
 			wantErr: true,
 		},
 	}

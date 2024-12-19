@@ -45,8 +45,8 @@ func TestInitialize(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Reset defaultLogger
-			defaultLogger = &zapLogger{}
+			// Reset instance
+			instance = &defaultLoggerWrapper{}
 
 			// Test
 			logger, err := Initialize(tt.config)

@@ -4,7 +4,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/jonesrussell/godo/internal/common"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/model"
 	"github.com/jonesrussell/godo/internal/storage"
@@ -12,24 +11,27 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestSQLiteStore(t *testing.T) {
-	// Initialize logger with test config
-	logConfig := &common.LogConfig{
-		Level:       "debug",
-		Output:      []string{"stdout"},
-		ErrorOutput: []string{"stderr"},
-	}
+func setupTestLogger(t *testing.T) logger.Logger {
+	t.Helper()
+	log, err := logger.NewZapLogger(&logger.Config{
+		Level:    "debug",
+		Console:  true,
+		File:     false,
+		FilePath: "",
+	})
+	require.NoError(t, err)
+	return log
+}
 
-	if _, err := logger.Initialize(logConfig); err != nil {
-		t.Fatalf("Failed to initialize logger: %v", err)
-	}
+func TestSQLiteStore(t *testing.T) {
+	log := setupTestLogger(t)
 
 	// Create temporary database
 	tmpDir := t.TempDir()
 	dbPath := filepath.Join(tmpDir, "test.db")
 
 	// Create store
-	store, err := New(dbPath)
+	store, err := New(dbPath, log)
 	require.NoError(t, err)
 	defer store.Close()
 
@@ -38,23 +40,14 @@ func TestSQLiteStore(t *testing.T) {
 }
 
 func TestSQLiteStore_Persistence(t *testing.T) {
-	// Initialize logger with test config
-	logConfig := &common.LogConfig{
-		Level:       "debug",
-		Output:      []string{"stdout"},
-		ErrorOutput: []string{"stderr"},
-	}
-
-	if _, err := logger.Initialize(logConfig); err != nil {
-		t.Fatalf("Failed to initialize logger: %v", err)
-	}
+	log := setupTestLogger(t)
 
 	// Create temporary database
 	tmpDir := t.TempDir()
 	dbPath := filepath.Join(tmpDir, "persistence_test.db")
 
 	// Create first store instance
-	store1, err := New(dbPath)
+	store1, err := New(dbPath, log)
 	require.NoError(t, err)
 
 	// Add a todo
@@ -64,7 +57,7 @@ func TestSQLiteStore_Persistence(t *testing.T) {
 	store1.Close()
 
 	// Create second store instance
-	store2, err := New(dbPath)
+	store2, err := New(dbPath, log)
 	require.NoError(t, err)
 	defer store2.Close()
 
@@ -75,19 +68,10 @@ func TestSQLiteStore_Persistence(t *testing.T) {
 }
 
 func TestSQLiteStore_InvalidPath(t *testing.T) {
-	// Initialize logger with test config
-	logConfig := &common.LogConfig{
-		Level:       "debug",
-		Output:      []string{"stdout"},
-		ErrorOutput: []string{"stderr"},
-	}
-
-	if _, err := logger.Initialize(logConfig); err != nil {
-		t.Fatalf("Failed to initialize logger: %v", err)
-	}
+	log := setupTestLogger(t)
 
 	// Try to create store with invalid path
-	store, err := New("/nonexistent/path/test.db")
+	store, err := New("/nonexistent/path/test.db", log)
 	assert.Error(t, err)
 	assert.Nil(t, store)
 }

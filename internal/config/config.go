@@ -8,6 +8,16 @@ import (
 	yaml "gopkg.in/yaml.v3"
 )
 
+// Default environment
+var env = "development"
+
+func init() {
+	// Allow environment override through ENV var
+	if e := os.Getenv("GODO_ENV"); e != "" {
+		env = e
+	}
+}
+
 type Config struct {
 	App      AppConfig        `yaml:"app"`
 	Database DatabaseConfig   `yaml:"database"`
@@ -43,7 +53,7 @@ type QuickNoteConfig struct {
 }
 
 // Load loads configuration from files
-func Load(env string) (*Config, error) {
+func Load(logger logger.Logger) (*Config, error) {
 	config := &Config{}
 
 	// Load default config

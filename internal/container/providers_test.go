@@ -10,15 +10,16 @@ import (
 )
 
 func TestProvideEnvironment(t *testing.T) {
-	// Initialize logger with test config
+	// Initialize logger for testing
 	logConfig := &common.LogConfig{
 		Level:       "debug",
 		Output:      []string{"stdout"},
 		ErrorOutput: []string{"stderr"},
 	}
 
-	if _, err := logger.Initialize(logConfig); err != nil {
-		t.Fatalf("Failed to initialize logger: %v", err)
+	log, err := logger.New(logConfig)
+	if err != nil {
+		t.Fatalf("Failed to create logger: %v", err)
 	}
 
 	tests := []struct {
@@ -49,7 +50,7 @@ func TestProvideEnvironment(t *testing.T) {
 			}
 
 			// Test
-			result := provideEnvironment()
+			result := provideEnvironment(log)
 
 			// Assert
 			assert.Equal(t, tt.expected, result)

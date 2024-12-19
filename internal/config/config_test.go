@@ -11,17 +11,21 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestLoad(t *testing.T) {
-	// Initialize logger with test config
-	logConfig := &common.LogConfig{
-		Level:       "debug",
-		Output:      []string{"stdout"},
-		ErrorOutput: []string{"stderr"},
-	}
+func setupTestLogger(t *testing.T) logger.Logger {
+	t.Helper()
+	log, err := logger.NewZapLogger(&logger.Config{
+		Level:    "debug",
+		Console:  true,
+		File:     false,
+		FilePath: "",
+	})
+	require.NoError(t, err)
+	return log
+}
 
-	if _, err := logger.Initialize(logConfig); err != nil {
-		t.Fatalf("Failed to initialize logger: %v", err)
-	}
+func TestLoad(t *testing.T) {
+	// Initialize test logger
+	log := setupTestLogger(t)
 
 	// Create test config files
 	tmpDir := t.TempDir()
@@ -132,8 +136,8 @@ database:
 				defer os.Unsetenv(k)
 			}
 
-			// Test
-			got, err := Load(tt.env)
+			// Test with logger instance
+			got, err := Load(log)
 
 			// Assert
 			if tt.wantErr {

@@ -13,9 +13,9 @@ import (
 
 func InitializeApp() (*app.App, func(), error) {
 	wire.Build(
-		provideEnvironment,
+		provideLogger,
 		config.Load,
-		sqlite.New,
+		provideSQLite,
 		app.NewApp,
 		wire.Bind(new(storage.Store), new(*sqlite.Store)),
 	)

@@ -8,14 +8,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestInitialize(t *testing.T) {
+func TestNew(t *testing.T) {
 	tests := []struct {
 		name    string
 		config  *common.LogConfig
 		wantErr bool
 	}{
 		{
-			name: "initializes with debug level",
+			name: "creates with debug level",
 			config: &common.LogConfig{
 				Level:       "debug",
 				Output:      []string{"stdout"},
@@ -24,7 +24,7 @@ func TestInitialize(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "initializes with info level",
+			name: "creates with info level",
 			config: &common.LogConfig{
 				Level:       "info",
 				Output:      []string{"stdout"},
@@ -45,11 +45,8 @@ func TestInitialize(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Reset manager for each test
-			manager = &loggerManager{}
-
 			// Test
-			logger, err := Initialize(tt.config)
+			logger, err := New(tt.config)
 
 			// Assert
 			if tt.wantErr {
@@ -74,7 +71,7 @@ func TestLoggingFunctions(t *testing.T) {
 		ErrorOutput: []string{"stderr"},
 	}
 
-	logger, err := Initialize(config)
+	logger, err := New(config)
 	require.NoError(t, err)
 	require.NotNil(t, logger)
 

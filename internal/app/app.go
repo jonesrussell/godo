@@ -17,13 +17,14 @@ import (
 
 type App struct {
 	fyneApp    fyne.App
-	mainWindow UI
+	mainWindow fyne.Window
 	quickNote  QuickNoteService
 	store      storage.Store
 	config     *config.Config
+	log        logger.Logger
 }
 
-func NewApp(cfg *config.Config, store storage.Store) *App {
+func NewApp(cfg *config.Config, store storage.Store, log logger.Logger) *App {
 	fyneApp := fyneapp.NewWithID("io.github.jonesrussell.godo")
 	mainWindow := fyneApp.NewWindow(cfg.App.Name)
 
@@ -32,9 +33,10 @@ func NewApp(cfg *config.Config, store storage.Store) *App {
 		mainWindow: mainWindow,
 		store:      store,
 		config:     cfg,
+		log:        log,
 	}
 
-	app.quickNote = quicknote.New(mainWindow, store)
+	app.quickNote = quicknote.New(mainWindow, store, log)
 
 	return app
 }
@@ -44,7 +46,7 @@ func (a *App) SetupUI() {
 	a.setupSystemTray()
 	a.setupMainWindow()
 	if err := a.setupGlobalHotkey(); err != nil {
-		logger.Error("Failed to setup global hotkey", "error", err)
+		a.log.Error("Failed to setup global hotkey", "error", err)
 	}
 }
 
@@ -54,16 +56,16 @@ func (a *App) Run() {
 
 func (a *App) setupLifecycleLogging() {
 	a.fyneApp.Lifecycle().SetOnStarted(func() {
-		logger.Info("Lifecycle: Started")
+		a.log.Info("Lifecycle: Started")
 	})
 	a.fyneApp.Lifecycle().SetOnStopped(func() {
-		logger.Info("Lifecycle: Stopped")
+		a.log.Info("Lifecycle: Stopped")
 	})
 }
 
 func (a *App) setupSystemTray() {
 	if desk, ok := a.fyneApp.(desktop.App); ok {
-		logger.Debug("Loading system tray icon")
+		a.log.Debug("Loading system tray icon")
 		systrayIcon := assets.GetSystrayIconResource()
 		appIcon := assets.GetAppIconResource()
 		a.fyneApp.SetIcon(appIcon)
@@ -78,9 +80,9 @@ func (a *App) setupSystemTray() {
 
 		desk.SetSystemTrayMenu(menu)
 		desk.SetSystemTrayIcon(systrayIcon)
-		logger.Info("System tray initialized")
+		a.log.Info("System tray initialized")
 	} else {
-		logger.Warn("System tray not supported on this platform")
+		a.log.Warn("System tray not supported on this platform")
 	}
 }
 
@@ -138,7 +140,7 @@ func (a *App) setupGlobalHotkey() error {
 
 	go func() {
 		for range hk.Keydown() {
-			logger.Debug("Global hotkey triggered")
+			a.log.Debug("Global hotkey triggered")
 			a.quickNote.Show()
 		}
 	}()
@@ -149,7 +151,7 @@ func (a *App) setupGlobalHotkey() error {
 func (a *App) Cleanup() {
 	if db, ok := a.store.(*sqlite.Store); ok {
 		if err := db.Close(); err != nil {
-			logger.Error("Failed to close database", "error", err)
+			a.log.Error("Failed to close database", "error", err)
 		}
 	}
 }

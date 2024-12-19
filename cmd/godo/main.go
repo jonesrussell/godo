@@ -14,14 +14,15 @@ func main() {
 		ErrorOutput: []string{"stderr", "godo.error.log"},
 	}
 
-	if _, err := logger.Initialize(defaultConfig); err != nil {
+	log, err := logger.New(defaultConfig)
+	if err != nil {
 		panic(err)
 	}
 
 	// Initialize app using dependency injection
 	app, cleanup, err := container.InitializeApp()
 	if err != nil {
-		logger.Error("Failed to initialize application", "error", err)
+		log.Error("Failed to initialize application", "error", err)
 		panic(err)
 	}
 	defer cleanup()

@@ -18,9 +18,9 @@ func TestInitializeApp(t *testing.T) {
 		ErrorOutput: []string{"stderr"},
 	}
 
-	if _, err := logger.Initialize(logConfig); err != nil {
-		t.Fatalf("Failed to initialize logger: %v", err)
-	}
+	log, err := logger.New(logConfig)
+	require.NoError(t, err, "Failed to create logger")
+	require.NotNil(t, log)
 
 	tests := []struct {
 		name string

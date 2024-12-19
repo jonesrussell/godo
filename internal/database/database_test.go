@@ -6,23 +6,25 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/jonesrussell/godo/internal/common"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestNewSQLiteDB(t *testing.T) {
-	// Initialize logger with test config
-	logConfig := &common.LogConfig{
-		Level:       "debug",
-		Output:      []string{"stdout"},
-		ErrorOutput: []string{"stderr"},
-	}
+func setupTestLogger(t *testing.T) logger.Logger {
+	t.Helper()
+	log, err := logger.NewZapLogger(&logger.Config{
+		Level:    "debug",
+		Console:  true,
+		File:     false,
+		FilePath: "",
+	})
+	require.NoError(t, err)
+	return log
+}
 
-	if _, err := logger.Initialize(logConfig); err != nil {
-		t.Fatalf("Failed to initialize logger: %v", err)
-	}
+func TestNewSQLiteDB(t *testing.T) {
+	log := setupTestLogger(t)
 
 	// Create temporary directory for test database
 	tmpDir := t.TempDir()
@@ -48,7 +50,7 @@ func TestNewSQLiteDB(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Test
-			db, err := NewSQLiteDB(tt.dbPath)
+			db, err := NewSQLiteDB(tt.dbPath, log)
 
 			// Assert
 			if tt.wantErr {
@@ -76,16 +78,7 @@ func TestNewSQLiteDB(t *testing.T) {
 }
 
 func TestRunMigrations(t *testing.T) {
-	// Initialize logger with test config
-	logConfig := &common.LogConfig{
-		Level:       "debug",
-		Output:      []string{"stdout"},
-		ErrorOutput: []string{"stderr"},
-	}
-
-	if _, err := logger.Initialize(logConfig); err != nil {
-		t.Fatalf("Failed to initialize logger: %v", err)
-	}
+	log := setupTestLogger(t)
 
 	// Create temporary database
 	tmpDir := t.TempDir()
@@ -95,7 +88,7 @@ func TestRunMigrations(t *testing.T) {
 	defer db.Close()
 
 	// Test
-	err = RunMigrations(db)
+	err = RunMigrations(db, log)
 	assert.NoError(t, err)
 
 	// Verify migrations by checking table structure
@@ -138,6 +131,7 @@ func TestRunMigrations(t *testing.T) {
 }
 
 func TestEnsureDataDir(t *testing.T) {
+	log := setupTestLogger(t)
 	tmpDir := t.TempDir()
 	tests := []struct {
 		name    string
@@ -158,7 +152,7 @@ func TestEnsureDataDir(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := ensureDataDir(tt.dbPath)
+			err := ensureDataDir(tt.dbPath, log)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {

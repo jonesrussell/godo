@@ -11,13 +11,31 @@ import (
 type Store struct {
 	mu    sync.RWMutex
 	todos map[string]*model.Todo
+	notes []string
 }
 
 // New creates a new memory store
 func New() *Store {
 	return &Store{
 		todos: make(map[string]*model.Todo),
+		notes: make([]string, 0),
 	}
+}
+
+// Add note-related methods to implement the full Store interface
+func (s *Store) SaveNote(content string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.notes = append(s.notes, content)
+	return nil
+}
+
+func (s *Store) GetNotes() ([]string, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	notes := make([]string, len(s.notes))
+	copy(notes, s.notes)
+	return notes, nil
 }
 
 // Add adds a new todo

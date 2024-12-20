@@ -20,6 +20,11 @@ const (
 		done BOOLEAN NOT NULL DEFAULT 0,
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+	);
+	CREATE TABLE IF NOT EXISTS notes (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		content TEXT NOT NULL,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 	);`
 )
 
@@ -305,4 +310,36 @@ func verifyDatabaseAccess(dbPath string) error {
 		return err
 	}
 	return f.Close()
+}
+
+func (s *Store) SaveNote(content string) error {
+	query := `INSERT INTO notes (content) VALUES (?)`
+	_, err := s.db.Exec(query, content)
+	if err != nil {
+		s.logger.Error("Failed to save note", "error", err)
+		return err
+	}
+	s.logger.Info("Note saved successfully")
+	return nil
+}
+
+func (s *Store) GetNotes() ([]string, error) {
+	query := `SELECT content FROM notes ORDER BY created_at DESC`
+	rows, err := s.db.Query(query)
+	if err != nil {
+		s.logger.Error("Failed to get notes", "error", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	var notes []string
+	for rows.Next() {
+		var content string
+		if err := rows.Scan(&content); err != nil {
+			s.logger.Error("Failed to scan note", "error", err)
+			continue
+		}
+		notes = append(notes, content)
+	}
+	return notes, nil
 }

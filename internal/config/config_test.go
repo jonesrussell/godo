@@ -109,3 +109,14 @@ func TestConfigValidation(t *testing.T) {
 		})
 	}
 }
+
+func TestNewDefaultConfig(t *testing.T) {
+	cfg := config.NewDefaultConfig()
+
+	assert.Equal(t, "Godo", cfg.App.Name)
+	assert.Equal(t, "0.1.0", cfg.App.Version)
+	assert.Equal(t, "io.github.jonesrussell.godo", cfg.App.ID)
+	assert.Equal(t, "info", cfg.Logger.Level)
+	assert.True(t, cfg.Logger.Console)
+	assert.Equal(t, "godo.db", cfg.Database.Path)
+}

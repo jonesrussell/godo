@@ -50,6 +50,24 @@ func NewProvider(paths []string, name, configType string) *Provider {
 	}
 }
 
+// NewDefaultConfig returns a new Config instance with default values
+func NewDefaultConfig() *Config {
+	return &Config{
+		App: AppConfig{
+			Name:    "Godo",
+			Version: "0.1.0",
+			ID:      "io.github.jonesrussell.godo",
+		},
+		Logger: LoggerConfig{
+			Level:   "info",
+			Console: true,
+		},
+		Database: DatabaseConfig{
+			Path: "godo.db",
+		},
+	}
+}
+
 // Load reads configuration from the specified file
 func (p *Provider) Load() (*Config, error) {
 	v := viper.New()
@@ -69,21 +87,8 @@ func (p *Provider) Load() (*Config, error) {
 	v.SetEnvPrefix("GODO")
 	v.AutomaticEnv()
 
-	// Create default config
-	cfg := &Config{
-		App: AppConfig{
-			Name:    "Godo",
-			Version: "0.1.0",
-			ID:      "io.github.jonesrussell.godo",
-		},
-		Logger: LoggerConfig{
-			Level:   "info",
-			Console: true,
-		},
-		Database: DatabaseConfig{
-			Path: "godo.db",
-		},
-	}
+	// Use the new function for default config
+	cfg := NewDefaultConfig()
 
 	// Try to read config file
 	if err := v.ReadInConfig(); err != nil {

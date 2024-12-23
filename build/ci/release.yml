@@ -23,7 +23,7 @@ jobs:
 
       - name: Build all platforms
         run: |
-          task build-all
+          task build:all
 
       - name: Create Release
         uses: softprops/action-gh-release@v1

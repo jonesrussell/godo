@@ -44,10 +44,10 @@ jobs:
     - name: Run tests and linting
       run: |
         task lint
-        task test-coverage-threshold
+        task test:coverage:threshold
 
     - name: Build all platforms
-      run: task build-all
+      run: task build:all
 
     - name: Cross-platform build check
       run: |

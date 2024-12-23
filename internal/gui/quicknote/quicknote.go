@@ -6,7 +6,6 @@ import (
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/widget"
 	"github.com/jonesrussell/godo/internal/logger"
-	"github.com/jonesrussell/godo/internal/model"
 	"github.com/jonesrussell/godo/internal/storage"
 )
 
@@ -86,19 +85,14 @@ func (qn *QuickNote) setupShortcuts() {
 
 func (qn *QuickNote) handleSave() {
 	if qn.input.Text != "" {
-		if err := qn.saveTodo(qn.input.Text); err != nil {
-			qn.config.Logger.Error("Failed to save todo", "error", err)
+		if err := qn.config.Store.SaveNote(qn.input.Text); err != nil {
+			qn.config.Logger.Error("Failed to save note", "error", err)
 			dialog.ShowError(err, qn.window)
 			return
 		}
-		qn.config.Logger.Debug("Saved note as todo", "content", qn.input.Text)
+		qn.config.Logger.Debug("Saved note", "content", qn.input.Text)
 	}
 	qn.handleCancel()
-}
-
-func (qn *QuickNote) saveTodo(content string) error {
-	todo := model.NewTodo(content)
-	return qn.config.Store.Add(todo)
 }
 
 func (qn *QuickNote) handleCancel() {

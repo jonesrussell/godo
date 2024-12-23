@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func setupTestQuickNote(t *testing.T) *QuickNote {
+func setupTestQuickNote(t *testing.T) (*QuickNote, *memory.Store) {
 	app := test.NewApp()
 	mainWindow := app.NewWindow("Test Main")
 	store := memory.New()
@@ -25,11 +25,11 @@ func setupTestQuickNote(t *testing.T) *QuickNote {
 	}
 
 	qn := New(cfg)
-	return qn
+	return qn, store
 }
 
 func TestNew(t *testing.T) {
-	qn := setupTestQuickNote(t)
+	qn, _ := setupTestQuickNote(t)
 	assert.NotNil(t, qn)
 	assert.NotNil(t, qn.input)
 	assert.NotNil(t, qn.window)
@@ -38,7 +38,7 @@ func TestNew(t *testing.T) {
 }
 
 func TestShow(t *testing.T) {
-	qn := setupTestQuickNote(t)
+	qn, _ := setupTestQuickNote(t)
 	qn.Show()
 	// In test environment, we can't directly check window visibility
 	// Instead, we verify the window exists and has expected properties
@@ -46,28 +46,43 @@ func TestShow(t *testing.T) {
 }
 
 func TestHide(t *testing.T) {
-	qn := setupTestQuickNote(t)
+	qn, _ := setupTestQuickNote(t)
 	qn.Show()
 	qn.Hide()
 	assert.Equal(t, "", qn.input.Text)
 }
 
 func TestHandleSave(t *testing.T) {
-	qn := setupTestQuickNote(t)
+	qn, store := setupTestQuickNote(t)
 	qn.input.SetText("Test note")
-	qn.handleSave()
+
+	// Save note directly to verify store is working
+	err := store.SaveNote("Test note")
+	assert.NoError(t, err)
 
 	// Verify the note was saved
-	notes, _ := qn.config.Store.GetNotes()
+	notes, err := store.GetNotes()
+	assert.NoError(t, err)
 	assert.Equal(t, 1, len(notes))
 	assert.Equal(t, "Test note", notes[0])
+
+	// Now test the handleSave method
+	qn.input.SetText("Another note")
+	qn.handleSave()
+
+	// Verify both notes are saved
+	notes, err = store.GetNotes()
+	assert.NoError(t, err)
+	assert.Equal(t, 2, len(notes))
+	assert.Equal(t, "Test note", notes[0])
+	assert.Equal(t, "Another note", notes[1])
 
 	// Verify input cleared
 	assert.Equal(t, "", qn.input.Text)
 }
 
 func TestHandleCancel(t *testing.T) {
-	qn := setupTestQuickNote(t)
+	qn, _ := setupTestQuickNote(t)
 	qn.input.SetText("Test note")
 	qn.Show()
 
@@ -77,12 +92,13 @@ func TestHandleCancel(t *testing.T) {
 }
 
 func TestHandleFormSubmit(t *testing.T) {
-	qn := setupTestQuickNote(t)
+	qn, store := setupTestQuickNote(t)
 	qn.input.SetText("Test note")
 
 	// Test save
 	qn.handleFormSubmit(true)
-	notes, _ := qn.config.Store.GetNotes()
+	notes, err := store.GetNotes()
+	assert.NoError(t, err)
 	assert.Equal(t, 1, len(notes))
 	assert.Equal(t, "Test note", notes[0])
 
@@ -90,18 +106,19 @@ func TestHandleFormSubmit(t *testing.T) {
 	qn.Show()
 	qn.input.SetText("Another note")
 	qn.handleFormSubmit(false)
-	notes, _ = qn.config.Store.GetNotes()
+	notes, err = store.GetNotes()
+	assert.NoError(t, err)
 	assert.Equal(t, 1, len(notes)) // Should still have only one note
 }
 
 func TestGetters(t *testing.T) {
-	qn := setupTestQuickNote(t)
+	qn, _ := setupTestQuickNote(t)
 	assert.Equal(t, qn.window, qn.GetWindow())
 	assert.Equal(t, qn.input, qn.GetInput())
 }
 
 func TestSetupShortcuts(t *testing.T) {
-	qn := setupTestQuickNote(t)
+	qn, store := setupTestQuickNote(t)
 	qn.input.SetText("Test note")
 
 	// Simulate Ctrl+Enter shortcut
@@ -109,7 +126,7 @@ func TestSetupShortcuts(t *testing.T) {
 		KeyName:  fyne.KeyReturn,
 		Modifier: fyne.KeyModifierControl,
 	}
-	qn.window.Canvas().AddShortcut(shortcut, func(shortcut fyne.Shortcut) {
+	qn.window.Canvas().AddShortcut(shortcut, func(_ fyne.Shortcut) {
 		qn.handleSave()
 	})
 
@@ -117,7 +134,8 @@ func TestSetupShortcuts(t *testing.T) {
 	qn.handleSave()
 
 	// Verify note was saved
-	notes, _ := qn.config.Store.GetNotes()
+	notes, err := store.GetNotes()
+	assert.NoError(t, err)
 	assert.Equal(t, 1, len(notes))
 	assert.Equal(t, "Test note", notes[0])
 }

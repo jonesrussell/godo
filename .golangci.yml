@@ -18,6 +18,7 @@ linters:
     - nakedret
     - noctx
     - nolintlint
+    - revive # Ensure revive is enabled if you're using it
 
 run:
   timeout: 5m
@@ -54,9 +55,8 @@ linters-settings:
   depguard:
     rules:
       main:
-        # List of allowed packages
         allow:
-          - $gostd # Allows all Go standard library packages
+          - $gostd
           - github.com/mattn/go-sqlite3
           - go.uber.org/zap
           - github.com/google/wire
@@ -67,7 +67,6 @@ linters-settings:
           - golang.design/x/hotkey
           - github.com/google/uuid
           - github.com/spf13/viper
-          # Internal packages
           - github.com/jonesrussell/godo/internal
           - github.com/jonesrussell/godo/pkg
         deny:
@@ -81,7 +80,7 @@ linters-settings:
             desc: "use github.com/jonesrussell/godo/internal/logger instead"
             files:
               exclude: 
-                - "^internal/config/.*\\.go$"
+                - "^internal/(config|logger)/.*\\.go$"
           - pkg: "github.com/gotk3/gotk3"
             desc: "use fyne.io/fyne/v2 for GUI instead"
           - pkg: "github.com/lxn/win"
@@ -110,7 +109,7 @@ linters-settings:
         files: ["^internal/config/.*\\.go$"]
         path: "github.com/jonesrussell/godo/internal/config"
         allow:
-          - $gostd  # Allows fmt and other std libs
+          - $gostd
           - github.com/spf13/viper
           - github.com/jonesrussell/godo/internal/logger
           - github.com/jonesrussell/godo/internal/common

@@ -6,6 +6,7 @@ package container
 import (
 	"github.com/google/wire"
 	"github.com/jonesrussell/godo/internal/app"
+	"github.com/jonesrussell/godo/internal/common"
 	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
@@ -37,9 +38,11 @@ func provideConfig() (*config.Config, error) {
 
 // provideLogger provides a basic logger for initial config loading
 func provideLogger() (logger.Logger, error) {
-	return logger.NewZapLogger(&logger.Config{
-		Level:   "info",
-		Console: true,
+	return logger.New(&common.LogConfig{
+		Level:       "info",
+		Console:     true,
+		Output:      []string{"stdout"},
+		ErrorOutput: []string{"stderr"},
 	})
 }
 

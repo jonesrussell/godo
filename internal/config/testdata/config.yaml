@@ -10,6 +10,10 @@ database:
 logger:
   level: "info"
   console: true
+  file: false
+  file_path: ""
+  output: ["stdout"]
+  error_output: ["stderr"]
 
 hotkeys:
   quick_note: "Ctrl+Alt+G"

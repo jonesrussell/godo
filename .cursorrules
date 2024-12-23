@@ -59,15 +59,26 @@
 - Use structured logging with Zap
 - Keep functions small and focused
 - Use meaningful variable and function names
+- Use modern octal literal style (0o600 instead of 0600)
 
 ## Project Structure
 - cmd/godo/ - Main application entry point
 - internal/
-  - di/ - Dependency injection
+  - app/ - Core application logic
+  - common/ - Shared utilities and types
+  - config/ - Configuration management
+    - hotkey/ - Hotkey configuration and mapping
+  - container/ - Dependency injection (Wire)
   - logger/ - Logging system
-  - service/ - Business logic
+    - testing.go - Test logger implementation
+  - model/ - Data models
+  - storage/ - Data persistence
+    - sqlite/ - SQLite implementation
   - ui/ - User interface components
+    - fyne/ - Fyne.io GUI implementation
 - pkg/ - Public libraries (if needed)
+- configs/ - Configuration files
+  - default.yaml - Default configuration
 
 ## Testing Requirements
 - Unit tests for all packages

@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/jonesrussell/godo/internal/common"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/model"
 	"github.com/stretchr/testify/assert"
@@ -12,7 +13,11 @@ import (
 
 func TestStore(t *testing.T) {
 	// Setup test logger and database
-	log, err := logger.NewZapLogger(&logger.Config{Level: "debug"})
+	log, err := logger.New(&common.LogConfig{
+		Level:       "debug",
+		Output:      []string{"stdout"},
+		ErrorOutput: []string{"stderr"},
+	})
 	require.NoError(t, err)
 
 	tmpDir := t.TempDir()
@@ -66,7 +71,11 @@ func TestStore(t *testing.T) {
 
 func TestConcurrency(t *testing.T) {
 	// Setup test logger and database
-	log, err := logger.NewZapLogger(&logger.Config{Level: "debug"})
+	log, err := logger.New(&common.LogConfig{
+		Level:       "debug",
+		Output:      []string{"stdout"},
+		ErrorOutput: []string{"stderr"},
+	})
 	require.NoError(t, err)
 
 	tmpDir := t.TempDir()

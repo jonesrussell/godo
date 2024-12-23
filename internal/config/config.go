@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/jonesrussell/godo/internal/common"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/spf13/viper"
 )
@@ -38,10 +39,10 @@ const (
 
 // Config holds all application configuration
 type Config struct {
-	App      AppConfig      `mapstructure:"app"`
-	Logger   LoggerConfig   `mapstructure:"logger"`
-	Hotkeys  HotkeyConfig   `mapstructure:"hotkeys"`
-	Database DatabaseConfig `mapstructure:"database"`
+	App      AppConfig        `mapstructure:"app"`
+	Logger   common.LogConfig `mapstructure:"logger"`
+	Hotkeys  HotkeyConfig     `mapstructure:"hotkeys"`
+	Database DatabaseConfig   `mapstructure:"database"`
 }
 
 // AppConfig holds application-specific configuration
@@ -49,14 +50,6 @@ type AppConfig struct {
 	Name    string `mapstructure:"name"`
 	Version string `mapstructure:"version"`
 	ID      string `mapstructure:"id"`
-}
-
-// LoggerConfig holds logger-specific configuration
-type LoggerConfig struct {
-	Level    string `mapstructure:"level"`
-	Console  bool   `mapstructure:"console"`
-	File     bool   `mapstructure:"file"`
-	FilePath string `mapstructure:"file_path"`
 }
 
 // DatabaseConfig holds database configuration
@@ -88,7 +81,7 @@ func NewProvider(paths []string, configName, configType string, opts ...Provider
 		paths:      paths,
 		configName: configName,
 		configType: configType,
-		log:        logger.NewTestLogger(), // default logger
+		log:        logger.NewNoopLogger(), // Default to no-op logger
 	}
 
 	for _, opt := range opts {
@@ -241,14 +234,16 @@ func NewDefaultConfig() *Config {
 		App: AppConfig{
 			Name:    "Godo",
 			Version: "0.1.0",
-			ID:      "io.github.jonesrussell.godo",
+			ID:      "io.github.jonesrussell/godo",
+		},
+		Logger: common.LogConfig{
+			Level:   "info",
+			Console: true,
+			File:    false,
+			Output:  []string{"stdout"},
 		},
 		Database: DatabaseConfig{
 			Path: "godo.db",
-		},
-		Logger: LoggerConfig{
-			Level:   "info",
-			Console: true,
 		},
 		Hotkeys: HotkeyConfig{
 			QuickNote: "Ctrl+Alt+G",

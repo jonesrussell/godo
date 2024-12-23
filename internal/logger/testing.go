@@ -1,45 +1,56 @@
 package logger
 
-import "go.uber.org/zap"
-
-// TestLogger returns a logger suitable for testing
-func NewTestLogger() Logger {
-	config := zap.NewDevelopmentConfig()
-	config.OutputPaths = []string{"stdout"}
-	config.ErrorOutputPaths = []string{"stderr"}
-	logger, _ := config.Build(
-		zap.AddCallerSkip(1),
-		zap.AddStacktrace(zap.ErrorLevel),
-	)
-	return &ZapLogger{
-		log: logger.Sugar(),
-	}
+// TestLogger is a logger implementation specifically for testing
+type TestLogger struct {
+	T TestingT // Interface to support both *testing.T and *testing.B
 }
 
-// NoopLogger returns a logger that does nothing (for testing)
-func NewNoopLogger() Logger {
-	return &noopLogger{}
+// TestingT is an interface wrapper around *testing.T and *testing.B
+type TestingT interface {
+	Helper()
+	Log(args ...interface{})
+	Logf(format string, args ...interface{})
 }
 
-// noopLogger implements Logger but does nothing
-type noopLogger struct{}
-
-// Basic logging methods
-func (l *noopLogger) Debug(msg string, keysAndValues ...interface{}) {}
-func (l *noopLogger) Info(msg string, keysAndValues ...interface{})  {}
-func (l *noopLogger) Warn(msg string, keysAndValues ...interface{})  {}
-func (l *noopLogger) Error(msg string, keysAndValues ...interface{}) {}
-func (l *noopLogger) Fatal(msg string, keysAndValues ...interface{}) {}
-
-// Helper methods
-func (l *noopLogger) WithField(key string, value interface{}) Logger {
-	return l
+// NewTestLogger creates a new logger for testing that writes to the test log
+func NewTestLogger(t TestingT) Logger {
+	return &TestLogger{T: t}
 }
 
-func (l *noopLogger) WithFields(fields map[string]interface{}) Logger {
-	return l
+// Implementation of Logger interface for TestLogger
+func (l *TestLogger) Debug(msg string, keysAndValues ...interface{}) {
+	l.T.Helper()
+	l.T.Logf("DEBUG: %s %v", msg, keysAndValues)
 }
 
-func (l *noopLogger) WithError(err error) Logger {
-	return l
+func (l *TestLogger) Info(msg string, keysAndValues ...interface{}) {
+	l.T.Helper()
+	l.T.Logf("INFO: %s %v", msg, keysAndValues)
+}
+
+func (l *TestLogger) Warn(msg string, keysAndValues ...interface{}) {
+	l.T.Helper()
+	l.T.Logf("WARN: %s %v", msg, keysAndValues)
+}
+
+func (l *TestLogger) Error(msg string, keysAndValues ...interface{}) {
+	l.T.Helper()
+	l.T.Logf("ERROR: %s %v", msg, keysAndValues)
+}
+
+func (l *TestLogger) Fatal(msg string, keysAndValues ...interface{}) {
+	l.T.Helper()
+	l.T.Logf("FATAL: %s %v", msg, keysAndValues)
+}
+
+func (l *TestLogger) WithError(err error) Logger {
+	return &TestLogger{T: l.T}
+}
+
+func (l *TestLogger) WithField(key string, value interface{}) Logger {
+	return &TestLogger{T: l.T}
+}
+
+func (l *TestLogger) WithFields(fields map[string]interface{}) Logger {
+	return &TestLogger{T: l.T}
 }

@@ -16,14 +16,13 @@ func main() {
 
 	log, err := logger.New(defaultConfig)
 	if err != nil {
-		panic(err)
+		log.Fatal("Failed to initialize logger:", err)
 	}
 
 	// Initialize app using dependency injection
 	app, cleanup, err := container.InitializeApp()
 	if err != nil {
-		log.Error("Failed to initialize application", "error", err)
-		panic(err)
+		log.Fatal("Failed to initialize application:", err)
 	}
 	defer cleanup()
 

@@ -65,7 +65,7 @@ func TestNew(t *testing.T) {
 }
 
 func TestLoggingWithContext(t *testing.T) {
-	logger := NewTestLogger()
+	logger := NewTestLogger(t)
 
 	t.Run("WithField", func(t *testing.T) {
 		contextLogger := logger.WithField("requestID", "123")

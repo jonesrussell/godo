@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/jonesrussell/godo/internal/app"
+	"github.com/jonesrussell/godo/internal/common"
 	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage/memory"
@@ -28,9 +29,10 @@ func setupTestApp(t *testing.T) (*app.App, *MockQuickNoteService) {
 	t.Helper()
 
 	// Setup logger
-	log, err := logger.NewZapLogger(&logger.Config{
-		Level:   "debug",
-		Console: true,
+	log, err := logger.New(&common.LogConfig{
+		Level:       "debug",
+		Output:      []string{"stdout"},
+		ErrorOutput: []string{"stderr"},
 	})
 	require.NoError(t, err)
 

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jonesrussell/godo/internal/common"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/model"
 	"github.com/jonesrussell/godo/internal/storage"
@@ -15,9 +16,10 @@ import (
 
 func TestSQLiteStore(t *testing.T) {
 	// Setup
-	log, err := logger.NewZapLogger(&logger.Config{
-		Level:   "debug",
-		Console: true,
+	log, err := logger.New(&common.LogConfig{
+		Level:       "debug",
+		Output:      []string{"stdout"},
+		ErrorOutput: []string{"stderr"},
 	})
 	require.NoError(t, err)
 

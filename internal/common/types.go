@@ -2,9 +2,12 @@ package common
 
 // LogConfig holds logging configuration
 type LogConfig struct {
-	Level       string   `yaml:"level"`
-	Output      []string `yaml:"output"`
-	ErrorOutput []string `yaml:"error_output"`
+	Level       string   `mapstructure:"level" yaml:"level"`
+	Console     bool     `mapstructure:"console" yaml:"console"`
+	File        bool     `mapstructure:"file" yaml:"file"`
+	FilePath    string   `mapstructure:"file_path" yaml:"file_path"`
+	Output      []string `mapstructure:"output" yaml:"output"`
+	ErrorOutput []string `mapstructure:"error_output" yaml:"error_output"`
 }
 
 // HotkeyBinding represents a keyboard shortcut configuration

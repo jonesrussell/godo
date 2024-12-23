@@ -9,7 +9,7 @@ import (
 )
 
 func TestHotkey(t *testing.T) {
-	log := logger.NewTestLogger()
+	log := logger.NewTestLogger(t)
 	mapper := NewHotkeyMapper(log)
 
 	tests := []struct {
@@ -71,7 +71,7 @@ func TestHotkey(t *testing.T) {
 }
 
 func TestHotkeyConfig(t *testing.T) {
-	log := logger.NewTestLogger()
+	log := logger.NewTestLogger(t)
 	mapper := NewHotkeyMapper(log)
 
 	tests := []struct {
@@ -110,7 +110,7 @@ func TestHotkeyConfig(t *testing.T) {
 }
 
 func TestHotkey_Parse(t *testing.T) {
-	log := logger.NewTestLogger()
+	log := logger.NewTestLogger(t)
 	mapper := NewHotkeyMapper(log)
 
 	tests := []struct {

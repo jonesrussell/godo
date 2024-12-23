@@ -79,7 +79,9 @@ linters-settings:
             desc: "use raw SQL with database/sql instead"
           - pkg: "fmt"
             desc: "use github.com/jonesrussell/godo/internal/logger instead"
-            files-exclude: ["internal/config/.*\\.go$"]
+            files:
+              exclude: 
+                - "internal/config/.*\\.go$"
           - pkg: "github.com/gotk3/gotk3"
             desc: "use fyne.io/fyne/v2 for GUI instead"
           - pkg: "github.com/lxn/win"
@@ -111,6 +113,7 @@ linters-settings:
           - $gostd  # Allows fmt and other std libs
           - github.com/spf13/viper
           - github.com/jonesrussell/godo/internal/logger
+          - github.com/jonesrussell/godo/internal/common
         deny:
           - pkg: "log"
             desc: "use github.com/jonesrussell/godo/internal/logger instead"

@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/jonesrussell/godo/internal/common"
 	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/stretchr/testify/assert"
@@ -19,16 +20,16 @@ func TestProviders(t *testing.T) {
 	})
 
 	t.Run("provideSQLite creates store with correct path", func(t *testing.T) {
-		// Create test config
 		cfg := &config.Config{
 			Database: config.DatabaseConfig{
 				Path: filepath.Join(t.TempDir(), "test.db"),
 			},
 		}
 
-		log, err := logger.NewZapLogger(&logger.Config{
-			Level:   "debug",
-			Console: true,
+		log, err := logger.New(&common.LogConfig{
+			Level:       "debug",
+			Output:      []string{"stdout"},
+			ErrorOutput: []string{"stderr"},
 		})
 		require.NoError(t, err)
 

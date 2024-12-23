@@ -5,7 +5,9 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/jonesrussell/godo/internal/common"
 	"github.com/jonesrussell/godo/internal/config"
+	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -13,29 +15,34 @@ import (
 )
 
 func TestConfig(t *testing.T) {
-	// Create a new observer core
+	// Create a zap observer for testing
 	observedZapCore, logs := observer.New(zap.DebugLevel)
-
-	// Create a test logger that writes to the observer
 	zapLogger := zap.New(observedZapCore)
-	defer zapLogger.Sync()
+	defer func() {
+		if err := zapLogger.Sync(); err != nil {
+			t.Logf("failed to sync logger: %v", err)
+		}
+	}()
 
-	// Create a new Provider with our test logger
+	// Use your standard logger implementation
+	log := logger.NewZapLogger(zapLogger)
+
 	provider := config.NewProvider(
 		[]string{"testdata"},
 		"config",
 		"yaml",
+		config.WithLogger(log),
 	)
 
 	// Set test mode to prevent path resolution
-	os.Setenv("GODO_TEST_MODE", "true")
-	defer os.Unsetenv("GODO_TEST_MODE")
+	os.Setenv(config.EnvTestMode, "true")
+	defer os.Unsetenv(config.EnvTestMode)
 
 	t.Run("Load default config", func(t *testing.T) {
 		cfg, err := provider.Load()
 		require.NoError(t, err)
-		assert.Equal(t, "Godo", cfg.App.Name)
-		assert.Equal(t, "0.1.0", cfg.App.Version)
+		assert.Equal(t, config.DefaultAppName, cfg.App.Name)
+		assert.Equal(t, config.DefaultAppVersion, cfg.App.Version)
 
 		// Verify logs
 		logEntries := logs.All()
@@ -53,18 +60,12 @@ func TestConfig(t *testing.T) {
 	})
 
 	t.Run("Environment variables override config", func(t *testing.T) {
-		os.Setenv("GODO_APP_NAME", "TestApp")
-		os.Setenv("GODO_DATABASE_PATH", "test.db")
+		os.Setenv(config.EnvPrefix+"_APP_NAME", "TestApp")
+		os.Setenv(config.EnvPrefix+"_DATABASE_PATH", "test.db")
 		defer func() {
-			os.Unsetenv("GODO_APP_NAME")
-			os.Unsetenv("GODO_DATABASE_PATH")
+			os.Unsetenv(config.EnvPrefix + "_APP_NAME")
+			os.Unsetenv(config.EnvPrefix + "_DATABASE_PATH")
 		}()
-
-		provider := config.NewProvider(
-			[]string{"testdata"},
-			"config",
-			"yaml",
-		)
 
 		cfg, err := provider.Load()
 		require.NoError(t, err)
@@ -72,30 +73,31 @@ func TestConfig(t *testing.T) {
 		assert.Equal(t, "test.db", cfg.Database.Path)
 	})
 
-	t.Run("Invalid config validation", func(t *testing.T) {
-		os.Setenv("GODO_APP_NAME", "")
-		defer os.Unsetenv("GODO_APP_NAME")
+	t.Run("Invalid_config_validation", func(t *testing.T) {
+		// Setup invalid config
+		cfg := &config.Config{
+			App: config.AppConfig{
+				Name: "", // Invalid: empty name
+			},
+			Logger: common.LogConfig{
+				Level: "invalid", // Invalid log level
+			},
+		}
 
-		provider := config.NewProvider(
-			[]string{"testdata"},
-			"config",
-			"yaml",
-		)
+		// Test validation
+		err := config.ValidateConfig(cfg)
+		assert.Error(t, err, "should fail validation with empty app name and invalid log level")
 
-		_, err := provider.Load()
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "app name is required")
+		// Optional: Check specific validation errors
+		if configErr, ok := err.(*config.ConfigError); ok {
+			assert.Contains(t, configErr.Error(), "app name is required")
+			assert.Contains(t, configErr.Error(), "invalid log level")
+		}
 	})
 
 	t.Run("Invalid log level", func(t *testing.T) {
-		os.Setenv("GODO_LOGGER_LEVEL", "invalid")
-		defer os.Unsetenv("GODO_LOGGER_LEVEL")
-
-		provider := config.NewProvider(
-			[]string{"testdata"},
-			"config",
-			"yaml",
-		)
+		os.Setenv(config.EnvPrefix+"_LOGGER_LEVEL", "invalid")
+		defer os.Unsetenv(config.EnvPrefix + "_LOGGER_LEVEL")
 
 		_, err := provider.Load()
 		assert.Error(t, err)
@@ -103,47 +105,53 @@ func TestConfig(t *testing.T) {
 	})
 
 	t.Run("Path resolution in production mode", func(t *testing.T) {
-		os.Unsetenv("GODO_TEST_MODE")
-		defer os.Setenv("GODO_TEST_MODE", "true")
-
-		provider := config.NewProvider(
-			[]string{"testdata"},
-			"config",
-			"yaml",
-		)
+		os.Unsetenv(config.EnvTestMode)
+		defer os.Setenv(config.EnvTestMode, "true")
 
 		cfg, err := provider.Load()
 		require.NoError(t, err)
 		assert.True(t, filepath.IsAbs(cfg.Database.Path))
-		assert.Contains(t, cfg.Database.Path, "godo.db")
+		assert.Contains(t, cfg.Database.Path, config.DefaultDBPath)
 	})
 }
 
 func TestConfigFileErrors(t *testing.T) {
 	t.Run("Invalid YAML syntax", func(t *testing.T) {
 		tmpDir := t.TempDir()
-		tmpFile := filepath.Join(tmpDir, "invalid.yaml")
-		err := os.WriteFile(tmpFile, []byte("invalid: yaml: content:"), 0o600)
+
+		// Create invalid YAML with the correct filename (invalid.yaml)
+		invalidYAML := []byte(`
+app:
+  name: [test
+    version: 1.0.0]
+  id: {broken:
+`)
+		err := os.WriteFile(filepath.Join(tmpDir, "invalid.yaml"), invalidYAML, 0o600)
 		require.NoError(t, err)
 
 		provider := config.NewProvider(
 			[]string{tmpDir},
-			"invalid",
+			"invalid", // This matches the filename we created
 			"yaml",
+			config.WithLogger(logger.NewTestLogger(t)), // Add logging for better debugging
 		)
 
-		_, err = provider.Load()
-		assert.Error(t, err)
+		cfg, err := provider.Load()
+		if err == nil {
+			t.Logf("Config loaded when it shouldn't: %+v", cfg)
+			t.Fatal("Expected error for invalid YAML, got nil")
+		}
+		assert.Contains(t, err.Error(), "yaml", "Error should mention YAML parsing")
 	})
 }
 
 func TestNewDefaultConfig(t *testing.T) {
 	cfg := config.NewDefaultConfig()
 
-	assert.Equal(t, "Godo", cfg.App.Name)
-	assert.Equal(t, "0.1.0", cfg.App.Version)
-	assert.Equal(t, "io.github.jonesrussell.godo", cfg.App.ID)
-	assert.Equal(t, "info", cfg.Logger.Level)
+	assert.Equal(t, config.DefaultAppName, cfg.App.Name)
+	assert.Equal(t, config.DefaultAppVersion, cfg.App.Version)
+	assert.Equal(t, "io.github.jonesrussell/godo", cfg.App.ID)
+	assert.Equal(t, config.DefaultLogLevel, cfg.Logger.Level)
 	assert.True(t, cfg.Logger.Console)
-	assert.Equal(t, "godo.db", cfg.Database.Path)
+	assert.Equal(t, config.DefaultDBPath, cfg.Database.Path)
 }

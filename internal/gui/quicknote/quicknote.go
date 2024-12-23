@@ -78,7 +78,7 @@ func (qn *QuickNote) setupShortcuts() {
 	qn.window.Canvas().AddShortcut(&desktop.CustomShortcut{
 		KeyName:  fyne.KeyReturn,
 		Modifier: fyne.KeyModifierControl,
-	}, func(shortcut fyne.Shortcut) {
+	}, func(_ fyne.Shortcut) {
 		qn.config.Logger.Debug("Window Ctrl+Enter shortcut triggered")
 		qn.handleSave()
 	})

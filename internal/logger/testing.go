@@ -43,14 +43,14 @@ func (l *TestLogger) Fatal(msg string, keysAndValues ...interface{}) {
 	l.T.Logf("FATAL: %s %v", msg, keysAndValues)
 }
 
-func (l *TestLogger) WithError(err error) Logger {
+func (l *TestLogger) WithError(_ error) Logger {
 	return &TestLogger{T: l.T}
 }
 
-func (l *TestLogger) WithField(key string, value interface{}) Logger {
+func (l *TestLogger) WithField(_ string, _ interface{}) Logger {
 	return &TestLogger{T: l.T}
 }
 
-func (l *TestLogger) WithFields(fields map[string]interface{}) Logger {
+func (l *TestLogger) WithFields(_ map[string]interface{}) Logger {
 	return &TestLogger{T: l.T}
 }

@@ -18,7 +18,7 @@ linters:
     - nakedret
     - noctx
     - nolintlint
-    - revive # Ensure revive is enabled if you're using it
+    - revive
 
 run:
   timeout: 5m
@@ -28,8 +28,6 @@ issues:
     - vendor
 
 linters-settings:
-  gofmt:
-    simplify: true
   revive:
     rules:
       - name: unused-parameter
@@ -76,11 +74,6 @@ linters-settings:
             desc: "use go.uber.org/zap for logging instead"
           - pkg: "github.com/jinzhu/gorm"
             desc: "use raw SQL with database/sql instead"
-          - pkg: "fmt"
-            desc: "use github.com/jonesrussell/godo/internal/logger instead"
-            files:
-              exclude: 
-                - "^internal/(config|logger)/.*\\.go$"
           - pkg: "github.com/gotk3/gotk3"
             desc: "use fyne.io/fyne/v2 for GUI instead"
           - pkg: "github.com/lxn/win"

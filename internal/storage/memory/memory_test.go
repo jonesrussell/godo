@@ -19,7 +19,7 @@ func TestMemoryStore_Concurrency(t *testing.T) {
 
 	// Concurrent writes
 	for i := 0; i < 10; i++ {
-		go func(i int) {
+		go func(_ int) {
 			todo := model.NewTodo("Concurrent todo")
 			err := store.Add(todo)
 			assert.NoError(t, err)

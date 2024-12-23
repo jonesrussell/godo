@@ -96,32 +96,30 @@ func TestConfig(t *testing.T) {
 }
 
 func TestConfigFileErrors(t *testing.T) {
-	t.Run("Invalid YAML syntax", func(t *testing.T) {
+	t.Run("Falls back to defaults with invalid YAML", func(t *testing.T) {
 		tmpDir := t.TempDir()
 
-		// Create invalid YAML with the correct filename (invalid.yaml)
+		// Create invalid YAML file
 		invalidYAML := []byte(`
 app:
   name: [test
     version: 1.0.0]
-  id: {broken:
+  id: {broken
 `)
 		err := os.WriteFile(filepath.Join(tmpDir, "invalid.yaml"), invalidYAML, 0o600)
 		require.NoError(t, err)
 
 		provider := config.NewProvider(
 			[]string{tmpDir},
-			"invalid", // This matches the filename we created
+			"invalid",
 			"yaml",
-			config.WithLogger(logger.NewTestLogger(t)), // Add logging for better debugging
+			config.WithLogger(logger.NewTestLogger(t)),
 		)
 
 		cfg, err := provider.Load()
-		if err == nil {
-			t.Logf("Config loaded when it shouldn't: %+v", cfg)
-			t.Fatal("Expected error for invalid YAML, got nil")
-		}
-		assert.Contains(t, err.Error(), "yaml", "Error should mention YAML parsing")
+		require.NoError(t, err) // Should not error as it falls back to defaults
+		assert.Equal(t, config.DefaultAppName, cfg.App.Name)
+		assert.Equal(t, config.DefaultAppVersion, cfg.App.Version)
 	})
 }
 

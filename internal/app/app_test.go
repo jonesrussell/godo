@@ -65,7 +65,7 @@ func TestApp(t *testing.T) {
 	}{
 		{
 			name: "Save and retrieve notes",
-			fn: func(t *testing.T, a *app.App, m *MockQuickNoteService) {
+			fn: func(t *testing.T, a *app.App, _ *MockQuickNoteService) {
 				err := a.SaveNote("Test note")
 				require.NoError(t, err)
 

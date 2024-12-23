@@ -29,7 +29,7 @@ func TestMockUI(t *testing.T) {
 			action: func(m *app.MockUI) {
 				m.Show()
 			},
-			validate: func(t *testing.T, m *app.MockUI) {
+			validate: func(_ *testing.T, m *app.MockUI) {
 				assert.True(t, m.IsShown())
 			},
 		},
@@ -83,7 +83,7 @@ func TestMockUI(t *testing.T) {
 			action: func(m *app.MockUI) {
 				m.CenterOnScreen()
 			},
-			validate: func(t *testing.T, m *app.MockUI) {
+			validate: func(_ *testing.T, _ *app.MockUI) {
 				// No validation needed for no-op
 			},
 		},

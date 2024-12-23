@@ -13,33 +13,33 @@ func NewNoopLogger() Logger {
 }
 
 // Debug implements Logger
-func (l *NoopLogger) Debug(msg string, keysAndValues ...interface{}) {}
+func (l *NoopLogger) Debug(_ string, _ ...interface{}) {}
 
 // Info implements Logger
-func (l *NoopLogger) Info(msg string, keysAndValues ...interface{}) {}
+func (l *NoopLogger) Info(_ string, _ ...interface{}) {}
 
 // Warn implements Logger
-func (l *NoopLogger) Warn(msg string, keysAndValues ...interface{}) {}
+func (l *NoopLogger) Warn(_ string, _ ...interface{}) {}
 
 // Error implements Logger
-func (l *NoopLogger) Error(msg string, keysAndValues ...interface{}) {}
+func (l *NoopLogger) Error(_ string, _ ...interface{}) {}
 
 // Fatal implements Logger
-func (l *NoopLogger) Fatal(msg string, keysAndValues ...interface{}) {
+func (l *NoopLogger) Fatal(_ string, _ ...interface{}) {
 	os.Exit(1)
 }
 
 // WithError implements Logger
-func (l *NoopLogger) WithError(err error) Logger {
+func (l *NoopLogger) WithError(_ error) Logger {
 	return l
 }
 
 // WithField implements Logger
-func (l *NoopLogger) WithField(key string, value interface{}) Logger {
+func (l *NoopLogger) WithField(_ string, _ interface{}) Logger {
 	return l
 }
 
 // WithFields implements Logger
-func (l *NoopLogger) WithFields(fields map[string]interface{}) Logger {
+func (l *NoopLogger) WithFields(_ map[string]interface{}) Logger {
 	return l
 }

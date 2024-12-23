@@ -9,7 +9,7 @@ import (
 //go:embed favicon.ico
 var systrayIconBytes []byte
 
-//go:embed Icon.png
+//go:embed icon.png
 var appIconBytes []byte
 
 // GetSystrayIconResource returns the system tray icon resource
@@ -19,5 +19,5 @@ func GetSystrayIconResource() fyne.Resource {
 
 // GetAppIconResource returns a Fyne resource for the application icon
 func GetAppIconResource() fyne.Resource {
-	return fyne.NewStaticResource("Icon.png", appIconBytes)
+	return fyne.NewStaticResource("icon.png", appIconBytes)
 }

@@ -11,6 +11,10 @@ import (
 )
 
 func TestConfig(t *testing.T) {
+	// Set test mode to prevent path resolution
+	os.Setenv("GODO_TEST_MODE", "true")
+	defer os.Unsetenv("GODO_TEST_MODE")
+
 	t.Run("Load default config", func(t *testing.T) {
 		provider := config.NewProvider(
 			[]string{"testdata"},
@@ -51,6 +55,25 @@ func TestConfig(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, "Godo", cfg.App.Name)
 		assert.Equal(t, "godo.db", cfg.Database.Path)
+	})
+
+	t.Run("Path resolution in production mode", func(t *testing.T) {
+		// Temporarily unset test mode
+		os.Unsetenv("GODO_TEST_MODE")
+		defer os.Setenv("GODO_TEST_MODE", "true")
+
+		provider := config.NewProvider(
+			[]string{"testdata"},
+			"config",
+			"yaml",
+		)
+
+		cfg, err := provider.Load()
+		require.NoError(t, err)
+
+		// Path should be absolute in production mode
+		assert.True(t, filepath.IsAbs(cfg.Database.Path))
+		assert.Contains(t, cfg.Database.Path, "godo.db")
 	})
 }
 

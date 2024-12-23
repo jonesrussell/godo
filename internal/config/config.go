@@ -109,6 +109,11 @@ func (p *Provider) Load() (*Config, error) {
 
 // resolvePaths resolves relative paths in the config to absolute paths
 func (p *Provider) resolvePaths(cfg *Config) error {
+	// Skip path resolution for tests or when explicitly set to relative
+	if os.Getenv("GODO_TEST_MODE") == "true" {
+		return nil
+	}
+
 	if !filepath.IsAbs(cfg.Database.Path) {
 		userConfigDir, err := os.UserConfigDir()
 		if err != nil {

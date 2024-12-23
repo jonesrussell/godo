@@ -1,7 +1,9 @@
 package config
 
 import (
+	"errors"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/viper"
 )
@@ -72,39 +74,60 @@ func NewDefaultConfig() *Config {
 func (p *Provider) Load() (*Config, error) {
 	v := viper.New()
 
-	// Set configuration type
 	v.SetConfigType(p.configType)
 
-	// Add config paths
 	for _, path := range p.paths {
 		v.AddConfigPath(path)
 	}
 
-	// Set config name
 	v.SetConfigName(p.configName)
-
-	// Set environment variable prefix
 	v.SetEnvPrefix("GODO")
 	v.AutomaticEnv()
+	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
-	// Use the new function for default config
+	// Bind specific environment variables
+	if err := v.BindEnv("database.path", "GODO_DATABASE_PATH"); err != nil {
+		return nil, err
+	}
+	if err := v.BindEnv("logger.level", "GODO_LOGGER_LEVEL"); err != nil {
+		return nil, err
+	}
+
 	cfg := NewDefaultConfig()
 
-	// Try to read config file
 	if err := v.ReadInConfig(); err != nil {
-		// If config file is not found, use defaults
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
 			return cfg, nil
 		}
 		return nil, err
 	}
 
-	// Unmarshal config
 	if err := v.Unmarshal(cfg); err != nil {
 		return nil, err
 	}
 
+	// Validate configuration
+	if err := ValidateConfig(cfg); err != nil {
+		return nil, err
+	}
+
 	return cfg, nil
+}
+
+// ValidateConfig validates the configuration values
+func ValidateConfig(cfg *Config) error {
+	validLevels := map[string]bool{
+		"debug": true,
+		"info":  true,
+		"warn":  true,
+		"error": true,
+	}
+
+	if !validLevels[strings.ToLower(cfg.Logger.Level)] {
+		return errors.New("invalid log level: " + cfg.Logger.Level)
+	}
+
+	return nil
 }
 
 // Add this function

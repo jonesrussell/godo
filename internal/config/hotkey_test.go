@@ -40,7 +40,7 @@ func TestHotkey(t *testing.T) {
 		},
 		{
 			name:          "Invalid hotkey",
-			hotkeyStr:     "Invalid+Key+Combo",
+			hotkeyStr:     "Invalid+X",
 			shouldSucceed: false,
 		},
 	}

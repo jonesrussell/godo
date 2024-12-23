@@ -2,6 +2,7 @@ package config_test
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/jonesrussell/godo/internal/config"
@@ -30,7 +31,7 @@ func TestConfig(t *testing.T) {
 
 		provider := config.NewProvider(
 			[]string{"testdata"},
-			"test",
+			"config",
 			"yaml",
 		)
 
@@ -73,12 +74,44 @@ func TestConfigValidation(t *testing.T) {
 		{
 			name: "invalid log level",
 			setupEnv: func() {
-				os.Setenv("GODO_LOGGING_LEVEL", "invalid")
+				os.Setenv("GODO_LOGGER_LEVEL", "invalid")
+				os.Setenv("GODO_CONFIG", "testdata/config.yaml")
 			},
 			cleanupEnv: func() {
-				os.Unsetenv("GODO_LOGGING_LEVEL")
+				os.Unsetenv("GODO_LOGGER_LEVEL")
+				os.Unsetenv("GODO_CONFIG")
 			},
 			expectError: true,
+		},
+		{
+			name: "missing required fields",
+			setupEnv: func() {
+				os.Setenv("GODO_APP_NAME", "")
+			},
+			cleanupEnv: func() {
+				os.Unsetenv("GODO_APP_NAME")
+			},
+			expectError: true,
+		},
+		{
+			name: "valid log level - debug",
+			setupEnv: func() {
+				os.Setenv("GODO_LOGGER_LEVEL", "debug")
+			},
+			cleanupEnv: func() {
+				os.Unsetenv("GODO_LOGGER_LEVEL")
+			},
+			expectError: false,
+		},
+		{
+			name: "valid log level - warn",
+			setupEnv: func() {
+				os.Setenv("GODO_LOGGER_LEVEL", "warn")
+			},
+			cleanupEnv: func() {
+				os.Unsetenv("GODO_LOGGER_LEVEL")
+			},
+			expectError: false,
 		},
 	}
 
@@ -102,6 +135,9 @@ func TestConfigValidation(t *testing.T) {
 			cfg, err := provider.Load()
 			if tt.expectError {
 				assert.Error(t, err)
+				if err != nil {
+					assert.Contains(t, err.Error(), "invalid log level")
+				}
 			} else {
 				assert.NoError(t, err)
 				assert.NotNil(t, cfg)
@@ -119,4 +155,79 @@ func TestNewDefaultConfig(t *testing.T) {
 	assert.Equal(t, "info", cfg.Logger.Level)
 	assert.True(t, cfg.Logger.Console)
 	assert.Equal(t, "godo.db", cfg.Database.Path)
+}
+
+func TestConfigFileErrors(t *testing.T) {
+	t.Run("Invalid YAML syntax", func(t *testing.T) {
+		// Create temporary file with invalid YAML
+		tmpDir := t.TempDir()
+		tmpFile := filepath.Join(tmpDir, "invalid.yaml")
+		err := os.WriteFile(tmpFile, []byte("invalid: yaml: content:"), 0o600)
+		require.NoError(t, err)
+
+		provider := config.NewProvider(
+			[]string{tmpDir},
+			"invalid",
+			"yaml",
+		)
+
+		_, err = provider.Load()
+		assert.Error(t, err)
+	})
+}
+
+func TestConfigEnvBindingErrors(t *testing.T) {
+	t.Run("Invalid environment variable binding", func(t *testing.T) {
+		// Set an invalid environment variable
+		os.Setenv("GODO_INVALID_VAR", "invalid")
+		defer os.Unsetenv("GODO_INVALID_VAR")
+
+		provider := config.NewProvider(
+			[]string{"testdata"},
+			"config",
+			"yaml",
+		)
+
+		cfg, err := provider.Load()
+		require.NoError(t, err) // Should not fail as invalid vars are ignored
+		assert.NotNil(t, cfg)
+	})
+}
+
+func TestConfigValidationRules(t *testing.T) {
+	tests := []struct {
+		name    string
+		cfg     *config.Config
+		wantErr bool
+	}{
+		{
+			name: "valid config",
+			cfg: &config.Config{
+				Logger: config.LoggerConfig{
+					Level: "info",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "empty log level",
+			cfg: &config.Config{
+				Logger: config.LoggerConfig{
+					Level: "",
+				},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := config.ValidateConfig(tt.cfg)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
 }

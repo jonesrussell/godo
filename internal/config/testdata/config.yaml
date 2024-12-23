@@ -1,0 +1,9 @@
+app:
+  name: "Godo"
+  version: "0.1.0"
+  id: "io.github.jonesrussell.godo"
+logger:
+  level: "info"
+  console: true
+database:
+  path: "godo.db" 

@@ -9,3 +9,4 @@ golangci-lint
 bin/
 vendor/
 coverage
+coverage.html

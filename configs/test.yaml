@@ -1,0 +1,18 @@
+# Test environment configuration
+app:
+  name: "Godo (Test)"
+
+database:
+  path: ":memory:"  # Use in-memory SQLite for tests
+  max_open_conns: 1
+  max_idle_conns: 1
+
+logging:
+  level: "debug"
+  console: true
+  file:
+    enabled: false
+
+ui:
+  main_window:
+    start_hidden: true 

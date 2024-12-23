@@ -1,0 +1,20 @@
+# Production environment configuration
+app:
+  name: "Godo"
+
+database:
+  path: "$HOME/.local/share/godo/godo.db"
+
+logging:
+  level: "info"
+  console: false
+  file:
+    enabled: true
+    path: "$HOME/.local/share/godo/logs/godo.log"
+    max_size: 10
+    max_backups: 5
+    max_age: 90
+
+ui:
+  main_window:
+    start_hidden: true 

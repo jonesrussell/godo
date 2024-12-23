@@ -2,8 +2,25 @@
 
 ## Important Notes on GUI library
 - fyne.io/fyne/v2 v2.5.3
-  1. Key.Modifier doesn't exist
-  2. there is no RequestFocus() method
+  1. Key Events and Shortcuts:
+     - Key.Modifier doesn't exist
+     - Use desktop.CustomShortcut instead of fyne.ShortcutKey
+     - Shortcuts must be registered via Canvas().AddShortcut()
+     - KeyName is used instead of Key in CustomShortcut
+  2. Focus and Window Management:
+     - No RequestFocus() method
+     - Use Canvas().Focus() instead
+     - Window.Show() doesn't automatically focus
+     - CenterOnScreen() should be called after Show()
+  3. Widget Implementation:
+     - Always call ExtendBaseWidget() in custom widget constructors
+     - Override both KeyDown() and TypedKey() for complete key handling
+     - TypedShortcut() needed for shortcut support
+     - Base widget methods should be called after custom handling
+  4. Forms and Dialogs:
+     - Dialog size must be set after creation
+     - Forms don't automatically focus first field
+     - Custom widgets must be properly extended for form usage
 
 ## Project Overview
 - Todo application with two main features:

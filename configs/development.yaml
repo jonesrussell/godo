@@ -1,6 +1,17 @@
-# Development-specific overrides
-logging:
-  level: "debug"
+# Development environment configuration
+app:
+  name: "Godo (Dev)"
 
 database:
-  path: "./data/godo_dev.db" 
+  path: "./data/godo_dev.db"
+
+logging:
+  level: "debug"
+  console: true
+  file:
+    enabled: true
+    path: "./logs/godo_dev.log"
+
+ui:
+  main_window:
+    start_hidden: false 

@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/jonesrussell/godo/internal/common"
@@ -63,21 +64,49 @@ func TestNew(t *testing.T) {
 	}
 }
 
-func TestLoggingFunctions(t *testing.T) {
-	// Setup test logger
-	config := &common.LogConfig{
-		Level:       "debug",
-		Output:      []string{"stdout"},
-		ErrorOutput: []string{"stderr"},
-	}
+func TestLoggingWithContext(t *testing.T) {
+	logger := NewTestLogger()
 
-	logger, err := New(config)
-	require.NoError(t, err)
-	require.NotNil(t, logger)
+	t.Run("WithField", func(t *testing.T) {
+		contextLogger := logger.WithField("requestID", "123")
+		require.NotNil(t, contextLogger)
+		contextLogger.Info("test message")
+	})
 
-	// Test all logging methods
-	logger.Debug("debug message", "key", "value")
-	logger.Info("info message", "key", "value")
-	logger.Warn("warn message", "key", "value")
-	logger.Error("error message", "key", "value")
+	t.Run("WithFields", func(t *testing.T) {
+		fields := map[string]interface{}{
+			"requestID": "123",
+			"userID":    "456",
+		}
+		contextLogger := logger.WithFields(fields)
+		require.NotNil(t, contextLogger)
+		contextLogger.Info("test message")
+	})
+
+	t.Run("WithError", func(t *testing.T) {
+		err := errors.New("test error")
+		contextLogger := logger.WithError(err)
+		require.NotNil(t, contextLogger)
+		contextLogger.Error("operation failed")
+	})
+}
+
+func TestNoopLogger(t *testing.T) {
+	logger := NewNoopLogger()
+
+	// These should not panic
+	logger.Debug("debug")
+	logger.Info("info")
+	logger.Warn("warn")
+	logger.Error("error")
+
+	// Test context methods
+	withField := logger.WithField("key", "value")
+	assert.NotNil(t, withField)
+
+	withFields := logger.WithFields(map[string]interface{}{"key": "value"})
+	assert.NotNil(t, withFields)
+
+	withError := logger.WithError(errors.New("test"))
+	assert.NotNil(t, withError)
 }

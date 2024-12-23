@@ -14,6 +14,11 @@ type Logger interface {
 	Warn(msg string, keysAndValues ...interface{})
 	Error(msg string, keysAndValues ...interface{})
 	Fatal(msg string, keysAndValues ...interface{})
+
+	// Helper methods
+	WithField(key string, value interface{}) Logger
+	WithFields(fields map[string]interface{}) Logger
+	WithError(err error) Logger
 }
 
 // Config holds logger configuration
@@ -47,6 +52,29 @@ func (l *ZapLogger) Error(msg string, keysAndValues ...interface{}) {
 
 func (l *ZapLogger) Fatal(msg string, keysAndValues ...interface{}) {
 	l.log.Fatalw(msg, keysAndValues...)
+}
+
+func (l *ZapLogger) WithField(key string, value interface{}) Logger {
+	return &ZapLogger{
+		log: l.log.With(key, value),
+	}
+}
+
+func (l *ZapLogger) WithFields(fields map[string]interface{}) Logger {
+	// Convert map to key-value pairs
+	kvs := make([]interface{}, 0, len(fields)*2)
+	for k, v := range fields {
+		kvs = append(kvs, k, v)
+	}
+	return &ZapLogger{
+		log: l.log.With(kvs...),
+	}
+}
+
+func (l *ZapLogger) WithError(err error) Logger {
+	return &ZapLogger{
+		log: l.log.With("error", err),
+	}
 }
 
 // NewZapLogger creates a new ZapLogger instance

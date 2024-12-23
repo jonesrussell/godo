@@ -36,7 +36,13 @@ func NewApp(cfg *config.Config, store storage.Store, log logger.Logger) *App {
 		log:        log,
 	}
 
-	app.quickNote = quicknote.New(fyneApp, mainWindow, store, log)
+	quickNoteConfig := quicknote.Config{
+		App:        fyneApp,
+		MainWindow: mainWindow,
+		Store:      store,
+		Logger:     log,
+	}
+	app.quickNote = quicknote.New(quickNoteConfig)
 
 	return app
 }
@@ -105,7 +111,7 @@ func (a *App) setupMainWindow() {
 		widget.NewLabel("Your todos will appear here"),
 	)
 
-	hotkeyText := "Press " + a.config.Hotkeys.QuickNote.String() + " for quick notes"
+	hotkeyText := "Press " + string(a.config.Hotkeys.QuickNote) + " for quick notes"
 	versionText := "v" + a.config.App.Version
 
 	statusBar := container.NewHBox(

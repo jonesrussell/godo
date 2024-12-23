@@ -1,32 +1,32 @@
-# Default configuration
+# Default configuration for Godo
 app:
   name: "Godo"
-  version: "1.0.0"
+  version: "0.1.0"
+  id: "io.github.jonesrussell.godo"
 
 database:
   path: "./data/godo.db"
   max_open_conns: 1
   max_idle_conns: 1
 
-hotkeys:
-  quick_note:
-    modifiers: ["ctrl", "alt"]
-    key: "g"
-  open_app:
-    modifiers: ["ctrl", "alt"]
-    key: "o"
-
 logging:
-  level: "info"
-  output:
-    - "./logs/godo.log"
-    - "stdout"
-  error_output:
-    - "./logs/godo_error.log"
-    - "stderr"
+  level: "info"  # info, debug, warn, error
+  console: true
+  file:
+    enabled: false
+    path: "./logs/godo.log"
+    max_size: 10    # megabytes
+    max_backups: 3
+    max_age: 28     # days
+
+hotkeys:
+  quick_note: "Ctrl+Alt+G"
 
 ui:
+  main_window:
+    width: 800
+    height: 600
+    start_hidden: true
   quick_note:
     width: 400
-    height: 60
-    title: "Quick Note" 
+    height: 200

@@ -3,77 +3,190 @@ package config
 import (
 	"testing"
 
+	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"golang.design/x/hotkey"
 )
 
-func TestHotkeyConfig(t *testing.T) {
+func TestHotkey(t *testing.T) {
+	log := logger.NewTestLogger()
+	mapper := NewHotkeyMapper(log)
+
 	tests := []struct {
-		name      string
-		config    HotkeyConfig
-		wantKey   hotkey.Key
-		wantMods  []hotkey.Modifier
-		wantError bool
+		name          string
+		hotkeyStr     Hotkey
+		expectedMods  []hotkey.Modifier
+		expectedKey   hotkey.Key
+		shouldSucceed bool
 	}{
 		{
-			name: "valid ctrl+space hotkey",
-			config: HotkeyConfig{
-				Modifiers: []string{"ctrl"},
-				Key:       "space",
+			name:      "Ctrl+Alt+G",
+			hotkeyStr: "Ctrl+Alt+G",
+			expectedMods: []hotkey.Modifier{
+				hotkey.ModCtrl,
+				hotkey.ModAlt,
 			},
-			wantKey:  hotkey.KeySpace,
-			wantMods: []hotkey.Modifier{hotkey.ModCtrl},
+			expectedKey:   hotkey.KeyG,
+			shouldSucceed: true,
 		},
 		{
-			name: "valid ctrl+alt+s hotkey",
-			config: HotkeyConfig{
-				Modifiers: []string{"ctrl", "alt"},
-				Key:       "s",
+			name:      "Ctrl+Space",
+			hotkeyStr: "Ctrl+Space",
+			expectedMods: []hotkey.Modifier{
+				hotkey.ModCtrl,
 			},
-			wantKey:  hotkey.KeyS,
-			wantMods: []hotkey.Modifier{hotkey.ModCtrl, hotkey.ModAlt},
+			expectedKey:   hotkey.KeySpace,
+			shouldSucceed: true,
 		},
 		{
-			name: "invalid modifier",
-			config: HotkeyConfig{
-				Modifiers: []string{"invalid"},
-				Key:       "space",
-			},
-			wantError: true,
-		},
-		{
-			name: "invalid key",
-			config: HotkeyConfig{
-				Modifiers: []string{"ctrl"},
-				Key:       "invalid",
-			},
-			wantError: true,
+			name:          "Invalid hotkey",
+			hotkeyStr:     "Invalid+Key+Combo",
+			shouldSucceed: false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Test validation first
-			err := tt.config.Validate()
+			// Test String() method
+			assert.Equal(t, string(tt.hotkeyStr), tt.hotkeyStr.String())
 
-			if tt.wantError {
+			// Test parsing
+			mods, key, err := tt.hotkeyStr.Parse(mapper)
+
+			if !tt.shouldSucceed {
 				assert.Error(t, err)
 				return
 			}
 
-			require.NoError(t, err)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expectedKey, key)
+			assert.Equal(t, len(tt.expectedMods), len(mods))
 
-			// Only create hotkey if validation passed
-			hk, err := tt.config.ToHotkey()
-			require.NoError(t, err)
-			require.NotNil(t, hk)
-
-			// Test string representation
-			assert.Contains(t, tt.config.String(), tt.config.Key)
-			for _, mod := range tt.config.Modifiers {
-				assert.Contains(t, tt.config.String(), mod)
+			// Check if all expected modifiers are present
+			for i, mod := range tt.expectedMods {
+				assert.Equal(t, mod, mods[i])
 			}
+		})
+	}
+}
+
+func TestHotkeyConfig(t *testing.T) {
+	log := logger.NewTestLogger()
+	mapper := NewHotkeyMapper(log)
+
+	tests := []struct {
+		name          string
+		config        HotkeyConfig
+		expectedHK    Hotkey
+		shouldSucceed bool
+	}{
+		{
+			name: "Valid quick note hotkey",
+			config: HotkeyConfig{
+				QuickNote: "Ctrl+Alt+G",
+			},
+			expectedHK:    "Ctrl+Alt+G",
+			shouldSucceed: true,
+		},
+		{
+			name: "Empty quick note hotkey",
+			config: HotkeyConfig{
+				QuickNote: "",
+			},
+			shouldSucceed: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, string(tt.config.QuickNote), tt.config.QuickNote.String())
+
+			if tt.shouldSucceed {
+				assert.Equal(t, tt.expectedHK, tt.config.QuickNote)
+				assert.True(t, tt.config.QuickNote.IsValid(mapper))
+			}
+		})
+	}
+}
+
+func TestHotkey_Parse(t *testing.T) {
+	log := logger.NewTestLogger()
+	mapper := NewHotkeyMapper(log)
+
+	tests := []struct {
+		name          string
+		hotkeyStr     Hotkey
+		expectedMods  []hotkey.Modifier
+		expectedKey   hotkey.Key
+		shouldSucceed bool
+	}{
+		{
+			name:      "Ctrl+Alt+G",
+			hotkeyStr: "Ctrl+Alt+G",
+			expectedMods: []hotkey.Modifier{
+				hotkey.ModCtrl,
+				hotkey.ModAlt,
+			},
+			expectedKey:   hotkey.KeyG,
+			shouldSucceed: true,
+		},
+		{
+			name:      "Ctrl+Space",
+			hotkeyStr: "Ctrl+Space",
+			expectedMods: []hotkey.Modifier{
+				hotkey.ModCtrl,
+			},
+			expectedKey:   hotkey.KeySpace,
+			shouldSucceed: true,
+		},
+		{
+			name:      "Ctrl+Shift+Alt+A",
+			hotkeyStr: "Ctrl+Shift+Alt+A",
+			expectedMods: []hotkey.Modifier{
+				hotkey.ModCtrl,
+				hotkey.ModShift,
+				hotkey.ModAlt,
+			},
+			expectedKey:   hotkey.KeyA,
+			shouldSucceed: true,
+		},
+		{
+			name:          "Invalid hotkey",
+			hotkeyStr:     "Invalid+Key+Combo",
+			shouldSucceed: false,
+		},
+		{
+			name:          "Empty hotkey",
+			hotkeyStr:     "",
+			shouldSucceed: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Test String() method
+			assert.Equal(t, string(tt.hotkeyStr), tt.hotkeyStr.String())
+
+			// Test parsing
+			mods, key, err := tt.hotkeyStr.Parse(mapper)
+
+			if !tt.shouldSucceed {
+				assert.Error(t, err)
+				return
+			}
+
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expectedKey, key)
+			assert.Equal(t, len(tt.expectedMods), len(mods))
+
+			// Check if all expected modifiers are present
+			for i, mod := range tt.expectedMods {
+				assert.Equal(t, mod, mods[i])
+			}
+
+			// Test roundtrip
+			newHK := NewHotkey(mapper, mods, key)
+			assert.Equal(t, tt.hotkeyStr, newHK)
 		})
 	}
 }

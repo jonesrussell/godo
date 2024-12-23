@@ -14,11 +14,17 @@ import (
 // Wire sets for dependency injection
 var defaultSet = wire.NewSet(
 	provideLogger,
-	config.Load,
+	provideConfigPath,
+	config.NewConfig,
 	provideSQLite,
 	app.NewApp,
 	wire.Bind(new(storage.Store), new(*sqlite.Store)),
 )
+
+// provideConfigPath provides the default config file path
+func provideConfigPath() string {
+	return "./config.yaml"
+}
 
 // InitializeApp creates a new application instance with all dependencies wired
 func InitializeApp() (*app.App, func(), error) {

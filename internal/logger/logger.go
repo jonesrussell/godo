@@ -1,74 +1,90 @@
 package logger
 
 import (
-	"os"
+	"errors"
 
 	"github.com/jonesrussell/godo/internal/common"
 	"go.uber.org/zap"
 )
 
-//nolint:gochecknoglobals // logger needs to be globally accessible for application-wide logging
-var log *zap.Logger
-
-// Initialize sets up the logger with default configuration
-func Initialize() (*zap.Logger, error) {
-	config := zap.NewDevelopmentConfig()
-	var err error
-	log, err = config.Build()
-	if err != nil {
-		return nil, err
-	}
-	return log, nil
+// Logger defines the logging interface
+type Logger interface {
+	Debug(msg string, keysAndValues ...interface{})
+	Info(msg string, keysAndValues ...interface{})
+	Warn(msg string, keysAndValues ...interface{})
+	Error(msg string, keysAndValues ...interface{})
+	Fatal(msg string, keysAndValues ...interface{})
 }
 
-// InitializeWithConfig sets up the logger with custom configuration
-func InitializeWithConfig(cfg common.LogConfig) (*zap.Logger, error) {
-	config := zap.NewDevelopmentConfig()
+// Config holds logger configuration
+type Config struct {
+	Level    string
+	Console  bool
+	File     bool
+	FilePath string
+}
 
-	// Configure outputs
-	if len(cfg.Output) > 0 {
-		config.OutputPaths = cfg.Output
-	}
-	if len(cfg.ErrorOutput) > 0 {
-		config.ErrorOutputPaths = cfg.ErrorOutput
-	}
+// ZapLogger is the concrete implementation of Logger using zap
+type ZapLogger struct {
+	log *zap.SugaredLogger
+}
+
+func (l *ZapLogger) Debug(msg string, keysAndValues ...interface{}) {
+	l.log.Debugw(msg, keysAndValues...)
+}
+
+func (l *ZapLogger) Info(msg string, keysAndValues ...interface{}) {
+	l.log.Infow(msg, keysAndValues...)
+}
+
+func (l *ZapLogger) Warn(msg string, keysAndValues ...interface{}) {
+	l.log.Warnw(msg, keysAndValues...)
+}
+
+func (l *ZapLogger) Error(msg string, keysAndValues ...interface{}) {
+	l.log.Errorw(msg, keysAndValues...)
+}
+
+func (l *ZapLogger) Fatal(msg string, keysAndValues ...interface{}) {
+	l.log.Fatalw(msg, keysAndValues...)
+}
+
+// NewZapLogger creates a new ZapLogger instance
+func NewZapLogger(cfg *Config) (Logger, error) {
+	// Create the basic configuration
+	zapCfg := zap.NewProductionConfig()
 
 	// Set log level
 	level, err := zap.ParseAtomicLevel(cfg.Level)
 	if err != nil {
-		return nil, err
+		return nil, errors.New("invalid log level")
 	}
-	config.Level = level
+	zapCfg.Level = level
 
-	log, err = config.Build()
+	// Configure output paths (avoid duplicates)
+	zapCfg.OutputPaths = []string{"stdout"}      // Single output path
+	zapCfg.ErrorOutputPaths = []string{"stderr"} // Single error output path
+
+	// Build the logger
+	logger, err := zapCfg.Build(
+		zap.AddCallerSkip(1),
+		zap.AddStacktrace(zap.ErrorLevel),
+	)
 	if err != nil {
-		return nil, err
+		return nil, errors.New("failed to build logger")
 	}
-	return log, nil
+
+	return &ZapLogger{
+		log: logger.Sugar(),
+	}, nil
 }
 
-// Debug logs a debug message with structured fields
-func Debug(msg string, keysAndValues ...interface{}) {
-	log.Sugar().Debugw(msg, keysAndValues...)
-}
-
-// Info logs an info message with structured fields
-func Info(msg string, keysAndValues ...interface{}) {
-	log.Sugar().Infow(msg, keysAndValues...)
-}
-
-// Warn logs a warning message with structured fields
-func Warn(msg string, keysAndValues ...interface{}) {
-	log.Sugar().Warnw(msg, keysAndValues...)
-}
-
-// Error logs an error message with structured fields
-func Error(msg string, keysAndValues ...interface{}) {
-	log.Sugar().Errorw(msg, keysAndValues...)
-}
-
-// Fatal logs a fatal message with structured fields and exits
-func Fatal(msg string, keysAndValues ...interface{}) {
-	log.Sugar().Fatalw(msg, keysAndValues...)
-	os.Exit(1)
+// New creates a new logger instance (for backward compatibility)
+func New(config *common.LogConfig) (Logger, error) {
+	return NewZapLogger(&Config{
+		Level:    config.Level,
+		Console:  true,
+		File:     false,
+		FilePath: "",
+	})
 }

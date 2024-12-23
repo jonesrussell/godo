@@ -2,6 +2,8 @@ package sqlite
 
 import (
 	"database/sql"
+	"os"
+	"path/filepath"
 
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/model"
@@ -9,48 +11,148 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-// Store implements todo storage using SQLite
+const (
+	SchemaVersion = 1
+	Schema        = `
+	CREATE TABLE IF NOT EXISTS todos (
+		id TEXT PRIMARY KEY,
+		content TEXT NOT NULL,
+		done BOOLEAN NOT NULL DEFAULT 0,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+	);
+	CREATE TABLE IF NOT EXISTS notes (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		content TEXT NOT NULL,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+	);`
+)
+
 type Store struct {
-	db *sql.DB
+	db     *sql.DB
+	logger logger.Logger
 }
 
-// New creates a new SQLite store
-func New(dbPath string) (*Store, error) {
+func New(dbPath string, log logger.Logger) (*Store, error) {
+	log.Info("Opening database", "path", dbPath)
+
+	// Try to create the database directory
+	if err := ensureDataDir(dbPath); err != nil {
+		log.Error("Failed to create database directory", "error", err)
+		return nil, err
+	}
+
+	// Verify we can write to the database path
+	if err := verifyDatabaseAccess(dbPath); err != nil {
+		log.Error("Failed to verify database access", "error", err)
+		return nil, err
+	}
+
+	// Open the database connection
 	db, err := sql.Open("sqlite3", dbPath)
 	if err != nil {
+		log.Error("Failed to open database", "error", err)
 		return nil, err
 	}
 
-	if err := db.Ping(); err != nil {
-		return nil, err
+	store := &Store{
+		db:     db,
+		logger: log,
 	}
 
-	store := &Store{db: db}
-	if err := store.migrate(); err != nil {
+	// Try to initialize the database
+	if err := store.initialize(); err != nil {
+		// Close the database connection before returning error
+		if closeErr := db.Close(); closeErr != nil {
+			log.Error("Failed to close database after initialization error", "error", closeErr)
+		}
 		return nil, err
 	}
 
 	return store, nil
 }
 
-// migrate creates the necessary database tables
-func (s *Store) migrate() error {
-	query := `
-	CREATE TABLE IF NOT EXISTS todos (
-		id TEXT PRIMARY KEY,
-		content TEXT NOT NULL,
-		done BOOLEAN NOT NULL DEFAULT 0,
-		created_at DATETIME NOT NULL,
-		updated_at DATETIME NOT NULL
-	);`
+func (s *Store) initialize() error {
+	s.db.SetMaxOpenConns(1)
+	s.db.SetMaxIdleConns(1)
 
-	_, err := s.db.Exec(query)
-	if err != nil {
-		logger.Error("Failed to create todos table", "error", err)
+	if _, err := s.db.Exec("PRAGMA foreign_keys = ON"); err != nil {
+		s.logger.Error("Failed to enable foreign keys", "error", err)
 		return err
 	}
 
-	logger.Info("Database migration completed")
+	if err := s.db.Ping(); err != nil {
+		s.logger.Error("Database ping failed", "error", err)
+		return err
+	}
+	s.logger.Info("Database connection successful")
+
+	s.logger.Info("Initializing database schema...")
+	if err := s.initSchema(); err != nil {
+		s.logger.Error("Schema initialization failed", "error", err)
+		return err
+	}
+	s.logger.Info("Schema initialized successfully")
+
+	return nil
+}
+
+func (s *Store) initSchema() error {
+	// Create schema_version table
+	_, err := s.db.Exec(`
+		CREATE TABLE IF NOT EXISTS schema_version (
+			version INTEGER PRIMARY KEY,
+			applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		)
+	`)
+	if err != nil {
+		s.logger.Error("Failed to create schema_version table", "error", err)
+		return err
+	}
+
+	// Check current version
+	var version int
+	err = s.db.QueryRow("SELECT COALESCE(MAX(version), 0) FROM schema_version").Scan(&version)
+	if err != nil {
+		s.logger.Error("Failed to get schema version", "error", err)
+		return err
+	}
+
+	s.logger.Debug("Schema versions", "current", version, "target", SchemaVersion)
+
+	if version < SchemaVersion {
+		tx, err := s.db.Begin()
+		if err != nil {
+			s.logger.Error("Failed to begin transaction", "error", err)
+			return err
+		}
+
+		defer func() {
+			if err := tx.Rollback(); err != nil && err != sql.ErrTxDone {
+				s.logger.Error("Failed to rollback transaction", "error", err)
+			}
+		}()
+
+		// Create or update tables
+		if _, err := tx.Exec(Schema); err != nil {
+			s.logger.Error("Failed to create todos table", "error", err)
+			return err
+		}
+
+		// Update schema version
+		if _, err := tx.Exec("INSERT INTO schema_version (version) VALUES (?)", SchemaVersion); err != nil {
+			s.logger.Error("Failed to update schema version", "error", err)
+			return err
+		}
+
+		if err := tx.Commit(); err != nil {
+			s.logger.Error("Failed to commit schema changes", "error", err)
+			return err
+		}
+
+		s.logger.Info("Schema updated", "version", SchemaVersion)
+	}
+
 	return nil
 }
 
@@ -62,7 +164,7 @@ func (s *Store) Add(todo *model.Todo) error {
 
 	_, err := s.db.Exec(query, todo.ID, todo.Content, todo.Done, todo.CreatedAt, todo.UpdatedAt)
 	if err != nil {
-		logger.Error("Failed to add todo", "error", err)
+		s.logger.Error("Failed to add todo", "error", err)
 		return err
 	}
 
@@ -83,11 +185,11 @@ func (s *Store) Get(id string) (*model.Todo, error) {
 	)
 
 	if err == sql.ErrNoRows {
-		logger.Debug("Todo not found", "id", id)
+		s.logger.Debug("Todo not found", "id", id)
 		return nil, storage.ErrTodoNotFound
 	}
 	if err != nil {
-		logger.Error("Failed to get todo", "error", err)
+		s.logger.Error("Failed to get todo", "error", err)
 		return nil, err
 	}
 
@@ -100,7 +202,7 @@ func (s *Store) List() []*model.Todo {
 
 	rows, err := s.db.Query(query)
 	if err != nil {
-		logger.Error("Failed to list todos", "error", err)
+		s.logger.Error("Failed to list todos", "error", err)
 		return nil
 	}
 	defer rows.Close()
@@ -116,7 +218,7 @@ func (s *Store) List() []*model.Todo {
 			&todo.UpdatedAt,
 		)
 		if err != nil {
-			logger.Error("Failed to scan todo row", "error", err)
+			s.logger.Error("Failed to scan todo row", "error", err)
 			continue
 		}
 		todos = append(todos, todo)
@@ -131,30 +233,32 @@ func (s *Store) Delete(id string) error {
 
 	result, err := s.db.Exec(query, id)
 	if err != nil {
-		logger.Error("Failed to delete todo", "error", err)
+		s.logger.Error("Failed to delete todo", "error", err)
 		return err
 	}
 
 	rows, err := result.RowsAffected()
 	if err != nil {
-		logger.Error("Failed to get rows affected", "error", err)
+		s.logger.Error("Failed to get rows affected", "error", err)
 		return err
 	}
 
 	if rows == 0 {
-		logger.Debug("Todo not found for deletion", "id", id)
+		s.logger.Debug("Todo not found for deletion", "id", id)
 		return storage.ErrTodoNotFound
 	}
 
-	logger.Debug("Deleted todo", "id", id)
+	s.logger.Debug("Deleted todo", "id", id)
 	return nil
 }
 
 // Close closes the database connection
 func (s *Store) Close() error {
-	if s.db != nil {
-		return s.db.Close()
+	if err := s.db.Close(); err != nil {
+		s.logger.Error("Error closing database", "error", err)
+		return err
 	}
+	s.logger.Info("Database closed successfully")
 	return nil
 }
 
@@ -167,21 +271,78 @@ func (s *Store) Update(todo *model.Todo) error {
 
 	result, err := s.db.Exec(query, todo.Content, todo.Done, todo.ID)
 	if err != nil {
-		logger.Error("Failed to update todo", "error", err)
+		s.logger.Error("Failed to update todo", "error", err)
 		return err
 	}
 
 	rows, err := result.RowsAffected()
 	if err != nil {
-		logger.Error("Failed to get rows affected", "error", err)
+		s.logger.Error("Failed to get rows affected", "error", err)
 		return err
 	}
 
 	if rows == 0 {
-		logger.Debug("Todo not found for update", "id", todo.ID)
+		s.logger.Debug("Todo not found for update", "id", todo.ID)
 		return storage.ErrTodoNotFound
 	}
 
-	logger.Debug("Updated todo", "id", todo.ID)
+	s.logger.Debug("Updated todo", "id", todo.ID)
 	return nil
+}
+
+// ensureDataDir creates the database directory if it doesn't exist
+func ensureDataDir(dbPath string) error {
+	// Clean and normalize the path
+	dbPath = filepath.Clean(dbPath)
+	dir := filepath.Dir(dbPath)
+
+	// Create directory if it doesn't exist
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		if !os.IsPermission(err) && !os.IsExist(err) {
+			return err
+		}
+	}
+	return nil
+}
+
+// verifyDatabaseAccess checks if we can write to the database file
+func verifyDatabaseAccess(dbPath string) error {
+	// Try to create/open the file
+	f, err := os.OpenFile(dbPath, os.O_RDWR|os.O_CREATE, 0o600)
+	if err != nil {
+		return err
+	}
+	return f.Close()
+}
+
+func (s *Store) SaveNote(content string) error {
+	query := `INSERT INTO notes (content) VALUES (?)`
+	_, err := s.db.Exec(query, content)
+	if err != nil {
+		s.logger.Error("Failed to save note", "error", err)
+		return err
+	}
+	s.logger.Info("Note saved successfully")
+	return nil
+}
+
+func (s *Store) GetNotes() ([]string, error) {
+	query := `SELECT content FROM notes ORDER BY created_at DESC`
+	rows, err := s.db.Query(query)
+	if err != nil {
+		s.logger.Error("Failed to get notes", "error", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	var notes []string
+	for rows.Next() {
+		var content string
+		if err := rows.Scan(&content); err != nil {
+			s.logger.Error("Failed to scan note", "error", err)
+			continue
+		}
+		notes = append(notes, content)
+	}
+	return notes, nil
 }

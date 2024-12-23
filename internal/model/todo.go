@@ -26,3 +26,15 @@ func NewTodo(content string) *Todo {
 		UpdatedAt: now,
 	}
 }
+
+// ToggleDone toggles the done status of the todo
+func (t *Todo) ToggleDone() {
+	t.Done = !t.Done
+	t.UpdatedAt = time.Now()
+}
+
+// UpdateContent updates the content of the todo
+func (t *Todo) UpdateContent(content string) {
+	t.Content = content
+	t.UpdatedAt = time.Now()
+}

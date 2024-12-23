@@ -1,97 +1,205 @@
 package config
 
 import (
+	"errors"
 	"os"
+	"strings"
 
 	"github.com/jonesrussell/godo/internal/common"
 	"github.com/jonesrussell/godo/internal/logger"
-	yaml "gopkg.in/yaml.v3"
+	"github.com/spf13/viper"
+	"golang.design/x/hotkey"
 )
 
+// Config holds the application configuration
 type Config struct {
-	App      AppConfig        `yaml:"app"`
-	Database DatabaseConfig   `yaml:"database"`
-	Hotkeys  HotkeyConfig     `yaml:"hotkeys"`
-	Logging  common.LogConfig `yaml:"logging"`
-	UI       UIConfig         `yaml:"ui"`
+	App      AppConfig        `mapstructure:"app"`
+	Database DatabaseConfig   `mapstructure:"database"`
+	Logging  common.LogConfig `mapstructure:"logging"`
+	Hotkeys  HotkeysConfig    `mapstructure:"hotkeys"`
 }
 
+// AppConfig holds application-specific configuration
 type AppConfig struct {
-	Name    string `yaml:"name"`
-	Version string `yaml:"version"`
+	Name    string `mapstructure:"name"`
+	Version string `mapstructure:"version"`
 }
 
+// DatabaseConfig holds database-specific configuration
 type DatabaseConfig struct {
-	Path         string `yaml:"path"`
-	MaxOpenConns int    `yaml:"max_open_conns"`
-	MaxIdleConns int    `yaml:"max_idle_conns"`
+	Path         string `mapstructure:"path"`
+	MaxOpenConns int    `mapstructure:"max_open_conns"`
+	MaxIdleConns int    `mapstructure:"max_idle_conns"`
 }
 
+// HotkeysConfig holds hotkey configurations
+type HotkeysConfig struct {
+	QuickNote HotkeyConfig `mapstructure:"quick_note"`
+}
+
+// HotkeyConfig holds configuration for a single hotkey
 type HotkeyConfig struct {
-	QuickNote *common.HotkeyBinding `yaml:"quick_note"`
-	OpenApp   *common.HotkeyBinding `yaml:"open_app"`
+	Modifiers []string `mapstructure:"modifiers"`
+	Key       string   `mapstructure:"key"`
 }
 
-type UIConfig struct {
-	QuickNote QuickNoteConfig `yaml:"quick_note"`
+// String returns a string representation of the hotkey
+func (h HotkeyConfig) String() string {
+	return strings.Join(append(h.Modifiers, h.Key), "+")
 }
 
-type QuickNoteConfig struct {
-	Width  int    `yaml:"width"`
-	Height int    `yaml:"height"`
-	Title  string `yaml:"title"`
+// Validate checks if the hotkey configuration is valid
+func (h HotkeyConfig) Validate() error {
+	// Validate modifiers
+	for _, m := range h.Modifiers {
+		switch strings.ToLower(m) {
+		case "ctrl", "alt", "shift":
+			continue
+		default:
+			return errors.New("invalid modifier: " + m)
+		}
+	}
+
+	// Validate key
+	switch strings.ToLower(h.Key) {
+	case "space", "s":
+		return nil
+	default:
+		return errors.New("invalid key: " + h.Key)
+	}
 }
 
-// Load loads configuration from files
-func Load(env string) (*Config, error) {
-	config := &Config{}
-
-	// Load default config
-	if err := loadConfigFile(config, "configs/default.yaml"); err != nil {
-		logger.Error("Failed loading default config", "error", err)
+// ToHotkey converts the config to a hotkey.Hotkey
+func (h HotkeyConfig) ToHotkey() (*hotkey.Hotkey, error) {
+	if err := h.Validate(); err != nil {
 		return nil, err
 	}
 
-	// Load environment-specific config if it exists
-	envConfig := "configs/" + env + ".yaml"
-	if _, err := os.Stat(envConfig); err == nil {
-		if err := loadConfigFile(config, envConfig); err != nil {
-			logger.Error("Failed loading environment config",
-				"env", env,
-				"error", err)
+	var mods []hotkey.Modifier
+	for _, m := range h.Modifiers {
+		switch strings.ToLower(m) {
+		case "ctrl":
+			mods = append(mods, hotkey.ModCtrl)
+		case "alt":
+			mods = append(mods, hotkey.ModAlt)
+		case "shift":
+			mods = append(mods, hotkey.ModShift)
+		}
+	}
+
+	var key hotkey.Key
+	switch strings.ToLower(h.Key) {
+	case "space":
+		key = hotkey.KeySpace
+	case "s":
+		key = hotkey.KeyS
+	}
+
+	return hotkey.New(mods, key), nil
+}
+
+// Load loads the configuration from files and environment
+func Load(log logger.Logger) (*Config, error) {
+	v := viper.New()
+
+	// Set default values first
+	v.SetDefault("database.max_open_conns", 1)
+	v.SetDefault("database.max_idle_conns", 1)
+
+	// Configure Viper
+	v.SetConfigType("yaml")
+	v.AddConfigPath("configs")
+	v.AddConfigPath(".")
+	v.SetEnvPrefix("GODO")
+	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	v.AutomaticEnv()
+
+	// Use loadHotkeys
+	hotkeys, err := loadHotkeys(v)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := bindEnvVariables(v, log); err != nil {
+		return nil, err
+	}
+
+	// Load default config
+	v.SetConfigName("default")
+	if err := v.ReadInConfig(); err != nil {
+		log.Error("Failed to read default config", "error", err)
+		return nil, err
+	}
+
+	// Load environment specific config
+	if env := getEnv(); env != "development" {
+		v.SetConfigName(env)
+		if err := v.MergeInConfig(); err != nil {
+			log.Error("Failed to merge environment config", "error", err)
 			return nil, err
 		}
 	}
 
-	// Override with environment variables
-	if err := loadEnvOverrides(config); err != nil {
-		logger.Error("Failed loading environment overrides", "error", err)
+	return &Config{
+		App: AppConfig{
+			Name:    v.GetString("app.name"),
+			Version: v.GetString("app.version"),
+		},
+		Database: DatabaseConfig{
+			Path:         v.GetString("database.path"),
+			MaxOpenConns: v.GetInt("database.max_open_conns"),
+			MaxIdleConns: v.GetInt("database.max_idle_conns"),
+		},
+		Hotkeys: HotkeysConfig{
+			QuickNote: *hotkeys,
+		},
+		Logging: common.LogConfig{
+			Level: v.GetString("logging.level"),
+		},
+	}, nil
+}
+
+func getEnv() string {
+	if env := os.Getenv("GODO_ENV"); env != "" {
+		return env
+	}
+	return "development"
+}
+
+// loadHotkeys loads hotkey configuration
+func loadHotkeys(v *viper.Viper) (*HotkeyConfig, error) {
+	h := &HotkeyConfig{}
+	if err := v.UnmarshalKey("hotkeys.quick_note", h); err != nil {
 		return nil, err
 	}
 
-	return config, nil
-}
-
-func loadConfigFile(config *Config, path string) error {
-	f, err := os.Open(path)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	decoder := yaml.NewDecoder(f)
-	return decoder.Decode(config)
-}
-
-// loadEnvOverrides loads configuration overrides from environment variables
-func loadEnvOverrides(config *Config) error {
-	// Example: GODO_DATABASE_PATH overrides database.path
-	if path := os.Getenv("GODO_DATABASE_PATH"); path != "" {
-		config.Database.Path = path
+	if strings.EqualFold(h.Key, "CTRL+SPACE") {
+		h.Key = "CTRL+SPACE"
 	}
 
-	if level := os.Getenv("GODO_LOG_LEVEL"); level != "" {
-		config.Logging.Level = level
+	return h, nil
+}
+
+// bindEnvVariables binds environment variables to configuration
+func bindEnvVariables(v *viper.Viper, log logger.Logger) error {
+	envVars := []struct {
+		key string
+		env string
+	}{
+		{"database.path", "GODO_DATABASE_PATH"},
+		{"database.max_open_conns", "GODO_DATABASE_MAX_OPEN_CONNS"},
+		{"database.max_idle_conns", "GODO_DATABASE_MAX_IDLE_CONNS"},
+		{"logging.level", "GODO_LOG_LEVEL"},
+	}
+
+	for _, ev := range envVars {
+		if err := v.BindEnv(ev.key, ev.env); err != nil {
+			log.Error("Failed to bind environment variable",
+				"key", ev.key,
+				"env", ev.env,
+				"error", err)
+			return err
+		}
 	}
 
 	return nil

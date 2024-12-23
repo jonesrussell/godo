@@ -1,0 +1,32 @@
+# IDE and editor files
+.vscode/
+.idea/
+.devcontainer/
+
+# Build artifacts and binaries
+bin/
+vendor/
+coverage/
+*.exe
+*.db
+*.log
+*.out
+*_gen.go
+
+# CI/CD and quality tools
+.github/
+qodana.yml
+qodana.sarif.json
+
+# Task runners
+Taskfile.yaml
+taskfile.yml
+
+# Docker
+build/docker/
+
+# Generated documentation
+docs/generated/
+
+# Test data
+testdata/ 

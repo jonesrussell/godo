@@ -6,8 +6,9 @@ tasks:
       - task: run
 
   wire:
+    desc: Generate wire dependency injection code
     cmds:
-      - cd internal/app && wire
+      - cd internal/container && wire
 
   run:
     deps: [wire]
@@ -59,11 +60,15 @@ tasks:
       - test -z "$(gofmt -l .)"
 
   clean:
-    desc: Clean build artifacts
+    desc: Clean build artifacts and generated files
     cmds:
       - cmd: rd /s /q bin 2>nul || exit 0
         platforms: [windows]
       - cmd: rm -rf bin/
+        platforms: [linux, darwin]
+      - cmd: del /f /q internal\container\wire_gen.go 2>nul || exit 0
+        platforms: [windows]
+      - cmd: rm -f internal/container/wire_gen.go
         platforms: [linux, darwin]
 
   dev:
@@ -96,6 +101,12 @@ tasks:
       - go test -race -coverprofile=coverage.out -coverpkg=./... ./...
       - go tool cover -html=coverage.out -o coverage.html
       - go tool cover -func=coverage.out
+      - cmd: start coverage.html
+        platforms: [windows]
+      - cmd: open coverage.html
+        platforms: [darwin]
+      - cmd: xdg-open coverage.html
+        platforms: [linux]
 
   test-coverage-threshold:
     desc: Run tests and check coverage threshold

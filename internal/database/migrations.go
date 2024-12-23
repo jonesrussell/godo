@@ -19,22 +19,22 @@ var migrations = []string{
 }
 
 // RunMigrations executes all database migrations
-func RunMigrations(db *sql.DB) error {
-	logger.Info("Running database migrations")
+func RunMigrations(db *sql.DB, log logger.Logger) error {
+	log.Info("Running database migrations")
 
 	for i, migration := range migrations {
-		logger.Debug("Executing migration",
+		log.Debug("Executing migration",
 			"index", i,
 			"query", migration)
 
 		if _, err := db.Exec(migration); err != nil {
-			logger.Error("Migration failed",
+			log.Error("Migration failed",
 				"index", i,
 				"error", err)
 			return err
 		}
 	}
 
-	logger.Info("Database migrations completed successfully")
+	log.Info("Database migrations completed successfully")
 	return nil
 }

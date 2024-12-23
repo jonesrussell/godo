@@ -36,7 +36,7 @@ func NewApp(cfg *config.Config, store storage.Store, log logger.Logger) *App {
 		log:        log,
 	}
 
-	app.quickNote = quicknote.New(mainWindow, store, log)
+	app.quickNote = quicknote.New(fyneApp, mainWindow, store, log)
 
 	return app
 }

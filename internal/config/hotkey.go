@@ -155,3 +155,7 @@ func NewHotkey(mapper *HotkeyMapper, mods []hotkey.Modifier, key hotkey.Key) Hot
 
 	return Hotkey(strings.Join(parts, "+"))
 }
+
+func (h Hotkey) String() string {
+	return string(h)
+}

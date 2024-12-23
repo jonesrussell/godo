@@ -1,9 +1,8 @@
 package config
 
 import (
-	"os"
+	"path/filepath"
 
-	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/spf13/viper"
 )
 
@@ -35,20 +34,42 @@ type DatabaseConfig struct {
 	Path string `mapstructure:"path"`
 }
 
-// Load reads configuration from the specified file
-func (c *Config) Load(configPath string) error {
-	v := viper.New()
-	v.SetConfigFile(configPath)
-
-	if err := v.ReadInConfig(); err != nil {
-		return err
-	}
-
-	return v.Unmarshal(c)
+// Provider holds configuration paths and name
+type Provider struct {
+	paths      []string
+	configName string
+	configType string
 }
 
-// NewConfig creates a new Config instance with defaults
-func NewConfig(log logger.Logger, configPath string) (*Config, error) {
+// NewProvider creates a new Provider instance
+func NewProvider(paths []string, name, configType string) *Provider {
+	return &Provider{
+		paths:      paths,
+		configName: name,
+		configType: configType,
+	}
+}
+
+// Load reads configuration from the specified file
+func (p *Provider) Load() (*Config, error) {
+	v := viper.New()
+
+	// Set configuration type
+	v.SetConfigType(p.configType)
+
+	// Add config paths
+	for _, path := range p.paths {
+		v.AddConfigPath(path)
+	}
+
+	// Set config name
+	v.SetConfigName(p.configName)
+
+	// Set environment variable prefix
+	v.SetEnvPrefix("GODO")
+	v.AutomaticEnv()
+
+	// Create default config
 	cfg := &Config{
 		App: AppConfig{
 			Name:    "Godo",
@@ -56,29 +77,37 @@ func NewConfig(log logger.Logger, configPath string) (*Config, error) {
 			ID:      "io.github.jonesrussell.godo",
 		},
 		Logger: LoggerConfig{
-			Level:    "info",
-			Console:  true,
-			File:     false,
-			FilePath: "",
-		},
-		Hotkeys: HotkeyConfig{
-			QuickNote: "Ctrl+Alt+G",
+			Level:   "info",
+			Console: true,
 		},
 		Database: DatabaseConfig{
-			Path: "./data", // Default database path
+			Path: "godo.db",
 		},
 	}
 
-	// Try to load config file
-	if err := cfg.Load(configPath); err != nil {
-		// If file not found, use defaults and log info
-		if os.IsNotExist(err) {
-			log.Info("config file not found, using defaults", "path", configPath)
+	// Try to read config file
+	if err := v.ReadInConfig(); err != nil {
+		// If config file is not found, use defaults
+		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
 			return cfg, nil
 		}
-		// Other errors should be returned
+		return nil, err
+	}
+
+	// Unmarshal config
+	if err := v.Unmarshal(cfg); err != nil {
 		return nil, err
 	}
 
 	return cfg, nil
+}
+
+// Add this function
+func NewConfig(configPath string) (*Config, error) {
+	provider := NewProvider(
+		[]string{filepath.Dir(configPath)},
+		filepath.Base(configPath),
+		"yaml",
+	)
+	return provider.Load()
 }

@@ -32,9 +32,7 @@ func TestProviders(t *testing.T) {
 			setup: func() *config.Config {
 				return &config.Config{
 					Database: config.DatabaseConfig{
-						Path:         t.TempDir(),
-						MaxOpenConns: 1,
-						MaxIdleConns: 1,
+						Path: t.TempDir(),
 					},
 				}
 			},

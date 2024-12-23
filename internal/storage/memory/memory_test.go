@@ -36,3 +36,17 @@ func TestMemoryStore_Concurrency(t *testing.T) {
 	todos := store.List()
 	assert.Len(t, todos, 10)
 }
+
+func TestNoteOperations(t *testing.T) {
+	store := New()
+
+	// Test saving notes
+	testNote := "Test quick note"
+	err := store.SaveNote(testNote)
+	assert.NoError(t, err)
+
+	// Test retrieving notes
+	notes, err := store.GetNotes()
+	assert.NoError(t, err)
+	assert.Contains(t, notes, testNote)
+}

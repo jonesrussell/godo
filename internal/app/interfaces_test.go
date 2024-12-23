@@ -8,10 +8,13 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/test"
 	"fyne.io/fyne/v2/theme"
 )
 
 func TestMockUI(t *testing.T) {
+	test.NewApp()
+
 	tests := []struct {
 		name     string
 		setup    func() *app.MockUI
@@ -50,7 +53,7 @@ func TestMockUI(t *testing.T) {
 				return &app.MockUI{}
 			},
 			action: func(m *app.MockUI) {
-				content := canvas.NewText("Test", theme.Color(theme.ColorNameForeground))
+				content := canvas.NewText("Test", test.Theme().Color(theme.ColorNameForeground, theme.VariantLight))
 				m.SetContent(content)
 			},
 			validate: func(t *testing.T, m *app.MockUI) {

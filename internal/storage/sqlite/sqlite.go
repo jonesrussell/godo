@@ -292,9 +292,12 @@ func (s *Store) Update(todo *model.Todo) error {
 
 // ensureDataDir creates the database directory if it doesn't exist
 func ensureDataDir(dbPath string) error {
+	// Clean and normalize the path
+	dbPath = filepath.Clean(dbPath)
 	dir := filepath.Dir(dbPath)
+
+	// Create directory if it doesn't exist
 	if err := os.MkdirAll(dir, 0o755); err != nil {
-		// Check if the error is due to permissions or other issues
 		if !os.IsPermission(err) && !os.IsExist(err) {
 			return err
 		}

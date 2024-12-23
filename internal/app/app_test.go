@@ -6,6 +6,7 @@ import (
 	"github.com/jonesrussell/godo/internal/app"
 	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/logger"
+	"github.com/jonesrussell/godo/internal/storage/memory"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -33,16 +34,22 @@ func setupTestApp(t *testing.T) (*app.App, *MockQuickNoteService) {
 	})
 	require.NoError(t, err)
 
-	// Setup config
+	// Setup in-memory store
+	store := memory.New()
+
+	// Setup config with in-memory database
 	cfg := &config.Config{
 		App: config.AppConfig{
 			Name:    "Test App",
 			Version: "0.0.1",
 		},
+		Database: config.DatabaseConfig{
+			Path: ":memory:",
+		},
 	}
 
-	// Create app
-	testApp := app.NewApp(cfg, nil, log)
+	// Create app with store
+	testApp := app.NewApp(cfg, store, log)
 	mockQuickNote := &MockQuickNoteService{}
 	testApp.SetQuickNoteService(mockQuickNote)
 
@@ -55,17 +62,22 @@ func TestApp(t *testing.T) {
 		fn   func(*testing.T, *app.App, *MockQuickNoteService)
 	}{
 		{
-			name: "Setup UI initializes components",
+			name: "Save and retrieve notes",
 			fn: func(t *testing.T, a *app.App, m *MockQuickNoteService) {
-				a.SetupUI()
-				// Add assertions based on observable behavior
+				err := a.SaveNote("Test note")
+				require.NoError(t, err)
+
+				notes, err := a.GetNotes()
+				require.NoError(t, err)
+				assert.Contains(t, notes, "Test note")
 			},
 		},
 		{
-			name: "Cleanup closes resources",
+			name: "Quick note service integration",
 			fn: func(t *testing.T, a *app.App, m *MockQuickNoteService) {
-				a.Cleanup()
-				// Add assertions for cleanup
+				assert.False(t, m.showCalled)
+				a.ShowQuickNote()
+				assert.True(t, m.showCalled)
 			},
 		},
 	}
@@ -73,16 +85,9 @@ func TestApp(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			testApp, mockQuickNote := setupTestApp(t)
+
+			// Add assertions based on observable behavior
 			tt.fn(t, testApp, mockQuickNote)
 		})
 	}
-}
-
-func TestApp_QuickNoteIntegration(t *testing.T) {
-	testApp, mockQuickNote := setupTestApp(t)
-
-	// Test that quick note service is properly integrated
-	assert.False(t, mockQuickNote.showCalled)
-	testApp.ShowQuickNote() // Add this method to App
-	assert.True(t, mockQuickNote.showCalled)
 }

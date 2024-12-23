@@ -165,3 +165,11 @@ func (a *App) SetQuickNoteService(service QuickNoteService) {
 func (a *App) ShowQuickNote() {
 	a.quickNote.Show()
 }
+
+func (a *App) SaveNote(content string) error {
+	return a.store.SaveNote(content)
+}
+
+func (a *App) GetNotes() ([]string, error) {
+	return a.store.GetNotes()
+}

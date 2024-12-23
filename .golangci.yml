@@ -81,7 +81,7 @@ linters-settings:
             desc: "use github.com/jonesrussell/godo/internal/logger instead"
             files:
               exclude: 
-                - "internal/config/.*\\.go$"
+                - "^internal/config/.*\\.go$"
           - pkg: "github.com/gotk3/gotk3"
             desc: "use fyne.io/fyne/v2 for GUI instead"
           - pkg: "github.com/lxn/win"
@@ -107,7 +107,7 @@ linters-settings:
           - "examples/*"
           - "internal/testing/*"
       config:
-        files: ["internal/config/.*\\.go$"]
+        files: ["^internal/config/.*\\.go$"]
         path: "github.com/jonesrussell/godo/internal/config"
         allow:
           - $gostd  # Allows fmt and other std libs

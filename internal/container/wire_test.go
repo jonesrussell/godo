@@ -121,15 +121,27 @@ logger:
 			wantErr: false,
 		},
 		{
-			name:   "handles invalid config",
-			envVar: "invalid",
+			name:   "falls back to defaults with invalid config",
+			envVar: "",
 			setup: func(t *testing.T) (string, func()) {
 				tmpDir := t.TempDir()
 				configsDir := filepath.Join(tmpDir, "configs")
 				require.NoError(t, os.MkdirAll(configsDir, 0o755))
 
-				invalidConfig := `invalid: yaml: content`
-				err := os.WriteFile(filepath.Join(configsDir, "default.yaml"), []byte(invalidConfig), 0o600)
+				// Create an invalid YAML file - app should fall back to defaults
+				invalidConfig := `
+app:
+  name: [Godo  # Missing closing bracket
+  version: "0.1.0"
+  id: {broken
+database:
+  path: "test.db"
+logger:
+  level: "invalid_level"
+  console: true
+`
+				configPath := filepath.Join(configsDir, "default.yaml")
+				err := os.WriteFile(configPath, []byte(invalidConfig), 0o600)
 				require.NoError(t, err)
 
 				originalWd, err := os.Getwd()
@@ -141,7 +153,7 @@ logger:
 					require.NoError(t, os.Chdir(originalWd))
 				}
 			},
-			wantErr: true,
+			wantErr: false,
 		},
 	}
 

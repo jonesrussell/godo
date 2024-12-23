@@ -1,8 +1,0 @@
-
-app:
-  name: "Godo"
-  version: "0.1.0"
-database:
-  path: "test.db"
-  max_open_conns: 1
-  max_idle_conns: 1

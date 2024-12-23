@@ -7,6 +7,7 @@ import (
 	"github.com/google/wire"
 	"github.com/jonesrussell/godo/internal/app"
 	"github.com/jonesrussell/godo/internal/config"
+	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
 	"github.com/jonesrussell/godo/internal/storage/sqlite"
 )
@@ -14,16 +15,49 @@ import (
 // Wire sets for dependency injection
 var defaultSet = wire.NewSet(
 	provideLogger,
-	provideConfigPath,
-	config.NewConfig,
+	provideConfig,
 	provideSQLite,
 	app.NewApp,
 	wire.Bind(new(storage.Store), new(*sqlite.Store)),
 )
 
-// provideConfigPath provides the default config file path
-func provideConfigPath() string {
-	return "./config.yaml"
+// provideConfig creates a new config provider and loads the configuration
+func provideConfig() (*config.Config, error) {
+	provider := config.NewProvider(
+		[]string{
+			".",              // Current directory
+			"./configs",      // Project configs directory
+			"~/.config/godo", // User config directory
+		},
+		"default",
+		"yaml",
+	)
+	return provider.Load()
+}
+
+// provideLogger provides a basic logger for initial config loading
+func provideLogger() (logger.Logger, error) {
+	return logger.NewZapLogger(&logger.Config{
+		Level:   "info",
+		Console: true,
+	})
+}
+
+// provideSQLite creates a new SQLite store
+func provideSQLite(cfg *config.Config, log logger.Logger) (*sqlite.Store, func(), error) {
+	// Use the database path directly from config as it's already resolved
+	store, err := sqlite.New(cfg.Database.Path, log)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	cleanup := func() {
+		if err := store.Close(); err != nil {
+			log.Error("Failed to close database", "error", err)
+		}
+	}
+
+	return store, cleanup, nil
 }
 
 // InitializeApp creates a new application instance with all dependencies wired

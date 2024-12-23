@@ -1,9 +1,16 @@
+# Test data for config tests
 app:
   name: "Godo"
   version: "0.1.0"
   id: "io.github.jonesrussell.godo"
+
+database:
+  path: "godo.db"
+
 logger:
   level: "info"
   console: true
-database:
-  path: "godo.db" 
+
+hotkeys:
+  quick_note: "Ctrl+Alt+G"
+  

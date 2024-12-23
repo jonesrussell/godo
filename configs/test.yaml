@@ -4,14 +4,10 @@ app:
 
 database:
   path: ":memory:"  # Use in-memory SQLite for tests
-  max_open_conns: 1
-  max_idle_conns: 1
 
-logging:
+logger:
   level: "debug"
   console: true
-  file:
-    enabled: false
 
 ui:
   main_window:

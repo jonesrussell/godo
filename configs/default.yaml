@@ -5,19 +5,11 @@ app:
   id: "io.github.jonesrussell.godo"
 
 database:
-  path: "./data/godo.db"
-  max_open_conns: 1
-  max_idle_conns: 1
+  path: "godo.db"
 
-logging:
-  level: "info"  # info, debug, warn, error
+logger:
+  level: "info"
   console: true
-  file:
-    enabled: false
-    path: "./logs/godo.log"
-    max_size: 10    # megabytes
-    max_backups: 3
-    max_age: 28     # days
 
 hotkeys:
   quick_note: "Ctrl+Alt+G"

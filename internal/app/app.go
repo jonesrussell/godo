@@ -179,3 +179,7 @@ func (a *App) SaveNote(content string) error {
 func (a *App) GetNotes() ([]string, error) {
 	return a.store.GetNotes()
 }
+
+func (a *App) GetVersion() string {
+	return a.config.App.Version
+}

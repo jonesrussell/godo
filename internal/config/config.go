@@ -1,12 +1,39 @@
 package config
 
 import (
-	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/spf13/viper"
+)
+
+// Configuration keys and defaults
+const (
+	// Environment settings
+	EnvPrefix   = "GODO"
+	EnvTestMode = "GODO_TEST_MODE"
+
+	// Config paths
+	DefaultConfigDir = "godo"
+
+	// Default values
+	DefaultAppName    = "Godo"
+	DefaultAppVersion = "0.1.0"
+	DefaultAppID      = "io.github.jonesrussell.godo"
+	DefaultDBPath     = "godo.db"
+	DefaultLogLevel   = "info"
+
+	// Config keys
+	KeyAppName    = "app.name"
+	KeyAppVersion = "app.version"
+	KeyAppID      = "app.id"
+	KeyDBPath     = "database.path"
+	KeyLogLevel   = "logger.level"
+	KeyLogConsole = "logger.console"
+	KeyQuickNote  = "hotkeys.quick_note"
 )
 
 // Config holds all application configuration
@@ -42,67 +69,119 @@ type Provider struct {
 	paths      []string
 	configName string
 	configType string
+	log        logger.Logger
 }
 
-// NewProvider creates a new configuration provider
-func NewProvider(paths []string, configName, configType string) *Provider {
-	return &Provider{
+// ProviderOption allows for optional configuration of the Provider
+type ProviderOption func(*Provider)
+
+// WithLogger sets a custom logger for the provider
+func WithLogger(log logger.Logger) ProviderOption {
+	return func(p *Provider) {
+		p.log = log
+	}
+}
+
+// NewProvider creates a new configuration provider with options
+func NewProvider(paths []string, configName, configType string, opts ...ProviderOption) *Provider {
+	p := &Provider{
 		paths:      paths,
 		configName: configName,
 		configType: configType,
+		log:        logger.NewTestLogger(), // default logger
 	}
+
+	for _, opt := range opts {
+		opt(p)
+	}
+
+	return p
 }
 
-// Load reads and validates configuration from files and environment
+// Load reads and validates configuration
 func (p *Provider) Load() (*Config, error) {
 	v := viper.New()
+	p.log.Info("starting config load")
 
-	// Set up Viper
-	v.SetConfigType(p.configType)
-	for _, path := range p.paths {
-		v.AddConfigPath(path)
-	}
-	v.SetConfigName(p.configName)
-
-	// Environment variables
-	v.SetEnvPrefix("GODO")
+	// Set up environment variables
+	v.SetEnvPrefix(EnvPrefix)
 	v.AutomaticEnv()
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
-	// Bind specific environment variables
-	if err := v.BindEnv("database.path", "GODO_DATABASE_PATH"); err != nil {
-		return nil, err
-	}
-	if err := v.BindEnv("logger.level", "GODO_LOGGER_LEVEL"); err != nil {
-		return nil, err
-	}
-
-	// Load defaults first
+	// Set defaults
 	cfg := NewDefaultConfig()
+	v.SetDefault(KeyAppName, cfg.App.Name)
+	v.SetDefault(KeyAppVersion, cfg.App.Version)
+	v.SetDefault(KeyAppID, cfg.App.ID)
+	v.SetDefault(KeyDBPath, cfg.Database.Path)
+	v.SetDefault(KeyLogLevel, cfg.Logger.Level)
+	v.SetDefault(KeyLogConsole, cfg.Logger.Console)
+	v.SetDefault(KeyQuickNote, cfg.Hotkeys.QuickNote)
 
-	// Try to read config file
+	// Configure and read config file
+	v.SetConfigType(p.configType)
+	v.SetConfigName(p.configName)
+	for _, path := range p.paths {
+		v.AddConfigPath(path)
+		p.log.Debug("added config path", "path", path)
+	}
+
 	if err := v.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-			// Return error only if it's not a missing file
+		p.log.Warn("config file read error", "error", err)
+	} else {
+		p.log.Info("config file loaded", "file", v.ConfigFileUsed())
+	}
+
+	// Bind environment variables explicitly
+	envBindings := map[string]string{
+		KeyAppName:    EnvPrefix + "_APP_NAME",
+		KeyAppVersion: EnvPrefix + "_APP_VERSION",
+		KeyAppID:      EnvPrefix + "_APP_ID",
+		KeyDBPath:     EnvPrefix + "_DATABASE_PATH",
+		KeyLogLevel:   EnvPrefix + "_LOGGER_LEVEL",
+		KeyLogConsole: EnvPrefix + "_LOGGER_CONSOLE",
+		KeyQuickNote:  EnvPrefix + "_HOTKEYS_QUICK_NOTE",
+	}
+
+	for k, env := range envBindings {
+		if err := v.BindEnv(k, env); err != nil {
 			return nil, err
 		}
-		// Missing config file is ok, we'll use defaults
+		if envVal := os.Getenv(env); envVal != "" {
+			p.log.Debug("environment variable found", "key", env, "value", envVal)
+		}
 	}
 
-	// Unmarshal the config
+	p.log.Debug("after env binding",
+		"app.name", v.GetString(KeyAppName),
+		"database.path", v.GetString(KeyDBPath))
+
+	// Unmarshal into struct
+	cfg = &Config{}
 	if err := v.Unmarshal(cfg); err != nil {
-		return nil, err
+		p.log.WithError(err).Error("unmarshal error")
+		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
 	}
 
-	// Validate configuration
+	p.log.Debug("after unmarshal",
+		"app.name", cfg.App.Name,
+		"database.path", cfg.Database.Path)
+
+	// Validate and resolve paths
 	if err := ValidateConfig(cfg); err != nil {
-		return nil, err
+		p.log.WithError(err).Error("validation error")
+		return nil, fmt.Errorf("invalid configuration: %w", err)
+	}
+	p.log.Debug("validation passed")
+
+	if err := p.resolvePaths(cfg); err != nil {
+		p.log.WithError(err).Error("path resolution error")
+		return nil, fmt.Errorf("failed to resolve paths: %w", err)
 	}
 
-	// Resolve paths
-	if err := p.resolvePaths(cfg); err != nil {
-		return nil, err
-	}
+	p.log.Info("config load complete",
+		"app.name", cfg.App.Name,
+		"database.path", cfg.Database.Path)
 
 	return cfg, nil
 }
@@ -126,22 +205,34 @@ func (p *Provider) resolvePaths(cfg *Config) error {
 
 // ValidateConfig validates the configuration values
 func ValidateConfig(cfg *Config) error {
+	var validationErrors []string
+
 	if cfg.App.Name == "" {
-		return errors.New("app name is required")
+		validationErrors = append(validationErrors, "app name is required")
 	}
 
+	if !isValidLogLevel(cfg.Logger.Level) {
+		validationErrors = append(validationErrors, "invalid log level: "+cfg.Logger.Level)
+	}
+
+	if len(validationErrors) > 0 {
+		return &ConfigError{
+			Op:  "validate",
+			Err: fmt.Errorf("validation failed: %s", strings.Join(validationErrors, "; ")),
+		}
+	}
+
+	return nil
+}
+
+func isValidLogLevel(level string) bool {
 	validLevels := map[string]bool{
 		"debug": true,
 		"info":  true,
 		"warn":  true,
 		"error": true,
 	}
-
-	if !validLevels[strings.ToLower(cfg.Logger.Level)] {
-		return errors.New("invalid log level: " + cfg.Logger.Level)
-	}
-
-	return nil
+	return validLevels[strings.ToLower(level)]
 }
 
 // NewDefaultConfig creates a new configuration with default values
@@ -163,4 +254,18 @@ func NewDefaultConfig() *Config {
 			QuickNote: "Ctrl+Alt+G",
 		},
 	}
+}
+
+// Custom error types for better error handling
+type ConfigError struct {
+	Op  string
+	Err error
+}
+
+func (e *ConfigError) Error() string {
+	return fmt.Sprintf("config %s: %v", e.Op, e.Err)
+}
+
+func (e *ConfigError) Unwrap() error {
+	return e.Err
 }

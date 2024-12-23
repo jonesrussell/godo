@@ -1,6 +1,7 @@
 package config_test
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -132,4 +133,231 @@ func TestNewDefaultConfig(t *testing.T) {
 	assert.Equal(t, config.DefaultLogLevel, cfg.Logger.Level)
 	assert.True(t, cfg.Logger.Console)
 	assert.Equal(t, config.DefaultDBPath, cfg.Database.Path)
+}
+
+func TestConfigError(t *testing.T) {
+	t.Run("Error string format", func(t *testing.T) {
+		err := &config.ConfigError{
+			Op:  "test",
+			Err: fmt.Errorf("test error"),
+		}
+		assert.Equal(t, "config test: test error", err.Error())
+	})
+
+	t.Run("Error unwrap", func(t *testing.T) {
+		innerErr := fmt.Errorf("inner error")
+		err := &config.ConfigError{
+			Op:  "test",
+			Err: innerErr,
+		}
+		assert.Equal(t, innerErr, err.Unwrap())
+	})
+}
+
+func TestPathResolution(t *testing.T) {
+	// Save original env and restore after test
+	originalTestMode := os.Getenv(config.EnvTestMode)
+	originalConfigDir := os.Getenv("XDG_CONFIG_HOME")
+	defer func() {
+		if originalTestMode != "" {
+			os.Setenv(config.EnvTestMode, originalTestMode)
+		} else {
+			os.Unsetenv(config.EnvTestMode)
+		}
+		if originalConfigDir != "" {
+			os.Setenv("XDG_CONFIG_HOME", originalConfigDir)
+		} else {
+			os.Unsetenv("XDG_CONFIG_HOME")
+		}
+	}()
+
+	// Create a test logger
+	log, err := logger.New(&common.LogConfig{
+		Level:   "debug",
+		Console: true,
+		Output:  []string{"stdout"},
+	})
+	require.NoError(t, err)
+
+	t.Run("Relative path resolution", func(t *testing.T) {
+		os.Unsetenv(config.EnvTestMode)
+
+		provider := config.NewProvider(
+			[]string{"testdata"},
+			"config",
+			"yaml",
+			config.WithLogger(log),
+		)
+
+		cfg, err := provider.Load()
+		require.NoError(t, err)
+
+		// Check if the database path was made absolute
+		assert.True(t, filepath.IsAbs(cfg.Database.Path))
+		assert.Contains(t, cfg.Database.Path, "godo")
+		assert.Contains(t, cfg.Database.Path, "godo.db")
+	})
+
+	t.Run("Keep absolute path unchanged", func(t *testing.T) {
+		os.Unsetenv(config.EnvTestMode)
+
+		absPath := filepath.Join(t.TempDir(), "custom.db")
+		os.Setenv(config.EnvPrefix+"_DATABASE_PATH", absPath)
+		defer os.Unsetenv(config.EnvPrefix + "_DATABASE_PATH")
+
+		provider := config.NewProvider(
+			[]string{"testdata"},
+			"config",
+			"yaml",
+			config.WithLogger(log),
+		)
+
+		cfg, err := provider.Load()
+		require.NoError(t, err)
+		assert.Equal(t, absPath, cfg.Database.Path)
+	})
+}
+
+func TestEnvironmentVariables(t *testing.T) {
+	// Create a test logger
+	log, err := logger.New(&common.LogConfig{
+		Level:   "debug",
+		Console: true,
+		Output:  []string{"stdout"},
+	})
+	require.NoError(t, err)
+
+	t.Run("Complex environment variable overrides", func(t *testing.T) {
+		// Set multiple environment variables
+		envVars := map[string]string{
+			config.EnvPrefix + "_APP_NAME":           "EnvApp",
+			config.EnvPrefix + "_APP_VERSION":        "2.0.0",
+			config.EnvPrefix + "_APP_ID":             "env.app.id",
+			config.EnvPrefix + "_LOGGER_LEVEL":       "debug",
+			config.EnvPrefix + "_LOGGER_CONSOLE":     "false",
+			config.EnvPrefix + "_HOTKEYS_QUICK_NOTE": "Alt+Shift+N",
+		}
+
+		// Set environment variables and create cleanup function
+		for k, v := range envVars {
+			os.Setenv(k, v)
+		}
+		defer func() {
+			for k := range envVars {
+				os.Unsetenv(k)
+			}
+		}()
+
+		provider := config.NewProvider(
+			[]string{"testdata"},
+			"config",
+			"yaml",
+			config.WithLogger(log),
+		)
+
+		cfg, err := provider.Load()
+		require.NoError(t, err)
+
+		// Verify all environment variables were properly applied
+		assert.Equal(t, "EnvApp", cfg.App.Name)
+		assert.Equal(t, "2.0.0", cfg.App.Version)
+		assert.Equal(t, "env.app.id", cfg.App.ID)
+		assert.Equal(t, "debug", cfg.Logger.Level)
+		assert.False(t, cfg.Logger.Console)
+		assert.Equal(t, config.Hotkey("Alt+Shift+N"), cfg.Hotkeys.QuickNote)
+	})
+
+	t.Run("Invalid environment variable values", func(t *testing.T) {
+		os.Setenv(config.EnvPrefix+"_LOGGER_LEVEL", "invalid_level")
+		defer os.Unsetenv(config.EnvPrefix + "_LOGGER_LEVEL")
+
+		provider := config.NewProvider(
+			[]string{"testdata"},
+			"config",
+			"yaml",
+			config.WithLogger(log),
+		)
+
+		_, err := provider.Load()
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid log level")
+	})
+}
+
+func TestMultipleConfigPaths(t *testing.T) {
+	// Create temporary directories for config files
+	baseDir := t.TempDir()
+	primaryDir := filepath.Join(baseDir, "primary")
+	fallbackDir := filepath.Join(baseDir, "fallback")
+	require.NoError(t, os.MkdirAll(primaryDir, 0o755))
+	require.NoError(t, os.MkdirAll(fallbackDir, 0o755))
+
+	// Create config files with different values
+	primaryConfig := []byte(`
+app:
+  name: "Primary App"
+  version: "1.0.0"
+`)
+	fallbackConfig := []byte(`
+app:
+  name: "Fallback App"
+  version: "0.5.0"
+`)
+
+	require.NoError(t, os.WriteFile(filepath.Join(primaryDir, "config.yaml"), primaryConfig, 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(fallbackDir, "config.yaml"), fallbackConfig, 0o600))
+
+	// Create a test logger
+	log, err := logger.New(&common.LogConfig{
+		Level:   "debug",
+		Console: true,
+		Output:  []string{"stdout"},
+	})
+	require.NoError(t, err)
+
+	t.Run("Primary config takes precedence", func(t *testing.T) {
+		provider := config.NewProvider(
+			[]string{primaryDir, fallbackDir},
+			"config",
+			"yaml",
+			config.WithLogger(log),
+		)
+
+		cfg, err := provider.Load()
+		require.NoError(t, err)
+		assert.Equal(t, "Primary App", cfg.App.Name)
+		assert.Equal(t, "1.0.0", cfg.App.Version)
+	})
+
+	t.Run("Fallback when primary doesn't exist", func(t *testing.T) {
+		// Remove primary config
+		require.NoError(t, os.Remove(filepath.Join(primaryDir, "config.yaml")))
+
+		provider := config.NewProvider(
+			[]string{primaryDir, fallbackDir},
+			"config",
+			"yaml",
+			config.WithLogger(log),
+		)
+
+		cfg, err := provider.Load()
+		require.NoError(t, err)
+		assert.Equal(t, "Fallback App", cfg.App.Name)
+		assert.Equal(t, "0.5.0", cfg.App.Version)
+	})
+
+	t.Run("Default values when no config exists", func(t *testing.T) {
+		// Use non-existent directories
+		provider := config.NewProvider(
+			[]string{filepath.Join(baseDir, "nonexistent")},
+			"config",
+			"yaml",
+			config.WithLogger(log),
+		)
+
+		cfg, err := provider.Load()
+		require.NoError(t, err)
+		assert.Equal(t, config.DefaultAppName, cfg.App.Name)
+		assert.Equal(t, config.DefaultAppVersion, cfg.App.Version)
+	})
 }

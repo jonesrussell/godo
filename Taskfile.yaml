@@ -94,7 +94,7 @@ tasks:
     cmds:
       - cmd /C "type logs\godo.log"
 
-  test-coverage:
+  test:coverage:
     desc: Run tests with coverage report
     deps: [wire]
     cmds:
@@ -108,7 +108,7 @@ tasks:
       - cmd: xdg-open coverage.html
         platforms: [linux]
 
-  test-coverage-threshold:
+  test:coverage:threshold:
     desc: Run tests and check coverage threshold
     deps: [wire]
     cmds:
@@ -126,15 +126,15 @@ tasks:
     cmds:
       - go build -ldflags="-X main.Version={{.VERSION}}" -o bin/godo cmd/godo/main.go
 
-  build-all:
+  build:all:
     desc: Build for all platforms
     deps: [wire]
     cmds:
-      - task: build-windows
-      - task: build-darwin
-      - task: build-linux
+      - task: build:windows
+      - task: build:darwin
+      - task: build:linux
 
-  build-windows:
+  build:windows:
     desc: Build for Windows
     deps: [wire]
     env:
@@ -144,7 +144,7 @@ tasks:
     cmds:
       - go build -o ../../bin/godo.exe
 
-  build-darwin:
+  build:darwin:
     desc: Build for macOS
     deps: [wire]
     env:
@@ -153,7 +153,7 @@ tasks:
     cmds:
       - go build -o bin/godo-darwin cmd/godo/main.go
 
-  build-linux:
+  build:linux:
     desc: Build for Linux
     deps: [wire]
     env:
@@ -179,9 +179,9 @@ tasks:
       - task: wire
       - go generate ./...
 
-  package-windows:
+  package:windows:
     desc: Package Windows executable with Fyne
-    deps: [build-windows]
+    deps: [build:windows]
     dir: cmd/godo
     cmds:
       - fyne package -os windows

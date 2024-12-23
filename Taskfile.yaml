@@ -183,3 +183,8 @@ tasks:
         platforms: [windows]
       - cmd: mv Godo.exe ../../bin/
         platforms: [linux, darwin]
+
+  act:
+    desc: Run GitHub Actions locally using act
+    cmds:
+      - act -v -j build --container-architecture linux/amd64 -P ubuntu-latest=catthehacker/ubuntu:act-medium

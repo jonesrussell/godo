@@ -1,10 +1,58 @@
 package logger
 
-import "go.uber.org/zap"
+import (
+	"fmt"
+	"strings"
 
-// NewZapLogger creates a new Logger from a zap.Logger instance
-func NewZapLogger(z *zap.Logger) Logger {
-	return &zapLogger{z.Sugar()}
+	"github.com/jonesrussell/godo/internal/common"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+)
+
+type zapLogger struct {
+	*zap.SugaredLogger
+}
+
+// New creates a new logger instance based on the provided configuration
+func New(config *common.LogConfig) (Logger, error) {
+	// Validate log level
+	level, err := parseLogLevel(config.Level)
+	if err != nil {
+		return nil, fmt.Errorf("invalid log level %q: %w", config.Level, err)
+	}
+
+	// Create Zap logger configuration
+	zapConfig := zap.Config{
+		Level:            zap.NewAtomicLevelAt(level),
+		Development:      false,
+		Encoding:         "json",
+		EncoderConfig:    zap.NewProductionEncoderConfig(),
+		OutputPaths:      config.Output,
+		ErrorOutputPaths: config.ErrorOutput,
+	}
+
+	// Build the logger
+	baseLogger, err := zapConfig.Build()
+	if err != nil {
+		return nil, fmt.Errorf("failed to build logger: %w", err)
+	}
+
+	return &zapLogger{baseLogger.Sugar()}, nil
+}
+
+func parseLogLevel(level string) (zapcore.Level, error) {
+	switch strings.ToLower(level) {
+	case "debug":
+		return zapcore.DebugLevel, nil
+	case "info":
+		return zapcore.InfoLevel, nil
+	case "warn":
+		return zapcore.WarnLevel, nil
+	case "error":
+		return zapcore.ErrorLevel, nil
+	default:
+		return zapcore.InfoLevel, fmt.Errorf("unsupported log level: %s", level)
+	}
 }
 
 // Implement the interface methods

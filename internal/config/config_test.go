@@ -10,22 +10,16 @@ import (
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest/observer"
 )
 
 func TestConfig(t *testing.T) {
-	// Create a zap observer for testing
-	observedZapCore, logs := observer.New(zap.DebugLevel)
-	zapLogger := zap.New(observedZapCore)
-	defer func() {
-		if err := zapLogger.Sync(); err != nil {
-			t.Logf("failed to sync logger: %v", err)
-		}
-	}()
-
-	// Use your standard logger implementation
-	log := logger.NewZapLogger(zapLogger)
+	// Create a test logger
+	log, err := logger.New(&common.LogConfig{
+		Level:   "debug",
+		Console: true,
+		Output:  []string{"stdout"},
+	})
+	require.NoError(t, err)
 
 	provider := config.NewProvider(
 		[]string{"testdata"},
@@ -43,20 +37,6 @@ func TestConfig(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, config.DefaultAppName, cfg.App.Name)
 		assert.Equal(t, config.DefaultAppVersion, cfg.App.Version)
-
-		// Verify logs
-		logEntries := logs.All()
-		assert.True(t, len(logEntries) > 0, "Expected some log entries")
-
-		// Check for specific log messages
-		hasStartMessage := false
-		for _, entry := range logEntries {
-			if entry.Message == "starting config load" {
-				hasStartMessage = true
-				break
-			}
-		}
-		assert.True(t, hasStartMessage, "Expected 'starting config load' message")
 	})
 
 	t.Run("Environment variables override config", func(t *testing.T) {

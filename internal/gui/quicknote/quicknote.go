@@ -63,6 +63,9 @@ func New(app fyne.App, mainWindow fyne.Window, store storage.Store, log logger.L
 		logger:     log,
 	}
 
+	// Set a reasonable default size for the quick note window
+	qn.window.Resize(fyne.NewSize(400, 200))
+
 	qn.input = newCustomEntry(log)
 	qn.setupUI()
 
@@ -89,7 +92,7 @@ func (qn *QuickNote) setupForm() {
 		qn.handleFormSubmit,
 		qn.window)
 
-	qn.form.Resize(fyne.NewSize(400, 200))
+	qn.form.Resize(fyne.NewSize(380, 180))
 }
 
 func (qn *QuickNote) setupShortcuts() {

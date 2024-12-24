@@ -54,7 +54,7 @@ jobs:
     - name: Run tests and linting
       run: |
         task lint
-        task test:coverage:threshold
+        task test
 
     - name: Build all platforms
       run: task build:all

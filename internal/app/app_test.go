@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/test"
 	"github.com/jonesrussell/godo/internal/app"
 	"github.com/jonesrussell/godo/internal/common"
 	"github.com/jonesrussell/godo/internal/config"
@@ -126,9 +127,59 @@ func TestApp(t *testing.T) {
 		{
 			name: "Lifecycle events",
 			fn: func(t *testing.T, a *app.App, _ *MockQuickNoteService, _ *MockSystrayService) {
-				// Test lifecycle events through SetupUI
+				// Create a test app to verify lifecycle events
+				testApp := test.NewApp()
+				testWindow := testApp.NewWindow("Test")
+				defer testWindow.Close()
+
+				// Replace the main window with our test window
+				a.SetMainWindow(testWindow)
+
+				// Run setup which should trigger lifecycle events
 				a.SetupUI()
-				// Add assertions for lifecycle logging
+
+				// Verify the window exists and has content
+				assert.NotNil(t, testWindow.Content(), "Window should have content")
+				assert.True(t, testWindow.Canvas().Size().IsZero(), "Window should be hidden initially")
+			},
+		},
+		{
+			name: "Main window hidden on startup",
+			fn: func(t *testing.T, a *app.App, _ *MockQuickNoteService, _ *MockSystrayService) {
+				// Create a test window using Fyne's test package
+				testApp := test.NewApp()
+				testWindow := testApp.NewWindow("Test")
+				defer testWindow.Close()
+
+				// Replace the main window with our test window
+				a.SetMainWindow(testWindow)
+
+				// Run the setup which should hide the window
+				a.SetupUI()
+
+				// Verify the window is hidden
+				// We can't directly check visibility, but we can verify the window size is zero
+				// which is how Fyne represents hidden windows in tests
+				assert.True(t, testWindow.Canvas().Size().IsZero(), "Window should be hidden")
+			},
+		},
+		{
+			name: "System tray menu options",
+			fn: func(t *testing.T, a *app.App, _ *MockQuickNoteService, s *MockSystrayService) {
+				a.SetupUI()
+
+				// Verify the menu was set up
+				assert.NotNil(t, s.menu)
+
+				// Check menu items
+				menuItems := s.menu.Items
+				assert.Equal(t, 4, len(menuItems), "Should have 4 menu items (Show, Quick Note, Separator, Quit)")
+
+				// Check menu item labels
+				assert.Equal(t, "Show", menuItems[0].Label)
+				assert.Equal(t, "Quick Note", menuItems[1].Label)
+				assert.True(t, menuItems[2].IsSeparator)
+				assert.Equal(t, "Quit", menuItems[3].Label)
 			},
 		},
 	}

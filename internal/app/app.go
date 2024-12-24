@@ -197,3 +197,13 @@ func (a *App) GetVersion() string {
 func (a *App) SetSystrayService(service systray.Interface) {
 	a.systray = service
 }
+
+// GetMainWindow returns the main application window for testing purposes
+func (a *App) GetMainWindow() fyne.Window {
+	return a.mainWindow
+}
+
+// SetMainWindow allows setting the main window for testing purposes
+func (a *App) SetMainWindow(window fyne.Window) {
+	a.mainWindow = window
+}

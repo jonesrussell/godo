@@ -21,6 +21,21 @@
      - Dialog size must be set after creation
      - Forms don't automatically focus first field
      - Custom widgets must be properly extended for form usage
+  5. Testing Best Practices:
+     - Use test.NewApp() to create a test application instance
+     - Window visibility in tests is represented by Canvas().Size().IsZero()
+     - Use test.NewWindow() for creating test windows
+     - Always defer window.Close() to clean up test resources
+     - Driver tests can use AbsolutePositionForObject() to check layout
+     - Window padding affects object positioning (use SetPadded() to control)
+     - Test window titles and content separately
+     - Mock complex window behaviors using test package utilities instead of custom mocks
+     - Test async behavior using channels and listeners
+     - Use AddChangeListener to test preference and settings changes
+     - Create small, focused mock implementations for interfaces
+     - Test both synchronous and asynchronous state transitions
+     - Verify preference updates trigger appropriate listeners
+     - Use channels to test asynchronous events and updates
 
 ## Project Overview
 - Todo application with two main features:

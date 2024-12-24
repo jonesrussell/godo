@@ -1,16 +1,22 @@
 package storage
 
-// Store defines the interface for storage operations
+import "errors"
+
+var (
+	ErrTaskNotFound = errors.New("task not found")
+)
+
+// Task represents a todo item
+type Task struct {
+	ID        string
+	Title     string
+	Completed bool
+}
+
+// Store defines the interface for task storage
 type Store interface {
-	// SaveNote saves a note to storage
-	SaveNote(note string) error
-
-	// GetNotes retrieves all notes from storage
-	GetNotes() ([]string, error)
-
-	// DeleteNote removes a note from storage
-	DeleteNote(note string) error
-
-	// Clear removes all notes from storage
-	Clear() error
+	Add(task Task) error
+	List() ([]Task, error)
+	Update(task Task) error
+	Delete(id string) error
 }

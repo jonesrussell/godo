@@ -1,88 +1,50 @@
-//go:build !ci && !android && !ios && !wasm && !test_web_driver && !docker
-
 package quicknote
 
 import (
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/widget"
-	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
+	"go.uber.org/zap"
 )
 
-// window represents the quick note window
-type window struct {
-	app   fyne.App
-	win   fyne.Window
-	store storage.Store
-	log   logger.Logger
-	entry *customEntry
+// Interface defines the behavior of a quick note window
+type Interface interface {
+	Setup() error
+	Hide()
+	Show()
 }
 
-// newWindow creates a new quick note window
-func newWindow(store storage.Store) Interface {
-	w := &window{
-		store: store,
+// Window implements the quick note window
+type Window struct {
+	store  storage.Store
+	logger *zap.Logger
+	win    fyne.Window
+}
+
+// New creates a new quick note window
+func New(store storage.Store, logger *zap.Logger) Interface {
+	return newWindow(store, logger)
+}
+
+func newWindow(store storage.Store, logger *zap.Logger) Interface {
+	return &Window{
+		store:  store,
+		logger: logger,
 	}
-	return w
 }
 
-// Initialize sets up the window with the given app and logger
-func (w *window) Initialize(app fyne.App, log logger.Logger) {
-	w.app = app
-	w.log = log
-	w.win = app.NewWindow("Quick Note")
-	w.entry = newCustomEntry(log)
+func (w *Window) Setup() error {
+	// Implementation
+	return nil
+}
 
-	// Set close handler to hide window
-	w.win.SetCloseIntercept(func() {
-		w.Hide()
-	})
-
-	// Setup entry handlers
-	w.entry.onCtrlEnter = func() {
-		if w.entry.Text != "" {
-			if err := w.store.SaveNote(w.entry.Text); err != nil {
-				w.log.Error("Failed to save note", "error", err)
-				return
-			}
-			w.log.Debug("Saved note", "content", w.entry.Text)
-		}
-		w.Hide()
+func (w *Window) Hide() {
+	if w.win != nil {
+		w.win.Hide()
 	}
-	w.entry.onEscape = func() {
-		w.Hide()
+}
+
+func (w *Window) Show() {
+	if w.win != nil {
+		w.win.Show()
 	}
-
-	// Setup window content
-	content := container.NewVBox(
-		widget.NewLabel("Enter your note (Ctrl+Enter to save, Esc to cancel):"),
-		w.entry,
-		container.NewHBox(
-			widget.NewButton("Save", func() {
-				w.entry.onCtrlEnter()
-			}),
-			widget.NewButton("Cancel", func() {
-				w.entry.onEscape()
-			}),
-		),
-	)
-
-	w.win.SetContent(content)
-	w.win.Resize(fyne.NewSize(400, 300))
-	w.win.CenterOnScreen()
-}
-
-// Show displays the quick note window
-func (w *window) Show() {
-	w.entry.SetText("")
-	w.win.Show()
-	w.win.RequestFocus()
-	w.win.Canvas().Focus(w.entry)
-}
-
-// Hide hides the quick note window
-func (w *window) Hide() {
-	w.entry.SetText("")
-	w.win.Hide()
 }

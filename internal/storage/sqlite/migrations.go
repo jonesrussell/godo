@@ -2,39 +2,40 @@ package sqlite
 
 import (
 	"database/sql"
-
-	"github.com/jonesrussell/godo/internal/logger"
 )
 
-//nolint:gochecknoglobals // migrations need to be package-level for database initialization
-var migrations = []string{
-	`CREATE TABLE IF NOT EXISTS todos (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		title TEXT NOT NULL,
-		description TEXT,
-		completed BOOLEAN DEFAULT FALSE,
-		created_at DATETIME NOT NULL,
-		updated_at DATETIME NOT NULL
-	);`,
+// migrationSet holds database migrations
+type migrationSet struct {
+	migrations []string
 }
 
-// RunMigrations executes all database migrations
-func RunMigrations(db *sql.DB, log logger.Logger) error {
-	log.Info("Running database migrations")
+// newMigrationSet creates a new migration set with default migrations
+func newMigrationSet() *migrationSet {
+	return &migrationSet{
+		migrations: []string{
+			`CREATE TABLE IF NOT EXISTS tasks (
+				id TEXT PRIMARY KEY,
+				title TEXT NOT NULL,
+				completed BOOLEAN DEFAULT FALSE,
+				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+				updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+			)`,
+		},
+	}
+}
 
-	for i, migration := range migrations {
-		log.Debug("Executing migration",
-			"index", i,
-			"query", migration)
-
+// RunMigrations executes all migrations in the set
+func (ms *migrationSet) RunMigrations(db *sql.DB) error {
+	for _, migration := range ms.migrations {
 		if _, err := db.Exec(migration); err != nil {
-			log.Error("Migration failed",
-				"index", i,
-				"error", err)
 			return err
 		}
 	}
-
-	log.Info("Database migrations completed successfully")
 	return nil
+}
+
+// RunMigrations executes all database migrations
+func RunMigrations(db *sql.DB) error {
+	ms := newMigrationSet()
+	return ms.RunMigrations(db)
 }

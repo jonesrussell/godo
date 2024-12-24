@@ -13,4 +13,12 @@ func NewHotkeyManager() HotkeyManager {
 	return &windowsHotkeyManager{}
 }
 
-// Implementation details...
+func (m *windowsHotkeyManager) Register() error {
+	// Implementation
+	return nil
+}
+
+func (m *windowsHotkeyManager) Unregister() error {
+	// Implementation
+	return nil
+}

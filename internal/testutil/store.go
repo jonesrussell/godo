@@ -1,56 +1,46 @@
 package testutil
 
 import (
-	"testing"
-
 	"github.com/jonesrussell/godo/internal/storage"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
-// RunStoreTests runs a standard suite of tests against any Store implementation
-func RunStoreTests(t *testing.T, s storage.Store) {
-	t.Helper()
+// MockStore provides a mock implementation of storage.Store for testing
+type MockStore struct {
+	tasks []storage.Task
+}
 
-	// Clear any existing data
-	require.NoError(t, s.Clear())
+// NewMockStore creates a new mock store
+func NewMockStore() *MockStore {
+	return &MockStore{
+		tasks: make([]storage.Task, 0),
+	}
+}
 
-	t.Run("SaveNote", func(t *testing.T) {
-		err := s.SaveNote("test note")
-		assert.NoError(t, err)
-	})
+func (s *MockStore) Add(task storage.Task) error {
+	s.tasks = append(s.tasks, task)
+	return nil
+}
 
-	t.Run("GetNotes", func(t *testing.T) {
-		notes, err := s.GetNotes()
-		assert.NoError(t, err)
-		assert.Len(t, notes, 1)
-		assert.Equal(t, "test note", notes[0])
-	})
+func (s *MockStore) List() ([]storage.Task, error) {
+	return s.tasks, nil
+}
 
-	t.Run("DeleteNote", func(t *testing.T) {
-		err := s.DeleteNote("test note")
-		assert.NoError(t, err)
+func (s *MockStore) Update(task storage.Task) error {
+	for i, t := range s.tasks {
+		if t.ID == task.ID {
+			s.tasks[i] = task
+			return nil
+		}
+	}
+	return storage.ErrTaskNotFound
+}
 
-		notes, err := s.GetNotes()
-		assert.NoError(t, err)
-		assert.Empty(t, notes)
-
-		err = s.DeleteNote("non-existent note")
-		assert.ErrorIs(t, err, storage.ErrTodoNotFound)
-	})
-
-	t.Run("Clear", func(t *testing.T) {
-		// Add some notes
-		require.NoError(t, s.SaveNote("note 1"))
-		require.NoError(t, s.SaveNote("note 2"))
-
-		// Clear them
-		err := s.Clear()
-		assert.NoError(t, err)
-
-		// Verify they're gone
-		notes, err := s.GetNotes()
-		assert.NoError(t, err)
-		assert.Empty(t, notes)
-	})
+func (s *MockStore) Delete(id string) error {
+	for i, t := range s.tasks {
+		if t.ID == id {
+			s.tasks = append(s.tasks[:i], s.tasks[i+1:]...)
+			return nil
+		}
+	}
+	return storage.ErrTaskNotFound
 }

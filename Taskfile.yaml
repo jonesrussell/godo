@@ -13,6 +13,8 @@ tasks:
   run:
     desc: Run the application
     deps: [wire]
+    env:
+      CGO_ENABLED: 1
     cmds:
       - go run cmd/godo/main.go
 
@@ -22,11 +24,9 @@ tasks:
       - go fmt ./...
 
   clean:
-    desc: Clean up generated files and Docker artifacts
+    desc: Clean up generated files
     cmds:
       - rm -rf bin/* internal/container/*_wire_gen.go
-      - docker rm -f godo-linux-test godo-linux-build godo-linux-lint || true
-      - docker rmi -f godo-linux-test godo-linux-builder godo-linux-wire godo-linux-lint || true
 
   wire:windows:
     desc: Generate wire code for Windows
@@ -41,41 +41,41 @@ tasks:
   wire:
     desc: Generate wire code for current platform
     cmds:
-      - task: wire:{{if eq OS "windows"}}windows{{else}}linux{{end}}
+      - task: wire:{{OS}}
 
   build:
     desc: Build for current platform
     cmds:
-      - task: build:{{if eq OS "windows"}}windows{{else}}linux{{end}}
+      - task: build:{{OS}}
 
   build:windows:
     desc: Build for Windows
     deps: [wire:windows]
+    env:
+      CGO_ENABLED: 1
+      GOOS: windows
     cmds:
-      - GOOS=windows go build -tags "!ci,!android,!ios,!wasm,!test_web_driver" -o bin/godo.exe cmd/godo/main.go
+      - go build -tags "windows,gl" -o bin/godo.exe cmd/godo/main.go
 
   build:linux:
     desc: Build for Linux
     deps: [wire:linux]
-    cmds:
-      - GOOS=linux CGO_ENABLED=0 FYNE_RENDERER=software go build -tags "!windows,!android,!ios,!wasm,!js" -o bin/godo cmd/godo/main.go
-
-  build:docker:
-    desc: Build using Docker
-    deps: [clean]
     env:
-      DOCKER_BUILDKIT: 1
+      CGO_ENABLED: 1
+      GOOS: linux
     cmds:
-      - docker build --target builder -f build/Dockerfile.linux -t godo-builder .
-      - docker create --name godo-build godo-builder
-      - docker cp godo-build:/app/bin/godo ./bin/
-      - docker rm godo-build
+      - go build -tags "linux,gl" -o bin/godo cmd/godo/main.go
 
   test:
     desc: Run tests
     deps: [wire]
     cmds:
-      - go test -v ./...
+      # Start Xvfb
+      - Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
+      # Run tests with virtual display
+      - DISPLAY=:99.0 go test -v ./...
+      # Cleanup Xvfb
+      - pkill Xvfb || true
 
   lint:
     desc: Run linters

@@ -2,65 +2,75 @@
 package app
 
 import (
-	"github.com/jonesrussell/godo/internal/config"
+	"fyne.io/fyne/v2"
 	"github.com/jonesrussell/godo/internal/gui/mainwindow"
 	"github.com/jonesrussell/godo/internal/gui/quicknote"
-	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
+	"go.uber.org/zap"
 )
 
 // App represents the main application
 type App struct {
-	config    *config.Config
-	logger    logger.Logger
+	logger    *zap.Logger
+	fyneApp   fyne.App
 	store     storage.Store
 	mainWin   *mainwindow.Window
 	quickNote quicknote.Interface
 	hotkeys   HotkeyManager
+	version   string
 }
 
-// NewApp creates a new application instance
-func NewApp(cfg *config.Config, log logger.Logger, store storage.Store, mainWin *mainwindow.Window) *App {
-	app := &App{
-		config:  cfg,
-		logger:  log,
+// New creates a new application instance
+func New(logger *zap.Logger, fyneApp fyne.App, store storage.Store, hotkeys HotkeyManager) *App {
+	return &App{
+		logger:  logger,
+		fyneApp: fyneApp,
 		store:   store,
-		mainWin: mainWin,
+		hotkeys: hotkeys,
+		version: "0.1.0",
 	}
-
-	// Create quick note window
-	app.quickNote = quicknote.New(store)
-	app.quickNote.Initialize(mainWin.GetApp(), log)
-
-	// Initialize hotkey manager based on build tags
-	app.hotkeys = initHotkeyManager(app)
-
-	return app
 }
 
 // Run starts the application
 func (a *App) Run() error {
-	// Setup hotkeys
-	if err := a.hotkeys.Setup(); err != nil {
+	// Setup windows
+	if err := a.mainWin.Setup(); err != nil {
+		a.logger.Error("Failed to setup main window", zap.Error(err))
 		return err
 	}
 
-	// Run the main window loop
-	if a.mainWin != nil {
-		a.mainWin.Run()
+	if err := a.quickNote.Setup(); err != nil {
+		a.logger.Error("Failed to setup quick note window", zap.Error(err))
+		return err
 	}
+
+	// Register global hotkeys
+	if err := a.hotkeys.Register(); err != nil {
+		a.logger.Error("Failed to register hotkeys", zap.Error(err))
+		return err
+	}
+	defer func() {
+		if err := a.hotkeys.Unregister(); err != nil {
+			a.logger.Error("Failed to unregister hotkeys", zap.Error(err))
+		}
+	}()
+
+	// Run the application
+	a.fyneApp.Run()
 
 	return nil
 }
 
 // SetupUI initializes the application UI
 func (a *App) SetupUI() {
-	if a.mainWin != nil {
-		a.mainWin.Setup()
-	}
+	// Create main window
+	a.mainWin = mainwindow.New(a.store, a.logger)
+
+	// Create quick note window
+	a.quickNote = quicknote.New(a.store, a.logger)
 }
 
 // GetVersion returns the application version
 func (a *App) GetVersion() string {
-	return a.config.App.Version
+	return a.version
 }

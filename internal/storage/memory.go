@@ -1,38 +1,34 @@
-package memory
-
-import (
-	"github.com/jonesrussell/godo/internal/storage"
-)
+package storage
 
 // MemoryStore provides an in-memory implementation of Store
 type MemoryStore struct {
-	tasks []storage.Task
+	tasks []Task
 }
 
 // NewMemoryStore creates a new in-memory store
 func NewMemoryStore() *MemoryStore {
 	return &MemoryStore{
-		tasks: make([]storage.Task, 0),
+		tasks: make([]Task, 0),
 	}
 }
 
-func (s *MemoryStore) Add(task storage.Task) error {
+func (s *MemoryStore) Add(task Task) error {
 	s.tasks = append(s.tasks, task)
 	return nil
 }
 
-func (s *MemoryStore) List() ([]storage.Task, error) {
+func (s *MemoryStore) List() ([]Task, error) {
 	return s.tasks, nil
 }
 
-func (s *MemoryStore) Update(task storage.Task) error {
+func (s *MemoryStore) Update(task Task) error {
 	for i, t := range s.tasks {
 		if t.ID == task.ID {
 			s.tasks[i] = task
 			return nil
 		}
 	}
-	return storage.ErrTaskNotFound
+	return ErrTaskNotFound
 }
 
 func (s *MemoryStore) Delete(id string) error {
@@ -42,5 +38,5 @@ func (s *MemoryStore) Delete(id string) error {
 			return nil
 		}
 	}
-	return storage.ErrTaskNotFound
+	return ErrTaskNotFound
 }

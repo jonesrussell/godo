@@ -68,9 +68,20 @@ tasks:
   act:
     desc: Run GitHub Actions locally using act
     cmds:
-      - act -v -j build --container-architecture linux/amd64 --secret GITHUB_TOKEN={{.GITHUB_TOKEN}}
+      - act -v -j build -P ubuntu-latest=catthehacker/ubuntu:act-latest
 
   act:release:
     desc: Run GitHub Actions release workflow locally
     cmds:
       - act -v -j release
+
+  lint:
+    desc: Run linters
+    cmds:
+      - golangci-lint run
+      - go fmt ./...
+
+  test:
+    desc: Run tests
+    cmds:
+      - go test -v ./...

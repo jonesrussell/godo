@@ -75,7 +75,7 @@ tasks:
     desc: Build for Windows
     deps: [wire:windows]
     cmds:
-      - go build -tags "windows nomobile" -o bin/godo.exe cmd/godo/main.go
+      - go build -tags "windows,!linux,nomobile" -o bin/godo.exe cmd/godo/main.go
 
   build:linux:
     desc: Build for Linux

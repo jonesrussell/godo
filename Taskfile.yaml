@@ -37,12 +37,17 @@ tasks:
   build:windows:
     desc: Build for Windows
     deps: [wire:windows]
+    env:
+      GOOS: windows
+      GOARCH: amd64
     cmds:
       - go build -tags "windows nomobile" -o bin/godo.exe cmd/godo/main.go
 
   build:linux:docker:
     desc: Build Linux binary using Docker
     deps: [wire:linux, clean:docker]
+    env:
+      DOCKER_BUILDKIT: 0
     cmds:
       - docker build -f build/Dockerfile.linux -t godo-linux-builder .
       - docker run --name godo-linux-build godo-linux-builder
@@ -59,3 +64,13 @@ tasks:
     deps: [wire:windows]
     cmds:
       - go run cmd/godo/main.go
+
+  act:
+    desc: Run GitHub Actions locally using act
+    cmds:
+      - act -v -j build --container-architecture linux/amd64 --secret GITHUB_TOKEN={{.GITHUB_TOKEN}}
+
+  act:release:
+    desc: Run GitHub Actions release workflow locally
+    cmds:
+      - act -v -j release

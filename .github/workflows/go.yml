@@ -95,7 +95,17 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc libx11-dev libxcursor-dev libxrandr-dev libxinerama-dev libxi-dev libxxf86vm-dev
+          sudo apt-get install -y \
+            gcc \
+            libgl1-mesa-dev \
+            libx11-dev \
+            libxcursor-dev \
+            libxrandr-dev \
+            libxinerama-dev \
+            libxi-dev \
+            libxxf86vm-dev \
+            libglx-dev \
+            pkg-config
       - uses: actions/cache@v4
         with:
           path: |

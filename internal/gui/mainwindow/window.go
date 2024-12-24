@@ -1,14 +1,16 @@
 package mainwindow
 
 import (
+	_ "embed"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/jonesrussell/godo/internal/gui/mainwindow/systray"
+	"github.com/jonesrussell/godo/internal/gui/theme"
 	"github.com/jonesrussell/godo/internal/logger"
-	"github.com/jonesrussell/godo/internal/storage"
+	storage "github.com/jonesrussell/godo/internal/storage"
 )
 
 // Window represents the main application window
@@ -47,7 +49,9 @@ func New(store storage.Store, log logger.Logger) *Window {
 			w.app.Quit()
 		}),
 	))
-	w.systray.SetIcon(theme.HomeIcon())
+
+	// Set the icon from our theme
+	w.systray.SetIcon(theme.AppIcon())
 
 	return w
 }

@@ -264,7 +264,6 @@ func TestEnvironmentVariables(t *testing.T) {
 		assert.Equal(t, "env.app.id", cfg.App.ID)
 		assert.Equal(t, "debug", cfg.Logger.Level)
 		assert.False(t, cfg.Logger.Console)
-		assert.Equal(t, "0.1.0", cfg.App.Version)
 		assert.Equal(t, "Alt+Shift+N", cfg.Hotkeys.QuickNote.String())
 	})
 

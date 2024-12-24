@@ -15,7 +15,7 @@ var _ config.HotkeyHandler = (*TestHotkey)(nil)
 
 func NewTestHotkey() *TestHotkey {
 	return &TestHotkey{
-		keydown: make(chan hotkey.Event),
+		keydown: make(chan hotkey.Event, 1),
 	}
 }
 

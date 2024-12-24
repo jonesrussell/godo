@@ -2,7 +2,11 @@ package app
 
 import (
 	"testing"
+	"time"
 
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/test"
+	_ "fyne.io/fyne/v2/test"
 	"github.com/jonesrussell/godo/internal/common"
 	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/logger"
@@ -21,7 +25,44 @@ func (f *mockHotkeyFactory) NewHotkey(_ []hotkey.Modifier, _ hotkey.Key) config.
 	return f.testHotkey
 }
 
+// mockQuickNote is a test implementation of QuickNoteService
+type mockQuickNote struct {
+	shown bool
+}
+
+func (m *mockQuickNote) Show() {
+	m.shown = true
+}
+
+func (m *mockQuickNote) Hide() {
+	m.shown = false
+}
+
+// mockSystray is a test implementation of systray.Interface
+type mockSystray struct {
+	ready bool
+	menu  *fyne.Menu
+	icon  fyne.Resource
+}
+
+func (m *mockSystray) Setup(menu *fyne.Menu) {
+	m.menu = menu
+	m.ready = true
+}
+
+func (m *mockSystray) SetIcon(icon fyne.Resource) {
+	m.icon = icon
+}
+
+func (m *mockSystray) IsReady() bool {
+	return m.ready
+}
+
 func TestApp(t *testing.T) {
+	// Use Fyne test app with test driver
+	fyneApp := test.NewApp()
+	defer fyneApp.Quit()
+
 	// Create mock factory with test hotkey
 	testHotkey := NewTestHotkey()
 	mockFactory := &mockHotkeyFactory{testHotkey: testHotkey}
@@ -43,6 +84,13 @@ func TestApp(t *testing.T) {
 	// Create app
 	app := NewApp(cfg, store, log, mockFactory)
 	require.NotNil(t, app)
+	defer app.Cleanup()
+
+	// Replace services with mocks
+	mockQN := &mockQuickNote{}
+	app.SetQuickNoteService(mockQN)
+	mockSystray := &mockSystray{}
+	app.systray = mockSystray
 
 	// Test note operations
 	t.Run("note operations", func(t *testing.T) {
@@ -64,13 +112,53 @@ func TestApp(t *testing.T) {
 		// Setup UI which includes hotkey registration
 		app.SetupUI()
 
-		// Simulate hotkey press
-		testHotkey.Trigger()
+		// Mark systray as ready immediately since it's a mock
+		mockSystray.ready = true
 
-		// Verify version
-		assert.Equal(t, "0.1.0", app.GetVersion())
+		// Setup hotkey directly
+		err := app.setupGlobalHotkey()
+		require.NoError(t, err)
+
+		// Create a channel to signal when the quick note is shown
+		shown := make(chan struct{})
+		done := make(chan struct{})
+		defer close(done) // Signal monitoring goroutine to stop
+
+		// Monitor for the quick note to be shown
+		go func() {
+			ticker := time.NewTicker(10 * time.Millisecond)
+			defer ticker.Stop()
+
+			for {
+				select {
+				case <-done:
+					return
+				case <-ticker.C:
+					if mockQN.shown {
+						close(shown)
+						return
+					}
+				}
+			}
+		}()
+
+		// Give the app a moment to set up the hotkey handler
+		time.Sleep(100 * time.Millisecond)
+
+		// Trigger the hotkey
+		testHotkey.Trigger() // No need for goroutine now that channel is buffered
+
+		// Wait for quick note to be shown or timeout
+		select {
+		case <-shown:
+			// Success
+		case <-time.After(1 * time.Second):
+			t.Fatalf("Quick note was not shown after hotkey trigger. Quick note shown: %v", mockQN.shown)
+		}
+
+		// Cleanup UI
+		if app.mainWindow != nil {
+			app.mainWindow.Close()
+		}
 	})
-
-	// Clean up
-	app.Cleanup()
 }

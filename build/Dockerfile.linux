@@ -30,6 +30,10 @@ RUN /usr/local/bin/run-with-xvfb.sh bash -c 'cd internal/container && wire gen -
 FROM wire AS lint
 RUN /usr/local/bin/run-with-xvfb.sh golangci-lint run ./...
 
+# Test stage
+FROM wire AS test
+RUN /usr/local/bin/run-with-xvfb.sh go test -v ./...
+
 # Build stage
 FROM wire AS builder
 RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -tags "linux nomobile" -o bin/godo-linux cmd/godo/main.go

@@ -93,9 +93,16 @@ tasks:
 
   test:linux:
     desc: Run tests on Linux
-    deps: [wire:linux]
+    deps: [clean:docker]
     cmds:
-      - go test -v ./...
+      - docker build --target test -f build/Dockerfile.linux -t godo-linux-test .
+      - docker run --name godo-linux-test godo-linux-test
+      - docker rm godo-linux-test
+
+  test:docker:
+    deps: [clean:docker]
+    cmds:
+      - docker build --target test -f build/Dockerfile.linux -t godo-linux-test .
 
   test:
     desc: Run tests for current platform
@@ -130,7 +137,5 @@ tasks:
 
   clean:docker:
     cmds:
-      - docker rm -f godo-linux-build 2>nul || true
-      - docker rmi -f godo-linux-lint 2>nul || true
-      - docker rmi -f godo-linux-wire 2>nul || true
-      - docker rmi -f godo-linux 2>nul || true
+      - docker rm -f godo-linux-build godo-linux-test 2>nul || true
+      - docker rmi -f godo-linux-lint godo-linux-test godo-linux-wire godo-linux 2>nul || true

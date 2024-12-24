@@ -1,4 +1,4 @@
-//go:build linux
+//go:build !windows && !android && !ios && !wasm && !js
 
 package config
 
@@ -6,9 +6,7 @@ import (
 	"golang.design/x/hotkey"
 )
 
-// On Linux (X11), some keys may be mapped to multiple Mod keys.
-// We need to use the correct underlying keycode combination.
-// For example, Ctrl+Shift+G might be registered as: Ctrl+Mod2+Mod4+G
+// GetDefaultQuickNoteModifiers returns the default modifiers for quick note hotkey
 func GetDefaultQuickNoteModifiers() []hotkey.Modifier {
 	return []hotkey.Modifier{
 		hotkey.ModCtrl,

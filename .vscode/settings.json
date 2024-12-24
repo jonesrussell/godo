@@ -1,9 +1,10 @@
 {
     "gopls": {
-        "buildFlags": ["-tags", "linux,windows"],
+        "buildFlags": ["-tags=windows,!ci,!android,!ios,!wasm,!test_web_driver"],
         "staticcheck": true,
         "completeUnimported": true,
-        "matcher": "fuzzy"
+        "matcher": "fuzzy",
+        "usePlaceholders": true
     },
     "go.formatTool": "goimports",
     "go.lintTool": "golangci-lint",
@@ -14,9 +15,7 @@
         "lll,wsl"
     ],
     "go.useLanguageServer": true,
-    "go.languageServerFlags": [
-        "-rpc.trace"
-    ],
+    "go.languageServerFlags": [],
     "go.toolsEnvVars": {
         "GO111MODULE": "on"
     },
@@ -38,6 +37,6 @@
     },
     "go.testFlags": ["-v"],
     "go.testOnSave": true,
-    "go.testTags": "linux,windows",
+    "go.testTags": "windows,!ci,!android,!ios,!wasm,!test_web_driver",
     "go.testTimeout": "5m"
 }

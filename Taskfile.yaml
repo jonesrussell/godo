@@ -52,13 +52,13 @@ tasks:
     desc: Build for Windows
     deps: [wire:windows]
     cmds:
-      - GOOS=windows go build -tags windows -o bin/godo.exe cmd/godo/main.go
+      - GOOS=windows go build -tags "!ci,!android,!ios,!wasm,!test_web_driver" -o bin/godo.exe cmd/godo/main.go
 
   build:linux:
     desc: Build for Linux
     deps: [wire:linux]
     cmds:
-      - GOOS=linux CGO_ENABLED=0 go build -tags linux -o bin/godo cmd/godo/main.go
+      - GOOS=linux CGO_ENABLED=0 FYNE_RENDERER=software go build -tags "!windows,!android,!ios,!wasm,!js" -o bin/godo cmd/godo/main.go
 
   build:docker:
     desc: Build using Docker

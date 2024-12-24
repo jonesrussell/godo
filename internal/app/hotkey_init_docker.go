@@ -1,4 +1,4 @@
-//go:build docker
+//go:build docker && !ci && !android && !ios && !wasm && !test_web_driver
 
 package app
 

@@ -4,7 +4,6 @@ import (
 	_ "embed"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 	"github.com/jonesrussell/godo/internal/gui/mainwindow/systray"
@@ -24,7 +23,12 @@ type Window struct {
 
 // New creates a new main window
 func New(store storage.Store, log logger.Logger) *Window {
-	fyneApp := app.New()
+	var fyneApp fyne.App
+	if isWindows() {
+		fyneApp = createWindowsApp()
+	} else {
+		fyneApp = createUnixApp()
+	}
 	win := fyneApp.NewWindow("Godo")
 
 	w := &Window{

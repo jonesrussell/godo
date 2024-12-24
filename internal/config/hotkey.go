@@ -1,3 +1,6 @@
+//go:build windows || darwin
+// +build windows darwin
+
 package config
 
 import (
@@ -8,20 +11,40 @@ import (
 	"golang.design/x/hotkey"
 )
 
+// HotkeyHandler defines the interface for runtime hotkey functionality
+type HotkeyHandler interface {
+	Register() error
+	Unregister() error
+	Keydown() <-chan hotkey.Event
+}
+
+// HotkeyFactory is responsible for creating hotkey instances
+type HotkeyFactory interface {
+	NewHotkey(mods []hotkey.Modifier, key hotkey.Key) HotkeyHandler
+}
+
+// GetDefaultQuickNoteModifiers returns the default modifiers for quick note hotkey
+func GetDefaultQuickNoteModifiers() []hotkey.Modifier {
+	return []hotkey.Modifier{
+		hotkey.ModCtrl,
+		hotkey.ModAlt,
+	}
+}
+
 // Modifier constants for hotkeys
 const (
-	ModCtrl  = hotkey.Modifier(1 << 2) // Control key
-	ModShift = hotkey.Modifier(1 << 0) // Shift key
-	ModAlt   = hotkey.Modifier(1 << 3) // Alt/Option key
-	ModSuper = hotkey.Modifier(1 << 6) // Super/Windows/Command key
+	ModCtrl  = hotkey.ModCtrl  // Control key
+	ModShift = hotkey.ModShift // Shift key
+	ModAlt   = hotkey.ModAlt   // Alt/Option key
+	// ModSuper is not supported in newer versions
 )
 
-// Hotkey represents a keyboard shortcut
-type Hotkey string
+// HotkeyString represents a keyboard shortcut in string form
+type HotkeyString string
 
 // HotkeyConfig holds hotkey configuration
 type HotkeyConfig struct {
-	QuickNote Hotkey `mapstructure:"quick_note"`
+	QuickNote HotkeyString `mapstructure:"quick_note"`
 }
 
 type HotkeyMapper struct {
@@ -37,7 +60,6 @@ func NewHotkeyMapper(log logger.Logger) *HotkeyMapper {
 			"Ctrl":  ModCtrl,
 			"Alt":   ModAlt,
 			"Shift": ModShift,
-			"Super": ModSuper,
 		},
 		keyMap: map[string]hotkey.Key{
 			"A":      hotkey.KeyA,
@@ -94,7 +116,7 @@ func (h *HotkeyMapper) GetKey(name string) (hotkey.Key, bool) {
 }
 
 // Parse converts the hotkey string into modifiers and key
-func (h Hotkey) Parse(mapper *HotkeyMapper) ([]hotkey.Modifier, hotkey.Key, error) {
+func (h HotkeyString) Parse(mapper *HotkeyMapper) ([]hotkey.Modifier, hotkey.Key, error) {
 	if h == "" {
 		err := errors.New("empty hotkey string")
 		mapper.log.Error("empty hotkey string")
@@ -133,13 +155,13 @@ func (h Hotkey) Parse(mapper *HotkeyMapper) ([]hotkey.Modifier, hotkey.Key, erro
 }
 
 // IsValid checks if the hotkey string is valid
-func (h Hotkey) IsValid(mapper *HotkeyMapper) bool {
+func (h HotkeyString) IsValid(mapper *HotkeyMapper) bool {
 	_, _, err := h.Parse(mapper)
 	return err == nil
 }
 
 // NewHotkey creates a new Hotkey from modifiers and key
-func NewHotkey(mapper *HotkeyMapper, mods []hotkey.Modifier, key hotkey.Key) Hotkey {
+func NewHotkey(mapper *HotkeyMapper, mods []hotkey.Modifier, key hotkey.Key) HotkeyString {
 	var parts []string
 
 	// Add modifiers in the expected order: Ctrl, Shift, Alt
@@ -162,9 +184,9 @@ func NewHotkey(mapper *HotkeyMapper, mods []hotkey.Modifier, key hotkey.Key) Hot
 		}
 	}
 
-	return Hotkey(strings.Join(parts, "+"))
+	return HotkeyString(strings.Join(parts, "+"))
 }
 
-func (h Hotkey) String() string {
+func (h HotkeyString) String() string {
 	return string(h)
 }

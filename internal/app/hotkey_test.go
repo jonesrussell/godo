@@ -1,6 +1,7 @@
 package app
 
 import (
+	"github.com/jonesrussell/godo/internal/config"
 	"golang.design/x/hotkey"
 )
 
@@ -8,6 +9,9 @@ import (
 type TestHotkey struct {
 	keydown chan hotkey.Event
 }
+
+// Ensure TestHotkey implements config.HotkeyHandler
+var _ config.HotkeyHandler = (*TestHotkey)(nil)
 
 func NewTestHotkey() *TestHotkey {
 	return &TestHotkey{

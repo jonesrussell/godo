@@ -12,12 +12,12 @@ import (
 	"golang.design/x/hotkey"
 )
 
-// mockHotkeyFactory is a test implementation of HotkeyFactory
+// mockHotkeyFactory is a test implementation of config.HotkeyFactory
 type mockHotkeyFactory struct {
-	testHotkey hotkeyInterface
+	testHotkey config.HotkeyHandler
 }
 
-func (f *mockHotkeyFactory) NewHotkey(_ []hotkey.Modifier, _ hotkey.Key) hotkeyInterface {
+func (f *mockHotkeyFactory) NewHotkey(_ []hotkey.Modifier, _ hotkey.Key) config.HotkeyHandler {
 	return f.testHotkey
 }
 

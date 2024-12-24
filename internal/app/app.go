@@ -28,11 +28,11 @@ type App struct {
 	store         storage.Store
 	config        *config.Config
 	log           logger.Logger
-	hotkeyFactory HotkeyFactory
+	hotkeyFactory config.HotkeyFactory
 }
 
 // NewApp creates a new application instance.
-func NewApp(cfg *config.Config, store storage.Store, log logger.Logger, hotkeyFactory HotkeyFactory) *App {
+func NewApp(cfg *config.Config, store storage.Store, log logger.Logger, hotkeyFactory config.HotkeyFactory) *App {
 	if hotkeyFactory == nil {
 		hotkeyFactory = NewHotkeyFactory()
 	}

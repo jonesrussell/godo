@@ -73,7 +73,7 @@ func provideSQLite(cfg *config.Config, log logger.Logger) (*sqlite.Store, func()
 }
 
 // provideHotkeyFactory creates a new hotkey factory
-func provideHotkeyFactory() app.HotkeyFactory {
+func provideHotkeyFactory() config.HotkeyFactory {
 	return app.NewHotkeyFactory()
 }
 

@@ -264,7 +264,8 @@ func TestEnvironmentVariables(t *testing.T) {
 		assert.Equal(t, "env.app.id", cfg.App.ID)
 		assert.Equal(t, "debug", cfg.Logger.Level)
 		assert.False(t, cfg.Logger.Console)
-		assert.Equal(t, config.Hotkey("Alt+Shift+N"), cfg.Hotkeys.QuickNote)
+		assert.Equal(t, "0.1.0", cfg.App.Version)
+		assert.Equal(t, "Alt+Shift+N", cfg.Hotkeys.QuickNote.String())
 	})
 
 	t.Run("Invalid environment variable values", func(t *testing.T) {

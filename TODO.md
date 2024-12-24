@@ -4,6 +4,11 @@
 - [ ] Fix build system
   - [x] Add proper Docker support
   - [x] Add build tags for Docker/non-Docker environments
+  - [ ] Implement platform-specific hotkey managers
+    - [ ] Windows implementation
+    - [ ] Linux implementation
+    - [ ] macOS implementation
+    - [ ] Docker mock implementation
   - [ ] Add proper cross-compilation support
   - [ ] Add release packaging
   - [ ] Add CI/CD pipeline

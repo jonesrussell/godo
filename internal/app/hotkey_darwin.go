@@ -1,16 +1,16 @@
-//go:build linux
-// +build linux
+//go:build darwin
+// +build darwin
 
 package app
 
 import "golang.design/x/hotkey"
 
-type linuxHotkeyManager struct {
+type darwinHotkeyManager struct {
 	hk *hotkey.Hotkey
 }
 
 func NewHotkeyManager() HotkeyManager {
-	return &linuxHotkeyManager{}
+	return &darwinHotkeyManager{}
 }
 
 // Implementation details...

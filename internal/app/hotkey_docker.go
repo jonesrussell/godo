@@ -1,18 +1,13 @@
-//go:build docker && !ci && !android && !ios && !wasm && !test_web_driver
+//go:build docker
+// +build docker
 
 package app
 
-// noopHotkeyManager is a no-op implementation for Docker environments
-type noopHotkeyManager struct {
-	app *App
+// mockHotkeyManager provides a no-op implementation for Docker environments
+type mockHotkeyManager struct{}
+
+func NewHotkeyManager() HotkeyManager {
+	return &mockHotkeyManager{}
 }
 
-// NewNoopHotkeyManager creates a new no-op hotkey manager
-func NewNoopHotkeyManager(app *App) HotkeyManager {
-	return &noopHotkeyManager{app: app}
-}
-
-// Setup implements HotkeyManager interface
-func (m *noopHotkeyManager) Setup() error {
-	return nil
-}
+// No-op implementations...

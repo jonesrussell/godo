@@ -1,16 +1,16 @@
-//go:build linux
-// +build linux
+//go:build windows
+// +build windows
 
 package app
 
 import "golang.design/x/hotkey"
 
-type linuxHotkeyManager struct {
+type windowsHotkeyManager struct {
 	hk *hotkey.Hotkey
 }
 
 func NewHotkeyManager() HotkeyManager {
-	return &linuxHotkeyManager{}
+	return &windowsHotkeyManager{}
 }
 
 // Implementation details...

@@ -1,85 +1,56 @@
 # Build Tags in Godo
 
-This document explains the build tags used in the Godo project, following Fyne's conventions.
+## Platform-Specific Build Tags
 
-## Platform Tags
-
-### Desktop (Windows/Unix)
+### Operating Systems
 ```go
-//go:build !ci && !android && !ios && !wasm && !test_web_driver
+//go:build windows
+// +build windows
 ```
-Used for Windows-specific code.
+Used for Windows-specific implementations.
 
 ```go
-//go:build !windows && !android && !ios && !wasm && !js
+//go:build linux
+// +build linux
 ```
-Used for Unix-specific code (Linux, BSD, macOS).
+Used for Linux-specific implementations.
+
+```go
+//go:build darwin
+// +build darwin
+```
+Used for macOS-specific implementations.
 
 ### Docker
 ```go
 //go:build docker
+// +build docker
 ```
-Used for Docker-specific implementations.
+Used for Docker-specific implementations (typically mock/no-op implementations).
 
-```go
-//go:build !docker
-```
-Used for non-Docker implementations.
+## Usage
 
-## Test Tags
-```go
-//go:build !docker && wireinject
-```
-Used for wire injection in tests.
-
-```go
-//go:build !docker
-```
-Used for regular tests.
-
-## Build Environments
-
-### CI Environment
-- `!ci` - Used to exclude code from CI builds
-- `ci` - Used for CI-specific implementations
-
-### Development
-- `!test_web_driver` - Excludes web driver test code
-- `!mobile` - Excludes mobile platform code
-
-## Usage Examples
-
-1. Windows Desktop App:
-   ```go
-   //go:build !ci && !android && !ios && !wasm && !test_web_driver
-   ```
-
-2. Unix Desktop App:
-   ```go
-   //go:build !windows && !android && !ios && !wasm && !js
-   ```
-
-3. Docker Environment:
-   ```go
-   //go:build docker
-   ```
-
-## Build Commands
-
-### Windows Build
+### Building for Different Platforms
 ```bash
-task build:windows
-```
-Uses: `!ci,!android,!ios,!wasm,!test_web_driver`
+# Windows build
+go build -tags windows
 
-### Linux Build
-```bash
-task build:linux
-```
-Uses: `!windows,!android,!ios,!wasm,!js`
+# Linux build
+go build -tags linux
 
-### Docker Build
-```bash
-task build:docker
+# Docker build
+go build -tags docker
 ```
-Uses: `docker` 
+
+### File Naming Conventions
+- `*_windows.go` - Windows-specific implementations
+- `*_linux.go` - Linux-specific implementations
+- `*_darwin.go` - macOS-specific implementations
+- `*_docker.go` - Docker-specific implementations
+- `*_common.go` - Shared interfaces and types
+
+## Notes
+- Always use both new (`//go:build`) and legacy (`// +build`) build tag formats for compatibility
+- Platform-specific files should only contain platform-specific code
+- Common interfaces should be in `*_common.go` files
+- Docker implementations typically provide mock or no-op functionality 

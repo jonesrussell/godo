@@ -1,6 +1,7 @@
 package app
 
-// HotkeyManager handles global hotkey registration and management
+// HotkeyManager defines the interface for global hotkey functionality
 type HotkeyManager interface {
-	Setup() error
+	Register() error
+	Unregister() error
 }

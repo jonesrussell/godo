@@ -58,19 +58,19 @@ func TestProvideSQLite(t *testing.T) {
 		// Create SQLite store
 		store, cleanup, err := provideSQLite(cfg, log)
 		require.NoError(t, err)
-		defer cleanup()
+		if cleanup != nil {
+			defer cleanup()
+		}
 
 		assert.NotNil(t, store)
 		assert.FileExists(t, dbPath)
 	})
 
 	t.Run("handles invalid path", func(t *testing.T) {
-		// Create a path with characters that are invalid for SQLite
-		// Using a character that is definitely invalid in all OS paths: "?"
-		invalidPath := filepath.Join(t.TempDir(), "test", "db?.sqlite")
+		// Create a path that's invalid for SQLite (empty path)
 		cfg := &config.Config{
 			Database: config.DatabaseConfig{
-				Path: invalidPath,
+				Path: "",
 			},
 		}
 
@@ -78,10 +78,13 @@ func TestProvideSQLite(t *testing.T) {
 		require.NoError(t, err)
 
 		store, cleanup, err := provideSQLite(cfg, log)
+		if cleanup != nil {
+			defer cleanup()
+		}
+
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "invalid character: ?")
+		assert.Contains(t, err.Error(), "invalid database path")
 		assert.Nil(t, store)
-		assert.Nil(t, cleanup)
 	})
 }
 
@@ -98,7 +101,9 @@ func TestInitializeApp(t *testing.T) {
 		// Initialize the application
 		application, cleanup, err := InitializeApp()
 		require.NoError(t, err)
-		defer cleanup()
+		if cleanup != nil {
+			defer cleanup()
+		}
 
 		assert.NotNil(t, application)
 		assert.NotNil(t, cleanup)

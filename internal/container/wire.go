@@ -53,14 +53,19 @@ func provideLogger() (logger.Logger, error) {
 
 // provideSQLite creates a new SQLite store
 func provideSQLite(cfg *config.Config, log logger.Logger) (*sqlite.Store, func(), error) {
+	if cfg.Database.Path == "" {
+		return nil, nil, fmt.Errorf("invalid database path: path cannot be empty")
+	}
+
 	store, err := sqlite.New(cfg.Database.Path, log)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create SQLite store: %w", err)
 	}
 
 	cleanup := func() {
-		// Silent cleanup - let the app layer handle logging
-		_ = store.Close()
+		if err := store.Close(); err != nil {
+			log.Error("Failed to close SQLite store", "error", err)
+		}
 	}
 
 	return store, cleanup, nil

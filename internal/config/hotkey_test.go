@@ -23,8 +23,8 @@ func TestHotkey(t *testing.T) {
 			name:      "Ctrl+Alt+G",
 			hotkeyStr: "Ctrl+Alt+G",
 			expectedMods: []hotkey.Modifier{
-				hotkey.ModCtrl,
-				hotkey.ModAlt,
+				ModCtrl,
+				ModAlt,
 			},
 			expectedKey:   hotkey.KeyG,
 			shouldSucceed: true,
@@ -33,7 +33,7 @@ func TestHotkey(t *testing.T) {
 			name:      "Ctrl+Space",
 			hotkeyStr: "Ctrl+Space",
 			expectedMods: []hotkey.Modifier{
-				hotkey.ModCtrl,
+				ModCtrl,
 			},
 			expectedKey:   hotkey.KeySpace,
 			shouldSucceed: true,
@@ -124,8 +124,8 @@ func TestHotkey_Parse(t *testing.T) {
 			name:      "Ctrl+Alt+G",
 			hotkeyStr: "Ctrl+Alt+G",
 			expectedMods: []hotkey.Modifier{
-				hotkey.ModCtrl,
-				hotkey.ModAlt,
+				ModCtrl,
+				ModAlt,
 			},
 			expectedKey:   hotkey.KeyG,
 			shouldSucceed: true,
@@ -134,7 +134,7 @@ func TestHotkey_Parse(t *testing.T) {
 			name:      "Ctrl+Space",
 			hotkeyStr: "Ctrl+Space",
 			expectedMods: []hotkey.Modifier{
-				hotkey.ModCtrl,
+				ModCtrl,
 			},
 			expectedKey:   hotkey.KeySpace,
 			shouldSucceed: true,
@@ -143,9 +143,9 @@ func TestHotkey_Parse(t *testing.T) {
 			name:      "Ctrl+Shift+Alt+A",
 			hotkeyStr: "Ctrl+Shift+Alt+A",
 			expectedMods: []hotkey.Modifier{
-				hotkey.ModCtrl,
-				hotkey.ModShift,
-				hotkey.ModAlt,
+				ModCtrl,
+				ModShift,
+				ModAlt,
 			},
 			expectedKey:   hotkey.KeyA,
 			shouldSucceed: true,

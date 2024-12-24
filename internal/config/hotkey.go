@@ -8,6 +8,14 @@ import (
 	"golang.design/x/hotkey"
 )
 
+// Modifier constants for hotkeys
+const (
+	ModCtrl  = hotkey.Modifier(1 << 2) // Control key
+	ModShift = hotkey.Modifier(1 << 0) // Shift key
+	ModAlt   = hotkey.Modifier(1 << 3) // Alt/Option key
+	ModSuper = hotkey.Modifier(1 << 6) // Super/Windows/Command key
+)
+
 // Hotkey represents a keyboard shortcut
 type Hotkey string
 
@@ -26,9 +34,10 @@ func NewHotkeyMapper(log logger.Logger) *HotkeyMapper {
 	return &HotkeyMapper{
 		log: log,
 		modMap: map[string]hotkey.Modifier{
-			"Ctrl":  hotkey.ModCtrl,
-			"Alt":   hotkey.ModAlt,
-			"Shift": hotkey.ModShift,
+			"Ctrl":  ModCtrl,
+			"Alt":   ModAlt,
+			"Shift": ModShift,
+			"Super": ModSuper,
 		},
 		keyMap: map[string]hotkey.Key{
 			"A":      hotkey.KeyA,

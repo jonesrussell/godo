@@ -16,6 +16,6 @@ func TestGetSystrayIconResource(t *testing.T) {
 func TestGetAppIconResource(t *testing.T) {
 	resource := GetAppIconResource()
 	assert.NotNil(t, resource)
-	assert.Equal(t, "Icon.png", resource.Name())
+	assert.Equal(t, "icon.png", resource.Name())
 	assert.NotEmpty(t, resource.Content())
 }

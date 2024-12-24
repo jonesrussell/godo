@@ -77,6 +77,10 @@ func (a *App) setupSystemTray() {
 		a.fyneApp.SetIcon(appIcon)
 
 		menu := fyne.NewMenu("Godo",
+			fyne.NewMenuItem("Show", func() {
+				a.mainWindow.Show()
+				a.mainWindow.CenterOnScreen()
+			}),
 			fyne.NewMenuItem("Quick Note", a.quickNote.Show),
 			fyne.NewMenuItemSeparator(),
 			fyne.NewMenuItem("Quit", func() {
@@ -84,12 +88,14 @@ func (a *App) setupSystemTray() {
 			}),
 		)
 
-		desk.SetSystemTrayMenu(menu)
 		desk.SetSystemTrayIcon(systrayIcon)
-		a.log.Info("System tray initialized")
+		desk.SetSystemTrayMenu(menu)
+		a.log.Info("System tray setup attempted")
 	} else {
 		a.log.Warn("System tray not supported on this platform")
 	}
+	// Always show the main window initially
+	a.mainWindow.Show()
 }
 
 func (a *App) setupMainWindow() {
@@ -136,8 +142,8 @@ func (a *App) setupMainWindow() {
 
 func (a *App) setupGlobalHotkey() error {
 	hk := hotkey.New([]hotkey.Modifier{
-		hotkey.ModCtrl,
-		hotkey.ModAlt,
+		config.ModCtrl,
+		config.ModAlt,
 	}, hotkey.KeyG)
 
 	if err := hk.Register(); err != nil {

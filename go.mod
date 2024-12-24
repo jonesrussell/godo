@@ -2,6 +2,8 @@ module github.com/jonesrussell/godo
 
 go 1.23
 
+toolchain go1.23.0
+
 require (
 	fyne.io/fyne/v2 v2.5.3
 	github.com/google/uuid v1.6.0

@@ -10,6 +10,7 @@ import (
 	"github.com/jonesrussell/godo/internal/app"
 	"github.com/jonesrussell/godo/internal/common"
 	"github.com/jonesrussell/godo/internal/config"
+	"github.com/jonesrussell/godo/internal/gui/mainwindow"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
 	"github.com/jonesrussell/godo/internal/storage/sqlite"
@@ -23,6 +24,7 @@ var defaultSet = wire.NewSet(
 	provideLogger,
 	provideConfig,
 	provideSQLite,
+	provideMainWindow,
 	app.NewApp,
 	wire.Bind(new(storage.Store), new(*sqlite.Store)),
 )
@@ -69,6 +71,11 @@ func provideSQLite(cfg *config.Config, log logger.Logger) (*sqlite.Store, func()
 	}
 
 	return store, cleanup, nil
+}
+
+// provideMainWindow creates the main application window
+func provideMainWindow(store storage.Store) *mainwindow.Window {
+	return mainwindow.New(store)
 }
 
 // InitializeApp creates a new application instance with all dependencies wired

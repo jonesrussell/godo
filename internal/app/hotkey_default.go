@@ -26,8 +26,8 @@ func (m *defaultHotkeyManager) Setup() error {
 	// Start hotkey listener
 	go func() {
 		for range hk.Keydown() {
-			if m.app.quickNote != nil {
-				m.app.quickNote.Show()
+			if m.app.mainWin != nil {
+				m.app.mainWin.Show()
 			}
 		}
 	}()

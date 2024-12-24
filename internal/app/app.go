@@ -3,27 +3,27 @@ package app
 
 import (
 	"github.com/jonesrussell/godo/internal/config"
-	"github.com/jonesrussell/godo/internal/gui"
+	"github.com/jonesrussell/godo/internal/gui/mainwindow"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
 )
 
 // App represents the main application
 type App struct {
-	config    *config.Config
-	logger    logger.Logger
-	store     storage.Store
-	mainWin   gui.MainWindow
-	quickNote gui.QuickNote
-	hotkeys   HotkeyManager
+	config  *config.Config
+	logger  logger.Logger
+	store   storage.Store
+	mainWin *mainwindow.Window
+	hotkeys HotkeyManager
 }
 
 // NewApp creates a new application instance
-func NewApp(cfg *config.Config, log logger.Logger, store storage.Store) *App {
+func NewApp(cfg *config.Config, log logger.Logger, store storage.Store, mainWin *mainwindow.Window) *App {
 	app := &App{
-		config: cfg,
-		logger: log,
-		store:  store,
+		config:  cfg,
+		logger:  log,
+		store:   store,
+		mainWin: mainWin,
 	}
 
 	// Initialize hotkey manager based on build tags

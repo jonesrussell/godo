@@ -5,11 +5,7 @@
         ],
         "staticcheck": true,
         "completeUnimported": true,
-        "matcher": "fuzzy",
-        "analyses": {
-            "unusedparams": true,
-            "fieldalignment": true
-        }
+        "matcher": "fuzzy"
     },
     "go.formatTool": "goimports",
     "go.lintTool": "golangci-lint",

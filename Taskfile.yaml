@@ -37,7 +37,7 @@ tasks:
   clean:docker:
     desc: Clean up Docker containers and images
     cmds:
-      - docker rm -f godo-linux-build || true
+      - docker rm -f godo-linux-build godo-linux-lint || true
       - docker rmi -f godo-linux-lint godo-linux-test godo-linux-wire godo-linux || true
 
   # Wire code generation tasks

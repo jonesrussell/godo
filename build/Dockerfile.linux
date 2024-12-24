@@ -2,7 +2,14 @@
 FROM golang:1.23-bullseye AS base
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
-    apt-get update && apt-get install -y gcc
+    apt-get update && apt-get install -y \
+    gcc \
+    libx11-dev \
+    libxcursor-dev \
+    libxrandr-dev \
+    libxinerama-dev \
+    libxi-dev \
+    libxxf86vm-dev
 
 # Dependencies stage
 FROM base AS deps

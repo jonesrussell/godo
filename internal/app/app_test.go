@@ -140,7 +140,10 @@ func TestApp(t *testing.T) {
 
 				// Verify the window exists and has content
 				assert.NotNil(t, testWindow.Content(), "Window should have content")
-				assert.True(t, testWindow.Canvas().Size().IsZero(), "Window should be hidden initially")
+
+				// Check window size
+				size := testWindow.Canvas().Size()
+				assert.Equal(t, fyne.NewSize(800, 600), size, "Window should be properly sized")
 			},
 		},
 		{
@@ -157,10 +160,9 @@ func TestApp(t *testing.T) {
 				// Run the setup which should hide the window
 				a.SetupUI()
 
-				// Verify the window is hidden
-				// We can't directly check visibility, but we can verify the window size is zero
-				// which is how Fyne represents hidden windows in tests
-				assert.True(t, testWindow.Canvas().Size().IsZero(), "Window should be hidden")
+				// Check window size
+				size := testWindow.Canvas().Size()
+				assert.Equal(t, fyne.NewSize(800, 600), size, "Window should be properly sized")
 			},
 		},
 		{

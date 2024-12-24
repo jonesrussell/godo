@@ -5,10 +5,10 @@ import (
 	fyneapp "fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
-	"github.com/jonesrussell/godo/internal/assets"
 	"github.com/jonesrussell/godo/internal/config"
+	"github.com/jonesrussell/godo/internal/gui/mainwindow/systray"
 	"github.com/jonesrussell/godo/internal/gui/quicknote"
-	"github.com/jonesrussell/godo/internal/gui/systray"
+	"github.com/jonesrussell/godo/internal/gui/theme"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
 	"github.com/jonesrussell/godo/internal/storage/sqlite"
@@ -73,8 +73,8 @@ func (a *App) setupLifecycleLogging() {
 
 func (a *App) setupSystemTray() {
 	a.log.Debug("Loading system tray icon")
-	systrayIcon := assets.GetSystrayIconResource()
-	appIcon := assets.GetAppIconResource()
+	systrayIcon := theme.GetSystrayIconResource()
+	appIcon := theme.GetAppIconResource()
 	a.fyneApp.SetIcon(appIcon)
 
 	menu := fyne.NewMenu("Godo",

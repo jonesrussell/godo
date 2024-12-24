@@ -1,4 +1,4 @@
-package assets
+package theme
 
 import (
 	_ "embed"

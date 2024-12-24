@@ -21,17 +21,22 @@ import (
 
 // App represents the main application instance.
 type App struct {
-	fyneApp    fyne.App
-	mainWindow fyne.Window
-	quickNote  QuickNoteService
-	systray    systray.Interface
-	store      storage.Store
-	config     *config.Config
-	log        logger.Logger
+	fyneApp       fyne.App
+	mainWindow    fyne.Window
+	quickNote     QuickNoteService
+	systray       systray.Interface
+	store         storage.Store
+	config        *config.Config
+	log           logger.Logger
+	hotkeyFactory HotkeyFactory
 }
 
 // NewApp creates a new application instance.
-func NewApp(cfg *config.Config, store storage.Store, log logger.Logger) *App {
+func NewApp(cfg *config.Config, store storage.Store, log logger.Logger, hotkeyFactory HotkeyFactory) *App {
+	if hotkeyFactory == nil {
+		hotkeyFactory = NewHotkeyFactory()
+	}
+
 	log.Debug("Creating new Fyne app")
 	fyneApp := fyneapp.NewWithID("io.github.jonesrussell.godo")
 	log.Debug("Created Fyne app", "type", fmt.Sprintf("%T", fyneApp))
@@ -40,11 +45,12 @@ func NewApp(cfg *config.Config, store storage.Store, log logger.Logger) *App {
 	log.Debug("Created main window")
 
 	app := &App{
-		fyneApp:    fyneApp,
-		mainWindow: mainWindow,
-		store:      store,
-		config:     cfg,
-		log:        log,
+		fyneApp:       fyneApp,
+		mainWindow:    mainWindow,
+		store:         store,
+		config:        cfg,
+		log:           log,
+		hotkeyFactory: hotkeyFactory,
 	}
 
 	log.Debug("Creating system tray service")
@@ -102,10 +108,8 @@ func (a *App) SetupUI() {
 // - The hotkey cannot be changed at runtime
 // - Only supports the Ctrl+Alt+G combination
 func (a *App) setupGlobalHotkey() error {
-	hk := hotkey.New([]hotkey.Modifier{
-		hotkey.ModCtrl,
-		hotkey.ModAlt,
-	}, hotkey.KeyG)
+	a.log.Debug("Setting up hotkey")
+	hk := a.hotkeyFactory.NewHotkey(getHotkeyModifiers(), hotkey.KeyG)
 
 	if err := hk.Register(); err != nil {
 		return err

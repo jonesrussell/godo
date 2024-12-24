@@ -1,26 +1,69 @@
 version: '3'
 
+vars:
+  VERSION:
+    sh: git describe --tags --always --dirty
+  GO_VERSION: 1.23.4
+
 tasks:
   default:
     cmds:
       - task: run
 
   wire:
-    desc: Generate wire dependency injection code
+    desc: Generate wire code for current platform only
     cmds:
       - |
         cd internal/container && \
-        GOOS=linux wire && \
-        GOOS=windows wire && \
-        GOOS=darwin wire
+        wire gen
+
+  wire:all:
+    desc: Generate wire code for all platforms
+    cmds:
+      - task: wire:linux
+      - task: wire:windows
+      - task: wire:darwin
+      - |
+        cd internal/container && \
+        mv wire_gen_linux.go wire_gen.go && \
+        echo "// +build !windows,!darwin" > temp && \
+        cat wire_gen.go >> temp && \
+        mv temp wire_gen.go
+
+  wire:windows:
+    desc: Generate wire code for Windows
+    env:
+      GOOS: windows
+    cmds:
+      - |
+        cd internal/container && \
+        wire gen --output_file_prefix windows_
+
+  wire:darwin:
+    desc: Generate wire code for macOS
+    env:
+      GOOS: darwin
+    cmds:
+      - |
+        cd internal/container && \
+        wire gen --output_file_prefix darwin_
+
+  wire:linux:
+    desc: Generate wire code for Linux
+    env:
+      GOOS: linux
+    cmds:
+      - |
+        cd internal/container && \
+        wire gen --output_file_prefix linux_
 
   run:
-    deps: [wire]
+    deps: [wire:all]
     cmds:
       - go run cmd/godo/main.go
 
   debug:
-    deps: [wire]
+    deps: [wire:all]
     env:
       DEBUG: "1"
     cmds:
@@ -28,9 +71,12 @@ tasks:
 
   test:
     desc: Run tests
-    deps: [wire]
+    deps: [wire:all]
+    env:
+      CGO_ENABLED: 1
+      GORACE: "halt_on_error=1"
     cmds:
-      - go test -v ./...
+      - go test -race -timeout 5m -v ./...
 
   lint:
     desc: Run linters for current platform only
@@ -70,9 +116,9 @@ tasks:
         platforms: [windows]
       - cmd: rm -rf bin/
         platforms: [linux, darwin]
-      - cmd: del /f /q internal\container\wire_gen.go 2>nul || exit 0
+      - cmd: del /f /q internal\container\wire_gen*.go 2>nul || exit 0
         platforms: [windows]
-      - cmd: rm -f internal/container/wire_gen.go
+      - cmd: rm -f internal/container/wire_gen*.go
         platforms: [linux, darwin]
 
   dev:
@@ -100,7 +146,7 @@ tasks:
 
   test:coverage:
     desc: Run tests with coverage report
-    deps: [wire]
+    deps: [wire:all]
     cmds:
       - 'go test -race -coverprofile="coverage.out" -coverpkg="./..." "./..."'
       - 'go tool cover -html="coverage.out" -o coverage.html'
@@ -108,7 +154,7 @@ tasks:
 
   test:coverage:threshold:
     desc: Run tests and check coverage threshold
-    deps: [wire]
+    deps: [wire:all]
     cmds:
       - cmd: bash scripts/test-coverage.sh
         platforms: [windows]
@@ -119,14 +165,16 @@ tasks:
     desc: Build for current platform
     deps: [wire]
     vars:
-      VERSION:
-        sh: git describe --tags --always --dirty
+      LDFLAGS: >-
+        -X main.Version={{.VERSION}}
+        -X main.BuildTime={{now | date "2006-01-02T15:04:05Z07:00"}}
+        -w -s
     cmds:
-      - go build -ldflags="-X main.Version={{.VERSION}}" -o bin/godo cmd/godo/main.go
+      - go build -ldflags="{{.LDFLAGS}}" -o bin/godo cmd/godo/main.go
 
   build:all:
     desc: Build for all platforms
-    deps: [wire]
+    deps: [wire:all]
     cmds:
       - task: build:windows
       - task: build:darwin
@@ -134,7 +182,7 @@ tasks:
 
   build:windows:
     desc: Build for Windows
-    deps: [wire]
+    deps: [wire:windows]
     env:
       GOOS: windows
       GOARCH: amd64
@@ -144,7 +192,7 @@ tasks:
 
   build:darwin:
     desc: Build for macOS
-    deps: [wire]
+    deps: [wire:darwin]
     env:
       GOOS: darwin
       GOARCH: amd64
@@ -153,7 +201,7 @@ tasks:
 
   build:linux:
     desc: Build for Linux
-    deps: [wire]
+    deps: [wire:linux]
     env:
       GOOS: linux
       GOARCH: amd64
@@ -192,3 +240,37 @@ tasks:
     desc: Run GitHub Actions locally using act
     cmds:
       - act -v -j build --container-architecture linux/amd64 -P ubuntu-latest=catthehacker/ubuntu:act-medium
+
+  check:all:
+    desc: Run all checks (fmt, lint, test)
+    cmds:
+      - task: fmt-check
+      - task: lint-all
+      - task: test:coverage:threshold
+
+  mod:verify:
+    desc: Verify dependencies
+    cmds:
+      - go mod verify
+      - go mod tidy -check
+
+  security:scan:
+    desc: Run security scanners
+    cmds:
+      - govulncheck ./...
+      - gosec ./...
+
+  clean:cache:
+    desc: Clean Go build cache
+    cmds:
+      - go clean -cache -modcache -testcache
+
+  verify:env:
+    desc: Verify development environment
+    cmds:
+      - |
+        GO_VERSION=$(go version | cut -d " " -f 3)
+        if [[ "$GO_VERSION" != "go{{.GO_VERSION}}" ]]; then
+          echo "Wrong Go version. Expected {{.GO_VERSION}}, got ${GO_VERSION#go}"
+          exit 1
+        fi

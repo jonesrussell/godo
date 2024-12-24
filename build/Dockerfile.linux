@@ -1,0 +1,21 @@
+FROM golang:1.23-bullseye
+
+# Install required X11 and GL development packages
+RUN apt-get update && apt-get install -y \
+    libx11-dev \
+    libxcursor-dev \
+    libxrandr-dev \
+    libxinerama-dev \
+    libxi-dev \
+    libgl1-mesa-dev \
+    libxxf86vm-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+COPY . .
+
+RUN go install github.com/google/wire/cmd/wire@latest && \
+    cd internal/container && \
+    wire gen -tags linux && \
+    cd ../.. && \
+    CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -tags 'linux nomobile' -o bin/godo-linux cmd/godo/main.go 

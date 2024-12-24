@@ -17,12 +17,10 @@ tasks:
         rm -f *_wire_gen.go || true
         {{end}}
 
-  wire:all:
-    desc: Generate wire code for all platforms
-    deps: [clean:wire]
+  clean:docker:
+    desc: Clean up Docker containers
     cmds:
-      - cd internal/container && wire gen -tags windows
-      - cd internal/container && wire gen -tags linux
+      - docker rm -f godo-linux-build 2>nul || true
 
   wire:windows:
     desc: Generate wire code for Windows
@@ -42,17 +40,22 @@ tasks:
     cmds:
       - go build -tags "windows nomobile" -o bin/godo.exe cmd/godo/main.go
 
-  build:linux:
-    desc: Build for Linux
-    deps: [wire:linux]
+  build:linux:docker:
+    desc: Build Linux binary using Docker
+    deps: [wire:linux, clean:docker]
     cmds:
-      - CGO_ENABLED=1 CC=x86_64-w64-mingw32-gcc GOOS=linux GOARCH=amd64 go build -tags "linux nomobile nowayland gles" -o bin/godo-linux cmd/godo/main.go
+      - docker build -f build/Dockerfile.linux -t godo-linux-builder .
+      - docker run --name godo-linux-build godo-linux-builder
+      - docker cp godo-linux-build:/app/bin/godo-linux ./bin/
+      - docker rm godo-linux-build
 
   build:all:
     desc: Build for all platforms
-    deps: [wire:all, build:windows, build:linux]
+    cmds:
+      - task: build:windows
+      - task: build:linux:docker
 
   run:
-    deps: [wire:all]
+    deps: [wire:windows]
     cmds:
       - go run cmd/godo/main.go

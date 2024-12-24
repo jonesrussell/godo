@@ -13,6 +13,9 @@ import (
 	"github.com/jonesrussell/godo/internal/storage/sqlite"
 )
 
+// Remove the build constraint from the generated file
+//go:generate wire
+
 // Wire sets for dependency injection
 var defaultSet = wire.NewSet(
 	provideLogger,

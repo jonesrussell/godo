@@ -45,7 +45,11 @@ jobs:
       run: task install
 
     - name: Generate Wire code
-      run: task wire
+      run: |
+        GOOS=linux wire
+        GOOS=windows wire
+        GOOS=darwin wire
+      working-directory: ./internal/container
 
     - name: Run tests and linting
       run: |

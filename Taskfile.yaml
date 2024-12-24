@@ -8,7 +8,11 @@ tasks:
   wire:
     desc: Generate wire dependency injection code
     cmds:
-      - cd internal/container && wire
+      - |
+        cd internal/container && \
+        GOOS=linux wire && \
+        GOOS=windows wire && \
+        GOOS=darwin wire
 
   run:
     deps: [wire]

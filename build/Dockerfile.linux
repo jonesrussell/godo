@@ -32,6 +32,13 @@ RUN /usr/local/bin/run-with-xvfb.sh golangci-lint run ./...
 
 # Test stage
 FROM wire AS test
+
+# Set up environment variables
+ENV DISPLAY=:99.0
+ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/var/run/dbus/system_bus_socket"
+ENV CGO_ENABLED=1
+
+# Run tests with Xvfb
 RUN /usr/local/bin/run-with-xvfb.sh go test -v ./...
 
 # Build stage

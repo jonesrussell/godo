@@ -57,7 +57,7 @@ func (e *customEntry) TypedKey(key *fyne.KeyEvent) {
 func (e *customEntry) TypedShortcut(shortcut fyne.Shortcut) {
 	if cs, ok := shortcut.(*desktop.CustomShortcut); ok {
 		if cs.KeyName == fyne.KeyReturn || cs.KeyName == fyne.KeyEnter {
-			if cs.Modifier == desktop.ControlModifier {
+			if cs.Modifier == fyne.KeyModifierControl {
 				if e.onCtrlEnter != nil {
 					e.onCtrlEnter()
 					return

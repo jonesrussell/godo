@@ -15,11 +15,11 @@ type mockLogger struct {
 	warnCalls  []string
 }
 
-func (m *mockLogger) Debug(msg string, args ...interface{}) {
+func (m *mockLogger) Debug(msg string, _ ...interface{}) {
 	m.debugCalls = append(m.debugCalls, msg)
 }
 
-func (m *mockLogger) Warn(msg string, args ...interface{}) {
+func (m *mockLogger) Warn(msg string, _ ...interface{}) {
 	m.warnCalls = append(m.warnCalls, msg)
 }
 

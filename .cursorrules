@@ -60,6 +60,10 @@
 - Keep functions small and focused
 - Use meaningful variable and function names
 - Use modern octal literal style (0o600 instead of 0600)
+- Never use time.Sleep for synchronization
+  - Use proper synchronization primitives (channels, WaitGroups, etc.)
+  - Use event-driven approaches for UI state management
+  - Implement proper ready/state callbacks where available
 
 ## Project Structure
 - cmd/godo/ - Main application entry point

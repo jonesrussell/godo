@@ -64,6 +64,15 @@
          - Test alpha channel values (0x0000 to 0xffff for 16-bit)
          - Test color model conversions (16-bit RGBA)
          - Test image scaling and resizing with different dimensions
+         - Image Loading Testing:
+           - Test default properties (Alpha=1.0, Translucency=0.0)
+           - Test loading from file (verify path and existence)
+           - Test loading from reader (verify name and resource)
+           - Test loading from URI (file:// and http:// schemes)
+           - Test image dimensions (e.g., 512x512)
+           - Test HTTP image loading (use httptest.NewServer)
+           - Handle platform-specific paths (Windows path separators)
+           - Test fill modes (ImageFillOriginal)
        - Shape Rendering Testing:
          - Test minimum size requirements (width/height > 0)
          - Test fill color properties (RGBA with alpha)

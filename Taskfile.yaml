@@ -3,7 +3,7 @@ version: '3'
 vars:
   VERSION:
     sh: git describe --tags --always --dirty
-  GO_VERSION: 1.23.4
+  GO_VERSION: 1.23
 
 tasks:
   default:
@@ -25,10 +25,18 @@ tasks:
       - task: wire:darwin
       - |
         cd internal/container && \
-        mv wire_gen_linux.go wire_gen.go && \
-        echo "// +build !windows,!darwin" > temp && \
-        cat wire_gen.go >> temp && \
-        mv temp wire_gen.go
+        {{if eq OS "windows"}}
+          cmd /c "copy linux_wire_gen.go wire_gen.go >nul && \
+          echo // +build !windows,!darwin > temp && \
+          type wire_gen.go >> temp && \
+          copy temp wire_gen.go >nul && \
+          del temp"
+        {{else}}
+          mv wire_gen_linux.go wire_gen.go && \
+          echo "// +build !windows,!darwin" > temp && \
+          cat wire_gen.go >> temp && \
+          mv temp wire_gen.go
+        {{end}}
 
   wire:windows:
     desc: Generate wire code for Windows

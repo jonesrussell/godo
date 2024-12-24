@@ -1,6 +1,8 @@
 package app
 
 import (
+	"fmt"
+
 	"fyne.io/fyne/v2"
 	fyneapp "fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
@@ -26,8 +28,12 @@ type App struct {
 }
 
 func NewApp(cfg *config.Config, store storage.Store, log logger.Logger) *App {
+	log.Debug("Creating new Fyne app")
 	fyneApp := fyneapp.NewWithID("io.github.jonesrussell.godo")
+	log.Debug("Created Fyne app", "type", fmt.Sprintf("%T", fyneApp))
+
 	mainWindow := fyneApp.NewWindow(cfg.App.Name)
+	log.Debug("Created main window")
 
 	app := &App{
 		fyneApp:    fyneApp,
@@ -35,8 +41,10 @@ func NewApp(cfg *config.Config, store storage.Store, log logger.Logger) *App {
 		store:      store,
 		config:     cfg,
 		log:        log,
-		systray:    systray.New(fyneApp, log),
 	}
+
+	log.Debug("Creating system tray service")
+	app.systray = systray.New(fyneApp, log)
 
 	quickNoteConfig := quicknote.Config{
 		App:        fyneApp,
@@ -72,11 +80,34 @@ func (a *App) setupLifecycleLogging() {
 }
 
 func (a *App) setupSystemTray() {
-	a.log.Debug("Loading system tray icon")
-	systrayIcon := theme.GetSystrayIconResource()
-	appIcon := theme.GetAppIconResource()
-	a.fyneApp.SetIcon(appIcon)
+	a.log.Debug("Starting system tray setup", "app_type", fmt.Sprintf("%T", a.fyneApp))
 
+	// Load icons
+	a.log.Debug("Loading system tray icons")
+	systrayIcon := theme.GetSystrayIconResource()
+	if systrayIcon == nil {
+		a.log.Error("Failed to load system tray icon - resource is nil")
+		return
+	}
+	a.log.Debug("Loaded system tray icon", "name", systrayIcon.Name(), "content_length", len(systrayIcon.Content()))
+
+	appIcon := theme.GetAppIconResource()
+	if appIcon == nil {
+		a.log.Error("Failed to load app icon - resource is nil")
+		return
+	}
+	a.log.Debug("Loaded app icon", "name", appIcon.Name(), "content_length", len(appIcon.Content()))
+
+	// Set app icon
+	a.fyneApp.SetIcon(appIcon)
+	a.log.Debug("Set application icon")
+
+	// Set systray icon first
+	a.log.Debug("Setting system tray icon")
+	a.systray.SetIcon(systrayIcon)
+
+	// Create menu
+	a.log.Debug("Creating system tray menu")
 	menu := fyne.NewMenu("Godo",
 		fyne.NewMenuItem("Show", func() {
 			a.mainWindow.Show()
@@ -88,16 +119,16 @@ func (a *App) setupSystemTray() {
 			a.fyneApp.Quit()
 		}),
 	)
+	a.log.Debug("Created system tray menu", "items", len(menu.Items))
 
-	// Setup menu first
+	// Setup menu
+	a.log.Debug("Setting up system tray with menu")
 	a.systray.Setup(menu)
 
-	// Then set icon
-	if a.systray.IsReady() {
-		a.systray.SetIcon(systrayIcon)
-		a.log.Info("System tray setup complete")
+	if !a.systray.IsReady() {
+		a.log.Error("System tray setup failed - not ready after setup")
 	} else {
-		a.log.Warn("System tray not ready, icon not set")
+		a.log.Info("System tray setup completed successfully")
 	}
 }
 

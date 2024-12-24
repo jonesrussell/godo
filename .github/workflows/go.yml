@@ -36,7 +36,8 @@ jobs:
           libxinerama-dev \
           libxi-dev \
           libgl1-mesa-dev \
-          libxxf86vm-dev
+          libxxf86vm-dev \
+          xvfb
 
     - name: Install Wire
       run: go install github.com/google/wire/cmd/wire@latest
@@ -56,8 +57,9 @@ jobs:
 
     - name: Run tests and linting
       run: |
-        task lint
-        task test
+        chmod +x build/run-with-xvfb.sh
+        ./build/run-with-xvfb.sh task lint
+        ./build/run-with-xvfb.sh task test
 
     - name: Build all platforms
       run: task build:all

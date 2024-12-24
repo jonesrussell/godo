@@ -60,8 +60,9 @@ tasks:
     env:
       CGO_ENABLED: 1
       GOOS: windows
+      GOARCH: amd64
     cmds:
-      - go build -tags "windows,gl" -o bin/godo.exe cmd/godo/main.go
+      - go build -tags "windows" -o bin/godo.exe cmd/godo/main.go
 
   build:linux:
     desc: Build for Linux
@@ -69,8 +70,9 @@ tasks:
     env:
       CGO_ENABLED: 1
       GOOS: linux
+      GOARCH: amd64
     cmds:
-      - go build -tags "linux,gl" -o bin/godo cmd/godo/main.go
+      - go build -tags "linux" -o bin/godo cmd/godo/main.go
 
   test:
     desc: Run tests
@@ -99,3 +101,17 @@ tasks:
       - task: lint
       - task: test
       - task: build
+
+  act:build:
+    desc: Run GitHub Actions build job locally using act
+    cmds:
+      - act -j build --container-architecture linux/amd64 
+        -s GITHUB_TOKEN="${GITHUB_TOKEN}"
+        --artifact-server-path /tmp/artifacts
+        -P ubuntu-latest=catthehacker/ubuntu:act-latest
+
+  # Optional helper task to clean up act artifacts
+  act:clean:
+    desc: Clean up act artifacts
+    cmds:
+      - rm -rf /tmp/artifacts

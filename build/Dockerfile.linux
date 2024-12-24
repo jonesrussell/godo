@@ -1,6 +1,5 @@
-FROM golang:1.23-bullseye
-
-# Install required X11 and GL development packages
+# Base stage with common dependencies
+FROM golang:1.23-bullseye AS base
 RUN apt-get update && apt-get install -y \
     libx11-dev \
     libxcursor-dev \
@@ -9,13 +8,44 @@ RUN apt-get update && apt-get install -y \
     libxi-dev \
     libgl1-mesa-dev \
     libxxf86vm-dev \
+    xvfb \
+    && rm -rf /var/lib/apt/lists/*
+
+# Tools stage for installing development tools
+FROM base AS tools
+WORKDIR /app
+COPY go.mod go.sum ./
+RUN go mod download
+RUN go install github.com/google/wire/cmd/wire@latest && \
+    go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+
+# Wire generation stage
+FROM tools AS wire
+COPY . .
+COPY build/run-with-xvfb.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/run-with-xvfb.sh
+RUN /usr/local/bin/run-with-xvfb.sh bash -c 'cd internal/container && wire gen -tags linux'
+
+# Lint stage
+FROM wire AS lint
+RUN /usr/local/bin/run-with-xvfb.sh golangci-lint run ./...
+
+# Build stage
+FROM wire AS builder
+RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -tags "linux nomobile" -o bin/godo-linux cmd/godo/main.go
+
+# Runtime stage
+FROM debian:bullseye-slim
+RUN apt-get update && apt-get install -y \
+    libx11-6 \
+    libxcursor1 \
+    libxrandr2 \
+    libxinerama1 \
+    libxi6 \
+    libgl1 \
+    libxxf86vm1 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-COPY . .
-
-RUN go install github.com/google/wire/cmd/wire@latest && \
-    cd internal/container && \
-    wire gen -tags linux && \
-    cd ../.. && \
-    CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -tags 'linux nomobile' -o bin/godo-linux cmd/godo/main.go 
+COPY --from=builder /app/bin/godo-linux /app/godo
+ENTRYPOINT ["/app/godo"] 

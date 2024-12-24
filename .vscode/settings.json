@@ -1,6 +1,6 @@
 {
     "gopls": {
-        "buildFlags": ["-tags", "docker,wireinject"],
+        "buildFlags": ["-tags", "linux,windows"],
         "staticcheck": true,
         "completeUnimported": true,
         "matcher": "fuzzy"
@@ -38,6 +38,6 @@
     },
     "go.testFlags": ["-v"],
     "go.testOnSave": true,
-    "go.testTags": "docker,wireinject",
+    "go.testTags": "linux,windows",
     "go.testTimeout": "5m"
 }

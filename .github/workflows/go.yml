@@ -36,9 +36,11 @@ jobs:
           - os: windows
             arch: amd64
             artifact: godo.exe
+            cc: x86_64-w64-mingw32-gcc
           - os: linux
             arch: amd64
             artifact: godo
+            cc: gcc
     steps:
       - uses: actions/checkout@v4
       
@@ -49,11 +51,11 @@ jobs:
       
       # Install system dependencies
       - name: Install system dependencies
-        if: matrix.os == 'linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y \
             gcc \
+            mingw-w64 \
             libgl1-mesa-dev \
             libx11-dev \
             libxcursor-dev \
@@ -89,6 +91,7 @@ jobs:
         env:
           GOOS: ${{ matrix.os }}
           GOARCH: ${{ matrix.arch }}
+          CC: ${{ matrix.cc }}
         run: task build:${{ matrix.os }}
 
       # Add versioning based on git tags

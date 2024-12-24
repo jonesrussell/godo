@@ -105,7 +105,9 @@ tasks:
   act:build:
     desc: Run GitHub Actions build job locally using act
     cmds:
-      - act -j build --container-architecture linux/amd64 
+      - act -j build 
+        -W .github/workflows/go.yml
+        --container-architecture linux/amd64 
         -s GITHUB_TOKEN="${GITHUB_TOKEN}"
         --artifact-server-path /tmp/artifacts
         -P ubuntu-latest=catthehacker/ubuntu:act-latest

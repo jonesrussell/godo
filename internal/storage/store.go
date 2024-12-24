@@ -1,17 +1,16 @@
 package storage
 
-import "github.com/jonesrussell/godo/internal/model"
-
-// Store defines the interface for todo and note storage
+// Store defines the interface for storage operations
 type Store interface {
-	// Todo operations
-	Add(todo *model.Todo) error
-	Get(id string) (*model.Todo, error)
-	List() []*model.Todo
-	Update(todo *model.Todo) error
-	Delete(id string) error
+	// SaveNote saves a note to storage
+	SaveNote(note string) error
 
-	// Note operations
-	SaveNote(content string) error
+	// GetNotes retrieves all notes from storage
 	GetNotes() ([]string, error)
+
+	// DeleteNote removes a note from storage
+	DeleteNote(note string) error
+
+	// Clear removes all notes from storage
+	Clear() error
 }

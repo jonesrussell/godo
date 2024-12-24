@@ -41,7 +41,7 @@ CMD ["golangci-lint", "run", "./..."]
 # Test stage
 FROM wire AS test
 ENV CGO_ENABLED=1
-CMD ["go", "test", "-v", "-count=1", "./..."]
+CMD ["go", "test", "-v", "-tags=docker", "./..."]
 
 # Build stage
 FROM wire AS builder

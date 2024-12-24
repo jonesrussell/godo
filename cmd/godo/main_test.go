@@ -1,3 +1,6 @@
+//go:build !docker && wireinject
+// +build !docker,wireinject
+
 package main
 
 import (

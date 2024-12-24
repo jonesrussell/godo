@@ -1,6 +1,11 @@
+//go:build !docker
+// +build !docker
+
 package app
 
-import "github.com/jonesrussell/godo/internal/config"
+import (
+	"github.com/jonesrussell/godo/internal/config"
+)
 
 // TestHotkey is a mock hotkey implementation for testing
 type TestHotkey struct {

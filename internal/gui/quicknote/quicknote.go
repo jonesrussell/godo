@@ -110,7 +110,6 @@ func (qn *QuickNote) handleFormSubmit(save bool) {
 
 // Show displays the quick note dialog
 func (qn *QuickNote) Show() {
-	qn.config.MainWindow.Hide()
 	qn.window.Show()
 	qn.window.CenterOnScreen()
 	qn.form.Show()

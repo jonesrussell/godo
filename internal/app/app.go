@@ -69,29 +69,16 @@ func (a *App) SetupUI() {
 		a.log.Info("Lifecycle: Started")
 		if err := a.setupGlobalHotkey(); err != nil {
 			a.log.Error("Failed to setup global hotkey", "error", err)
-			dialog.ShowError(fmt.Errorf("Failed to register global hotkey (%s). Quick note feature will not work.", a.config.Hotkeys.QuickNote), a.mainWindow)
+			dialog.ShowError(fmt.Errorf("Failed to register global hotkey (%s). Quick note feature will not work.", string(a.config.Hotkeys.QuickNote)), a.mainWindow)
 		} else {
 			a.log.Info("Global hotkey setup complete", "hotkey", a.config.Hotkeys.QuickNote)
 		}
-
-		// Start hotkey event handler
-		go a.handleHotkeyEvents()
 	})
 
 	a.fyneApp.Lifecycle().SetOnStopped(func() {
 		a.log.Info("Lifecycle: Stopped")
 		close(a.hotkeyC)
 	})
-}
-
-func (a *App) handleHotkeyEvents() {
-	a.log.Debug("Starting hotkey event handler")
-	for range a.hotkeyC {
-		a.log.Debug("Hotkey event received - showing quick note")
-		a.mainWindow.Show()
-		a.quickNote.Show()
-	}
-	a.log.Debug("Hotkey event handler stopped")
 }
 
 func (a *App) setupGlobalHotkey() error {
@@ -111,6 +98,12 @@ func (a *App) setupGlobalHotkey() error {
 		return fmt.Errorf("failed to register hotkey: %w", err)
 	}
 
+	// Test if hotkey is registered
+	if hk == nil {
+		a.log.Error("Hotkey is nil after registration")
+		return fmt.Errorf("hotkey is nil after registration")
+	}
+
 	a.log.Info("Global hotkey registered successfully", "hotkey", a.config.Hotkeys.QuickNote)
 
 	// Start hotkey listener in a goroutine
@@ -122,22 +115,39 @@ func (a *App) setupGlobalHotkey() error {
 			return
 		}
 
+		a.log.Debug("Hotkey listener setup",
+			"hotkey", a.config.Hotkeys.QuickNote,
+			"modifiers", fmt.Sprintf("%v", mods),
+			"key", fmt.Sprintf("%v", key))
+
 		for {
+			a.log.Debug("Waiting for hotkey event...")
+			event, ok := <-keydownChan
+			if !ok {
+				a.log.Error("Keydown channel closed")
+				return
+			}
+			a.log.Debug("Global hotkey triggered",
+				"event", fmt.Sprintf("%+v", event),
+				"hotkey", a.config.Hotkeys.QuickNote)
+
 			select {
-			case _, ok := <-keydownChan:
-				if !ok {
-					a.log.Error("Keydown channel closed")
-					return
-				}
-				a.log.Debug("Global hotkey triggered")
-				select {
-				case a.hotkeyC <- struct{}{}:
-					a.log.Debug("Hotkey event sent to handler")
-				default:
-					a.log.Debug("Hotkey event dropped - handler busy")
-				}
+			case a.hotkeyC <- struct{}{}:
+				a.log.Debug("Hotkey event sent to handler")
+			default:
+				a.log.Debug("Handler busy - dropping event")
 			}
 		}
+	}()
+
+	// Start event handler in a goroutine
+	go func() {
+		a.log.Debug("Starting hotkey event handler")
+		for range a.hotkeyC {
+			a.log.Debug("Hotkey event received - showing quick note")
+			a.quickNote.Show()
+		}
+		a.log.Debug("Hotkey event handler stopped")
 	}()
 
 	return nil

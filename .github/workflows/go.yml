@@ -1,6 +1,21 @@
 name: Build and Test
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - '**.go'
+      - 'go.mod'
+      - 'go.sum'
+      - '.github/workflows/go.yml'
+      - 'build/**'
+  pull_request:
+    paths:
+      - '**.go'
+      - 'go.mod'
+      - 'go.sum'
+      - '.github/workflows/go.yml'
+      - 'build/**'
 
 jobs:
   prepare:

@@ -11,13 +11,12 @@ import (
 const (
 	ModCtrl  = hotkey.ModCtrl  // Control key
 	ModShift = hotkey.ModShift // Shift key
-	ModAlt   = hotkey.ModAlt   // Alt/Option key
 )
 
 // GetDefaultQuickNoteModifiers returns the default modifiers for quick note hotkey
 func GetDefaultQuickNoteModifiers() []hotkey.Modifier {
 	return []hotkey.Modifier{
 		ModCtrl,
-		ModAlt,
+		ModShift,
 	}
 }

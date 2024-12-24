@@ -3,19 +3,18 @@
 
 package config
 
-import "golang.design/x/hotkey"
-
-// Modifier constants for hotkeys on Linux
-const (
-	ModCtrl  = hotkey.ModCtrl  // Control key
-	ModShift = hotkey.ModShift // Shift key
-	ModAlt   = hotkey.ModCtrl  // Alt key - using Ctrl as fallback since ModAlt is not supported on Linux
+import (
+	"golang.design/x/hotkey"
 )
 
-// GetDefaultQuickNoteModifiers returns the default modifiers for quick note hotkey
+// On Linux (X11), some keys may be mapped to multiple Mod keys.
+// We need to use the correct underlying keycode combination.
+// For example, Ctrl+Shift+G might be registered as: Ctrl+Mod2+Mod4+G
 func GetDefaultQuickNoteModifiers() []hotkey.Modifier {
 	return []hotkey.Modifier{
-		ModCtrl,
-		ModShift, // Using Shift instead of Alt on Linux
+		hotkey.ModCtrl,
+		hotkey.ModShift,
+		hotkey.Mod2, // Typically maps to Shift on X11
+		hotkey.Mod4, // Typically maps to Super/Windows key on X11
 	}
 }

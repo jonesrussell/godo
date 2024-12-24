@@ -1,6 +1,10 @@
+//go:build !docker
+// +build !docker
+
 package app
 
 import (
+	"os"
 	"testing"
 	"time"
 
@@ -13,7 +17,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.design/x/hotkey"
+	"golang.design/x/hotkey/mainthread"
 )
+
+func TestMain(m *testing.M) {
+	mainthread.Init(func() {
+		os.Exit(m.Run())
+	})
+}
 
 // mockHotkeyFactory is a test implementation of config.HotkeyFactory
 type mockHotkeyFactory struct {
@@ -59,7 +70,7 @@ func (m *mockSystray) IsReady() bool {
 
 func TestApp(t *testing.T) {
 	// Skip if X11 is not available
-	hk := hotkey.New([]hotkey.Modifier{}, hotkey.Key(0))
+	hk := hotkey.New([]hotkey.Modifier{hotkey.ModCtrl, hotkey.ModShift}, hotkey.KeyG)
 	if err := hk.Register(); err != nil {
 		t.Skip("Skipping test due to X11 initialization failure:", err)
 	}

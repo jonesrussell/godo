@@ -5,109 +5,96 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/test"
+	"github.com/jonesrussell/godo/internal/common"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/stretchr/testify/assert"
 )
 
-type mockLogger struct {
-	logger.Logger
-	debugCalls []string
-	warnCalls  []string
+type mockResource struct {
+	fyne.Resource
 }
 
-func (m *mockLogger) Debug(msg string, _ ...interface{}) {
-	m.debugCalls = append(m.debugCalls, msg)
-}
-
-func (m *mockLogger) Warn(msg string, _ ...interface{}) {
-	m.warnCalls = append(m.warnCalls, msg)
-}
-
-func TestNew(t *testing.T) {
-	t.Run("creates service with app", func(t *testing.T) {
-		mockApp := test.NewApp()
-		mockLog := &mockLogger{}
-
-		service := New(mockApp, mockLog)
-
-		assert.NotNil(t, service)
-		assert.Equal(t, mockApp, service.app)
-		assert.Equal(t, mockLog, service.log)
-		assert.False(t, service.ready)
-		assert.Nil(t, service.menu)
-		assert.Nil(t, service.icon)
+func TestInterface(t *testing.T) {
+	t.Run("implementation satisfies interface", func(_ *testing.T) {
+		var _ Interface = (*Systray)(nil)
 	})
 }
 
-func TestSetup(t *testing.T) {
-	t.Run("sets menu and ready state", func(t *testing.T) {
-		mockApp := test.NewApp()
-		mockLog := &mockLogger{}
-		service := New(mockApp, mockLog)
+func TestSystray(t *testing.T) {
+	app := test.NewApp()
+	defer app.Quit()
 
-		menu := fyne.NewMenu("Test Menu")
-		service.Setup(menu)
-
-		assert.True(t, service.ready)
-		assert.Equal(t, menu, service.menu)
+	log, err := logger.New(&common.LogConfig{
+		Level:   "debug",
+		Console: true,
 	})
-}
+	assert.NoError(t, err)
 
-func TestSetIcon(t *testing.T) {
-	t.Run("sets icon", func(t *testing.T) {
-		mockApp := test.NewApp()
-		mockLog := &mockLogger{}
-		service := New(mockApp, mockLog)
+	t.Run("Setup sets menu", func(t *testing.T) {
+		svc := New(app, log)
+		menu := &fyne.Menu{
+			Label: "Test Menu",
+			Items: []*fyne.MenuItem{
+				{Label: "Test Item"},
+			},
+		}
 
-		icon := fyne.NewStaticResource("test.png", []byte{})
-		service.SetIcon(icon)
-
-		assert.Equal(t, icon, service.icon)
+		svc.Setup(menu)
+		assert.True(t, svc.IsReady())
+		assert.Equal(t, menu, svc.menu)
 	})
-}
 
-func TestIsReady(t *testing.T) {
-	t.Run("returns ready state", func(t *testing.T) {
-		mockApp := test.NewApp()
-		mockLog := &mockLogger{}
-		service := New(mockApp, mockLog)
+	t.Run("SetIcon sets icon", func(t *testing.T) {
+		svc := New(app, log)
+		icon := &mockResource{}
 
-		assert.False(t, service.IsReady())
+		svc.SetIcon(icon)
+		assert.Equal(t, icon, svc.icon)
+		assert.False(t, svc.IsReady()) // Setting icon doesn't affect ready state
+	})
 
-		service.ready = true
-		assert.True(t, service.IsReady())
+	t.Run("IsReady returns ready state", func(t *testing.T) {
+		svc := New(app, log)
+		assert.False(t, svc.IsReady())
+
+		svc.Setup(&fyne.Menu{})
+		assert.True(t, svc.IsReady())
 	})
 }
 
 func TestIntegration(t *testing.T) {
-	t.Run("full systray lifecycle", func(t *testing.T) {
-		mockApp := test.NewApp()
-		mockLog := &mockLogger{}
-		service := New(mockApp, mockLog)
+	t.Run("full lifecycle", func(t *testing.T) {
+		app := test.NewApp()
+		defer app.Quit()
 
-		// Initial state
-		assert.False(t, service.IsReady())
-		assert.Nil(t, service.menu)
-		assert.Nil(t, service.icon)
+		log, err := logger.New(&common.LogConfig{
+			Level:   "debug",
+			Console: true,
+		})
+		assert.NoError(t, err)
 
-		// Setup menu
-		menu := fyne.NewMenu("Test Menu",
-			fyne.NewMenuItem("Item 1", nil),
-			fyne.NewMenuItem("Item 2", nil),
-		)
-		service.Setup(menu)
+		svc := New(app, log)
+		menu := &fyne.Menu{
+			Label: "Test Menu",
+			Items: []*fyne.MenuItem{
+				{Label: "Test Item"},
+			},
+		}
+		icon := &mockResource{}
 
-		// Verify menu setup
-		assert.True(t, service.IsReady())
-		assert.Equal(t, menu, service.menu)
-		assert.Len(t, menu.Items, 2)
+		// Test initial state
+		assert.False(t, svc.IsReady())
+		assert.Nil(t, svc.menu)
+		assert.Nil(t, svc.icon)
 
-		// Set icon
-		icon := fyne.NewStaticResource("test.png", []byte{})
+		// Test setup
+		svc.Setup(menu)
+		assert.True(t, svc.IsReady())
+		assert.Equal(t, menu, svc.menu)
 
-		service.SetIcon(icon)
-
-		// Verify icon setup
-		assert.Equal(t, icon, service.icon)
+		// Test icon
+		svc.SetIcon(icon)
+		assert.Equal(t, icon, svc.icon)
+		assert.True(t, svc.IsReady()) // Ready state should not be affected by icon
 	})
 }

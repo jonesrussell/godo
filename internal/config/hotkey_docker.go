@@ -1,5 +1,5 @@
-//go:build docker
-// +build docker
+//go:build docker && linux
+// +build docker,linux
 
 package config
 
@@ -7,11 +7,8 @@ import (
 	"golang.design/x/hotkey"
 )
 
-// GetDefaultQuickNoteModifiers returns the default modifiers for quick note hotkey
-// This is a mock implementation for Docker environment
+// GetDefaultQuickNoteModifiers returns empty modifiers for Docker environment
+// since we don't actually register hotkeys in Docker
 func GetDefaultQuickNoteModifiers() []hotkey.Modifier {
-	return []hotkey.Modifier{
-		hotkey.ModCtrl,
-		hotkey.ModShift,
-	}
+	return []hotkey.Modifier{}
 }

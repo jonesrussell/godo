@@ -23,7 +23,6 @@ var defaultSet = wire.NewSet(
 	provideLogger,
 	provideConfig,
 	provideSQLite,
-	provideHotkeyFactory,
 	app.NewApp,
 	wire.Bind(new(storage.Store), new(*sqlite.Store)),
 )
@@ -70,11 +69,6 @@ func provideSQLite(cfg *config.Config, log logger.Logger) (*sqlite.Store, func()
 	}
 
 	return store, cleanup, nil
-}
-
-// provideHotkeyFactory creates a new hotkey factory
-func provideHotkeyFactory() config.HotkeyFactory {
-	return app.NewHotkeyFactory()
 }
 
 // InitializeApp creates a new application instance with all dependencies wired

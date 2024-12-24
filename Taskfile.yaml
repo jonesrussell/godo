@@ -132,7 +132,7 @@ tasks:
     deps: [clean:docker]
     cmds:
       - docker build --target test -f build/Dockerfile.linux -t godo-linux-test .
-      - docker run --name godo-linux-test godo-linux-test
+      - docker run --name godo-linux-test godo-linux-test go test -v -tags=docker ./...
       - docker rm godo-linux-test
 
   # Lint tasks

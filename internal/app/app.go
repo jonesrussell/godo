@@ -16,24 +16,18 @@ type App struct {
 	mainWin   gui.MainWindow
 	quickNote gui.QuickNote
 	hotkeys   HotkeyManager
-	isDocker  bool // Used only for tests
 }
 
 // NewApp creates a new application instance
 func NewApp(cfg *config.Config, log logger.Logger, store storage.Store) *App {
 	app := &App{
-		config:   cfg,
-		logger:   log,
-		store:    store,
-		isDocker: false,
+		config: cfg,
+		logger: log,
+		store:  store,
 	}
 
 	// Initialize hotkey manager based on build tags
-	if app.isDocker {
-		app.hotkeys = NewNoopHotkeyManager(app)
-	} else {
-		app.hotkeys = NewDefaultHotkeyManager(app)
-	}
+	app.hotkeys = initHotkeyManager(app)
 
 	return app
 }
@@ -63,9 +57,4 @@ func (a *App) SetupUI() {
 // GetVersion returns the application version
 func (a *App) GetVersion() string {
 	return a.config.App.Version
-}
-
-// SetIsDocker sets the Docker environment flag (used only for tests)
-func (a *App) SetIsDocker(isDocker bool) {
-	a.isDocker = isDocker
 }

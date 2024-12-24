@@ -2,14 +2,7 @@
 FROM golang:1.23-bullseye AS base
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
-    apt-get update && apt-get install -y \
-    gcc \
-    libgl1-mesa-dev \
-    libx11-dev \
-    libxcursor-dev \
-    libxrandr-dev \
-    libxinerama-dev \
-    libxi-dev
+    apt-get update && apt-get install -y gcc
 
 # Dependencies stage
 FROM base AS deps
@@ -36,29 +29,20 @@ RUN --mount=type=cache,target=/go/pkg/mod,sharing=locked \
 # Test stage
 FROM wire AS test
 ENV CGO_ENABLED=1
-RUN --mount=type=cache,target=/go/pkg/mod,sharing=locked \
-    --mount=type=cache,target=/root/.cache/go-build,sharing=locked \
-    go test -v -count=1 -tags=docker ./...
+CMD ["go", "test", "-v", "-count=1", "./..."]
 
 # Build stage
 FROM wire AS builder
 RUN --mount=type=cache,target=/go/pkg/mod,sharing=locked \
     --mount=type=cache,target=/root/.cache/go-build,sharing=locked \
-    CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -tags "linux nomobile" -o bin/godo-linux cmd/godo/main.go
+    CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o bin/godo-linux cmd/godo/main.go
 
 # Runtime stage
 FROM debian:bullseye-slim
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
-    apt-get update && apt-get install -y \
-    gcc \
-    libgl1-mesa \
-    libx11-6 \
-    libxcursor1 \
-    libxrandr2 \
-    libxinerama2 \
-    libxi6 \
-    && rm -rf /var/lib/apt/lists/*
+    apt-get update && apt-get install -y gcc && \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 COPY --from=builder /app/bin/godo-linux /app/godo

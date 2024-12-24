@@ -53,8 +53,6 @@ func provideLogger() (logger.Logger, error) {
 
 // provideSQLite creates a new SQLite store
 func provideSQLite(cfg *config.Config, log logger.Logger) (*sqlite.Store, func(), error) {
-	log.Info("Opening database", "path", cfg.Database.Path)
-
 	store, err := sqlite.New(cfg.Database.Path, log)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create SQLite store: %w", err)

@@ -40,8 +40,8 @@ func TestService(t *testing.T) {
 		}
 
 		svc.Setup(menu)
-		// We can only test the behavior since menu is private
 		assert.True(t, svc.IsReady())
+		assert.Equal(t, menu, svc.menu)
 	})
 
 	t.Run("SetIcon sets icon", func(t *testing.T) {
@@ -49,8 +49,8 @@ func TestService(t *testing.T) {
 		icon := &mockResource{}
 
 		svc.SetIcon(icon)
-		// We can only test the behavior since icon is private
-		assert.True(t, svc.IsReady())
+		assert.Equal(t, icon, svc.icon)
+		assert.False(t, svc.IsReady()) // Setting icon doesn't affect ready state
 	})
 
 	t.Run("IsReady returns ready state", func(t *testing.T) {
@@ -84,13 +84,17 @@ func TestIntegration(t *testing.T) {
 
 		// Test initial state
 		assert.False(t, svc.IsReady())
+		assert.Nil(t, svc.menu)
+		assert.Nil(t, svc.icon)
 
 		// Test setup
 		svc.Setup(menu)
 		assert.True(t, svc.IsReady())
+		assert.Equal(t, menu, svc.menu)
 
 		// Test icon
 		svc.SetIcon(icon)
-		assert.True(t, svc.IsReady())
+		assert.Equal(t, icon, svc.icon)
+		assert.True(t, svc.IsReady()) // Ready state should not be affected by icon
 	})
 }

@@ -3,6 +3,7 @@ package testing
 import (
 	"testing"
 
+	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/model"
 	"github.com/jonesrussell/godo/internal/storage"
 	"github.com/jonesrussell/godo/internal/storage/memory"
@@ -21,12 +22,14 @@ func TestStoreInterface(t *testing.T) {
 }
 
 func TestStoreBehavior(t *testing.T) {
+	log := logger.NewTestLogger(t)
+
 	stores := map[string]func() storage.Store{
 		"memory": func() storage.Store {
 			return memory.New()
 		},
 		"sqlite": func() storage.Store {
-			store, err := sqlite.New(":memory:", nil)
+			store, err := sqlite.New("file::memory:?cache=shared", log)
 			assert.NoError(t, err)
 			return store
 		},

@@ -37,6 +37,11 @@ type Store struct {
 
 // validatePath checks if the path contains invalid characters
 func validatePath(dbPath string) error {
+	// Allow in-memory database paths
+	if strings.HasPrefix(dbPath, "file::memory:") {
+		return nil
+	}
+
 	// Invalid characters in Windows paths, excluding the drive letter colon
 	invalidChars := []string{"<", ">", "\"", "|", "?", "*"}
 
@@ -54,6 +59,10 @@ func validatePath(dbPath string) error {
 }
 
 func New(dbPath string, log logger.Logger) (*Store, error) {
+	if log == nil {
+		return nil, fmt.Errorf("logger is required")
+	}
+
 	log.Info("Opening database", "path", dbPath)
 
 	// Validate the path first
@@ -62,16 +71,19 @@ func New(dbPath string, log logger.Logger) (*Store, error) {
 		return nil, err
 	}
 
-	// Try to create the database directory
-	if err := ensureDataDir(dbPath); err != nil {
-		log.Error("Failed to create database directory", "error", err)
-		return nil, err
-	}
+	// Only create directories for non-memory databases
+	if !strings.HasPrefix(dbPath, "file::memory:") {
+		// Try to create the database directory
+		if err := ensureDataDir(dbPath); err != nil {
+			log.Error("Failed to create database directory", "error", err)
+			return nil, err
+		}
 
-	// Verify we can write to the database path
-	if err := verifyDatabaseAccess(dbPath); err != nil {
-		log.Error("Failed to verify database access", "error", err)
-		return nil, err
+		// Verify we can write to the database path
+		if err := verifyDatabaseAccess(dbPath); err != nil {
+			log.Error("Failed to verify database access", "error", err)
+			return nil, err
+		}
 	}
 
 	// Open the database connection

@@ -24,6 +24,8 @@ func newCustomEntry(log logger.Logger) *customEntry {
 		log: log,
 	}
 	entry.ExtendBaseWidget(entry)
+	entry.MultiLine = true
+	entry.Wrapping = fyne.TextWrapWord
 	return entry
 }
 
@@ -33,13 +35,7 @@ func (e *customEntry) KeyDown(key *fyne.KeyEvent) {
 		e.log.Debug("KeyDown event", "key", key.Name)
 	}
 
-	switch key.Name {
-	case fyne.KeyReturn, fyne.KeyEnter:
-		if e.onCtrlEnter != nil {
-			e.onCtrlEnter()
-			return
-		}
-	case fyne.KeyEscape:
+	if key.Name == fyne.KeyEscape {
 		if e.onEscape != nil {
 			e.onEscape()
 			return
@@ -50,11 +46,7 @@ func (e *customEntry) KeyDown(key *fyne.KeyEvent) {
 
 // TypedKey handles typed key events
 func (e *customEntry) TypedKey(key *fyne.KeyEvent) {
-	switch key.Name {
-	case fyne.KeyReturn, fyne.KeyEnter:
-		// Let KeyDown handle it
-		return
-	case fyne.KeyEscape:
+	if key.Name == fyne.KeyEscape {
 		// Let KeyDown handle it
 		return
 	}
@@ -65,9 +57,11 @@ func (e *customEntry) TypedKey(key *fyne.KeyEvent) {
 func (e *customEntry) TypedShortcut(shortcut fyne.Shortcut) {
 	if cs, ok := shortcut.(*desktop.CustomShortcut); ok {
 		if cs.KeyName == fyne.KeyReturn || cs.KeyName == fyne.KeyEnter {
-			if e.onCtrlEnter != nil {
-				e.onCtrlEnter()
-				return
+			if cs.Modifier == desktop.ControlModifier {
+				if e.onCtrlEnter != nil {
+					e.onCtrlEnter()
+					return
+				}
 			}
 		}
 	}

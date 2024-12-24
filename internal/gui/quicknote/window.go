@@ -54,6 +54,7 @@ func New(app fyne.App, store storage.Store, log logger.Logger) *Window {
 
 	// Setup window content
 	content := container.NewVBox(
+		widget.NewLabel("Enter your note (Ctrl+Enter to save, Esc to cancel):"),
 		w.entry,
 		container.NewHBox(
 			widget.NewButton("Save", func() {
@@ -66,7 +67,7 @@ func New(app fyne.App, store storage.Store, log logger.Logger) *Window {
 	)
 
 	win.SetContent(content)
-	win.Resize(fyne.NewSize(300, 100))
+	win.Resize(fyne.NewSize(400, 300))
 	win.CenterOnScreen()
 
 	return w

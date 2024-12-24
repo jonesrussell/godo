@@ -6,10 +6,10 @@ import (
 	"fyne.io/fyne/v2"
 )
 
-//go:embed icon.png
+//go:embed favicon.ico
 var iconData []byte
 
 // AppIcon returns the application icon
 func AppIcon() fyne.Resource {
-	return fyne.NewStaticResource("icon.png", iconData)
+	return fyne.NewStaticResource("favicon.ico", iconData)
 }

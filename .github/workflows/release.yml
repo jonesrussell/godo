@@ -70,7 +70,6 @@ jobs:
           cd internal/container
           wire gen -tags linux
           wire gen -tags windows
-          wire gen -tags darwin
 
       - name: Build all platforms
         run: |

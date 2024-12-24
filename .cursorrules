@@ -159,7 +159,6 @@
   - themes/ - Theme resources
 - build/ - Build configurations
   - windows/ - Windows-specific
-  - darwin/ - macOS-specific
   - linux/ - Linux-specific
 - configs/ - Configuration files
   - default.yaml - Default settings

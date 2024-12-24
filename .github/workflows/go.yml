@@ -91,6 +91,9 @@ jobs:
             ${{ runner.os }}-go-build-
             ${{ runner.os }}-go-
 
+      - name: Install Wire
+        run: go install github.com/google/wire/cmd/wire@latest
+
       - name: Install Task
         uses: arduino/setup-task@v2
         with:

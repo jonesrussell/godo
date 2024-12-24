@@ -1,6 +1,6 @@
 {
     "gopls": {
-        "buildFlags": ["-tags=linux,!ci,!android,!ios,!wasm,!test_web_driver"],
+        "buildFlags": ["-tags=windows"],
         "staticcheck": true,
         "completeUnimported": true,
         "matcher": "fuzzy",
@@ -37,6 +37,6 @@
     },
     "go.testFlags": ["-v"],
     "go.testOnSave": true,
-    "go.testTags": "linux,!ci,!android,!ios,!wasm,!test_web_driver",
+    "go.testTags": "windows",
     "go.testTimeout": "5m"
 }

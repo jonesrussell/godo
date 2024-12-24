@@ -84,15 +84,33 @@ jobs:
 #        run: task test:linux
 
   build:
-    # needs: [prepare, lint, test]
     needs: [prepare]
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - os: windows
+            arch: amd64
+            artifact: godo.exe
+          - os: linux
+            arch: amd64
+            artifact: godo-linux
+          # Optionally add more combinations like:
+          # - os: linux
+          #   arch: arm64
+          #   artifact: godo-linux-arm64
+
     steps:
       - uses: actions/checkout@v4
+      
       - uses: actions/setup-go@v5
         with:
           go-version: 1.23
+          cache: true  # Enable Go module caching
+      
+      # Only install system dependencies for Linux builds
       - name: Install system dependencies
+        if: matrix.os == 'linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -106,15 +124,17 @@ jobs:
             libxxf86vm-dev \
             libglx-dev \
             pkg-config
+
+      # Cache build tools
       - uses: actions/cache@v4
         with:
           path: |
             ~/.cache/go-build
             ~/go/pkg/mod
-          key: ${{ runner.os }}-go-build-${{ needs.prepare.outputs.go-cache-key }}
+            ~/go/bin  # Cache binary tools like wire
+          key: ${{ runner.os }}-${{ matrix.os }}-${{ matrix.arch }}-go-${{ needs.prepare.outputs.go-cache-key }}
           restore-keys: |
-            ${{ runner.os }}-go-build-
-            ${{ runner.os }}-go-
+            ${{ runner.os }}-${{ matrix.os }}-${{ matrix.arch }}-go-
 
       - name: Install Wire
         run: go install github.com/google/wire/cmd/wire@latest
@@ -125,16 +145,23 @@ jobs:
           version: 3.x
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build Linux binary
-        run: task build:linux
+      # Build with matrix variables
+      - name: Build binary
+        env:
+          GOOS: ${{ matrix.os }}
+          GOARCH: ${{ matrix.arch }}
+        run: task build:${{ matrix.os }}
 
-      - name: Build Windows binary
-        run: task build:windows
+      # Add versioning based on git tags
+      - name: Get version
+        id: get_version
+        run: |
+          VERSION=$(git describe --tags --always --dirty)
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
 
-      - name: Upload artifacts
+      # Upload individual artifacts with version
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: binaries
-          path: |
-            bin/godo.exe
-            bin/godo-linux
+          name: godo-${{ steps.get_version.outputs.version }}-${{ matrix.os }}-${{ matrix.arch }}
+          path: bin/${{ matrix.artifact }}

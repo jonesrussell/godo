@@ -9,16 +9,32 @@ permissions:
   contents: write
 
 jobs:
-  release:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      go-cache-key: ${{ steps.go-cache.outputs.cache-key }}
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: go-cache
+        run: echo "cache-key=${{ hashFiles('**/go.sum') }}" >> $GITHUB_OUTPUT
+      - id: version
+        run: echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+  build:
+    needs: prepare
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: 1.23
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-release-${{ needs.prepare.outputs.go-cache-key }}
 
       - name: Install dependencies
         run: |
@@ -60,6 +76,15 @@ jobs:
         run: |
           chmod +x build/run-with-xvfb.sh
           ./build/run-with-xvfb.sh task build:all
+
+  release:
+    needs: [prepare, build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: binaries
+          path: bin
 
       - name: Create Release
         uses: softprops/action-gh-release@v1

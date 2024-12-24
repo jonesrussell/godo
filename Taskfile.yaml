@@ -6,6 +6,17 @@ vars:
     sh: go env GOOS
 
 tasks:
+  fmt:
+    desc: Format Go code
+    cmds:
+      - go fmt ./...
+
+  lint:
+    desc: Run linters
+    deps: [fmt]
+    cmds:
+      - golangci-lint run ./...
+
   clean:wire:
     desc: Clean up wire-generated files
     cmds:
@@ -37,17 +48,12 @@ tasks:
   build:windows:
     desc: Build for Windows
     deps: [wire:windows]
-    env:
-      GOOS: windows
-      GOARCH: amd64
     cmds:
       - go build -tags "windows nomobile" -o bin/godo.exe cmd/godo/main.go
 
   build:linux:docker:
     desc: Build Linux binary using Docker
     deps: [wire:linux, clean:docker]
-    env:
-      DOCKER_BUILDKIT: 0
     cmds:
       - docker build -f build/Dockerfile.linux -t godo-linux-builder .
       - docker run --name godo-linux-build godo-linux-builder
@@ -68,18 +74,12 @@ tasks:
   act:
     desc: Run GitHub Actions locally using act
     cmds:
-      - act -v -j build -P ubuntu-latest=catthehacker/ubuntu:act-latest
+      - act -s GITHUB_TOKEN="$(gh auth token)" -v -j build -P ubuntu-latest=catthehacker/ubuntu:act-latest
 
   act:release:
     desc: Run GitHub Actions release workflow locally
     cmds:
       - act -v -j release
-
-  lint:
-    desc: Run linters
-    cmds:
-      - golangci-lint run
-      - go fmt ./...
 
   test:
     desc: Run tests

@@ -53,7 +53,7 @@ func TestMockUI(t *testing.T) {
 				return &app.MockUI{}
 			},
 			action: func(m *app.MockUI) {
-				content := canvas.NewText("Test", theme.ForegroundColor())
+				content := canvas.NewText("Test", theme.Color(theme.ColorNameForeground))
 				m.SetContent(content)
 			},
 			validate: func(t *testing.T, m *app.MockUI) {

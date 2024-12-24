@@ -10,6 +10,12 @@ tasks:
     cmds:
       - task: run
 
+  setup:linux:
+    desc: Install Linux dependencies
+    cmds:
+      - sudo apt-get update
+      - sudo apt-get install -y xvfb libx11-dev
+
   run:
     desc: Run the application
     deps: [wire]
@@ -72,8 +78,10 @@ tasks:
     cmds:
       # Start Xvfb
       - Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
+      # Wait for Xvfb to start
+      - sleep 1
       # Run tests with virtual display
-      - DISPLAY=:99.0 go test -v ./...
+      - DISPLAY=:99.0 FYNE_RENDERER=software go test -v ./...
       # Cleanup Xvfb
       - pkill Xvfb || true
 

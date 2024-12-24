@@ -29,7 +29,7 @@ func TestMockUI(t *testing.T) {
 			action: func(m *app.MockUI) {
 				m.Show()
 			},
-			validate: func(_ *testing.T, m *app.MockUI) {
+			validate: func(t *testing.T, m *app.MockUI) {
 				assert.True(t, m.IsShown())
 			},
 		},
@@ -53,12 +53,14 @@ func TestMockUI(t *testing.T) {
 				return &app.MockUI{}
 			},
 			action: func(m *app.MockUI) {
-				content := canvas.NewText("Test", test.Theme().Color(theme.ColorNameForeground, theme.VariantLight))
+				content := canvas.NewText("Test", theme.ForegroundColor())
 				m.SetContent(content)
 			},
 			validate: func(t *testing.T, m *app.MockUI) {
 				assert.NotNil(t, m.Content())
-				assert.IsType(t, &canvas.Text{}, m.Content())
+				text, ok := m.Content().(*canvas.Text)
+				assert.True(t, ok)
+				assert.Equal(t, "Test", text.Text)
 			},
 		},
 		{
@@ -75,16 +77,74 @@ func TestMockUI(t *testing.T) {
 				assert.Equal(t, expected, m.Size())
 			},
 		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mock := tt.setup()
+			tt.action(mock)
+			tt.validate(t, mock)
+		})
+	}
+}
+
+func TestMockApplication(t *testing.T) {
+	tests := []struct {
+		name     string
+		setup    func() *app.MockApplication
+		action   func(*app.MockApplication)
+		validate func(*testing.T, *app.MockApplication)
+	}{
 		{
-			name: "CenterOnScreen is no-op",
-			setup: func() *app.MockUI {
-				return &app.MockUI{}
+			name: "SetupUI called",
+			setup: func() *app.MockApplication {
+				return &app.MockApplication{}
 			},
-			action: func(m *app.MockUI) {
-				m.CenterOnScreen()
+			action: func(m *app.MockApplication) {
+				m.SetupUI()
 			},
-			validate: func(_ *testing.T, _ *app.MockUI) {
-				// No validation needed for no-op
+			validate: func(t *testing.T, m *app.MockApplication) {
+				assert.True(t, m.WasSetupUICalled())
+			},
+		},
+		{
+			name: "Run called",
+			setup: func() *app.MockApplication {
+				return &app.MockApplication{}
+			},
+			action: func(m *app.MockApplication) {
+				m.Run()
+			},
+			validate: func(t *testing.T, m *app.MockApplication) {
+				assert.True(t, m.WasRunCalled())
+			},
+		},
+		{
+			name: "Cleanup called",
+			setup: func() *app.MockApplication {
+				return &app.MockApplication{}
+			},
+			action: func(m *app.MockApplication) {
+				m.Cleanup()
+			},
+			validate: func(t *testing.T, m *app.MockApplication) {
+				assert.True(t, m.WasCleanupCalled())
+			},
+		},
+		{
+			name: "Full application lifecycle",
+			setup: func() *app.MockApplication {
+				return &app.MockApplication{}
+			},
+			action: func(m *app.MockApplication) {
+				m.SetupUI()
+				m.Run()
+				m.Cleanup()
+			},
+			validate: func(t *testing.T, m *app.MockApplication) {
+				assert.True(t, m.WasSetupUICalled())
+				assert.True(t, m.WasRunCalled())
+				assert.True(t, m.WasCleanupCalled())
 			},
 		},
 	}

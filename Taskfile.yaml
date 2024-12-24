@@ -25,6 +25,25 @@ tasks:
       - cd internal/container && wire gen -tags darwin
       - cd internal/container && wire gen -tags linux
 
+  wire:windows:
+    desc: Generate wire code for Windows
+    deps: [clean:wire]
+    cmds:
+      - cd internal/container && wire gen -tags windows
+
+  build:windows:
+    desc: Build for Windows
+    deps: [wire:windows]
+    cmds:
+      - go build -tags windows -o bin/godo.exe cmd/godo/main.go
+
+  build:all:
+    desc: Build for all platforms
+    deps: [wire:all, build:windows]
+    cmds:
+      - GOOS=darwin go build -tags darwin -o bin/godo-darwin cmd/godo/main.go
+      - GOOS=linux go build -tags linux -o bin/godo-linux cmd/godo/main.go
+
   run:
     deps: [wire:all]
     cmds:

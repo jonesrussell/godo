@@ -42,3 +42,19 @@ func (m *MockUI) Content() fyne.CanvasObject {
 func (m *MockUI) Size() fyne.Size {
 	return m.size
 }
+
+// MockApplication implements Application interface for testing
+type MockApplication struct {
+	setupUICalled bool
+	runCalled     bool
+	cleanupCalled bool
+}
+
+func (m *MockApplication) SetupUI() { m.setupUICalled = true }
+func (m *MockApplication) Run()     { m.runCalled = true }
+func (m *MockApplication) Cleanup() { m.cleanupCalled = true }
+
+// Test helper methods
+func (m *MockApplication) WasSetupUICalled() bool { return m.setupUICalled }
+func (m *MockApplication) WasRunCalled() bool     { return m.runCalled }
+func (m *MockApplication) WasCleanupCalled() bool { return m.cleanupCalled }

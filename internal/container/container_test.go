@@ -65,11 +65,12 @@ func TestProvideSQLite(t *testing.T) {
 	})
 
 	t.Run("handles invalid path", func(t *testing.T) {
-		// Create a path in a non-existent directory
-		nonExistentDir := filepath.Join(t.TempDir(), "does_not_exist")
+		// Create a path with characters that are invalid for SQLite
+		// Using a character that is definitely invalid in all OS paths: "?"
+		invalidPath := filepath.Join(t.TempDir(), "test", "db?.sqlite")
 		cfg := &config.Config{
 			Database: config.DatabaseConfig{
-				Path: filepath.Join(nonExistentDir, "db.sqlite"),
+				Path: invalidPath,
 			},
 		}
 
@@ -78,7 +79,7 @@ func TestProvideSQLite(t *testing.T) {
 
 		store, cleanup, err := provideSQLite(cfg, log)
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "database directory does not exist")
+		assert.Contains(t, err.Error(), "invalid character: ?")
 		assert.Nil(t, store)
 		assert.Nil(t, cleanup)
 	})

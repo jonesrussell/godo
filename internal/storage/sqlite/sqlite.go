@@ -2,8 +2,10 @@ package sqlite
 
 import (
 	"database/sql"
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/model"
@@ -33,8 +35,32 @@ type Store struct {
 	logger logger.Logger
 }
 
+// validatePath checks if the path contains invalid characters
+func validatePath(dbPath string) error {
+	// Invalid characters in Windows paths, excluding the drive letter colon
+	invalidChars := []string{"<", ">", "\"", "|", "?", "*"}
+
+	// For Windows paths, allow colon only after drive letter
+	if strings.Count(dbPath, ":") > 1 || (strings.Contains(dbPath, ":") && len(dbPath) < 2) {
+		return fmt.Errorf("invalid path: multiple colons or invalid drive format")
+	}
+
+	for _, char := range invalidChars {
+		if strings.Contains(dbPath, char) {
+			return fmt.Errorf("path contains invalid character: %s", char)
+		}
+	}
+	return nil
+}
+
 func New(dbPath string, log logger.Logger) (*Store, error) {
 	log.Info("Opening database", "path", dbPath)
+
+	// Validate the path first
+	if err := validatePath(dbPath); err != nil {
+		log.Error("Invalid database path", "error", err)
+		return nil, err
+	}
 
 	// Try to create the database directory
 	if err := ensureDataDir(dbPath); err != nil {

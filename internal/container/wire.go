@@ -5,8 +5,6 @@ package container
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 
 	"github.com/google/wire"
 	"github.com/jonesrussell/godo/internal/app"
@@ -56,12 +54,6 @@ func provideLogger() (logger.Logger, error) {
 // provideSQLite creates a new SQLite store
 func provideSQLite(cfg *config.Config, log logger.Logger) (*sqlite.Store, func(), error) {
 	log.Info("Opening database", "path", cfg.Database.Path)
-
-	// Ensure the directory exists
-	dir := filepath.Dir(cfg.Database.Path)
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		return nil, nil, fmt.Errorf("database directory does not exist: %s", dir)
-	}
 
 	store, err := sqlite.New(cfg.Database.Path, log)
 	if err != nil {

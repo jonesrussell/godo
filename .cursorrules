@@ -12,161 +12,68 @@
      - Use Canvas().Focus() instead
      - Window.Show() doesn't automatically focus
      - CenterOnScreen() should be called after Show()
+     - Window visibility in tests uses Canvas().Size().IsZero()
+     - Always defer window.Close() in tests
   3. Widget Implementation:
      - Always call ExtendBaseWidget() in custom widget constructors
      - Override both KeyDown() and TypedKey() for complete key handling
      - TypedShortcut() needed for shortcut support
      - Base widget methods should be called after custom handling
+     - Test widget rendering with test.AssertRendersToMarkup()
   4. Forms and Dialogs:
      - Dialog size must be set after creation
      - Forms don't automatically focus first field
      - Custom widgets must be properly extended for form usage
   5. Testing Best Practices:
-     - Use test.NewApp() to create a test application instance
-     - Window visibility in tests is represented by Canvas().Size().IsZero()
-     - Use test.NewWindow() for creating test windows
-     - Always defer window.Close() to clean up test resources
-     - Driver tests can use AbsolutePositionForObject() to check layout
-     - Window padding affects object positioning (use SetPadded() to control)
-     - Test window titles and content separately
-     - Mock complex window behaviors using test package utilities instead of custom mocks
-     - Test async behavior using channels and listeners
-     - Use AddChangeListener to test preference and settings changes
-     - Create small, focused mock implementations for interfaces
-     - Test both synchronous and asynchronous state transitions
-     - Verify preference updates trigger appropriate listeners
-     - Use channels to test asynchronous events and updates
-     - Use build tags to control test execution (e.g., !ci, !android, !ios)
-     - String Escaping Testing:
-       - Test normal strings without special characters
-       - Test strings with single quotes
-       - Test strings with double quotes (escaped as \")
-       - Test strings with backslashes (escaped as \\)
-       - Test strings with multiple escape sequences
-     - Platform-Specific Testing:
-       - Use build tags to target specific platforms
-       - Test platform-specific file paths
-       - Mock environment variables with defer cleanup
-       - Test platform-specific storage locations
-       - Verify platform-specific configurations
-     - Canvas Testing:
-       - Use NewCanvas() for standard canvas tests
-       - Use NewTransparentCanvas() for overlay/transparent tests
-       - Test pixel coordinates with different scale factors (e.g., 2.5x)
-       - Verify canvas captures match theme colors using RGBA values
-       - Test interactive areas and boundaries (e.g., pos 2,3 for safe area)
-       - Compare RGBA values for color accuracy (all channels: r,g,b,a)
-       - Test both standard and transparent backgrounds (verify alpha)
-       - Image Rendering Testing:
-         - Test raster image generation from source rectangles
-         - Verify pixel color values at specific coordinates (0,0 2,2 4,4)
-         - Test image bounds and dimensions (e.g., 6x6)
-         - Test alpha channel values (0x0000 to 0xffff for 16-bit)
-         - Test color model conversions (16-bit RGBA)
-         - Test image scaling and resizing with different dimensions
-         - Image Loading Testing:
-           - Test default properties (Alpha=1.0, Translucency=0.0)
-           - Test loading from file (verify path and existence)
-           - Test loading from reader (verify name and resource)
-           - Test loading from URI (file:// and http:// schemes)
-           - Test image dimensions (e.g., 512x512)
-           - Test HTTP image loading (use httptest.NewServer)
-           - Handle platform-specific paths (Windows path separators)
-           - Test fill modes (ImageFillOriginal)
-       - Shape Rendering Testing:
-         - Test minimum size requirements (width/height > 0)
-         - Test fill color properties (RGBA with alpha)
-         - Test stroke color and width (e.g., 2.0 width)
-         - Test corner radius properties (e.g., 12px radius)
-         - Compare renders with reference images (.png files)
-         - Test with software driver rendering (software.NewCanvas())
-         - Test shape resizing behavior (e.g., 50x50)
-         - Verify markup (.xml) and image (.png) outputs
-         - Line Testing:
-           - Test line minimum size (width/height > 0)
-           - Test line positions (Position1, Position2)
-           - Test line movement (verify both points move)
-           - Test line resizing (e.g., 10x0, 20x20)
-           - Test line rotation (diagonal positions)
-           - Test stroke color properties (color.White)
-           - Verify relative point positions after transforms
-           - Test zero-height and zero-width lines
-       - Text Rendering Testing:
-         - Test font source changes and captures (bold vs italic)
-         - Test text minimum size calculations (compare width changes)
-         - Test text alignment (leading, center, trailing with different sizes)
-         - Test text layout with different sizes (1x1 to 500x101)
-         - Test text with special characters (e.g., carriage returns \r)
-         - Test text rendering with different themes (via captures)
-         - Compare rendered text with reference images (layout_*.png)
-         - Test text with short ("abc") and long (alphabet) content
-         - Test text with different window sizes (small/large)
-         - Test text with different font styles (bold, italic via TextStyle)
-         - Test text with corrupt font resources (empty byte array)
-     - App Testing:
-       - Test app creation with NewWithID() for specific app IDs (e.g., "io.fyne.test")
-       - Verify CurrentApp() returns the correct instance (compare pointers)
-       - Test app metadata like UniqueID and Icon (verify StaticResource properties)
-       - Test app lifecycle (creation, quit, cleanup order)
-       - Test icon setting and retrieval (PNG and ICO formats)
-       - Import test package with blank identifier (_ "fyne.io/fyne/v2/test")
-       - Test app preferences and settings persistence (verify after restart)
-       - Cloud Provider Testing:
-         - Test provider setup and cleanup (verify configured and cleaned flags)
-         - Test provider transitions (old provider cleanup before new setup)
-         - Test cloud preferences and storage (InMemoryPreferences)
-         - Mock cloud provider implementations (description, icon, name)
-         - Test provider metadata (verify string values and resources)
-         - Verify state transitions (preferences changed, settings updated)
-         - Test error handling (create, open, remove operations)
-         - Test preference persistence (blank vs empty string defaults)
-       - Icon Testing:
-         - Use embedded test resources (//go:embed testdata/fyne.png)
-         - Test icon cache path generation (verify icon.png name)
-         - Verify icon file creation (check file info)
-         - Test icon metadata (StaticName and StaticContent)
-         - Clean up cached files (defer os.Remove)
-         - Test empty/default icon states (nil resource)
-       - Storage Testing:
-         - Test document creation and removal (verify file existence)
-         - Test storage root URI handling (mock:// scheme)
-         - Test file operations (verify errors for not implemented)
-         - Use unique app IDs for isolation (e.g., "io.fyne.test")
-         - Verify error handling (create, open, save, remove)
-       - Theme and Settings Testing:
-         - Test theme loading from files (light-theme.json, dark-theme.json)
-         - Test environment variable overrides (FYNE_THEME=light/dark)
-         - Verify theme variant changes (DefaultTheme, VariantLight, VariantDark)
-         - Test custom theme implementations (extend Theme interface)
-         - Test theme persistence (verify after file load)
-         - Use testdata directory for config files (testdata/*.json)
-         - Test build type settings (BuildStandard vs build.Mode)
-         - Verify theme setup order (env vars override files)
-       - File and Settings Watching:
-         - Test file watcher callbacks (100ms timeout)
-         - Use testdata for temp files (fyne-temp-watch.txt)
-         - Test file deletion and recreation (verify callback)
-         - Test settings change notifications (channel receive)
-         - Use channels with timeouts (time.After(100 * time.Millisecond))
-         - Clean up test files (defer os.Remove)
-         - Handle platform limitations (fsnotify on macOS TMPDIR)
-         - Test directory existence (os.Stat checks)
-       - Preferences Testing:
-         - Test reading and writing (keyString, keyInt, keyFloat, keyBool)
-         - Test value persistence (verify after load)
-         - Test removal and defaults (StringWithFallback "missing")
-         - Compare JSON (assert.JSONEq with preferences.json)
-         - Test rapid overwrites (verify latest value)
-         - Test empty loading (zero count in ReadValues)
-         - Use temporary directories (t.TempDir())
-         - Test value lists ([1,2,3], ["1","2","3"], [true,false,true])
+     - Use test.NewApp() instead of custom mocks where possible
+     - Use test.NewWindow() with defer Close() for window tests
+     - Use test.NewTempApp(t) for temporary app instances
+     - Use test.AssertRendersToImage() for visual tests
+     - Use test.AssertObjectRendersToMarkup() for widget tests
+     - Use httptest.NewServer for HTTP-based tests
+     - Use t.TempDir() for temporary files
+     - Use assert.JSONEq() for JSON comparisons
+     - Use time.After() instead of time.Sleep() for timeouts
+     - Mock interfaces should be small and focused
+     - Always clean up resources with defer
+     - Use build tags for platform-specific tests
+     - Import test package with blank identifier
+     - Test both success and error paths
+     - Test edge cases explicitly
+  6. Resource Management:
+     - Use //go:embed for test resources
+     - Clean up files with defer os.Remove()
+     - Use filepath.Join() for paths
+     - Handle Windows path separators
+     - Use storage.ParseURI() for URIs
+  7. State Management:
+     - Use channels for async notifications
+     - Use AddChangeListener for state changes
+     - Verify state transitions explicitly
+     - Test preference persistence
+     - Test settings overrides
+  8. Canvas and Rendering:
+     - Use software.NewCanvas() for driver tests
+     - Test with different scale factors
+     - Test with different theme variants
+     - Test with different window sizes
+     - Compare RGBA values exactly
+     - Test transparent backgrounds
+     - Test minimum sizes
+     - Test layout positions
+  9. Error Handling:
+     - Test "not implemented" errors
+     - Test file operation errors
+     - Test corrupt resources
+     - Test invalid states
+     - Test cleanup failures
 
 ## Project Overview
 - Todo application with two main features:
   1. Quick-note capture via global hotkey
   2. Full-featured todo management interface
 - Built with Go and SQLite
-- Uses Bubble Tea for TUI
+- Uses Fyne for all UI components
 - Cross-platform compatibility (Windows, Linux, macOS)
 
 ## Core Features
@@ -178,10 +85,11 @@
     - macOS: Cocoa/NSWindow
     - Linux: GTK
   - Instant task capture
-- Full UI Mode (Terminal-based)
+- Main Application Window
   - Task organization
   - Task completion tracking
   - Task deletion
+  - Modern graphical interface using Fyne widgets
 - Database
   - SQLite3 storage
   - Repository pattern
@@ -205,23 +113,60 @@
   - Implement proper ready/state callbacks where available
 
 ## Project Structure
-- cmd/godo/ - Main application entry point
+- cmd/
+  - godo/ - Main application entry point
+    - main.go - Application initialization
 - internal/
   - app/ - Core application logic
+    - app.go - Main application setup
+    - app_test.go - Application tests
+    - app_mock.go - Test mocks
   - common/ - Shared utilities and types
+    - errors/ - Custom error types
+    - testutils/ - Testing utilities
   - config/ - Configuration management
-    - hotkey/ - Hotkey configuration and mapping
-  - container/ - Dependency injection (Wire)
-  - logger/ - Logging system
-    - testing.go - Test logger implementation
+    - config.go - Configuration types
+    - loader.go - Config file loading
+  - gui/ - User interface components
+    - mainwindow/ - Main application window
+      - window.go - Window setup
+      - menu.go - Menu definitions
+      - toolbar.go - Toolbar setup
+    - quicknote/ - Quick note popup
+      - window.go - Quick note window
+      - hotkey.go - Global hotkey handling
+    - widgets/ - Custom Fyne widgets
+      - task_list.go - Todo list widget
+      - task_item.go - Individual task widget
+    - theme/ - Custom theming
+      - colors.go - Color definitions
+      - icons.go - Custom icons
   - model/ - Data models
+    - task.go - Task data structures
+    - task_test.go - Model tests
+  - service/ - Business logic
+    - task/ - Task management
+      - service.go - Task operations
+      - service_test.go - Service tests
   - storage/ - Data persistence
     - sqlite/ - SQLite implementation
-  - ui/ - User interface components
-    - fyne/ - Fyne.io GUI implementation
-- pkg/ - Public libraries (if needed)
+      - db.go - Database setup
+      - migrations/ - Schema migrations
+    - repository/ - Data access layer
+      - task.go - Task repository
+- assets/ - Application resources
+  - icons/ - Application icons
+  - themes/ - Theme resources
+- build/ - Build configurations
+  - windows/ - Windows-specific
+  - darwin/ - macOS-specific
+  - linux/ - Linux-specific
 - configs/ - Configuration files
-  - default.yaml - Default configuration
+  - default.yaml - Default settings
+- scripts/ - Build and utility scripts
+- docs/ - Documentation
+  - api/ - API documentation
+  - usage/ - User guides
 
 ## Testing Requirements
 - Unit tests for all packages

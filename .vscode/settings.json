@@ -2,11 +2,22 @@
     "gopls": {
         "buildFlags": [
             "-tags=wireinject"
-        ]
+        ],
+        "staticcheck": true,
+        "completeUnimported": true,
+        "matcher": "fuzzy",
+        "analyses": {
+            "unusedparams": true,
+            "fieldalignment": true
+        }
     },
+    "go.formatTool": "goimports",
     "go.lintTool": "golangci-lint",
     "go.lintFlags": [
-        "--fast"
+        "--fast",
+        "--enable-all",
+        "--disable",
+        "lll,wsl"
     ],
     "go.useLanguageServer": true,
     "go.languageServerFlags": [
@@ -30,5 +41,10 @@
         "uncoveredHighlightColor": "rgba(128,64,64,0.25)",
         "coveredGutterStyle": "blockblue",
         "uncoveredGutterStyle": "blockred"
-    }
+    },
+    "go.testFlags": ["-v"],
+    "go.testOnSave": true,
+    "go.testTags": "integration",
+    "go.testTimeout": "5m",
+    "go.testGenerateFlags": ["-all"]
 }

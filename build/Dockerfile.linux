@@ -26,6 +26,11 @@ RUN --mount=type=cache,target=/go/pkg/mod,sharing=locked \
     --mount=type=cache,target=/root/.cache/go-build,sharing=locked \
     cd internal/container && wire gen -tags linux
 
+# Lint stage
+FROM wire AS lint
+ENV CGO_ENABLED=1
+CMD ["golangci-lint", "run", "./..."]
+
 # Test stage
 FROM wire AS test
 ENV CGO_ENABLED=1

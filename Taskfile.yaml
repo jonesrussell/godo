@@ -2,10 +2,8 @@ version: '3'
 
 vars:
   GO_VERSION: 1.23
-  CURRENT_OS:
+  GOOS:
     sh: go env GOOS
-  USE_DOCKER:
-    sh: echo "{{if eq .CURRENT_OS \"windows\"}}false{{else}}true{{end}}"
 
 tasks:
   # Default task
@@ -30,37 +28,36 @@ tasks:
     desc: Clean up wire-generated files
     cmds:
       - |
-        cd internal/container && \
-        {{if eq OS "windows"}}
-        cmd /c "del /f *_wire_gen.go 2>nul || exit 0"
+        {{if eq .GOOS "windows"}}
+        cd internal/container; if (Test-Path *_wire_gen.go) { Remove-Item *_wire_gen.go }
         {{else}}
-        rm -f *_wire_gen.go || true
+        cd internal/container && rm -f *_wire_gen.go || true
         {{end}}
 
   clean:docker:
     desc: Clean up Docker containers and images
     cmds:
-      - docker rm -f godo-linux-build 2>nul || true
-      - docker rmi -f godo-linux-lint godo-linux-test godo-linux-wire godo-linux 2>nul || true
+      - docker rm -f godo-linux-build || true
+      - docker rmi -f godo-linux-lint godo-linux-test godo-linux-wire godo-linux || true
 
   # Wire code generation tasks
   wire:
     desc: Generate wire code for current platform
     deps: [clean:wire]
     cmds:
-      - task: wire:{{if eq .CURRENT_OS "windows"}}windows{{else if .USE_DOCKER}}linux:docker{{else}}linux{{end}}
+      - task: wire:{{if eq .GOOS "windows"}}windows{{else}}linux{{end}}
 
   wire:windows:
     desc: Generate wire code for Windows
     internal: true
     cmds:
-      - cd internal/container && wire gen -tags windows
+      - cd internal/container; wire gen -tags windows
 
   wire:linux:
     desc: Generate wire code for Linux
     internal: true
     cmds:
-      - cd internal/container && wire gen -tags linux
+      - cd internal/container; wire gen -tags linux
 
   wire:linux:docker:
     desc: Generate wire code for Linux in Docker
@@ -73,7 +70,7 @@ tasks:
   build:
     desc: Build for current platform
     cmds:
-      - task: build:{{if eq .CURRENT_OS "windows"}}windows{{else if .USE_DOCKER}}linux:docker{{else}}linux{{end}}
+      - task: build:{{if eq .GOOS "windows"}}windows{{else}}linux{{end}}
 
   build:windows:
     desc: Build for Windows
@@ -110,7 +107,7 @@ tasks:
   test:
     desc: Run tests for current platform
     cmds:
-      - task: test:{{if eq .CURRENT_OS "windows"}}windows{{else if .USE_DOCKER}}linux:docker{{else}}linux{{end}}
+      - task: test:{{if eq .GOOS "windows"}}windows{{else}}linux{{end}}
 
   test:windows:
     desc: Run tests on Windows
@@ -139,7 +136,7 @@ tasks:
   lint:
     desc: Run linters for current platform
     cmds:
-      - task: lint:{{if eq .CURRENT_OS "windows"}}windows{{else if .USE_DOCKER}}linux:docker{{else}}linux{{end}}
+      - task: lint:{{if eq .GOOS "windows"}}windows{{else}}linux{{end}}
 
   lint:windows:
     desc: Run linters on Windows
@@ -157,10 +154,11 @@ tasks:
 
   lint:linux:docker:
     desc: Run linters on Linux in Docker
-    internal: true
     deps: [clean:docker]
     cmds:
       - docker build --target lint -f build/Dockerfile.linux -t godo-linux-lint .
+      - docker run --name godo-linux-lint godo-linux-lint golangci-lint run ./...
+      - docker rm godo-linux-lint
 
   # CI/CD tasks
   act:

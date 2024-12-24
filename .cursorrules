@@ -36,6 +36,112 @@
      - Test both synchronous and asynchronous state transitions
      - Verify preference updates trigger appropriate listeners
      - Use channels to test asynchronous events and updates
+     - Use build tags to control test execution (e.g., !ci, !android, !ios)
+     - String Escaping Testing:
+       - Test normal strings without special characters
+       - Test strings with single quotes
+       - Test strings with double quotes (escaped as \")
+       - Test strings with backslashes (escaped as \\)
+       - Test strings with multiple escape sequences
+     - Platform-Specific Testing:
+       - Use build tags to target specific platforms
+       - Test platform-specific file paths
+       - Mock environment variables with defer cleanup
+       - Test platform-specific storage locations
+       - Verify platform-specific configurations
+     - Canvas Testing:
+       - Use NewCanvas() for standard canvas tests
+       - Use NewTransparentCanvas() for overlay/transparent tests
+       - Test pixel coordinates with different scale factors (e.g., 2.5x)
+       - Verify canvas captures match theme colors using RGBA values
+       - Test interactive areas and boundaries (e.g., pos 2,3 for safe area)
+       - Compare RGBA values for color accuracy (all channels: r,g,b,a)
+       - Test both standard and transparent backgrounds (verify alpha)
+       - Image Rendering Testing:
+         - Test raster image generation from source rectangles
+         - Verify pixel color values at specific coordinates (0,0 2,2 4,4)
+         - Test image bounds and dimensions (e.g., 6x6)
+         - Test alpha channel values (0x0000 to 0xffff for 16-bit)
+         - Test color model conversions (16-bit RGBA)
+         - Test image scaling and resizing with different dimensions
+       - Shape Rendering Testing:
+         - Test minimum size requirements (width/height > 0)
+         - Test fill color properties (RGBA with alpha)
+         - Test stroke color and width (e.g., 2.0 width)
+         - Test corner radius properties (e.g., 12px radius)
+         - Compare renders with reference images (.png files)
+         - Test with software driver rendering (software.NewCanvas())
+         - Test shape resizing behavior (e.g., 50x50)
+         - Verify markup (.xml) and image (.png) outputs
+       - Text Rendering Testing:
+         - Test font source changes and captures (bold vs italic)
+         - Test text minimum size calculations (compare width changes)
+         - Test text alignment (leading, center, trailing with different sizes)
+         - Test text layout with different sizes (1x1 to 500x101)
+         - Test text with special characters (e.g., carriage returns \r)
+         - Test text rendering with different themes (via captures)
+         - Compare rendered text with reference images (layout_*.png)
+         - Test text with short ("abc") and long (alphabet) content
+         - Test text with different window sizes (small/large)
+         - Test text with different font styles (bold, italic via TextStyle)
+         - Test text with corrupt font resources (empty byte array)
+     - App Testing:
+       - Test app creation with NewWithID() for specific app IDs (e.g., "io.fyne.test")
+       - Verify CurrentApp() returns the correct instance (compare pointers)
+       - Test app metadata like UniqueID and Icon (verify StaticResource properties)
+       - Test app lifecycle (creation, quit, cleanup order)
+       - Test icon setting and retrieval (PNG and ICO formats)
+       - Import test package with blank identifier (_ "fyne.io/fyne/v2/test")
+       - Test app preferences and settings persistence (verify after restart)
+       - Cloud Provider Testing:
+         - Test provider setup and cleanup (verify configured and cleaned flags)
+         - Test provider transitions (old provider cleanup before new setup)
+         - Test cloud preferences and storage (InMemoryPreferences)
+         - Mock cloud provider implementations (description, icon, name)
+         - Test provider metadata (verify string values and resources)
+         - Verify state transitions (preferences changed, settings updated)
+         - Test error handling (create, open, remove operations)
+         - Test preference persistence (blank vs empty string defaults)
+       - Icon Testing:
+         - Use embedded test resources (//go:embed testdata/fyne.png)
+         - Test icon cache path generation (verify icon.png name)
+         - Verify icon file creation (check file info)
+         - Test icon metadata (StaticName and StaticContent)
+         - Clean up cached files (defer os.Remove)
+         - Test empty/default icon states (nil resource)
+       - Storage Testing:
+         - Test document creation and removal (verify file existence)
+         - Test storage root URI handling (mock:// scheme)
+         - Test file operations (verify errors for not implemented)
+         - Use unique app IDs for isolation (e.g., "io.fyne.test")
+         - Verify error handling (create, open, save, remove)
+       - Theme and Settings Testing:
+         - Test theme loading from files (light-theme.json, dark-theme.json)
+         - Test environment variable overrides (FYNE_THEME=light/dark)
+         - Verify theme variant changes (DefaultTheme, VariantLight, VariantDark)
+         - Test custom theme implementations (extend Theme interface)
+         - Test theme persistence (verify after file load)
+         - Use testdata directory for config files (testdata/*.json)
+         - Test build type settings (BuildStandard vs build.Mode)
+         - Verify theme setup order (env vars override files)
+       - File and Settings Watching:
+         - Test file watcher callbacks (100ms timeout)
+         - Use testdata for temp files (fyne-temp-watch.txt)
+         - Test file deletion and recreation (verify callback)
+         - Test settings change notifications (channel receive)
+         - Use channels with timeouts (time.After(100 * time.Millisecond))
+         - Clean up test files (defer os.Remove)
+         - Handle platform limitations (fsnotify on macOS TMPDIR)
+         - Test directory existence (os.Stat checks)
+       - Preferences Testing:
+         - Test reading and writing (keyString, keyInt, keyFloat, keyBool)
+         - Test value persistence (verify after load)
+         - Test removal and defaults (StringWithFallback "missing")
+         - Compare JSON (assert.JSONEq with preferences.json)
+         - Test rapid overwrites (verify latest value)
+         - Test empty loading (zero count in ReadValues)
+         - Use temporary directories (t.TempDir())
+         - Test value lists ([1,2,3], ["1","2","3"], [true,false,true])
 
 ## Project Overview
 - Todo application with two main features:

@@ -49,13 +49,11 @@ tasks:
 
   wire:windows:
     desc: Generate wire code for Windows
-    internal: true
     cmds:
       - cd internal/container; wire gen -tags windows
 
   wire:linux:
     desc: Generate wire code for Linux
-    internal: true
     cmds:
       - cd internal/container; wire gen -tags linux
 
@@ -75,14 +73,12 @@ tasks:
 
   build:windows:
     desc: Build for Windows
-    internal: true
     deps: [wire:windows]
     cmds:
       - go build -tags "windows nomobile" -o bin/godo.exe cmd/godo/main.go
 
   build:linux:
     desc: Build for Linux
-    internal: true
     deps: [wire:linux]
     cmds:
       - go build -tags "linux nomobile" -o bin/godo cmd/godo/main.go
@@ -113,14 +109,12 @@ tasks:
 
   test:windows:
     desc: Run tests on Windows
-    internal: true
     deps: [wire:windows]
     cmds:
       - go test -v ./...
 
   test:linux:
     desc: Run tests on Linux
-    internal: true
     deps: [wire:linux]
     cmds:
       - go test -v ./...
@@ -143,14 +137,12 @@ tasks:
 
   lint:windows:
     desc: Run linters on Windows
-    internal: true
     deps: [fmt]
     cmds:
       - golangci-lint run ./...
 
   lint:linux:
     desc: Run linters on Linux
-    internal: true
     deps: [fmt]
     cmds:
       - golangci-lint run ./...

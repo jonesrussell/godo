@@ -74,3 +74,14 @@ tasks:
     desc: Run GitHub Actions release workflow locally
     cmds:
       - act -v -j release
+
+  lint:
+    desc: Run linters
+    cmds:
+      - golangci-lint run
+      - go fmt ./...
+
+  test:
+    desc: Run tests
+    cmds:
+      - go test -v ./...

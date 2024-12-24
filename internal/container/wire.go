@@ -74,8 +74,8 @@ func provideSQLite(cfg *config.Config, log logger.Logger) (*sqlite.Store, func()
 }
 
 // provideMainWindow creates the main application window
-func provideMainWindow(store storage.Store) *mainwindow.Window {
-	return mainwindow.New(store)
+func provideMainWindow(store storage.Store, log logger.Logger) *mainwindow.Window {
+	return mainwindow.New(store, log)
 }
 
 // InitializeApp creates a new application instance with all dependencies wired

@@ -39,9 +39,9 @@ func (a *App) Run() error {
 		return err
 	}
 
-	// Show main window
+	// Run the main window loop
 	if a.mainWin != nil {
-		a.mainWin.Show()
+		a.mainWin.Run()
 	}
 
 	return nil

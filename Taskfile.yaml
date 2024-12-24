@@ -85,7 +85,19 @@ tasks:
     cmds:
       - act -v -j release
 
-  test:
-    desc: Run tests
+  test:windows:
+    desc: Run tests on Windows
+    deps: [wire:windows]
     cmds:
       - go test -v ./...
+
+  test:linux:
+    desc: Run tests on Linux
+    deps: [wire:linux]
+    cmds:
+      - go test -v ./...
+
+  test:
+    desc: Run tests for current platform
+    cmds:
+      - task: test:{{.CURRENT_OS}}

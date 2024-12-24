@@ -16,7 +16,6 @@
         "GO111MODULE": "on"
     },
     "go.linting.enabled": true,
-    "go.buildOnSave": "workspace",
     "go.vetOnSave": "package",
     "[go]": {
         "editor.formatOnSave": true,

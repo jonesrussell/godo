@@ -59,11 +59,8 @@ func provideSQLite(cfg *config.Config, log logger.Logger) (*sqlite.Store, func()
 	}
 
 	cleanup := func() {
-		if err := store.Close(); err != nil {
-			log.Error("Failed to close database", "error", err)
-		} else {
-			log.Info("Database closed successfully")
-		}
+		// Silent cleanup - let the app layer handle logging
+		_ = store.Close()
 	}
 
 	return store, cleanup, nil

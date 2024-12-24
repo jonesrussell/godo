@@ -11,22 +11,22 @@ import (
 
 // App represents the main application
 type App struct {
-	logger    *zap.Logger
+	Logger    *zap.Logger
 	fyneApp   fyne.App
 	store     storage.Store
 	mainWin   *mainwindow.Window
 	quickNote quicknote.Interface
-	hotkeys   HotkeyManager
+	Hotkeys   HotkeyManager
 	version   string
 }
 
 // New creates a new application instance
 func New(logger *zap.Logger, fyneApp fyne.App, store storage.Store, hotkeys HotkeyManager) *App {
 	return &App{
-		logger:  logger,
+		Logger:  logger,
 		fyneApp: fyneApp,
 		store:   store,
-		hotkeys: hotkeys,
+		Hotkeys: hotkeys,
 		version: "0.1.0",
 	}
 }
@@ -35,23 +35,23 @@ func New(logger *zap.Logger, fyneApp fyne.App, store storage.Store, hotkeys Hotk
 func (a *App) Run() error {
 	// Setup windows
 	if err := a.mainWin.Setup(); err != nil {
-		a.logger.Error("Failed to setup main window", zap.Error(err))
+		a.Logger.Error("Failed to setup main window", zap.Error(err))
 		return err
 	}
 
 	if err := a.quickNote.Setup(); err != nil {
-		a.logger.Error("Failed to setup quick note window", zap.Error(err))
+		a.Logger.Error("Failed to setup quick note window", zap.Error(err))
 		return err
 	}
 
 	// Register global hotkeys
-	if err := a.hotkeys.Register(); err != nil {
-		a.logger.Error("Failed to register hotkeys", zap.Error(err))
+	if err := a.Hotkeys.Register(); err != nil {
+		a.Logger.Error("Failed to register hotkeys", zap.Error(err))
 		return err
 	}
 	defer func() {
-		if err := a.hotkeys.Unregister(); err != nil {
-			a.logger.Error("Failed to unregister hotkeys", zap.Error(err))
+		if err := a.Hotkeys.Unregister(); err != nil {
+			a.Logger.Error("Failed to unregister hotkeys", zap.Error(err))
 		}
 	}()
 
@@ -64,10 +64,10 @@ func (a *App) Run() error {
 // SetupUI initializes the application UI
 func (a *App) SetupUI() {
 	// Create main window
-	a.mainWin = mainwindow.New(a.store, a.logger)
+	a.mainWin = mainwindow.New(a.store, a.Logger)
 
 	// Create quick note window
-	a.quickNote = quicknote.New(a.store, a.logger)
+	a.quickNote = quicknote.New(a.store, a.Logger)
 }
 
 // GetVersion returns the application version

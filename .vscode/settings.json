@@ -15,7 +15,6 @@
     "go.toolsEnvVars": {
         "GO111MODULE": "on"
     },
-    "go.linting.enabled": true,
     "go.vetOnSave": "package",
     "[go]": {
         "editor.formatOnSave": true,

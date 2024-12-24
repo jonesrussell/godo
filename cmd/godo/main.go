@@ -1,38 +1,41 @@
 package main
 
 import (
-	"fmt"
 	"os"
 
-	"github.com/jonesrussell/godo/internal/common"
 	"github.com/jonesrussell/godo/internal/container"
-	"github.com/jonesrussell/godo/internal/logger"
+	"go.uber.org/zap"
 )
 
-func main() {
-	// Initialize logger with default config
-	defaultConfig := &common.LogConfig{
-		Level:       "info",
-		Output:      []string{"stdout", "godo.log"},
-		ErrorOutput: []string{"stderr", "godo.error.log"},
-	}
+func run() error {
+	logger, _ := zap.NewProduction()
+	defer func() {
+		_ = logger.Sync() // Ignore sync errors
+	}()
 
-	log, err := logger.New(defaultConfig)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to initialize logger: %v\n", err)
-		os.Exit(1)
-	}
-
-	// Initialize app using dependency injection
+	// Create app
 	app, cleanup, err := container.InitializeApp()
 	if err != nil {
-		log.Fatal("Failed to initialize application", "error", err)
+		logger.Error("Failed to initialize app", zap.Error(err))
+		cleanup()
+		return err
 	}
 	defer cleanup()
 
-	log.Info("Starting Godo", "version", app.GetVersion())
-
-	// Setup and run the application
+	// Setup UI
 	app.SetupUI()
-	app.Run()
+
+	// Run app
+	if err := app.Run(); err != nil {
+		logger.Error("Failed to run app", zap.Error(err))
+		return err
+	}
+
+	return nil
+}
+
+func main() {
+	if err := run(); err != nil {
+		os.Exit(1)
+	}
 }

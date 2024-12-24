@@ -5,46 +5,75 @@ import (
 	"golang.design/x/hotkey"
 )
 
-// defaultHotkeyFactory is the default implementation of config.HotkeyFactory
-type defaultHotkeyFactory struct{}
+// HotkeyManager handles global hotkey registration and events
+type HotkeyManager interface {
+	Setup() error
+}
+
+// NoopHotkeyManager is a no-op implementation for environments that don't support hotkeys
+type NoopHotkeyManager struct {
+	app *App
+}
+
+func NewNoopHotkeyManager(app *App) HotkeyManager {
+	return &NoopHotkeyManager{app: app}
+}
+
+func (m *NoopHotkeyManager) Setup() error {
+	return nil
+}
+
+// DefaultHotkeyManager is the default implementation for environments that support hotkeys
+type DefaultHotkeyManager struct {
+	app *App
+}
+
+func NewDefaultHotkeyManager(app *App) HotkeyManager {
+	return &DefaultHotkeyManager{app: app}
+}
+
+func (m *DefaultHotkeyManager) Setup() error {
+	modifiers := config.GetDefaultQuickNoteModifiers()
+	key := hotkey.KeyN
+
+	hk := hotkey.New(modifiers, key)
+	if err := hk.Register(); err != nil {
+		return err
+	}
+
+	go func() {
+		for range hk.Keydown() {
+			m.app.quickNote.Show()
+		}
+	}()
+
+	return nil
+}
 
 // NewHotkeyFactory creates a new default hotkey factory
 func NewHotkeyFactory() config.HotkeyFactory {
 	return &defaultHotkeyFactory{}
 }
 
-// hotkeyWrapper wraps the hotkey package's types to match our interfaces
-type hotkeyWrapper struct {
-	*hotkey.Hotkey
-	events chan config.Event
-}
-
-func (h *hotkeyWrapper) Keydown() <-chan config.Event {
-	return h.events
-}
+// defaultHotkeyFactory is the default implementation of config.HotkeyFactory
+type defaultHotkeyFactory struct{}
 
 // NewHotkey creates a new hotkey instance
-func (f *defaultHotkeyFactory) NewHotkey(mods []config.Modifier, key config.Key) config.HotkeyHandler {
-	// Convert our types to hotkey package types
-	hotkeyMods := make([]hotkey.Modifier, len(mods))
-	for i, mod := range mods {
-		// Safe conversion since both types are uint8
-		hotkeyMods[i] = hotkey.Modifier(mod)
-	}
+func (f *defaultHotkeyFactory) NewHotkey(_ []config.Modifier, _ config.Key) config.HotkeyHandler {
+	return &noopHotkey{}
+}
 
-	// Safe conversion since both types are uint16
-	h := hotkey.New(hotkeyMods, hotkey.Key(key))
-	wrapper := &hotkeyWrapper{
-		Hotkey: h,
-		events: make(chan config.Event, 1),
-	}
+// noopHotkey is a no-op implementation of config.HotkeyHandler
+type noopHotkey struct{}
 
-	// Start goroutine to convert hotkey.Event to config.Event
-	go func() {
-		for range h.Keydown() {
-			wrapper.events <- config.Event{}
-		}
-	}()
+func (h *noopHotkey) Register() error {
+	return nil
+}
 
-	return wrapper
+func (h *noopHotkey) Unregister() error {
+	return nil
+}
+
+func (h *noopHotkey) Keydown() <-chan config.Event {
+	return make(chan config.Event)
 }

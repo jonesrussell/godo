@@ -1,7 +1,7 @@
 {
     "gopls": {
         "buildFlags": [
-            "-tags=wireinject"
+            "-tags=wireinject,docker,!docker"
         ],
         "staticcheck": true,
         "completeUnimported": true,
@@ -40,7 +40,6 @@
     },
     "go.testFlags": ["-v"],
     "go.testOnSave": true,
-    "go.testTags": "integration",
-    "go.testTimeout": "5m",
-    "go.testGenerateFlags": ["-all"]
+    "go.testTags": "integration,docker",
+    "go.testTimeout": "5m"
 }

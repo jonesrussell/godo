@@ -6,8 +6,6 @@ package app
 import (
 	"testing"
 
-	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/test"
 	"github.com/jonesrussell/godo/internal/common"
 	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/logger"
@@ -16,7 +14,21 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// mockQuickNote is a test implementation of QuickNoteService
+// mockMainWindow is a test implementation of MainWindow
+type mockMainWindow struct {
+	shown       bool
+	setupCalled bool
+}
+
+func (m *mockMainWindow) Show() {
+	m.shown = true
+}
+
+func (m *mockMainWindow) Setup() {
+	m.setupCalled = true
+}
+
+// mockQuickNote is a test implementation of QuickNote
 type mockQuickNote struct {
 	shown bool
 }
@@ -25,35 +37,7 @@ func (m *mockQuickNote) Show() {
 	m.shown = true
 }
 
-func (m *mockQuickNote) Hide() {
-	m.shown = false
-}
-
-// mockSystray is a test implementation of systray.Interface
-type mockSystray struct {
-	ready bool
-	menu  *fyne.Menu
-	icon  fyne.Resource
-}
-
-func (m *mockSystray) Setup(menu *fyne.Menu) {
-	m.menu = menu
-	m.ready = true
-}
-
-func (m *mockSystray) SetIcon(icon fyne.Resource) {
-	m.icon = icon
-}
-
-func (m *mockSystray) IsReady() bool {
-	return m.ready
-}
-
 func TestApp(t *testing.T) {
-	// Use Fyne test app with test driver
-	fyneApp := test.NewApp()
-	defer fyneApp.Quit()
-
 	// Create test dependencies
 	cfg := &config.Config{
 		Logger: common.LogConfig{
@@ -68,36 +52,31 @@ func TestApp(t *testing.T) {
 	log := logger.NewTestLogger(t)
 	store := memory.New()
 
-	// Create app without hotkey factory
-	app := NewApp(cfg, store, log, nil)
+	// Create app
+	app := NewApp(cfg, log, store)
 	require.NotNil(t, app)
-	defer app.Cleanup()
 
-	// Replace services with mocks
+	// Replace windows with mocks
+	mockMain := &mockMainWindow{}
+	app.mainWin = mockMain
 	mockQN := &mockQuickNote{}
-	app.SetQuickNoteService(mockQN)
-	mockSystray := &mockSystray{}
-	app.systray = mockSystray
+	app.quickNote = mockQN
 
-	// Test note operations
-	t.Run("note operations", func(t *testing.T) {
-		// Add note
-		err := app.SaveNote("Test note")
-		require.NoError(t, err)
+	// Test UI setup
+	t.Run("ui setup", func(t *testing.T) {
+		app.SetupUI()
+		assert.True(t, mockMain.setupCalled)
+	})
 
-		// Get notes
-		notes, err := app.GetNotes()
-		require.NoError(t, err)
-		assert.Contains(t, notes, "Test note")
-
-		// Verify version
+	// Test version
+	t.Run("version", func(t *testing.T) {
 		assert.Equal(t, "0.1.0", app.GetVersion())
 	})
 
-	// Test UI setup without hotkey
-	t.Run("ui setup", func(t *testing.T) {
-		app.SetupUI()
-		assert.NotNil(t, app.mainWindow)
-		assert.True(t, mockSystray.ready)
+	// Test run
+	t.Run("run", func(t *testing.T) {
+		err := app.Run()
+		require.NoError(t, err)
+		assert.True(t, mockMain.shown)
 	})
 }

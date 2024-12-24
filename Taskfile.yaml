@@ -102,14 +102,6 @@ tasks:
     cmds:
       - task: test:{{.CURRENT_OS}}
 
-  lint:docker:
-    desc: Run linters in Linux Docker container
-    deps: [clean:docker]
-    cmds:
-      - docker build -f build/Dockerfile.linux -t godo-linux-builder .
-      - docker run --name godo-linux-build godo-linux-builder golangci-lint run ./...
-      - docker rm godo-linux-build
-
   lint:
     desc: Run linters for current platform
     cmds:
@@ -120,3 +112,25 @@ tasks:
     deps: [fmt]
     cmds:
       - golangci-lint run ./...
+
+  lint:docker:
+      deps: [clean:docker]
+      cmds:
+        - docker build --target lint -f build/Dockerfile.linux -t godo-linux-lint .
+
+  build:docker:
+    deps: [clean:docker]
+    cmds:
+      - docker build -f build/Dockerfile.linux -t godo-linux .
+
+  wire:docker:
+    deps: [clean:docker]
+    cmds:
+      - docker build --target wire -f build/Dockerfile.linux -t godo-linux-wire .
+
+  clean:docker:
+    cmds:
+      - docker rm -f godo-linux-build 2>nul || true
+      - docker rmi -f godo-linux-lint 2>nul || true
+      - docker rmi -f godo-linux-wire 2>nul || true
+      - docker rmi -f godo-linux 2>nul || true

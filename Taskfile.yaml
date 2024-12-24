@@ -37,8 +37,8 @@ tasks:
   clean:docker:
     desc: Clean up Docker containers and images
     cmds:
-      - docker rm -f godo-linux-build godo-linux-lint || true
-      - docker rmi -f godo-linux-lint godo-linux-test godo-linux-wire godo-linux || true
+      - docker rm -f godo-linux-test godo-linux-build godo-linux-lint || true
+      - docker rmi -f godo-linux-test godo-linux-builder godo-linux-wire godo-linux-lint || true
 
   # Wire code generation tasks
   wire:
@@ -62,6 +62,8 @@ tasks:
   wire:linux:docker:
     desc: Generate wire code for Linux in Docker
     deps: [clean:docker]
+    env:
+      DOCKER_BUILDKIT: 1
     cmds:
       - docker build --target wire -f build/Dockerfile.linux -t godo-linux-wire .
 
@@ -88,6 +90,8 @@ tasks:
   build:linux:docker:
     desc: Build Linux binary using Docker
     deps: [wire:linux:docker, clean:docker]
+    env:
+      DOCKER_BUILDKIT: 1
     cmds:
       - docker build --target builder -f build/Dockerfile.linux -t godo-linux-builder .
       - docker create --name godo-linux-build godo-linux-builder
@@ -124,6 +128,8 @@ tasks:
   test:linux:docker:
     desc: Run tests in Linux Docker container
     deps: [clean:docker]
+    env:
+      DOCKER_BUILDKIT: 1
     cmds:
       - docker build --target test -f build/Dockerfile.linux -t godo-linux-test .
       - docker run --name godo-linux-test godo-linux-test
@@ -150,11 +156,13 @@ tasks:
       - golangci-lint run ./...
 
   lint:linux:docker:
-    desc: Run linters on Linux in Docker
+    desc: Run linters in Linux Docker container
     deps: [clean:docker]
+    env:
+      DOCKER_BUILDKIT: 1
     cmds:
       - docker build --target lint -f build/Dockerfile.linux -t godo-linux-lint .
-      - docker run --name godo-linux-lint godo-linux-lint golangci-lint run ./...
+      - docker run --name godo-linux-lint godo-linux-lint
       - docker rm godo-linux-lint
 
   # CI/CD tasks

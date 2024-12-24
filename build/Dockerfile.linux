@@ -31,23 +31,23 @@ FROM tools AS wire
 COPY . .
 RUN --mount=type=cache,target=/go/pkg/mod,sharing=locked \
     --mount=type=cache,target=/root/.cache/go-build,sharing=locked \
-    cd internal/container && wire gen -tags "linux,docker"
+    cd internal/container && wire gen -tags linux
 
 # Lint stage
 FROM wire AS lint
 ENV CGO_ENABLED=1
-CMD ["golangci-lint", "run", "--build-tags=docker", "./..."]
+CMD ["golangci-lint", "run", "./..."]
 
 # Test stage
 FROM wire AS test
 ENV CGO_ENABLED=1
-CMD ["go", "test", "-v", "-count=1", "-tags=docker", "./..."]
+CMD ["go", "test", "-v", "-count=1", "./..."]
 
 # Build stage
 FROM wire AS builder
 RUN --mount=type=cache,target=/go/pkg/mod,sharing=locked \
     --mount=type=cache,target=/root/.cache/go-build,sharing=locked \
-    CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -tags "linux" -o bin/godo-linux cmd/godo/main.go
+    CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -tags linux -o bin/godo-linux cmd/godo/main.go
 
 # Runtime stage
 FROM debian:bullseye-slim

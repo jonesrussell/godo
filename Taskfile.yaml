@@ -101,3 +101,22 @@ tasks:
     desc: Run tests for current platform
     cmds:
       - task: test:{{.CURRENT_OS}}
+
+  lint:docker:
+    desc: Run linters in Linux Docker container
+    deps: [clean:docker]
+    cmds:
+      - docker build -f build/Dockerfile.linux -t godo-linux-builder .
+      - docker run --name godo-linux-build godo-linux-builder golangci-lint run ./...
+      - docker rm godo-linux-build
+
+  lint:
+    desc: Run linters for current platform
+    cmds:
+      - task: lint:{{if eq .CURRENT_OS "windows"}}windows{{else}}docker{{end}}
+
+  lint:windows:
+    desc: Run linters on Windows
+    deps: [fmt]
+    cmds:
+      - golangci-lint run ./...

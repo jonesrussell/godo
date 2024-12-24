@@ -99,9 +99,6 @@ func (a *App) setupSystemTray() {
 	} else {
 		a.log.Warn("System tray not ready, icon not set")
 	}
-
-	// Always show the main window initially
-	a.mainWindow.Show()
 }
 
 func (a *App) setupMainWindow() {

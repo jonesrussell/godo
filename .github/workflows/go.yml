@@ -30,7 +30,9 @@ jobs:
           libxcursor-dev \
           libxrandr-dev \
           libxinerama-dev \
-          libxi-dev
+          libxi-dev \
+          libgl1-mesa-dev \
+          libxxf86vm-dev
 
     - name: Install Wire
       run: go install github.com/google/wire/cmd/wire@latest
@@ -41,15 +43,12 @@ jobs:
         version: 3.x
         repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Install project dependencies
-      run: task install
-
     - name: Generate Wire code
       run: |
-        GOOS=linux wire
-        GOOS=windows wire
-        GOOS=darwin wire
-      working-directory: ./internal/container
+        cd internal/container
+        wire gen -tags linux
+        wire gen -tags windows
+        wire gen -tags darwin
 
     - name: Run tests and linting
       run: |
@@ -59,8 +58,10 @@ jobs:
     - name: Build all platforms
       run: task build:all
 
-    - name: Cross-platform build check
-      run: |
-        GOOS=darwin go build ./...
-        GOOS=linux go build ./...
-        GOOS=windows go build ./...
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: binaries
+        path: |
+          bin/godo.exe
+          bin/godo-linux

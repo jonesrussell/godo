@@ -45,8 +45,8 @@ ENV DISPLAY=:99.0
 ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/var/run/dbus/system_bus_socket"
 ENV CGO_ENABLED=1
 
-# Run tests with Xvfb and docker tag
-RUN /usr/local/bin/run-with-xvfb.sh go test -v -count=1 -tags=docker ./...
+# Run tests with Xvfb
+RUN /usr/local/bin/run-with-xvfb.sh go test -v -count=1 ./...
 
 # Build stage
 FROM wire AS builder

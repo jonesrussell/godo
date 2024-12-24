@@ -33,9 +33,10 @@ tasks:
         {{end}}
 
   clean:docker:
-    desc: Clean up Docker containers
+    desc: Clean up Docker containers and images
     cmds:
       - docker rm -f godo-linux-build 2>nul || true
+      - docker rmi -f godo-linux-lint godo-linux-test godo-linux-wire godo-linux 2>nul || true
 
   wire:windows:
     desc: Generate wire code for Windows
@@ -121,9 +122,9 @@ tasks:
       - golangci-lint run ./...
 
   lint:docker:
-      deps: [clean:docker]
-      cmds:
-        - docker build --target lint -f build/Dockerfile.linux -t godo-linux-lint .
+    deps: [clean:docker]
+    cmds:
+      - docker build --target lint -f build/Dockerfile.linux -t godo-linux-lint .
 
   build:docker:
     deps: [clean:docker]
@@ -134,8 +135,3 @@ tasks:
     deps: [clean:docker]
     cmds:
       - docker build --target wire -f build/Dockerfile.linux -t godo-linux-wire .
-
-  clean:docker:
-    cmds:
-      - docker rm -f godo-linux-build godo-linux-test 2>nul || true
-      - docker rmi -f godo-linux-lint godo-linux-test godo-linux-wire godo-linux 2>nul || true

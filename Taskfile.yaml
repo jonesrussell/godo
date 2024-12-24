@@ -68,7 +68,7 @@ tasks:
   act:
     desc: Run GitHub Actions locally using act
     cmds:
-      - act -v -j build -P ubuntu-latest=catthehacker/ubuntu:act-latest
+      - act -s GITHUB_TOKEN="$(gh auth token)" -v -j build -P ubuntu-latest=catthehacker/ubuntu:act-latest
 
   act:release:
     desc: Run GitHub Actions release workflow locally
@@ -78,7 +78,7 @@ tasks:
   lint:
     desc: Run linters
     cmds:
-      - golangci-lint run
+      - golangci-lint run ./...
       - go fmt ./...
 
   test:

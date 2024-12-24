@@ -125,7 +125,7 @@ func TestApp(t *testing.T) {
 		},
 		{
 			name: "Lifecycle events",
-			fn: func(t *testing.T, a *app.App, _ *MockQuickNoteService, _ *MockSystrayService) {
+			fn: func(_ *testing.T, a *app.App, _ *MockQuickNoteService, _ *MockSystrayService) {
 				// Test lifecycle events through SetupUI
 				a.SetupUI()
 				// Add assertions for lifecycle logging

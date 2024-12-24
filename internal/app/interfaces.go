@@ -23,9 +23,3 @@ type QuickNoteService interface {
 	Show()
 	Hide()
 }
-
-// SystemTrayService defines system tray operations
-type SystemTrayService interface {
-	Setup(menu *fyne.Menu)
-	SetIcon(resource fyne.Resource)
-}

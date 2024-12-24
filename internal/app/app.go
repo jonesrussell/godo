@@ -4,11 +4,11 @@ import (
 	"fyne.io/fyne/v2"
 	fyneapp "fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/widget"
 	"github.com/jonesrussell/godo/internal/assets"
 	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/gui/quicknote"
+	"github.com/jonesrussell/godo/internal/gui/systray"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
 	"github.com/jonesrussell/godo/internal/storage/sqlite"
@@ -19,6 +19,7 @@ type App struct {
 	fyneApp    fyne.App
 	mainWindow fyne.Window
 	quickNote  QuickNoteService
+	systray    systray.Interface
 	store      storage.Store
 	config     *config.Config
 	log        logger.Logger
@@ -34,6 +35,7 @@ func NewApp(cfg *config.Config, store storage.Store, log logger.Logger) *App {
 		store:      store,
 		config:     cfg,
 		log:        log,
+		systray:    systray.New(fyneApp, log),
 	}
 
 	quickNoteConfig := quicknote.Config{
@@ -70,30 +72,34 @@ func (a *App) setupLifecycleLogging() {
 }
 
 func (a *App) setupSystemTray() {
-	if desk, ok := a.fyneApp.(desktop.App); ok {
-		a.log.Debug("Loading system tray icon")
-		systrayIcon := assets.GetSystrayIconResource()
-		appIcon := assets.GetAppIconResource()
-		a.fyneApp.SetIcon(appIcon)
+	a.log.Debug("Loading system tray icon")
+	systrayIcon := assets.GetSystrayIconResource()
+	appIcon := assets.GetAppIconResource()
+	a.fyneApp.SetIcon(appIcon)
 
-		menu := fyne.NewMenu("Godo",
-			fyne.NewMenuItem("Show", func() {
-				a.mainWindow.Show()
-				a.mainWindow.CenterOnScreen()
-			}),
-			fyne.NewMenuItem("Quick Note", a.quickNote.Show),
-			fyne.NewMenuItemSeparator(),
-			fyne.NewMenuItem("Quit", func() {
-				a.fyneApp.Quit()
-			}),
-		)
+	menu := fyne.NewMenu("Godo",
+		fyne.NewMenuItem("Show", func() {
+			a.mainWindow.Show()
+			a.mainWindow.CenterOnScreen()
+		}),
+		fyne.NewMenuItem("Quick Note", a.quickNote.Show),
+		fyne.NewMenuItemSeparator(),
+		fyne.NewMenuItem("Quit", func() {
+			a.fyneApp.Quit()
+		}),
+	)
 
-		desk.SetSystemTrayIcon(systrayIcon)
-		desk.SetSystemTrayMenu(menu)
-		a.log.Info("System tray setup attempted")
+	// Setup menu first
+	a.systray.Setup(menu)
+
+	// Then set icon
+	if a.systray.IsReady() {
+		a.systray.SetIcon(systrayIcon)
+		a.log.Info("System tray setup complete")
 	} else {
-		a.log.Warn("System tray not supported on this platform")
+		a.log.Warn("System tray not ready, icon not set")
 	}
+
 	// Always show the main window initially
 	a.mainWindow.Show()
 }

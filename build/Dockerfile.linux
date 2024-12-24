@@ -4,6 +4,7 @@ RUN apt-get update && apt-get install -y \
     gcc \
     libgl1-mesa-dev \
     libx11-dev \
+    libxcursor-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Tools stage for installing development tools

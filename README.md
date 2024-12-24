@@ -24,7 +24,6 @@ The quick-note feature uses a minimal graphical window that appears when you pre
 - SQLite database for reliable data storage
 - Cross-platform compatibility using Fyne toolkit
   - Windows
-  - macOS
   - Linux
 
 ## Prerequisites
@@ -39,7 +38,11 @@ The quick-note feature uses a minimal graphical window that appears when you pre
     2. Extract to C:\mingw64 (or your preferred location)
     3. Add C:\mingw64\bin to your system's PATH environment variable
     4. Verify installation by running `gcc --version` in Command Prompt
-- Being cool 😎
+- Task (task runner)
+  ```powershell
+  # Install using Chocolatey
+  choco install go-task
+  ```
 
 ### Additional Development Prerequisites
 
@@ -56,11 +59,11 @@ For Windows developers:
 
 ## Development Notes
 
-- This project uses CGO dependencies (specifically `github.com/robotn/gohook`)
+- This project uses CGO dependencies (specifically `golang.design/x/hotkey`)
 - Do not use `go mod vendor` as it may break CGO dependencies
 - Always use `go mod tidy` to manage dependencies
 
-## Installation
+## Building
 
 1. Clone the repository
 ```bash
@@ -68,24 +71,39 @@ git clone https://github.com/jonesrussell/godo.git
 cd godo
 ```
 
-2. Build and package the application
-```bash
+2. Build the application
+```powershell
 # For Windows
-task package-windows
+task build:windows
 
-# The packaged executable will be in cmd/godo/
+# For Linux
+task build:linux
+
+# For Linux using Docker
+task build:linux:docker
 ```
 
-3. Run the application
-- Double-click the packaged executable
-- Or run from command line:
-```bash
-./godo
+3. Run tests
+```powershell
+# Run tests for current platform
+task test
+
+# Run tests in Docker
+task test:linux:docker
+```
+
+4. Run linting
+```powershell
+# Run linting for current platform
+task lint
+
+# Run linting in Docker
+task lint:linux:docker
 ```
 
 ## Usage
 
-[Add specific hotkey combinations and commands here]
+Default hotkey: Ctrl+Shift+N
 
 ## Contributing
 

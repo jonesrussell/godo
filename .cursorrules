@@ -74,16 +74,15 @@
   2. Full-featured todo management interface
 - Built with Go and SQLite
 - Uses Fyne for all UI components
-- Cross-platform compatibility (Windows, Linux, macOS)
+- Cross-platform compatibility (Windows, Linux)
 
 ## Core Features
 - Quick-Note System
   - Global hotkey registration
   - Minimal graphical popup window
     - Platform-specific implementations
-    - Windows: Win32 API
-    - macOS: Cocoa/NSWindow
-    - Linux: GTK
+    - Windows: golang.design/x/hotkey
+    - Linux: golang.design/x/hotkey
   - Instant task capture
 - Main Application Window
   - Task organization
@@ -96,9 +95,10 @@
   - Service layer abstraction
 
 ## Technical Requirements
-- Go 1.23.4 (as of March 2024 - Note: Earlier I incorrectly claimed Go 1.22 was latest)
+- Go 1.23 or higher
 - SQLite3
 - MinGW-w64 GCC (for Windows)
+- Task runner for build automation
 
 ## Code Style & Standards
 - Follow standard Go formatting guidelines
@@ -111,6 +111,9 @@
   - Use proper synchronization primitives (channels, WaitGroups, etc.)
   - Use event-driven approaches for UI state management
   - Implement proper ready/state callbacks where available
+- Use build tags for platform-specific code
+  - docker - for Docker-specific implementations
+  - windows/linux - for OS-specific features
 
 ## Project Structure
 - cmd/
@@ -119,8 +122,9 @@
 - internal/
   - app/ - Core application logic
     - app.go - Main application setup
-    - app_test.go - Application tests
-    - app_mock.go - Test mocks
+    - hotkey_common.go - Common hotkey interface
+    - hotkey_default.go - Default hotkey implementation
+    - hotkey_docker.go - Docker-specific implementation
   - common/ - Shared utilities and types
     - errors/ - Custom error types
     - testutils/ - Testing utilities
@@ -134,7 +138,6 @@
       - toolbar.go - Toolbar setup
     - quicknote/ - Quick note popup
       - window.go - Quick note window
-      - hotkey.go - Global hotkey handling
     - widgets/ - Custom Fyne widgets
       - task_list.go - Todo list widget
       - task_item.go - Individual task widget
@@ -143,11 +146,6 @@
       - icons.go - Custom icons
   - model/ - Data models
     - task.go - Task data structures
-    - task_test.go - Model tests
-  - service/ - Business logic
-    - task/ - Task management
-      - service.go - Task operations
-      - service_test.go - Service tests
   - storage/ - Data persistence
     - sqlite/ - SQLite implementation
       - db.go - Database setup
@@ -158,14 +156,9 @@
   - icons/ - Application icons
   - themes/ - Theme resources
 - build/ - Build configurations
-  - windows/ - Windows-specific
-  - linux/ - Linux-specific
+  - Dockerfile.linux - Linux Docker build
 - configs/ - Configuration files
   - default.yaml - Default settings
-- scripts/ - Build and utility scripts
-- docs/ - Documentation
-  - api/ - API documentation
-  - usage/ - User guides
 
 ## Testing Requirements
 - Unit tests for all packages
@@ -181,7 +174,6 @@
 - System service support
   - Windows service
   - Linux systemd
-  - macOS launchd
 - Auto-start capability
 - Update mechanism
 

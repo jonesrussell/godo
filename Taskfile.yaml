@@ -29,7 +29,7 @@ tasks:
     cmds:
       - |
         {{if eq .GOOS "windows"}}
-        cd internal/container; if (Test-Path *_wire_gen.go) { Remove-Item *_wire_gen.go }
+        powershell -Command "cd internal/container; Remove-Item -ErrorAction SilentlyContinue *_wire_gen.go"
         {{else}}
         cd internal/container && rm -f *_wire_gen.go || true
         {{end}}
@@ -61,7 +61,6 @@ tasks:
 
   wire:linux:docker:
     desc: Generate wire code for Linux in Docker
-    internal: true
     deps: [clean:docker]
     cmds:
       - docker build --target wire -f build/Dockerfile.linux -t godo-linux-wire .
@@ -88,11 +87,10 @@ tasks:
 
   build:linux:docker:
     desc: Build Linux binary using Docker
-    internal: true
     deps: [wire:linux:docker, clean:docker]
     cmds:
-      - docker build -f build/Dockerfile.linux -t godo-linux-builder .
-      - docker run --name godo-linux-build godo-linux-builder
+      - docker build --target builder -f build/Dockerfile.linux -t godo-linux-builder .
+      - docker create --name godo-linux-build godo-linux-builder
       - docker cp godo-linux-build:/app/bin/godo-linux ./bin/
       - docker rm godo-linux-build
 

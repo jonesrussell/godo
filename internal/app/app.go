@@ -6,6 +6,7 @@ import (
 	"fyne.io/fyne/v2"
 	fyneapp "fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
 	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/gui/mainwindow/systray"
@@ -58,25 +59,27 @@ func NewApp(cfg *config.Config, store storage.Store, log logger.Logger) *App {
 }
 
 func (a *App) SetupUI() {
-	a.setupLifecycleLogging()
 	a.setupSystemTray()
 	a.setupMainWindow()
-	if err := a.setupGlobalHotkey(); err != nil {
-		a.log.Error("Failed to setup global hotkey", "error", err)
-	}
+
+	// Setup lifecycle events
+	a.fyneApp.Lifecycle().SetOnStarted(func() {
+		a.log.Info("Lifecycle: Started")
+		if err := a.setupGlobalHotkey(); err != nil {
+			a.log.Error("Failed to setup global hotkey", "error", err)
+			dialog.ShowError(fmt.Errorf("Failed to register global hotkey (%s). Quick note feature will not work.", a.config.Hotkeys.QuickNote), a.mainWindow)
+		} else {
+			a.log.Info("Global hotkey setup complete", "hotkey", a.config.Hotkeys.QuickNote)
+		}
+	})
+
+	a.fyneApp.Lifecycle().SetOnStopped(func() {
+		a.log.Info("Lifecycle: Stopped")
+	})
 }
 
 func (a *App) Run() {
 	a.fyneApp.Run()
-}
-
-func (a *App) setupLifecycleLogging() {
-	a.fyneApp.Lifecycle().SetOnStarted(func() {
-		a.log.Info("Lifecycle: Started")
-	})
-	a.fyneApp.Lifecycle().SetOnStopped(func() {
-		a.log.Info("Lifecycle: Stopped")
-	})
 }
 
 func (a *App) setupSystemTray() {
@@ -175,19 +178,32 @@ func (a *App) setupMainWindow() {
 }
 
 func (a *App) setupGlobalHotkey() error {
-	hk := hotkey.New([]hotkey.Modifier{
-		config.ModCtrl,
-		config.ModAlt,
-	}, hotkey.KeyG)
-
-	if err := hk.Register(); err != nil {
-		return err
+	mapper := config.NewHotkeyMapper(a.log)
+	mods, key, err := a.config.Hotkeys.QuickNote.Parse(mapper)
+	if err != nil {
+		a.log.Error("Failed to parse hotkey", "error", err)
+		return fmt.Errorf("failed to parse hotkey: %w", err)
 	}
 
+	a.log.Debug("Creating hotkey", "modifiers", fmt.Sprintf("%v", mods), "key", fmt.Sprintf("%v", key))
+	hk := hotkey.New(mods, key)
+
+	a.log.Debug("Registering hotkey")
+	if err := hk.Register(); err != nil {
+		a.log.Error("Failed to register hotkey", "error", err)
+		return fmt.Errorf("failed to register hotkey: %w", err)
+	}
+
+	a.log.Info("Global hotkey registered successfully", "hotkey", a.config.Hotkeys.QuickNote)
+
 	go func() {
+		a.log.Debug("Starting hotkey event listener")
 		for range hk.Keydown() {
-			a.log.Debug("Global hotkey triggered")
-			a.quickNote.Show()
+			a.log.Debug("Global hotkey triggered - showing quick note")
+			// Run on main thread since this is a UI operation
+			a.mainWindow.Canvas().QueueEvent(func() {
+				a.quickNote.Show()
+			})
 		}
 	}()
 

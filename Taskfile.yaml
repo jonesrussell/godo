@@ -28,22 +28,37 @@ tasks:
       - docker rm -f godo-linux-test godo-linux-build godo-linux-lint || true
       - docker rmi -f godo-linux-test godo-linux-builder godo-linux-wire godo-linux-lint || true
 
-  wire:
-    desc: Generate wire code
+  wire:windows:
+    desc: Generate wire code for Windows
     cmds:
-      - cd internal/container; wire gen -tags {{.GOOS}}
+      - cd internal/container; wire gen -tags windows
+
+  wire:linux:
+    desc: Generate wire code for Linux
+    cmds:
+      - cd internal/container; wire gen -tags linux
+
+  wire:
+    desc: Generate wire code for current platform
+    cmds:
+      - task: wire:{{if eq OS "windows"}}windows{{else}}linux{{end}}
 
   build:
     desc: Build for current platform
-    deps: [wire]
     cmds:
-      - go build -tags {{.GOOS}} -o bin/godo{{if eq .GOOS "windows"}}.exe{{end}} cmd/godo/main.go
+      - task: build:{{if eq OS "windows"}}windows{{else}}linux{{end}}
 
-  build:cross:
-    desc: Build for other platform
-    deps: [wire]
+  build:windows:
+    desc: Build for Windows
+    deps: [wire:windows]
     cmds:
-      - GOOS={{if eq .GOOS "windows"}}linux{{else}}windows{{end}} CGO_ENABLED=0 go build -tags {{if eq .GOOS "windows"}}linux{{else}}windows{{end}} -o bin/godo{{if eq .GOOS "linux"}}.exe{{end}} cmd/godo/main.go
+      - GOOS=windows go build -tags windows -o bin/godo.exe cmd/godo/main.go
+
+  build:linux:
+    desc: Build for Linux
+    deps: [wire:linux]
+    cmds:
+      - GOOS=linux CGO_ENABLED=0 go build -tags linux -o bin/godo cmd/godo/main.go
 
   build:docker:
     desc: Build using Docker

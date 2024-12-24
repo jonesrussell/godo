@@ -4,17 +4,19 @@ package app
 import (
 	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/gui/mainwindow"
+	"github.com/jonesrussell/godo/internal/gui/quicknote"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
 )
 
 // App represents the main application
 type App struct {
-	config  *config.Config
-	logger  logger.Logger
-	store   storage.Store
-	mainWin *mainwindow.Window
-	hotkeys HotkeyManager
+	config    *config.Config
+	logger    logger.Logger
+	store     storage.Store
+	mainWin   *mainwindow.Window
+	quickNote *quicknote.Window
+	hotkeys   HotkeyManager
 }
 
 // NewApp creates a new application instance
@@ -25,6 +27,9 @@ func NewApp(cfg *config.Config, log logger.Logger, store storage.Store, mainWin 
 		store:   store,
 		mainWin: mainWin,
 	}
+
+	// Create quick note window
+	app.quickNote = quicknote.New(mainWin.GetApp(), store, log)
 
 	// Initialize hotkey manager based on build tags
 	app.hotkeys = initHotkeyManager(app)

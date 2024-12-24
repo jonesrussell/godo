@@ -67,6 +67,16 @@ func (w *Window) Hide() {
 	w.win.Hide()
 }
 
+// GetWindow returns the underlying fyne window
+func (w *Window) GetWindow() fyne.Window {
+	return w.win
+}
+
+// GetApp returns the underlying fyne app
+func (w *Window) GetApp() fyne.App {
+	return w.app
+}
+
 // Setup initializes the window
 func (w *Window) Setup() {
 	content := container.NewVBox(
@@ -79,9 +89,6 @@ func (w *Window) Setup() {
 	w.win.SetContent(content)
 	w.win.Resize(fyne.NewSize(800, 600))
 	w.win.CenterOnScreen()
-
-	// Show window initially
-	w.Show()
 }
 
 // Run starts the application main loop

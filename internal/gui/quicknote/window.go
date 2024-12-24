@@ -5,133 +5,83 @@ package quicknote
 
 import (
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/dialog"
-	"fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
 )
 
-// Config holds all dependencies for QuickNote
-type Config struct {
-	App        fyne.App
-	MainWindow fyne.Window
-	Store      storage.Store
-	Logger     logger.Logger
+// Window represents the quick note window
+type Window struct {
+	app   fyne.App
+	win   fyne.Window
+	store storage.Store
+	log   logger.Logger
+	entry *customEntry
 }
 
-// QuickNote manages the quick note window and functionality
-type QuickNote struct {
-	config     Config
-	window     fyne.Window
-	input      *customEntry
-	form       dialog.Dialog
-	dimensions struct {
-		window fyne.Size
-		form   fyne.Size
-	}
-}
+// New creates a new quick note window
+func New(app fyne.App, store storage.Store, log logger.Logger) *Window {
+	win := app.NewWindow("Quick Note")
 
-// New creates a new QuickNote instance
-func New(cfg Config) *QuickNote {
-	qn := &QuickNote{
-		config: cfg,
-		window: cfg.App.NewWindow("Quick Note"),
-		dimensions: struct {
-			window fyne.Size
-			form   fyne.Size
-		}{
-			window: fyne.NewSize(400, 200),
-			form:   fyne.NewSize(380, 180),
-		},
+	w := &Window{
+		app:   app,
+		win:   win,
+		store: store,
+		log:   log,
+		entry: newCustomEntry(log),
 	}
 
-	qn.input = newCustomEntry(cfg.Logger)
-	qn.setupUI()
-
-	return qn
-}
-
-func (qn *QuickNote) setupUI() {
-	qn.window.Resize(qn.dimensions.window)
-	qn.setupInput()
-	qn.setupForm()
-	qn.setupShortcuts()
-}
-
-func (qn *QuickNote) setupInput() {
-	qn.input.SetPlaceHolder("Enter your note here...")
-	qn.input.onCtrlEnter = qn.handleSave
-	qn.input.onEscape = qn.handleCancel
-}
-
-func (qn *QuickNote) setupForm() {
-	qn.form = dialog.NewForm("Quick Note", "Save", "Cancel",
-		[]*widget.FormItem{
-			widget.NewFormItem("Note", qn.input),
-		},
-		qn.handleFormSubmit,
-		qn.window)
-
-	qn.form.Resize(qn.dimensions.form)
-}
-
-func (qn *QuickNote) setupShortcuts() {
-	qn.window.Canvas().AddShortcut(&desktop.CustomShortcut{
-		KeyName:  fyne.KeyReturn,
-		Modifier: fyne.KeyModifierControl,
-	}, func(_ fyne.Shortcut) {
-		qn.config.Logger.Debug("Window Ctrl+Enter shortcut triggered")
-		qn.handleSave()
+	// Set close handler to hide window
+	win.SetCloseIntercept(func() {
+		w.Hide()
 	})
-}
 
-func (qn *QuickNote) handleSave() {
-	if qn.input.Text != "" {
-		if err := qn.config.Store.SaveNote(qn.input.Text); err != nil {
-			qn.config.Logger.Error("Failed to save note", "error", err)
-			dialog.ShowError(err, qn.window)
-			return
+	// Setup entry handlers
+	w.entry.onCtrlEnter = func() {
+		if w.entry.Text != "" {
+			if err := w.store.SaveNote(w.entry.Text); err != nil {
+				w.log.Error("Failed to save note", "error", err)
+				return
+			}
+			w.log.Debug("Saved note", "content", w.entry.Text)
 		}
-		qn.config.Logger.Debug("Saved note", "content", qn.input.Text)
+		w.Hide()
 	}
-	qn.handleCancel()
-}
-
-func (qn *QuickNote) handleCancel() {
-	qn.input.SetText("")
-	qn.Hide()
-}
-
-func (qn *QuickNote) handleFormSubmit(save bool) {
-	if save {
-		qn.handleSave()
-	} else {
-		qn.handleCancel()
+	w.entry.onEscape = func() {
+		w.Hide()
 	}
+
+	// Setup window content
+	content := container.NewVBox(
+		w.entry,
+		container.NewHBox(
+			widget.NewButton("Save", func() {
+				w.entry.onCtrlEnter()
+			}),
+			widget.NewButton("Cancel", func() {
+				w.entry.onEscape()
+			}),
+		),
+	)
+
+	win.SetContent(content)
+	win.Resize(fyne.NewSize(300, 100))
+	win.CenterOnScreen()
+
+	return w
 }
 
-// Show displays the quick note dialog
-func (qn *QuickNote) Show() {
-	qn.window.Show()
-	qn.window.CenterOnScreen()
-	qn.form.Show()
-	qn.window.Canvas().Focus(qn.input)
+// Show displays the quick note window
+func (w *Window) Show() {
+	w.entry.SetText("")
+	w.win.Show()
+	w.win.RequestFocus()
+	w.win.Canvas().Focus(w.entry)
 }
 
-// Hide hides the quick note dialog
-func (qn *QuickNote) Hide() {
-	qn.input.SetText("")
-	qn.window.Hide()
-	qn.config.Logger.Debug("Quick note hidden")
-}
-
-// GetWindow returns the underlying window for testing
-func (qn *QuickNote) GetWindow() fyne.Window {
-	return qn.window
-}
-
-// GetInput returns the input field for testing
-func (qn *QuickNote) GetInput() *customEntry {
-	return qn.input
+// Hide hides the quick note window
+func (w *Window) Hide() {
+	w.entry.SetText("")
+	w.win.Hide()
 }

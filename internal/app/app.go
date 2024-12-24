@@ -3,6 +3,7 @@ package app
 
 import (
 	"github.com/jonesrussell/godo/internal/config"
+	"github.com/jonesrussell/godo/internal/gui"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
 )
@@ -12,21 +13,10 @@ type App struct {
 	config    *config.Config
 	logger    logger.Logger
 	store     storage.Store
-	mainWin   MainWindow
-	quickNote QuickNote
+	mainWin   gui.MainWindow
+	quickNote gui.QuickNote
 	hotkeys   HotkeyManager
-	isDocker  bool // Replaces global buildTagDocker
-}
-
-// MainWindow defines the interface for the main application window
-type MainWindow interface {
-	Show()
-	Setup()
-}
-
-// QuickNote defines the interface for the quick note window
-type QuickNote interface {
-	Show()
+	isDocker  bool // Used only for tests
 }
 
 // NewApp creates a new application instance
@@ -35,7 +25,7 @@ func NewApp(cfg *config.Config, log logger.Logger, store storage.Store) *App {
 		config:   cfg,
 		logger:   log,
 		store:    store,
-		isDocker: false, // Will be set to true by build_docker.go init()
+		isDocker: false,
 	}
 
 	// Initialize hotkey manager based on build tags
@@ -56,14 +46,18 @@ func (a *App) Run() error {
 	}
 
 	// Show main window
-	a.mainWin.Show()
+	if a.mainWin != nil {
+		a.mainWin.Show()
+	}
 
 	return nil
 }
 
 // SetupUI initializes the application UI
 func (a *App) SetupUI() {
-	a.mainWin.Setup()
+	if a.mainWin != nil {
+		a.mainWin.Setup()
+	}
 }
 
 // GetVersion returns the application version
@@ -71,7 +65,7 @@ func (a *App) GetVersion() string {
 	return a.config.App.Version
 }
 
-// SetIsDocker sets the Docker environment flag
+// SetIsDocker sets the Docker environment flag (used only for tests)
 func (a *App) SetIsDocker(isDocker bool) {
 	a.isDocker = isDocker
 }

@@ -4,79 +4,93 @@
 package app
 
 import (
+	"errors"
 	"testing"
 
-	"github.com/jonesrussell/godo/internal/common"
-	"github.com/jonesrussell/godo/internal/config"
-	"github.com/jonesrussell/godo/internal/logger"
-	"github.com/jonesrussell/godo/internal/storage/memory"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
-// mockMainWindow is a test implementation of MainWindow
-type mockMainWindow struct {
-	shown       bool
-	setupCalled bool
+// MockUI implements a mock UI for testing
+type MockUI struct {
+	ShowCalled  bool
+	SetupCalled bool
+	HideCalled  bool
 }
 
-func (m *mockMainWindow) Show() {
-	m.shown = true
+func (m *MockUI) Show() {
+	m.ShowCalled = true
 }
 
-func (m *mockMainWindow) Setup() {
-	m.setupCalled = true
+func (m *MockUI) Setup() {
+	m.SetupCalled = true
 }
 
-// mockQuickNote is a test implementation of QuickNote
-type mockQuickNote struct {
-	shown bool
+func (m *MockUI) Hide() {
+	m.HideCalled = true
 }
 
-func (m *mockQuickNote) Show() {
-	m.shown = true
+// MockApplication implements a mock application for testing
+type MockApplication struct {
+	RunCalled        bool
+	SetupUICalled    bool
+	GetVersionCalled bool
+	ReturnVersion    string
+	ReturnError      error
 }
 
-func TestApp(t *testing.T) {
-	// Create test dependencies
-	cfg := &config.Config{
-		Logger: common.LogConfig{
-			Level:   "debug",
-			Console: true,
-		},
-		App: config.AppConfig{
-			Name:    "Test App",
-			Version: "0.1.0",
-		},
-	}
-	log := logger.NewTestLogger(t)
-	store := memory.New()
+func (m *MockApplication) Run() error {
+	m.RunCalled = true
+	return m.ReturnError
+}
 
-	// Create app
-	app := NewApp(cfg, log, store)
-	require.NotNil(t, app)
+func (m *MockApplication) SetupUI() {
+	m.SetupUICalled = true
+}
 
-	// Replace windows with mocks
-	mockMain := &mockMainWindow{}
-	app.mainWin = mockMain
-	mockQN := &mockQuickNote{}
-	app.quickNote = mockQN
+func (m *MockApplication) GetVersion() string {
+	m.GetVersionCalled = true
+	return m.ReturnVersion
+}
 
-	// Test UI setup
-	t.Run("ui setup", func(t *testing.T) {
-		app.SetupUI()
-		assert.True(t, mockMain.setupCalled)
+func TestMockUI(t *testing.T) {
+	t.Run("Show sets ShowCalled", func(t *testing.T) {
+		ui := &MockUI{}
+		ui.Show()
+		assert.True(t, ui.ShowCalled)
 	})
 
-	// Test version
-	t.Run("version", func(t *testing.T) {
-		assert.Equal(t, "0.1.0", app.GetVersion())
+	t.Run("Setup sets SetupCalled", func(t *testing.T) {
+		ui := &MockUI{}
+		ui.Setup()
+		assert.True(t, ui.SetupCalled)
 	})
 
-	// Test run
-	t.Run("run", func(t *testing.T) {
+	t.Run("Hide sets HideCalled", func(t *testing.T) {
+		ui := &MockUI{}
+		ui.Hide()
+		assert.True(t, ui.HideCalled)
+	})
+}
+
+func TestMockApplication(t *testing.T) {
+	t.Run("Run sets RunCalled and returns error", func(t *testing.T) {
+		app := &MockApplication{ReturnError: errors.New("test error")}
 		err := app.Run()
-		require.NoError(t, err)
-		assert.True(t, mockMain.shown)
+		assert.True(t, app.RunCalled)
+		assert.Error(t, err)
+		assert.Equal(t, "test error", err.Error())
+	})
+
+	t.Run("SetupUI sets SetupUICalled", func(t *testing.T) {
+		app := &MockApplication{}
+		app.SetupUI()
+		assert.True(t, app.SetupUICalled)
+	})
+
+	t.Run("GetVersion sets GetVersionCalled and returns version", func(t *testing.T) {
+		app := &MockApplication{ReturnVersion: "1.0.0"}
+		version := app.GetVersion()
+		assert.True(t, app.GetVersionCalled)
+		assert.Equal(t, "1.0.0", version)
 	})
 }

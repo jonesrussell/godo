@@ -15,7 +15,7 @@ type App struct {
 	logger    logger.Logger
 	store     storage.Store
 	mainWin   *mainwindow.Window
-	quickNote *quicknote.Window
+	quickNote quicknote.Interface
 	hotkeys   HotkeyManager
 }
 
@@ -29,7 +29,8 @@ func NewApp(cfg *config.Config, log logger.Logger, store storage.Store, mainWin 
 	}
 
 	// Create quick note window
-	app.quickNote = quicknote.New(mainWin.GetApp(), store, log)
+	app.quickNote = quicknote.New(store)
+	app.quickNote.Initialize(mainWin.GetApp(), log)
 
 	// Initialize hotkey manager based on build tags
 	app.hotkeys = initHotkeyManager(app)

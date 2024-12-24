@@ -11,8 +11,8 @@ import (
 	"github.com/jonesrussell/godo/internal/storage"
 )
 
-// Window represents the quick note window
-type Window struct {
+// window represents the quick note window
+type window struct {
 	app   fyne.App
 	win   fyne.Window
 	store storage.Store
@@ -20,20 +20,23 @@ type Window struct {
 	entry *customEntry
 }
 
-// New creates a new quick note window
-func New(app fyne.App, store storage.Store, log logger.Logger) *Window {
-	win := app.NewWindow("Quick Note")
-
-	w := &Window{
-		app:   app,
-		win:   win,
+// newWindow creates a new quick note window
+func newWindow(store storage.Store) Interface {
+	w := &window{
 		store: store,
-		log:   log,
-		entry: newCustomEntry(log),
 	}
+	return w
+}
+
+// Initialize sets up the window with the given app and logger
+func (w *window) Initialize(app fyne.App, log logger.Logger) {
+	w.app = app
+	w.log = log
+	w.win = app.NewWindow("Quick Note")
+	w.entry = newCustomEntry(log)
 
 	// Set close handler to hide window
-	win.SetCloseIntercept(func() {
+	w.win.SetCloseIntercept(func() {
 		w.Hide()
 	})
 
@@ -66,15 +69,13 @@ func New(app fyne.App, store storage.Store, log logger.Logger) *Window {
 		),
 	)
 
-	win.SetContent(content)
-	win.Resize(fyne.NewSize(400, 300))
-	win.CenterOnScreen()
-
-	return w
+	w.win.SetContent(content)
+	w.win.Resize(fyne.NewSize(400, 300))
+	w.win.CenterOnScreen()
 }
 
 // Show displays the quick note window
-func (w *Window) Show() {
+func (w *window) Show() {
 	w.entry.SetText("")
 	w.win.Show()
 	w.win.RequestFocus()
@@ -82,7 +83,7 @@ func (w *Window) Show() {
 }
 
 // Hide hides the quick note window
-func (w *Window) Hide() {
+func (w *window) Hide() {
 	w.entry.SetText("")
 	w.win.Hide()
 }

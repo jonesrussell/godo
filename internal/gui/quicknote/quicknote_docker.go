@@ -4,36 +4,35 @@
 package quicknote
 
 import (
+	"fyne.io/fyne/v2"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
 )
 
-// Config holds the configuration for the quick note window
-type Config struct {
-	Store  storage.Store
-	Logger logger.Logger
+// dockerWindow represents a no-op quick note window for Docker environments
+type dockerWindow struct {
+	store storage.Store
+	log   logger.Logger
 }
 
-// Window represents the quick note window
-type Window struct {
-	config Config
-}
-
-// New creates a new quick note window
-func New(store storage.Store) *Window {
-	return &Window{
-		config: Config{
-			Store: store,
-		},
+// newWindow creates a new quick note window for Docker environments
+func newWindow(store storage.Store) Interface {
+	return &dockerWindow{
+		store: store,
 	}
 }
 
-// Show displays the quick note window
-func (w *Window) Show() {
+// Initialize sets up the window with the given app and logger
+func (w *dockerWindow) Initialize(app fyne.App, log logger.Logger) {
+	w.log = log
+}
+
+// Show displays the quick note window (no-op in Docker)
+func (w *dockerWindow) Show() {
 	// No-op in Docker environment
 }
 
-// Hide hides the quick note window
-func (w *Window) Hide() {
+// Hide hides the quick note window (no-op in Docker)
+func (w *dockerWindow) Hide() {
 	// No-op in Docker environment
 }

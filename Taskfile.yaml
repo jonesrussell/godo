@@ -22,7 +22,6 @@ tasks:
     deps: [clean:wire]
     cmds:
       - cd internal/container && wire gen -tags windows
-      - cd internal/container && wire gen -tags darwin
       - cd internal/container && wire gen -tags linux
 
   wire:windows:
@@ -31,18 +30,27 @@ tasks:
     cmds:
       - cd internal/container && wire gen -tags windows
 
+  wire:linux:
+    desc: Generate wire code for Linux
+    deps: [clean:wire]
+    cmds:
+      - cd internal/container && wire gen -tags linux
+
   build:windows:
     desc: Build for Windows
     deps: [wire:windows]
     cmds:
-      - go build -tags windows -o bin/godo.exe cmd/godo/main.go
+      - go build -tags "windows nomobile" -o bin/godo.exe cmd/godo/main.go
+
+  build:linux:
+    desc: Build for Linux
+    deps: [wire:linux]
+    cmds:
+      - CGO_ENABLED=1 CC=x86_64-w64-mingw32-gcc GOOS=linux GOARCH=amd64 go build -tags "linux nomobile nowayland gles" -o bin/godo-linux cmd/godo/main.go
 
   build:all:
     desc: Build for all platforms
-    deps: [wire:all, build:windows]
-    cmds:
-      - GOOS=darwin go build -tags darwin -o bin/godo-darwin cmd/godo/main.go
-      - GOOS=linux go build -tags linux -o bin/godo-linux cmd/godo/main.go
+    deps: [wire:all, build:windows, build:linux]
 
   run:
     deps: [wire:all]

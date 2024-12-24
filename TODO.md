@@ -73,6 +73,11 @@
   - [ ] Add user-configurable shortcuts
 
 ## Future Enhancements
+- [ ] macOS Support
+  - [ ] Set up OSXCross for cross-compilation
+  - [ ] Add Darwin-specific build tags
+  - [ ] Test on macOS
+  - [ ] Add macOS-specific features (if any)
 - [ ] Terminal User Interface (TUI) alternative
   - [ ] Research TUI libraries (Bubble Tea, etc.)
   - [ ] Design TUI layout

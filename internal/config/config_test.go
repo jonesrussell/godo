@@ -1,7 +1,7 @@
 //go:build !docker
 // +build !docker
 
-package config
+package config_test
 
 import (
 	"fmt"

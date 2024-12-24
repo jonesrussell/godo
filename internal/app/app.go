@@ -26,6 +26,7 @@ type App struct {
 	store      storage.Store
 	config     *config.Config
 	log        logger.Logger
+	hotkeyC    chan struct{}
 }
 
 func NewApp(cfg *config.Config, store storage.Store, log logger.Logger) *App {
@@ -42,6 +43,7 @@ func NewApp(cfg *config.Config, store storage.Store, log logger.Logger) *App {
 		store:      store,
 		config:     cfg,
 		log:        log,
+		hotkeyC:    make(chan struct{}, 1),
 	}
 
 	log.Debug("Creating system tray service")
@@ -71,11 +73,57 @@ func (a *App) SetupUI() {
 		} else {
 			a.log.Info("Global hotkey setup complete", "hotkey", a.config.Hotkeys.QuickNote)
 		}
+
+		// Start hotkey event handler
+		go a.handleHotkeyEvents()
 	})
 
 	a.fyneApp.Lifecycle().SetOnStopped(func() {
 		a.log.Info("Lifecycle: Stopped")
+		close(a.hotkeyC)
 	})
+}
+
+func (a *App) handleHotkeyEvents() {
+	for range a.hotkeyC {
+		a.log.Debug("Hotkey event received - showing quick note")
+		a.quickNote.Show()
+	}
+}
+
+func (a *App) setupGlobalHotkey() error {
+	mapper := config.NewHotkeyMapper(a.log)
+	mods, key, err := a.config.Hotkeys.QuickNote.Parse(mapper)
+	if err != nil {
+		a.log.Error("Failed to parse hotkey", "error", err)
+		return fmt.Errorf("failed to parse hotkey: %w", err)
+	}
+
+	a.log.Debug("Creating hotkey", "modifiers", fmt.Sprintf("%v", mods), "key", fmt.Sprintf("%v", key))
+	hk := hotkey.New(mods, key)
+
+	a.log.Debug("Registering hotkey")
+	if err := hk.Register(); err != nil {
+		a.log.Error("Failed to register hotkey", "error", err)
+		return fmt.Errorf("failed to register hotkey: %w", err)
+	}
+
+	a.log.Info("Global hotkey registered successfully", "hotkey", a.config.Hotkeys.QuickNote)
+
+	// Start hotkey listener in a goroutine
+	go func() {
+		a.log.Debug("Starting hotkey event listener")
+		for range hk.Keydown() {
+			a.log.Debug("Global hotkey triggered")
+			select {
+			case a.hotkeyC <- struct{}{}: // Send hotkey event
+			default:
+				a.log.Debug("Hotkey event dropped - handler busy")
+			}
+		}
+	}()
+
+	return nil
 }
 
 func (a *App) Run() {
@@ -175,39 +223,6 @@ func (a *App) setupMainWindow() {
 	a.mainWindow.Resize(fyne.NewSize(800, 600))
 	a.mainWindow.CenterOnScreen()
 	a.mainWindow.Hide()
-}
-
-func (a *App) setupGlobalHotkey() error {
-	mapper := config.NewHotkeyMapper(a.log)
-	mods, key, err := a.config.Hotkeys.QuickNote.Parse(mapper)
-	if err != nil {
-		a.log.Error("Failed to parse hotkey", "error", err)
-		return fmt.Errorf("failed to parse hotkey: %w", err)
-	}
-
-	a.log.Debug("Creating hotkey", "modifiers", fmt.Sprintf("%v", mods), "key", fmt.Sprintf("%v", key))
-	hk := hotkey.New(mods, key)
-
-	a.log.Debug("Registering hotkey")
-	if err := hk.Register(); err != nil {
-		a.log.Error("Failed to register hotkey", "error", err)
-		return fmt.Errorf("failed to register hotkey: %w", err)
-	}
-
-	a.log.Info("Global hotkey registered successfully", "hotkey", a.config.Hotkeys.QuickNote)
-
-	go func() {
-		a.log.Debug("Starting hotkey event listener")
-		for range hk.Keydown() {
-			a.log.Debug("Global hotkey triggered - showing quick note")
-			// Run on main thread since this is a UI operation
-			a.mainWindow.Canvas().QueueEvent(func() {
-				a.quickNote.Show()
-			})
-		}
-	}()
-
-	return nil
 }
 
 func (a *App) Cleanup() {

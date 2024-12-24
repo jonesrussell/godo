@@ -16,5 +16,12 @@
 			"userUid": "automatic",
 			"userGid": "automatic"
 		}
+	},
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-azuretools.vscode-docker"
+			]
+		}
 	}
 }

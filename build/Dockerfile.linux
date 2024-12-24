@@ -9,6 +9,8 @@ RUN apt-get update && apt-get install -y \
     libgl1-mesa-dev \
     libxxf86vm-dev \
     xvfb \
+    dbus \
+    dbus-x11 \
     && rm -rf /var/lib/apt/lists/*
 
 # Tools stage for installing development tools
@@ -33,13 +35,18 @@ RUN /usr/local/bin/run-with-xvfb.sh golangci-lint run ./...
 # Test stage
 FROM wire AS test
 
+# Set up dbus and X11
+RUN mkdir -p /var/run/dbus && \
+    dbus-uuidgen > /var/lib/dbus/machine-id && \
+    dbus-daemon --config-file=/usr/share/dbus-1/system.conf --print-address
+
 # Set up environment variables
 ENV DISPLAY=:99.0
 ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/var/run/dbus/system_bus_socket"
 ENV CGO_ENABLED=1
 
-# Run tests with Xvfb
-RUN /usr/local/bin/run-with-xvfb.sh go test -v ./...
+# Run tests with Xvfb and docker tag
+RUN /usr/local/bin/run-with-xvfb.sh go test -v -count=1 -tags=docker ./...
 
 # Build stage
 FROM wire AS builder

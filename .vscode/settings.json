@@ -1,7 +1,7 @@
 {
     "gopls": {
         "buildFlags": [
-            "-tags=wireinject"
+            "-tags=wireinject,docker"
         ]
     },
     "go.lintTool": "golangci-lint",
@@ -31,5 +31,6 @@
         "uncoveredHighlightColor": "rgba(128,64,64,0.25)",
         "coveredGutterStyle": "blockblue",
         "uncoveredGutterStyle": "blockred"
-    }
+    },
+    "go.buildTags": "wireinject,docker"
 }

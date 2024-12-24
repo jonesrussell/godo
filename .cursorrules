@@ -73,6 +73,15 @@
          - Test with software driver rendering (software.NewCanvas())
          - Test shape resizing behavior (e.g., 50x50)
          - Verify markup (.xml) and image (.png) outputs
+         - Line Testing:
+           - Test line minimum size (width/height > 0)
+           - Test line positions (Position1, Position2)
+           - Test line movement (verify both points move)
+           - Test line resizing (e.g., 10x0, 20x20)
+           - Test line rotation (diagonal positions)
+           - Test stroke color properties (color.White)
+           - Verify relative point positions after transforms
+           - Test zero-height and zero-width lines
        - Text Rendering Testing:
          - Test font source changes and captures (bold vs italic)
          - Test text minimum size calculations (compare width changes)

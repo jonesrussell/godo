@@ -1,6 +1,4 @@
-//go:build !docker && (windows || darwin)
-// +build !docker
-// +build windows darwin
+//go:build windows
 
 package config
 
@@ -8,7 +6,7 @@ import (
 	"golang.design/x/hotkey"
 )
 
-// Modifier constants for hotkeys on Windows and Darwin
+// Modifier constants for hotkeys on Windows
 const (
 	ModCtrl  = hotkey.ModCtrl  // Control key
 	ModShift = hotkey.ModShift // Shift key

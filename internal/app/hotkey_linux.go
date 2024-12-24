@@ -1,5 +1,4 @@
-//go:build linux && !docker
-// +build linux,!docker
+//go:build linux
 
 package app
 

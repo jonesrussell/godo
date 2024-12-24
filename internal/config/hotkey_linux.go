@@ -1,5 +1,4 @@
-//go:build !docker && linux
-// +build !docker,linux
+//go:build linux
 
 package config
 

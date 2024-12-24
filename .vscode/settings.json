@@ -3,5 +3,9 @@
         "buildFlags": [
             "-tags=wireinject"
         ]
-    }
+    },
+    "go.lintTool": "golangci-lint",
+    "go.lintFlags": [
+        "--fast"
+    ]
 }

@@ -24,8 +24,8 @@ run:
   timeout: 5m
 
 issues:
-  exclude-dirs:
-    - vendor
+  exclude:
+    - "vendor/"
 
 linters-settings:
   revive:
@@ -47,12 +47,15 @@ linters-settings:
   lll:
     line-length: 120
   govet:
-    checks: ["fieldalignment"]
-  goimports:
-    local-prefixes: github.com/jonesrussell/godo
+    enable-all: true
+    disable:
+      - shadow
   depguard:
     rules:
       main:
+        files:
+          - $all
+          - "!**/*_test.go"
         allow:
           - $gostd
           - github.com/mattn/go-sqlite3
@@ -85,8 +88,9 @@ linters-settings:
           - pkg: "github.com/charmbracelet/bubbles"
             desc: "use fyne.io/fyne/v2 for GUI instead"
       logger:
-        files: ["internal/logger/.*\\.go$"]
-        path: "github.com/jonesrussell/godo/internal/logger"
+        files:
+          - "internal/logger/**/*.go"
+          - "!internal/logger/**/*_test.go"
         allow:
           - $gostd
           - go.uber.org/zap
@@ -94,13 +98,10 @@ linters-settings:
         deny:
           - pkg: "github.com/sirupsen/logrus"
             desc: "use go.uber.org/zap for logging instead"
-        ignore-files:
-          - ".*_test.go$"
-          - "examples/*"
-          - "internal/testing/*"
       config:
-        files: ["^internal/config/.*\\.go$"]
-        path: "github.com/jonesrussell/godo/internal/config"
+        files:
+          - "internal/config/**/*.go"
+          - "!internal/config/**/*_test.go"
         allow:
           - $gostd
           - github.com/spf13/viper
@@ -109,8 +110,3 @@ linters-settings:
         deny:
           - pkg: "log"
             desc: "use github.com/jonesrussell/godo/internal/logger instead"
-
-output:
-  formats:
-    - format: colored-line-number
-  sort-results: true

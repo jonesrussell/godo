@@ -15,7 +15,7 @@ type mockResource struct {
 }
 
 func TestInterface(t *testing.T) {
-	t.Run("implementation satisfies interface", func(t *testing.T) {
+	t.Run("implementation satisfies interface", func(_ *testing.T) {
 		var _ Interface = (*Service)(nil)
 	})
 }

@@ -11,11 +11,11 @@ import (
 )
 
 func TestStoreInterface(t *testing.T) {
-	t.Run("memory store implements Store interface", func(t *testing.T) {
+	t.Run("memory store implements Store interface", func(_ *testing.T) {
 		var _ storage.Store = (*memory.Store)(nil)
 	})
 
-	t.Run("sqlite store implements Store interface", func(t *testing.T) {
+	t.Run("sqlite store implements Store interface", func(_ *testing.T) {
 		var _ storage.Store = (*sqlite.Store)(nil)
 	})
 }

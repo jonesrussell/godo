@@ -7,5 +7,30 @@
     "go.lintTool": "golangci-lint",
     "go.lintFlags": [
         "--fast"
-    ]
+    ],
+    "go.useLanguageServer": true,
+    "go.languageServerFlags": [
+        "-rpc.trace"
+    ],
+    "go.toolsEnvVars": {
+        "GO111MODULE": "on"
+    },
+    "go.linting.enabled": true,
+    "go.buildOnSave": "workspace",
+    "go.vetOnSave": "package",
+    "[go]": {
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "explicit"
+        }
+    },
+    "go.coverOnSave": true,
+    "go.coverOnSingleTest": true,
+    "go.coverageDecorator": {
+        "type": "highlight",
+        "coveredHighlightColor": "rgba(64,128,128,0.5)",
+        "uncoveredHighlightColor": "rgba(128,64,64,0.25)",
+        "coveredGutterStyle": "blockblue",
+        "uncoveredGutterStyle": "blockred"
+    }
 }

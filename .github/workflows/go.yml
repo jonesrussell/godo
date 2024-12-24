@@ -20,6 +20,10 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: 1.23
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc libx11-dev libxcursor-dev libxrandr-dev libxinerama-dev libxi-dev libxxf86vm-dev
       - uses: actions/cache@v4
         with:
           path: |
@@ -44,6 +48,10 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: 1.23
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc libx11-dev libxcursor-dev libxrandr-dev libxinerama-dev libxi-dev libxxf86vm-dev
       - uses: actions/cache@v4
         with:
           path: |
@@ -68,6 +76,10 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: 1.23
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc libx11-dev libxcursor-dev libxrandr-dev libxinerama-dev libxi-dev libxxf86vm-dev
       - uses: actions/cache@v4
         with:
           path: |

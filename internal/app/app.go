@@ -109,16 +109,18 @@ func (a *App) SetupUI() {
 // - Only supports the Ctrl+Alt+G combination
 func (a *App) setupGlobalHotkey() error {
 	a.log.Debug("Setting up hotkey")
-	hk := a.hotkeyFactory.NewHotkey(getHotkeyModifiers(), hotkey.KeyG)
+	hk := a.hotkeyFactory.NewHotkey(
+		a.getHotkeyModifiers(),
+		config.Key(hotkey.KeyG),
+	)
 
 	if err := hk.Register(); err != nil {
-		return err
+		return fmt.Errorf("failed to register hotkey: %w", err)
 	}
 
 	go func() {
 		for range hk.Keydown() {
-			a.log.Debug("Global hotkey triggered")
-			a.quickNote.Show()
+			a.ShowQuickNote()
 		}
 	}()
 
@@ -267,4 +269,11 @@ func (a *App) GetMainWindow() fyne.Window {
 // SetMainWindow allows setting the main window for testing purposes
 func (a *App) SetMainWindow(window fyne.Window) {
 	a.mainWindow = window
+}
+
+func (a *App) getHotkeyModifiers() []config.Modifier {
+	return []config.Modifier{
+		config.Modifier(hotkey.ModCtrl),
+		config.Modifier(hotkey.ModShift),
+	}
 }

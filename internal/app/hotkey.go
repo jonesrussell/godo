@@ -13,7 +13,36 @@ func NewHotkeyFactory() config.HotkeyFactory {
 	return &defaultHotkeyFactory{}
 }
 
+// hotkeyWrapper wraps the hotkey package's types to match our interfaces
+type hotkeyWrapper struct {
+	*hotkey.Hotkey
+	events chan config.Event
+}
+
+func (h *hotkeyWrapper) Keydown() <-chan config.Event {
+	return h.events
+}
+
 // NewHotkey creates a new hotkey instance
-func (f *defaultHotkeyFactory) NewHotkey(mods []hotkey.Modifier, key hotkey.Key) config.HotkeyHandler {
-	return hotkey.New(mods, key)
+func (f *defaultHotkeyFactory) NewHotkey(mods []config.Modifier, key config.Key) config.HotkeyHandler {
+	// Convert our types to hotkey package types
+	hotkeyMods := make([]hotkey.Modifier, len(mods))
+	for i, mod := range mods {
+		hotkeyMods[i] = hotkey.Modifier(mod)
+	}
+
+	h := hotkey.New(hotkeyMods, hotkey.Key(key))
+	wrapper := &hotkeyWrapper{
+		Hotkey: h,
+		events: make(chan config.Event, 1),
+	}
+
+	// Start goroutine to convert hotkey.Event to config.Event
+	go func() {
+		for range h.Keydown() {
+			wrapper.events <- config.Event{}
+		}
+	}()
+
+	return wrapper
 }

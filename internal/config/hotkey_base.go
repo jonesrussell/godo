@@ -2,20 +2,27 @@ package config
 
 import (
 	"strings"
-
-	"golang.design/x/hotkey"
 )
+
+// Modifier represents a hotkey modifier (Ctrl, Alt, etc.)
+type Modifier int
+
+// Key represents a keyboard key
+type Key int
+
+// Event represents a hotkey event
+type Event struct{}
 
 // HotkeyHandler defines the interface for platform-specific hotkey implementations
 type HotkeyHandler interface {
 	Register() error
 	Unregister() error
-	Keydown() <-chan hotkey.Event
+	Keydown() <-chan Event
 }
 
 // HotkeyFactory creates platform-specific hotkey handlers
 type HotkeyFactory interface {
-	NewHotkey([]hotkey.Modifier, hotkey.Key) HotkeyHandler
+	NewHotkey([]Modifier, Key) HotkeyHandler
 }
 
 // HotkeyConfig holds hotkey configuration

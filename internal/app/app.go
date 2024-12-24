@@ -85,10 +85,13 @@ func (a *App) SetupUI() {
 }
 
 func (a *App) handleHotkeyEvents() {
+	a.log.Debug("Starting hotkey event handler")
 	for range a.hotkeyC {
 		a.log.Debug("Hotkey event received - showing quick note")
+		a.mainWindow.Show()
 		a.quickNote.Show()
 	}
+	a.log.Debug("Hotkey event handler stopped")
 }
 
 func (a *App) setupGlobalHotkey() error {
@@ -113,12 +116,26 @@ func (a *App) setupGlobalHotkey() error {
 	// Start hotkey listener in a goroutine
 	go func() {
 		a.log.Debug("Starting hotkey event listener")
-		for range hk.Keydown() {
-			a.log.Debug("Global hotkey triggered")
+		keydownChan := hk.Keydown()
+		if keydownChan == nil {
+			a.log.Error("Keydown channel is nil")
+			return
+		}
+
+		for {
 			select {
-			case a.hotkeyC <- struct{}{}: // Send hotkey event
-			default:
-				a.log.Debug("Hotkey event dropped - handler busy")
+			case _, ok := <-keydownChan:
+				if !ok {
+					a.log.Error("Keydown channel closed")
+					return
+				}
+				a.log.Debug("Global hotkey triggered")
+				select {
+				case a.hotkeyC <- struct{}{}:
+					a.log.Debug("Hotkey event sent to handler")
+				default:
+					a.log.Debug("Hotkey event dropped - handler busy")
+				}
 			}
 		}
 	}()

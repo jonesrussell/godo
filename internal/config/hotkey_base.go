@@ -5,10 +5,10 @@ import (
 )
 
 // Modifier represents a hotkey modifier (Ctrl, Alt, etc.)
-type Modifier int
+type Modifier uint8
 
 // Key represents a keyboard key
-type Key int
+type Key uint16
 
 // Event represents a hotkey event
 type Event struct{}

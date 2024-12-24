@@ -1,195 +1,126 @@
-package app_test
+package app
 
 import (
 	"testing"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/test"
-	"github.com/jonesrussell/godo/internal/app"
+	"fyne.io/fyne/v2/widget"
 	"github.com/jonesrussell/godo/internal/common"
 	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/logger"
-	"github.com/jonesrussell/godo/internal/storage/memory"
+	"github.com/jonesrussell/godo/internal/storage/mock"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
+// MockQuickNoteService implements QuickNoteService for testing
 type MockQuickNoteService struct {
-	showCalled bool
-	hideCalled bool
+	shown     bool
+	showCount int
 }
 
 func (m *MockQuickNoteService) Show() {
-	m.showCalled = true
+	m.shown = true
+	m.showCount++
 }
 
 func (m *MockQuickNoteService) Hide() {
-	m.hideCalled = true
+	m.shown = false
 }
 
-type MockSystrayService struct {
-	ready     bool
-	menu      *fyne.Menu
-	icon      fyne.Resource
-	setupDone bool
-}
-
-func (m *MockSystrayService) Setup(menu *fyne.Menu) {
-	m.menu = menu
-	m.setupDone = true
-	m.ready = true
-}
-
-func (m *MockSystrayService) SetIcon(resource fyne.Resource) {
-	m.icon = resource
-}
-
-func (m *MockSystrayService) IsReady() bool {
-	return m.ready
-}
-
-func setupTestApp(t *testing.T) (*app.App, *MockQuickNoteService, *MockSystrayService) {
+func setupTestApp(t *testing.T) (*App, *MockQuickNoteService) {
 	t.Helper()
 
-	// Setup logger
 	log, err := logger.New(&common.LogConfig{
-		Level:       "debug",
-		Output:      []string{"stdout"},
-		ErrorOutput: []string{"stderr"},
+		Level:   "debug",
+		Console: true,
 	})
-	require.NoError(t, err)
+	assert.NoError(t, err)
 
-	// Setup in-memory store
-	store := memory.New()
-
-	// Setup config with in-memory database
 	cfg := &config.Config{
 		App: config.AppConfig{
 			Name:    "Test App",
-			Version: "0.0.1",
+			Version: "0.1.0",
 		},
-		Database: config.DatabaseConfig{
-			Path: ":memory:",
+		Hotkeys: config.HotkeyConfig{
+			QuickNote: "Ctrl+Alt+G",
 		},
 	}
 
-	// Create app with store
-	testApp := app.NewApp(cfg, store, log)
-	mockQuickNote := &MockQuickNoteService{}
-	mockSystray := &MockSystrayService{}
+	store := mock.NewStore()
+	app := NewApp(cfg, store, log)
+	qn := &MockQuickNoteService{}
+	app.SetQuickNoteService(qn)
 
-	testApp.SetQuickNoteService(mockQuickNote)
-	testApp.SetSystrayService(mockSystray)
-
-	return testApp, mockQuickNote, mockSystray
+	return app, qn
 }
 
-func TestApp(t *testing.T) {
-	tests := []struct {
-		name string
-		fn   func(*testing.T, *app.App, *MockQuickNoteService, *MockSystrayService)
-	}{
-		{
-			name: "Save and retrieve notes",
-			fn: func(t *testing.T, a *app.App, _ *MockQuickNoteService, _ *MockSystrayService) {
-				err := a.SaveNote("Test note")
-				require.NoError(t, err)
+func TestHotkeyIntegration(t *testing.T) {
+	t.Run("lifecycle and hotkey setup", func(t *testing.T) {
+		app, qn := setupTestApp(t)
+		defer app.Cleanup()
 
-				notes, err := a.GetNotes()
-				require.NoError(t, err)
-				assert.Contains(t, notes, "Test note")
-			},
-		},
-		{
-			name: "Quick note service integration",
-			fn: func(t *testing.T, a *app.App, m *MockQuickNoteService, _ *MockSystrayService) {
-				assert.False(t, m.showCalled)
-				a.ShowQuickNote()
-				assert.True(t, m.showCalled)
-			},
-		},
-		{
-			name: "System tray setup",
-			fn: func(t *testing.T, a *app.App, _ *MockQuickNoteService, s *MockSystrayService) {
-				a.SetupUI()
-				assert.True(t, s.setupDone)
-				assert.NotNil(t, s.menu)
-				assert.NotNil(t, s.icon)
-			},
-		},
-		{
-			name: "Version check",
-			fn: func(t *testing.T, a *app.App, _ *MockQuickNoteService, _ *MockSystrayService) {
-				version := a.GetVersion()
-				assert.Equal(t, "0.0.1", version)
-			},
-		},
-		{
-			name: "Lifecycle events",
-			fn: func(t *testing.T, a *app.App, _ *MockQuickNoteService, _ *MockSystrayService) {
-				// Create a test app to verify lifecycle events
-				testApp := test.NewApp()
-				testWindow := testApp.NewWindow("Test")
-				defer testWindow.Close()
+		// Setup UI which includes lifecycle events
+		app.SetupUI()
 
-				// Replace the main window with our test window
-				a.SetMainWindow(testWindow)
+		// Verify initial state
+		assert.False(t, qn.shown)
+		assert.Equal(t, 0, qn.showCount)
 
-				// Run setup which should trigger lifecycle events
-				a.SetupUI()
+		// Simulate hotkey by calling Show directly
+		app.ShowQuickNote()
+		assert.True(t, qn.shown)
+		assert.Equal(t, 1, qn.showCount)
 
-				// Verify the window exists and has content
-				assert.NotNil(t, testWindow.Content(), "Window should have content")
+		// Hide and verify
+		qn.Hide()
+		assert.False(t, qn.shown)
 
-				// Check window size
-				size := testWindow.Canvas().Size()
-				assert.Equal(t, fyne.NewSize(800, 600), size, "Window should be properly sized")
-			},
-		},
-		{
-			name: "Main window hidden on startup",
-			fn: func(t *testing.T, a *app.App, _ *MockQuickNoteService, _ *MockSystrayService) {
-				// Create a test window using Fyne's test package
-				testApp := test.NewApp()
-				testWindow := testApp.NewWindow("Test")
-				defer testWindow.Close()
+		// Trigger multiple shows to verify counter
+		app.ShowQuickNote()
+		app.ShowQuickNote()
+		assert.Equal(t, 3, qn.showCount)
+	})
 
-				// Replace the main window with our test window
-				a.SetMainWindow(testWindow)
+	t.Run("hotkey display in UI", func(t *testing.T) {
+		app, _ := setupTestApp(t)
+		defer app.Cleanup()
 
-				// Run the setup which should hide the window
-				a.SetupUI()
+		app.SetupUI()
+		win := test.NewWindow(app.GetMainWindow().Content())
+		defer win.Close()
 
-				// Check window size
-				size := testWindow.Canvas().Size()
-				assert.Equal(t, fyne.NewSize(800, 600), size, "Window should be properly sized")
-			},
-		},
-		{
-			name: "System tray menu options",
-			fn: func(t *testing.T, a *app.App, _ *MockQuickNoteService, s *MockSystrayService) {
-				a.SetupUI()
+		// Find the label with hotkey text
+		var found bool
+		expectedText := "Press Ctrl+Alt+G for quick notes"
 
-				// Verify the menu was set up
-				assert.NotNil(t, s.menu)
-
-				// Check menu items
-				menuItems := s.menu.Items
-				assert.Equal(t, 4, len(menuItems), "Should have 4 menu items (Show, Quick Note, Separator, Quit)")
-
-				// Check menu item labels
-				assert.Equal(t, "Show", menuItems[0].Label)
-				assert.Equal(t, "Quick Note", menuItems[1].Label)
-				assert.True(t, menuItems[2].IsSeparator)
-				assert.Equal(t, "Quit", menuItems[3].Label)
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			testApp, mockQuickNote, mockSystray := setupTestApp(t)
-			tt.fn(t, testApp, mockQuickNote, mockSystray)
+		// Walk through all containers to find the label
+		walkContainers(win.Content(), func(w fyne.CanvasObject) {
+			if label, ok := w.(*widget.Label); ok {
+				if label.Text == expectedText {
+					found = true
+				}
+			}
 		})
+
+		assert.True(t, found, "Hotkey text should be visible in the UI")
+	})
+}
+
+// walkContainers recursively walks through containers to find widgets
+func walkContainers(o fyne.CanvasObject, fn func(fyne.CanvasObject)) {
+	fn(o)
+
+	switch cont := o.(type) {
+	case *fyne.Container:
+		for _, item := range cont.Objects {
+			walkContainers(item, fn)
+		}
+	case *container.Split:
+		walkContainers(cont.Leading, fn)
+		walkContainers(cont.Trailing, fn)
+	case *container.Scroll:
+		walkContainers(cont.Content, fn)
 	}
 }

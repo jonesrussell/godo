@@ -1,3 +1,4 @@
+// Package app implements the main application logic for Godo.
 package app
 
 import (
@@ -18,6 +19,7 @@ import (
 	"golang.design/x/hotkey"
 )
 
+// App represents the main application instance.
 type App struct {
 	fyneApp    fyne.App
 	mainWindow fyne.Window
@@ -26,9 +28,9 @@ type App struct {
 	store      storage.Store
 	config     *config.Config
 	log        logger.Logger
-	hotkeyC    chan struct{}
 }
 
+// NewApp creates a new application instance.
 func NewApp(cfg *config.Config, store storage.Store, log logger.Logger) *App {
 	log.Debug("Creating new Fyne app")
 	fyneApp := fyneapp.NewWithID("io.github.jonesrussell.godo")
@@ -43,7 +45,6 @@ func NewApp(cfg *config.Config, store storage.Store, log logger.Logger) *App {
 		store:      store,
 		config:     cfg,
 		log:        log,
-		hotkeyC:    make(chan struct{}, 1),
 	}
 
 	log.Debug("Creating system tray service")
@@ -60,6 +61,7 @@ func NewApp(cfg *config.Config, store storage.Store, log logger.Logger) *App {
 	return app
 }
 
+// SetupUI initializes the application UI and hotkeys.
 func (a *App) SetupUI() {
 	a.setupSystemTray()
 	a.setupMainWindow()
@@ -69,7 +71,8 @@ func (a *App) SetupUI() {
 		a.log.Info("Lifecycle: Started")
 		if err := a.setupGlobalHotkey(); err != nil {
 			a.log.Error("Failed to setup global hotkey", "error", err)
-			dialog.ShowError(fmt.Errorf("Failed to register global hotkey (%s). Quick note feature will not work.", string(a.config.Hotkeys.QuickNote)), a.mainWindow)
+			msg := fmt.Sprintf("Failed to register global hotkey (%s).", string(a.config.Hotkeys.QuickNote))
+			dialog.ShowError(fmt.Errorf("%s Quick note feature will not work", msg), a.mainWindow)
 		} else {
 			a.log.Info("Global hotkey setup complete", "hotkey", a.config.Hotkeys.QuickNote)
 		}
@@ -77,77 +80,42 @@ func (a *App) SetupUI() {
 
 	a.fyneApp.Lifecycle().SetOnStopped(func() {
 		a.log.Info("Lifecycle: Stopped")
-		close(a.hotkeyC)
 	})
 }
 
+// setupGlobalHotkey configures the global hotkey for quick notes.
+//
+// Implementation Notes:
+// 1. The hotkey is hardcoded to Ctrl+Alt+G for reliability
+// 2. Uses golang.design/x/hotkey for cross-platform global hotkey support
+// 3. Runs a dedicated goroutine to handle hotkey events
+// 4. The hotkey registration must happen after the application starts
+//
+// Troubleshooting:
+// - If hotkey doesn't work, check if another application has registered Ctrl+Alt+G
+// - Verify the application has the necessary permissions for global hotkeys
+// - On Windows, try running as administrator if hotkey registration fails
+// - Check logs for "Global hotkey registered successfully" message
+//
+// Known Issues:
+// - Configuration via config.Hotkeys.QuickNote is not currently used
+// - The hotkey cannot be changed at runtime
+// - Only supports the Ctrl+Alt+G combination
 func (a *App) setupGlobalHotkey() error {
-	mapper := config.NewHotkeyMapper(a.log)
-	mods, key, err := a.config.Hotkeys.QuickNote.Parse(mapper)
-	if err != nil {
-		a.log.Error("Failed to parse hotkey", "error", err)
-		return fmt.Errorf("failed to parse hotkey: %w", err)
-	}
+	hk := hotkey.New([]hotkey.Modifier{
+		hotkey.ModCtrl,
+		hotkey.ModAlt,
+	}, hotkey.KeyG)
 
-	a.log.Debug("Creating hotkey", "modifiers", fmt.Sprintf("%v", mods), "key", fmt.Sprintf("%v", key))
-	hk := hotkey.New(mods, key)
-
-	a.log.Debug("Registering hotkey")
 	if err := hk.Register(); err != nil {
-		a.log.Error("Failed to register hotkey", "error", err)
-		return fmt.Errorf("failed to register hotkey: %w", err)
+		return err
 	}
 
-	// Test if hotkey is registered
-	if hk == nil {
-		a.log.Error("Hotkey is nil after registration")
-		return fmt.Errorf("hotkey is nil after registration")
-	}
-
-	a.log.Info("Global hotkey registered successfully", "hotkey", a.config.Hotkeys.QuickNote)
-
-	// Start hotkey listener in a goroutine
 	go func() {
-		a.log.Debug("Starting hotkey event listener")
-		keydownChan := hk.Keydown()
-		if keydownChan == nil {
-			a.log.Error("Keydown channel is nil")
-			return
-		}
-
-		a.log.Debug("Hotkey listener setup",
-			"hotkey", a.config.Hotkeys.QuickNote,
-			"modifiers", fmt.Sprintf("%v", mods),
-			"key", fmt.Sprintf("%v", key))
-
-		for {
-			a.log.Debug("Waiting for hotkey event...")
-			event, ok := <-keydownChan
-			if !ok {
-				a.log.Error("Keydown channel closed")
-				return
-			}
-			a.log.Debug("Global hotkey triggered",
-				"event", fmt.Sprintf("%+v", event),
-				"hotkey", a.config.Hotkeys.QuickNote)
-
-			select {
-			case a.hotkeyC <- struct{}{}:
-				a.log.Debug("Hotkey event sent to handler")
-			default:
-				a.log.Debug("Handler busy - dropping event")
-			}
-		}
-	}()
-
-	// Start event handler in a goroutine
-	go func() {
-		a.log.Debug("Starting hotkey event handler")
-		for range a.hotkeyC {
-			a.log.Debug("Hotkey event received - showing quick note")
+		for range hk.Keydown() {
+			a.log.Debug("Global hotkey triggered")
 			a.quickNote.Show()
 		}
-		a.log.Debug("Hotkey event handler stopped")
 	}()
 
 	return nil

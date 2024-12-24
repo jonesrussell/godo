@@ -1,4 +1,5 @@
-//go:build windows || darwin
+//go:build !docker && (windows || darwin)
+// +build !docker
 // +build windows darwin
 
 package config

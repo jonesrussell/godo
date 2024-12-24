@@ -269,8 +269,8 @@ tasks:
     desc: Verify development environment
     cmds:
       - |
-        GO_VERSION=$(go version | cut -d " " -f 3)
-        if [[ "$GO_VERSION" != "go{{.GO_VERSION}}" ]]; then
-          echo "Wrong Go version. Expected {{.GO_VERSION}}, got ${GO_VERSION#go}"
-          exit 1
-        fi
+        {{if eq OS "windows"}}
+          powershell -Command "if ((go version) -notmatch 'go1\.23|go1\.2[4-9]|go1\.[3-9]|go[2-9]') { Write-Error 'Go version must be 1.23 or higher'; exit 1 }"
+        {{else}}
+          go version | awk -F'go| ' '{split($3,v,"."); if (v[1] < 1 || (v[1] == 1 && v[2] < 23)) {print "Go version must be 1.23 or higher"; exit 1}}'
+        {{end}}

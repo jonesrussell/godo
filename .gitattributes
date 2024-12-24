@@ -1,8 +1,10 @@
 # Auto detect text files and perform LF normalization
-* text=auto
+* text=auto eol=lf
 
 # Go files should always use LF
 *.go text eol=lf
+go.mod text eol=lf
+go.sum text eol=lf
 
 # Taskfile should use LF
 *.yaml text eol=lf

@@ -192,3 +192,8 @@ func (a *App) GetNotes() ([]string, error) {
 func (a *App) GetVersion() string {
 	return a.config.App.Version
 }
+
+// SetSystrayService allows injection of a SystemTrayService for testing
+func (a *App) SetSystrayService(service systray.Interface) {
+	a.systray = service
+}

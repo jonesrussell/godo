@@ -6,6 +6,10 @@ vars:
     sh: go env GOOS
 
 tasks:
+  default:
+    cmds:
+      - task: run
+
   fmt:
     desc: Format Go code
     cmds:

@@ -68,6 +68,11 @@ var (
 
 	// HTTPSet provides HTTP server dependencies
 	HTTPSet = wire.NewSet(
+		ProvideHTTPPort,
+		ProvideReadTimeout,
+		ProvideWriteTimeout,
+		ProvideHeaderTimeout,
+		ProvideIdleTimeout,
 		wire.Struct(new(HTTPOptions), "*"),
 		ProvideHTTPConfig,
 	)
@@ -94,12 +99,14 @@ var (
 	AppSet = wire.NewSet(
 		app.New,
 		wire.Bind(new(app.Application), new(*app.App)),
+		BaseSet,
+		HTTPSet,
 	)
 
 	// TestSet provides mock dependencies for testing
 	TestSet = wire.NewSet(
 		ProvideMockStore,
-		ProvideMockMainWindow,
+		 ProvideMockMainWindow,
 		ProvideMockQuickNote,
 		ProvideMockHotkey,
 		wire.Bind(new(gui.MainWindow), new(*gui.MockMainWindow)),
@@ -222,10 +229,8 @@ func ProvideHTTPConfig(opts *HTTPOptions) *common.HTTPConfig {
 // InitializeApp initializes the application with all dependencies
 func InitializeApp() (app.Application, func(), error) {
 	wire.Build(
-		BaseSet,
 		LoggingSet,
 		StorageSet,
-		HTTPSet,
 		HotkeySet,
 		GUISet,
 		AppSet,
@@ -238,6 +243,7 @@ func InitializeTestApp() (*app.TestApp, func(), error) {
 	wire.Build(
 		LoggingSet,
 		TestSet,
+		BaseSet,
 		wire.Struct(new(app.TestApp), "*"),
 	)
 	return nil, nil, nil
@@ -281,4 +287,25 @@ func ProvideModifierKeys() common.ModifierKeys {
 // ProvideKeyCode provides the default hotkey key code
 func ProvideKeyCode() common.KeyCode {
 	return common.KeyCode("N")
+}
+
+// Provider functions for HTTP configuration
+func ProvideHTTPPort() common.HTTPPort {
+	return common.HTTPPort(8080)
+}
+
+func ProvideReadTimeout() common.ReadTimeoutSeconds {
+	return common.ReadTimeoutSeconds(30)
+}
+
+func ProvideWriteTimeout() common.WriteTimeoutSeconds {
+	return common.WriteTimeoutSeconds(30)
+}
+
+func ProvideHeaderTimeout() common.HeaderTimeoutSeconds {
+	return common.HeaderTimeoutSeconds(10)
+}
+
+func ProvideIdleTimeout() common.IdleTimeoutSeconds {
+	return common.IdleTimeoutSeconds(120)
 }

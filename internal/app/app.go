@@ -4,6 +4,7 @@ package app
 import (
 	"fyne.io/fyne/v2"
 	"github.com/jonesrussell/godo/internal/app/hotkey"
+	"github.com/jonesrussell/godo/internal/common"
 	"github.com/jonesrussell/godo/internal/gui"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
@@ -17,6 +18,10 @@ type App struct {
 	mainWindow gui.MainWindow
 	quickNote  gui.QuickNote
 	hotkey     hotkey.Manager
+	httpConfig *common.HTTPConfig
+	name       common.AppName
+	version    common.AppVersion
+	id         common.AppID
 }
 
 // New creates a new App instance
@@ -27,6 +32,10 @@ func New(
 	mainWindow gui.MainWindow,
 	quickNote gui.QuickNote,
 	hotkey hotkey.Manager,
+	httpConfig *common.HTTPConfig,
+	name common.AppName,
+	version common.AppVersion,
+	id common.AppID,
 ) *App {
 	return &App{
 		logger:     logger,
@@ -35,6 +44,10 @@ func New(
 		mainWindow: mainWindow,
 		quickNote:  quickNote,
 		hotkey:     hotkey,
+		httpConfig: httpConfig,
+		name:       name,
+		version:    version,
+		id:         id,
 	}
 }
 

@@ -79,6 +79,33 @@ Current Status: Adding HTTP API to Windows-only Todo App
   - [ ] API usage examples
   - [ ] Postman/HTTPie collections
 
+### Phase 2.5: Shared Client Library
+- [ ] Create godo-client-go Repository
+  - [ ] Initialize Go module
+  - [ ] Add OpenAPI generator configuration
+  - [ ] Set up CI/CD for client generation
+  - [ ] Add usage documentation
+- [ ] Generate Go Client
+  - [ ] Install oapi-codegen tool
+  - [ ] Generate client from OpenAPI spec
+  - [ ] Add custom HTTP client options
+  - [ ] Add retry and timeout logic
+- [ ] Testing and Validation
+  - [ ] Add unit tests
+  - [ ] Add integration tests
+  - [ ] Validate against live API
+  - [ ] Add examples
+- [ ] Dashboard Integration
+  - [ ] Add client as dependency to godashboard
+  - [ ] Create service wrapper
+  - [ ] Add configuration options
+  - [ ] Implement error handling
+- [ ] Maintenance Plan
+  - [ ] Set up automated updates
+  - [ ] Add version compatibility matrix
+  - [ ] Document breaking changes process
+  - [ ] Add migration guides
+
 ### Phase 3: Real-time Updates (Future)
 - [ ] WebSocket Support
   - [ ] Task update notifications

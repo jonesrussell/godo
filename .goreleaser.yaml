@@ -38,18 +38,18 @@ archives:
   name_template: "{{ .ProjectName }}_{{ .Version }}_Windows_{{ .Arch }}"
   format: zip
   files:
-  - README.md
   - LICENSE
-  - configs/*
+  - README.md
+  - configs/*.yaml
 
 - id: linux
   builds: [ linux ]
   name_template: "{{ .ProjectName }}_{{ .Version }}_Linux_{{ .Arch }}"
   format: tar.gz
   files:
-  - README.md
   - LICENSE
-  - configs/*
+  - README.md
+  - configs/*.yaml
 
 checksum:
   name_template: 'checksums.txt'

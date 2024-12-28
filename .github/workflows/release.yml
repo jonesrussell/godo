@@ -7,74 +7,57 @@ on:
 
 permissions:
   contents: write
+  discussions: write
+  packages: write
 
 jobs:
-  prepare:
-    runs-on: ubuntu-latest
-    outputs:
-      go-cache-key: ${{ steps.go-cache.outputs.cache-key }}
-      version: ${{ steps.version.outputs.version }}
-    steps:
-      - uses: actions/checkout@v4
-      - id: go-cache
-        run: echo "cache-key=${{ hashFiles('**/go.sum') }}" >> $GITHUB_OUTPUT
-      - id: version
-        run: echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-
-  build:
-    needs: prepare
+  release:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
         with:
-          go-version: 1.23
-      - name: Install system dependencies
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.23'
+          cache: true
+
+      - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc libx11-dev libxcursor-dev libxrandr-dev libxinerama-dev libxi-dev libxxf86vm-dev
-      - uses: actions/cache@v4
+          sudo apt-get install -y gcc libgl1-mesa-dev xorg-dev mingw-w64
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v5
         with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-release-${{ needs.prepare.outputs.go-cache-key }}
+          distribution: goreleaser
+          version: latest
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Install Task
-        uses: arduino/setup-task@v2
+      - name: Create Discussion
+        uses: actions/github-script@v7
         with:
-          version: 3.x
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const tag = context.ref.replace('refs/tags/', '');
+            
+            try {
+              const release = await github.rest.repos.getRelease({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag_name: tag
+              });
 
-      - name: Build Linux binary
-        run: task build:linux
-
-      - name: Build Windows binary
-        run: task build:windows
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: binaries
-          path: |
-            bin/godo.exe
-            bin/godo
-
-  release:
-    needs: [prepare, build]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: binaries
-          path: bin
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            bin/godo.exe
-            bin/godo
-          generate_release_notes: true
-          draft: false
-          prerelease: false 
+              await github.rest.discussions.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                category_id: "DIC_kwDOLKQXXc4CcDVS",
+                title: `Release ${tag}`,
+                body: release.data.body
+              });
+            } catch (error) {
+              console.log('Error creating discussion:', error);
+            } 

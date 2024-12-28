@@ -1,0 +1,76 @@
+version: 1
+
+before:
+  hooks:
+  - go mod tidy
+
+builds:
+- id: windows
+  env:
+  - CGO_ENABLED=1
+  - CC=x86_64-w64-mingw32-gcc
+  goos:
+  - windows
+  goarch:
+  - amd64
+  ldflags:
+  - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
+  tags:
+  - windows
+
+- id: linux
+  env:
+  - CGO_ENABLED=1
+  goos:
+  - linux
+  goarch:
+  - amd64
+  ldflags:
+  - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
+  tags:
+  - linux
+
+archives:
+- id: windows
+  builds: [ windows ]
+  name_template: "{{ .ProjectName }}_{{ .Version }}_Windows_{{ .Arch }}"
+  format: zip
+  files:
+  - README.md
+  - LICENSE
+  - configs/*
+
+- id: linux
+  builds: [ linux ]
+  name_template: "{{ .ProjectName }}_{{ .Version }}_Linux_{{ .Arch }}"
+  format: tar.gz
+  files:
+  - README.md
+  - LICENSE
+  - configs/*
+
+checksum:
+  name_template: 'checksums.txt'
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+    - '^docs:'
+    - '^test:'
+    - '^ci:'
+    - Merge pull request
+    - Merge branch
+
+release:
+  draft: false
+  prerelease: auto
+  mode: replace
+  header: |
+    ## Godo {{ .Tag }} ({{ .Date }})
+
+    Welcome to this new release!
+  footer: |
+    **Full Changelog**: https://github.com/jonesrussell/godo/compare/{{ .PreviousTag }}...{{ .Tag }}
+
+  discussion_category_name: Releases

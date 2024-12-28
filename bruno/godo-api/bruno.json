@@ -1,0 +1,8 @@
+{
+  "name": "Godo API",
+  "version": "1.0.0",
+  "description": "API collection for Godo Todo Application",
+  "variables": {
+    "baseUrl": "http://localhost:8080"
+  }
+} 

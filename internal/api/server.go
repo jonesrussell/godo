@@ -11,6 +11,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
+	"github.com/google/uuid"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
 )
@@ -101,6 +102,12 @@ func (s *Server) handleCreateTask(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
+
+	// Generate UUID and set timestamps
+	now := time.Now()
+	task.ID = uuid.New().String()
+	task.CreatedAt = now
+	task.UpdatedAt = now
 
 	if err := s.store.Add(task); err != nil {
 		s.logger.Error("Failed to create task", "error", err)

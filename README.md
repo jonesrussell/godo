@@ -26,6 +26,11 @@ The quick-note feature uses a minimal graphical window that appears when you pre
   - JSON responses
   - Health check endpoint
   - Proper error handling
+- Robust logging system
+  - Structured logging with multiple implementations
+  - Test-friendly logging for better test output
+  - Comprehensive operation tracking
+  - Clean abstraction for easy customization
 - Runs as a system service
 - SQLite database for reliable data storage
 - Cross-platform compatibility using Fyne toolkit

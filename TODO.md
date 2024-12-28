@@ -1,5 +1,5 @@
 # Godo - Todo Application with Quick-Note Support
-Current Status: Adding HTTP API to Windows-only Todo App
+Current Status: Cross-platform Todo App with REST API and CI/CD Pipeline
 
 ## ✅ Ready-to-Use Components
 
@@ -23,9 +23,16 @@ Current Status: Adding HTTP API to Windows-only Todo App
   - Basic CRUD operations
   - Error handling
   - Health check endpoint
+- [x] Cross-Platform Build System
+  - Docker support
+  - Windows builds
+  - Linux builds
+  - GitHub Actions CI/CD
+  - Automated releases
+  - Binary distribution
 
-### UI Features (Windows)
-- [x] System Tray Integration
+### UI Features
+- [x] System Tray Integration (Windows)
 - [x] Quick Note Window
 - [x] Todo List Interface
 - [x] Keyboard Shortcuts

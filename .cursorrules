@@ -153,13 +153,16 @@ gui_library_notes:
 
 project_overview:
 - todo_application_features:
-    description: "Main features of the Todo application (Currently Windows-only)."
+    description: "Main features of the Todo application (Cross-platform)."
     features:
     - quick_note_capture_via_global_hotkey: true
     - full_featured_todo_management_interface: true
     - built_with_go_and_sqlite: true
-    - current_platform: "Windows"
-    - future_platforms: [ "Linux", "macOS" ]
+    - current_platforms: [ "Windows", "Linux" ]
+    - future_platforms: [ "macOS" ]
+    - cross_platform_build_system: true
+    - github_actions_ci_cd: true
+    - docker_support: true
 
 core_features:
 - quick_note_system:

@@ -2,7 +2,7 @@
 
 ## Overview
 
-Godo is a Windows-focused Todo application with quick-note capabilities, built in Go using the Fyne UI toolkit. The application is designed with a clean architecture that separates concerns and allows for future cross-platform support.
+Godo is a cross-platform Todo application with quick-note capabilities and REST API support, built in Go using the Fyne UI toolkit. The application is designed with a clean architecture that separates concerns and supports multiple platforms.
 
 ## Core Components
 
@@ -11,6 +11,7 @@ Godo is a Windows-focused Todo application with quick-note capabilities, built i
 - Component coordination
 - Event handling
 - Global hotkey management
+- Platform-specific implementations
 
 ### Storage Layer (`internal/storage`)
 - Task persistence
@@ -21,13 +22,23 @@ Godo is a Windows-focused Todo application with quick-note capabilities, built i
 ### GUI Layer (`internal/gui`)
 - Main window management
 - Quick note window
-- System tray integration
+- System tray integration (Windows)
 - Event handling
+- Cross-platform UI components
+
+### HTTP API Layer (`internal/api`)
+- RESTful endpoints
+- Chi router with middleware
+- JSON response handling
+- Health check endpoint
+- Error handling
+- Future WebSocket support
 
 ### Configuration (`internal/config`)
 - YAML-based configuration
 - Environment-specific settings
 - Runtime configuration management
+- API configuration
 
 ### Logging (`internal/logger`)
 - Clean logger abstraction
@@ -44,6 +55,7 @@ Godo is a Windows-focused Todo application with quick-note capabilities, built i
 - Shared types and utilities
 - Cross-cutting concerns
 - Common interfaces
+- Platform-specific utilities
 
 ## Dependency Management
 
@@ -57,11 +69,13 @@ The application uses Wire for dependency injection, configured in:
    - GUI events
    - Global hotkeys
    - System tray actions
+   - HTTP API requests
 
 2. Application Logic
    - Event handling
    - Task management
    - State updates
+   - API request processing
 
 3. Storage
    - Task persistence
@@ -74,27 +88,36 @@ The application uses Wire for dependency injection, configured in:
 - Platform-specific build tags
 - Docker support for Linux builds
 - Windows-native compilation
+- GitHub Actions CI/CD pipeline
+- Automated releases
+- Cross-platform binary distribution
 
 ## Testing Strategy
 
 - Unit tests for core components
-- Integration tests for storage
+- Integration tests for storage and API
 - GUI testing utilities
 - Mock implementations for testing
+- API endpoint testing
+- Cross-platform testing
 
-## Future Architecture (HTTP API)
+## API Architecture
 
-The upcoming HTTP API will add:
+The HTTP API includes:
 
 1. HTTP Server Layer
    - Chi router for endpoints
    - JSON response handling
    - Middleware pipeline
+   - Health checks
+   - Error handling
 
-2. WebSocket Support
-   - Real-time updates
+2. Future Enhancements
+   - WebSocket support for real-time updates
    - Connection management
    - Event broadcasting
+   - Rate limiting
+   - Authentication
 
 3. API Documentation
    - OpenAPI/Swagger specs

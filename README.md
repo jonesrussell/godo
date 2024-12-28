@@ -1,6 +1,6 @@
 # Godo
 
-A minimalist todo application with quick-note hotkey support and REST API.
+A cross-platform todo application with quick-note hotkey support and REST API.
 
 ## Overview
 
@@ -13,6 +13,10 @@ The quick-note feature uses a minimal graphical window that appears when you pre
 
 ## Features
 
+- Cross-platform support
+  - Windows: Full support with system tray integration
+  - Linux: Full support (except system tray)
+  - macOS: Coming soon
 - Instant note capture with global hotkey
   - Press hotkey → Graphical popup appears
   - Type note → Press enter → Window disappears
@@ -31,11 +35,12 @@ The quick-note feature uses a minimal graphical window that appears when you pre
   - Test-friendly logging for better test output
   - Comprehensive operation tracking
   - Clean abstraction for easy customization
-- Runs as a system service
+- Automated builds and releases
+  - GitHub Actions CI/CD pipeline
+  - Cross-platform binary releases
+  - Docker support for development and testing
 - SQLite database for reliable data storage
-- Cross-platform compatibility using Fyne toolkit
-  - Windows
-  - Linux
+- Built with Fyne toolkit for native look and feel
 
 ## API Endpoints
 

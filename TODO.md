@@ -178,14 +178,14 @@ Current Status: Cross-platform Todo App with REST API and CI/CD Pipeline
     - [x] TaskWriter interface for write operations
     - [x] TaskStore interface combining read/write
     - [x] TaskTx interface for transaction support
-  - [ ] Add Validation Layer
-    - [ ] Input validation
-    - [ ] State validation
-    - [ ] Connection validation
-  - [ ] Error Types
-    - [ ] Domain-specific error types
-    - [ ] Error wrapping support
-    - [ ] Error code system
+  - [x] Add Validation Layer
+    - [x] Input validation
+    - [x] State validation
+    - [x] Connection validation
+  - [x] Error Types
+    - [x] Domain-specific error types
+    - [x] Error wrapping support
+    - [x] Error code system
   - [x] Documentation
     - [x] Architecture decisions
     - [x] Interface documentation

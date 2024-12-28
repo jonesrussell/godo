@@ -16,10 +16,15 @@ func newMigrationSet() *migrationSet {
 			`CREATE TABLE IF NOT EXISTS tasks (
 				id TEXT PRIMARY KEY,
 				title TEXT NOT NULL,
-				completed BOOLEAN DEFAULT FALSE,
+				description TEXT,
 				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-				updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+				updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+				completed_at TIMESTAMP
 			)`,
+			`-- Migration to update existing tasks table
+			ALTER TABLE tasks ADD COLUMN IF NOT EXISTS description TEXT;
+			ALTER TABLE tasks ADD COLUMN IF NOT EXISTS completed_at TIMESTAMP;
+			ALTER TABLE tasks DROP COLUMN IF EXISTS completed;`,
 		},
 	}
 }

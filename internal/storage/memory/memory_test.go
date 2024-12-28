@@ -2,18 +2,23 @@ package memory
 
 import (
 	"testing"
+	"time"
 
 	"github.com/jonesrussell/godo/internal/storage"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestMemoryStore(t *testing.T) {
-	store := NewMemoryStore()
+	store := New()
+	now := time.Now()
 
 	t.Run("Add and List", func(t *testing.T) {
 		task := storage.Task{
-			ID:    "1",
-			Title: "Test Task",
+			ID:          "1",
+			Title:       "Test Task",
+			Description: "Test Description",
+			CreatedAt:   now,
+			UpdatedAt:   now,
 		}
 
 		err := store.Add(task)
@@ -27,8 +32,12 @@ func TestMemoryStore(t *testing.T) {
 
 	t.Run("Update", func(t *testing.T) {
 		task := storage.Task{
-			ID:    "1",
-			Title: "Updated Task",
+			ID:          "1",
+			Title:       "Updated Task",
+			Description: "Updated Description",
+			CreatedAt:   now,
+			UpdatedAt:   now,
+			CompletedAt: now,
 		}
 
 		err := store.Update(task)
@@ -37,6 +46,8 @@ func TestMemoryStore(t *testing.T) {
 		tasks, err := store.List()
 		assert.NoError(t, err)
 		assert.Equal(t, "Updated Task", tasks[0].Title)
+		assert.Equal(t, "Updated Description", tasks[0].Description)
+		assert.Equal(t, now, tasks[0].CompletedAt)
 	})
 
 	t.Run("Delete", func(t *testing.T) {

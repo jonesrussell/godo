@@ -2,6 +2,7 @@ package sqlite
 
 import (
 	"database/sql"
+	"time"
 
 	"github.com/jonesrussell/godo/internal/storage"
 	"go.uber.org/zap"
@@ -36,14 +37,14 @@ func New(path string, logger *zap.Logger) (*Store, error) {
 
 func (s *Store) Add(task storage.Task) error {
 	_, err := s.db.Exec(
-		"INSERT INTO tasks (id, title, completed) VALUES (?, ?, ?)",
-		task.ID, task.Title, task.Completed,
+		"INSERT INTO tasks (id, title, description, created_at, updated_at, completed_at) VALUES (?, ?, ?, ?, ?, ?)",
+		task.ID, task.Title, task.Description, task.CreatedAt, task.UpdatedAt, task.CompletedAt,
 	)
 	return err
 }
 
 func (s *Store) List() ([]storage.Task, error) {
-	rows, err := s.db.Query("SELECT id, title, completed FROM tasks")
+	rows, err := s.db.Query("SELECT id, title, description, created_at, updated_at, completed_at FROM tasks")
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +53,7 @@ func (s *Store) List() ([]storage.Task, error) {
 	var tasks []storage.Task
 	for rows.Next() {
 		var task storage.Task
-		if err := rows.Scan(&task.ID, &task.Title, &task.Completed); err != nil {
+		if err := rows.Scan(&task.ID, &task.Title, &task.Description, &task.CreatedAt, &task.UpdatedAt, &task.CompletedAt); err != nil {
 			return nil, err
 		}
 		tasks = append(tasks, task)
@@ -62,8 +63,8 @@ func (s *Store) List() ([]storage.Task, error) {
 
 func (s *Store) Update(task storage.Task) error {
 	result, err := s.db.Exec(
-		"UPDATE tasks SET title = ?, completed = ? WHERE id = ?",
-		task.Title, task.Completed, task.ID,
+		"UPDATE tasks SET title = ?, description = ?, updated_at = ?, completed_at = ? WHERE id = ?",
+		task.Title, task.Description, time.Now(), task.CompletedAt, task.ID,
 	)
 	if err != nil {
 		return err

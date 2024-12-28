@@ -3,6 +3,7 @@ package mainwindow
 
 import (
 	"fmt"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -94,9 +95,13 @@ func (w *Window) Setup() error {
 			deleteBtn := box.Objects[2].(*widget.Button)
 
 			// Update check state
-			check.Checked = task.Completed
+			check.Checked = !task.CompletedAt.IsZero()
 			check.OnChanged = func(checked bool) {
-				task.Completed = checked
+				if checked {
+					task.CompletedAt = time.Now()
+				} else {
+					task.CompletedAt = time.Time{}
+				}
 				if err := w.store.Update(task); err != nil {
 					w.logger.Error("Failed to update task", "error", err)
 					// Revert UI state on error

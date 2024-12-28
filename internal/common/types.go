@@ -10,6 +10,13 @@ type LogConfig struct {
 	ErrorOutput []string `mapstructure:"error_output" yaml:"error_output"`
 }
 
+// HTTPConfig holds HTTP server configuration
+type HTTPConfig struct {
+	Port         int `mapstructure:"port" yaml:"port"`
+	ReadTimeout  int `mapstructure:"read_timeout" yaml:"read_timeout"`
+	WriteTimeout int `mapstructure:"write_timeout" yaml:"write_timeout"`
+}
+
 // HotkeyBinding represents a keyboard shortcut configuration
 type HotkeyBinding struct {
 	Modifiers []string `yaml:"modifiers"`

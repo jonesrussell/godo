@@ -22,3 +22,8 @@ ui:
   quick_note:
     width: 400
     height: 200
+
+http:
+  port: 8080
+  read_timeout: 10
+  write_timeout: 10

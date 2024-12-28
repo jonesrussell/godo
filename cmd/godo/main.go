@@ -1,70 +1,71 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
-	"runtime/debug"
+	"os/signal"
+	"syscall"
 
+	"github.com/jonesrussell/godo/internal/api"
 	"github.com/jonesrussell/godo/internal/container"
 	"go.uber.org/zap"
 )
 
-func main() {
-	fmt.Println("=== Godo Starting (main) ===")
-
-	// Add panic recovery
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Printf("Recovered from panic: %v\n", r)
-			fmt.Printf("Stack trace:\n%s\n", debug.Stack())
-			os.Exit(1)
-		}
-	}()
-
-	if err := run(); err != nil {
-		fmt.Printf("Application error: %v\n", err)
-		os.Exit(1)
-	}
-}
-
 func run() error {
-	fmt.Println("=== Entering run() ===")
+	fmt.Println("=== Starting Godo... ===")
 
-	// Try creating logger first
+	// Initialize logger first
 	logger, err := zap.NewDevelopment()
 	if err != nil {
 		fmt.Printf("Failed to create logger: %v\n", err)
 		return err
 	}
-	defer func() {
-		_ = logger.Sync() // Ignore sync errors
+	defer logger.Sync()
+
+	// Create application container
+	container, err := container.Initialize(logger.Sugar())
+	if err != nil {
+		fmt.Printf("Failed to initialize container: %v\n", err)
+		logger.Error("Failed to initialize container", zap.Error(err))
+		return err
+	}
+
+	// Create HTTP server runner
+	httpRunner := api.NewRunner(container.Store, container.Logger)
+	httpRunner.Start(8080)
+
+	// Setup signal handling
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+
+	// Run app in a goroutine
+	errChan := make(chan error, 1)
+	go func() {
+		if err := container.App.Run(); err != nil {
+			errChan <- err
+		}
 	}()
 
-	fmt.Println("=== Logger created successfully ===")
-	fmt.Println("=== Initializing app... ===")
-
-	// Create app
-	app, cleanup, err := container.InitializeApp()
-	if err != nil {
-		fmt.Printf("Failed to initialize app: %v\n", err)
-		logger.Error("Failed to initialize app", zap.Error(err))
-		cleanup()
-		return err
-	}
-	defer cleanup()
-
-	fmt.Println("=== Setting up UI... ===")
-	// Setup UI
-	app.SetupUI()
-
-	fmt.Println("=== Running app... ===")
-	// Run app
-	if err := app.Run(); err != nil {
-		fmt.Printf("Failed to run app: %v\n", err)
-		logger.Error("Failed to run app", zap.Error(err))
+	// Wait for signal or error
+	select {
+	case sig := <-sigChan:
+		logger.Info("Received signal", zap.String("signal", sig.String()))
+		// Shutdown HTTP server
+		ctx := context.Background()
+		if err := httpRunner.Shutdown(ctx); err != nil {
+			logger.Error("Failed to shutdown HTTP server", zap.Error(err))
+		}
+	case err := <-errChan:
+		logger.Error("Application error", zap.Error(err))
 		return err
 	}
 
-	fmt.Println("=== App completed successfully ===")
 	return nil
+}
+
+func main() {
+	if err := run(); err != nil {
+		os.Exit(1)
+	}
 }

@@ -4,7 +4,7 @@ package app
 import (
 	"fyne.io/fyne/v2"
 	"github.com/jonesrussell/godo/internal/app/hotkey"
-	"github.com/jonesrussell/godo/internal/gui/mainwindow"
+	"github.com/jonesrussell/godo/internal/gui"
 	"github.com/jonesrussell/godo/internal/gui/mainwindow/systray"
 	"github.com/jonesrussell/godo/internal/gui/quicknote"
 	"github.com/jonesrussell/godo/internal/gui/theme"
@@ -16,19 +16,27 @@ import (
 type App struct {
 	Logger    logger.Logger
 	fyneApp   fyne.App
-	store     storage.Store
-	mainWin   *mainwindow.Window
+	Store     storage.Store
+	mainWin   gui.MainWindow
 	quickNote quicknote.Interface
 	Hotkeys   hotkey.Manager
 	version   string
 }
 
 // New creates a new application instance
-func New(log logger.Logger, fyneApp fyne.App, store storage.Store, quickNote quicknote.Interface, hotkeys hotkey.Manager) *App {
+func New(
+	logger logger.Logger,
+	fyneApp fyne.App,
+	store storage.Store,
+	mainWin gui.MainWindow,
+	quickNote quicknote.Interface,
+	hotkeys hotkey.Manager,
+) *App {
 	return &App{
-		Logger:    log,
+		Logger:    logger,
 		fyneApp:   fyneApp,
-		store:     store,
+		Store:     store,
+		mainWin:   mainWin,
 		quickNote: quickNote,
 		Hotkeys:   hotkeys,
 		version:   "0.1.0",
@@ -84,11 +92,6 @@ func (a *App) Run() error {
 
 // SetupUI initializes the application UI
 func (a *App) SetupUI() {
-	// Create main window
-	a.Logger.Debug("Creating main window instance")
-	a.mainWin = mainwindow.New(a.store, a.Logger)
-	a.Logger.Debug("Main window instance created")
-
 	// Setup systray with menu
 	a.Logger.Debug("Setting up system tray")
 	menu := fyne.NewMenu("Godo",
@@ -111,9 +114,9 @@ func (a *App) SetupUI() {
 		}),
 	)
 
-	systray := systray.New(a.fyneApp, a.Logger)
-	systray.Setup(menu)
-	systray.SetIcon(theme.AppIcon())
+	tray := systray.New(a.fyneApp, a.Logger)
+	tray.Setup(menu)
+	tray.SetIcon(theme.GetSystrayIconResource())
 	a.Logger.Debug("System tray setup complete")
 }
 

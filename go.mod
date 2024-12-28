@@ -6,6 +6,8 @@ toolchain go1.23.0
 
 require (
 	fyne.io/fyne/v2 v2.5.3
+	github.com/go-chi/chi/v5 v5.2.0
+	github.com/go-chi/render v1.0.3
 	github.com/google/uuid v1.6.0
 	github.com/google/wire v0.6.0
 	github.com/spf13/viper v1.19.0
@@ -26,8 +28,6 @@ require (
 	github.com/fyne-io/gl-js v0.0.0-20230506162202-1fdaa286a934 // indirect
 	github.com/fyne-io/glfw-js v0.0.0-20241126112943-313d8a0fe1d0 // indirect
 	github.com/fyne-io/image v0.0.0-20240417123036-dc0ee9e7c964 // indirect
-	github.com/go-chi/chi/v5 v5.2.0 // indirect
-	github.com/go-chi/render v1.0.3 // indirect
 	github.com/go-gl/gl v0.0.0-20231021071112-07e5d0ea2e71 // indirect
 	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20240506104042-037f3cc74f2a // indirect
 	github.com/go-text/render v0.2.0 // indirect

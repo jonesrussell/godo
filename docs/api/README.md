@@ -1,39 +1,70 @@
 # Godo API Documentation
 
-## Overview
+This document describes the HTTP API for the Godo task management application.
 
-The Godo HTTP API provides RESTful endpoints for task management and real-time updates via WebSocket.
+## Base URL
 
-## API Versions
+The API is served at `http://localhost:8080` by default.
 
-- v1 (Current): `/api/v1/`
+## API Versioning
+
+The API is versioned using URL prefixes. The current version is `v1` and is accessed at `/api/v1/`.
 
 ## Authentication
 
-Currently, the API is unauthenticated. Authentication will be added in future versions.
+Authentication is not currently implemented. All endpoints are publicly accessible.
 
 ## Endpoints
 
-### Tasks
+### Health Check
 
-#### GET /api/v1/tasks
-List all tasks.
+```
+GET /health
+```
+
+Returns the health status of the API server.
 
 **Response**
 ```json
 {
-  "tasks": [
-    {
-      "id": "string",
-      "title": "string",
-      "completed": boolean
-    }
-  ]
+  "status": "ok"
 }
 ```
 
-#### GET /api/v1/tasks/{id}
-Get a specific task.
+### List Tasks
+
+```
+GET /api/v1/tasks
+```
+
+Returns a list of all tasks.
+
+**Response**
+```json
+[
+  {
+    "id": "string",
+    "title": "string",
+    "completed": boolean
+  }
+]
+```
+
+### Create Task
+
+```
+POST /api/v1/tasks
+```
+
+Creates a new task.
+
+**Request Body**
+```json
+{
+  "title": "string",
+  "completed": boolean
+}
+```
 
 **Response**
 ```json
@@ -44,10 +75,20 @@ Get a specific task.
 }
 ```
 
-#### POST /api/v1/tasks
-Create a new task.
+Status: 201 Created
 
-**Request**
+### Update Task
+
+```
+PUT /api/v1/tasks/{id}
+```
+
+Updates an existing task.
+
+**Parameters**
+- `id`: Task ID (string, required)
+
+**Request Body**
 ```json
 {
   "title": "string",
@@ -55,42 +96,53 @@ Create a new task.
 }
 ```
 
-#### PUT /api/v1/tasks/{id}
-Update an existing task.
-
-**Request**
+**Response**
 ```json
 {
+  "id": "string",
   "title": "string",
   "completed": boolean
 }
 ```
 
-#### DELETE /api/v1/tasks/{id}
-Delete a task.
+### Delete Task
 
-### WebSocket
+```
+DELETE /api/v1/tasks/{id}
+```
 
-#### WS /api/v1/ws
-WebSocket endpoint for real-time updates.
+Deletes a task.
 
-**Events**
-- `task.created`
-- `task.updated`
-- `task.deleted`
+**Parameters**
+- `id`: Task ID (string, required)
+
+**Response**
+Status: 204 No Content
 
 ## Error Responses
 
-All errors follow this format:
+The API uses standard HTTP status codes to indicate the success or failure of requests:
+
+- `200 OK`: Request succeeded
+- `201 Created`: Resource was successfully created
+- `204 No Content`: Request succeeded with no response body
+- `400 Bad Request`: Invalid request body or parameters
+- `404 Not Found`: Resource not found
+- `500 Internal Server Error`: Server error
+
+Error responses include a message in the response body:
+
 ```json
 {
-  "error": {
-    "code": "string",
-    "message": "string"
-  }
+  "error": "string"
 }
 ```
 
-## Implementation Status
+## Future Enhancements
 
-See the [TODO.md](../../TODO.md) file for current implementation status. 
+1. Authentication and authorization
+2. Rate limiting
+3. Request validation
+4. Pagination for list endpoints
+5. Search and filtering
+6. WebSocket support for real-time updates 

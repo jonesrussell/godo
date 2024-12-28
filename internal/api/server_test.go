@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -10,19 +11,18 @@ import (
 
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
-	"github.com/jonesrussell/godo/internal/storage/mock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func setupTestServer(t *testing.T) (*Server, *mock.Store) {
-	store := mock.New()
+func setupTestServer(t *testing.T) (*Server, *storage.MockStore) {
+	store := storage.NewMockStore()
 	log := logger.NewTestLogger(t)
 	server := NewServer(store, log)
 	return server, store
 }
 
-func TestHandleAddTask(t *testing.T) {
+func TestHandleCreateTask(t *testing.T) {
 	server, store := setupTestServer(t)
 
 	tests := []struct {
@@ -89,7 +89,7 @@ func TestHandleAddTask(t *testing.T) {
 			req.Header.Set("Content-Type", "application/json")
 			w := httptest.NewRecorder()
 
-			server.handleAddTask(w, req)
+			server.handleCreateTask(w, req)
 
 			assert.Equal(t, tt.wantStatus, w.Code)
 			if !tt.wantErr {
@@ -105,6 +105,7 @@ func TestHandleAddTask(t *testing.T) {
 
 func TestHandleGetTask(t *testing.T) {
 	server, store := setupTestServer(t)
+	ctx := context.Background()
 
 	existingTask := storage.Task{
 		ID:        "test-1",
@@ -125,7 +126,8 @@ func TestHandleGetTask(t *testing.T) {
 			name:   "existing task",
 			taskID: existingTask.ID,
 			setupStore: func() {
-				store.Add(existingTask)
+				err := store.Add(ctx, existingTask)
+				require.NoError(t, err)
 			},
 			wantStatus: http.StatusOK,
 			wantTask:   &existingTask,
@@ -175,6 +177,7 @@ func TestHandleGetTask(t *testing.T) {
 
 func TestHandleUpdateTask(t *testing.T) {
 	server, store := setupTestServer(t)
+	ctx := context.Background()
 
 	existingTask := storage.Task{
 		ID:        "test-1",
@@ -201,7 +204,8 @@ func TestHandleUpdateTask(t *testing.T) {
 				Done:    true,
 			},
 			setupStore: func() {
-				store.Add(existingTask)
+				err := store.Add(ctx, existingTask)
+				require.NoError(t, err)
 			},
 			wantStatus: http.StatusOK,
 			wantErr:    false,
@@ -263,6 +267,7 @@ func TestHandleUpdateTask(t *testing.T) {
 
 func TestHandleDeleteTask(t *testing.T) {
 	server, store := setupTestServer(t)
+	ctx := context.Background()
 
 	existingTask := storage.Task{
 		ID:        "test-1",
@@ -282,7 +287,8 @@ func TestHandleDeleteTask(t *testing.T) {
 			name:   "existing task",
 			taskID: existingTask.ID,
 			setupStore: func() {
-				store.Add(existingTask)
+				err := store.Add(ctx, existingTask)
+				require.NoError(t, err)
 			},
 			wantStatus: http.StatusNoContent,
 		},
@@ -321,6 +327,7 @@ func TestHandleDeleteTask(t *testing.T) {
 
 func TestHandleListTasks(t *testing.T) {
 	server, store := setupTestServer(t)
+	ctx := context.Background()
 
 	existingTasks := []storage.Task{
 		{
@@ -349,7 +356,8 @@ func TestHandleListTasks(t *testing.T) {
 			name: "list tasks",
 			setupStore: func() {
 				for _, task := range existingTasks {
-					store.Add(task)
+					err := store.Add(ctx, task)
+					require.NoError(t, err)
 				}
 			},
 			wantStatus: http.StatusOK,

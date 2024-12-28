@@ -7,7 +7,7 @@ import (
 
 	"github.com/jonesrussell/godo/internal/common"
 	"github.com/jonesrussell/godo/internal/logger"
-	"github.com/jonesrussell/godo/internal/testutil"
+	"github.com/jonesrussell/godo/internal/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -15,7 +15,7 @@ import (
 func TestRunnerLifecycle(t *testing.T) {
 	// Setup
 	log := logger.NewTestLogger(t)
-	store := testutil.NewMockStore()
+	store := storage.NewMockStore()
 	config := &common.HTTPConfig{
 		Port:              0, // Let OS choose port
 		ReadTimeout:       30,
@@ -44,7 +44,7 @@ func TestRunnerLifecycle(t *testing.T) {
 func TestRunnerWithInvalidPort(t *testing.T) {
 	// Setup
 	log := logger.NewTestLogger(t)
-	store := testutil.NewMockStore()
+	store := storage.NewMockStore()
 	config := &common.HTTPConfig{
 		Port:              -1, // Invalid port
 		ReadTimeout:       30,
@@ -73,7 +73,7 @@ func TestRunnerWithInvalidPort(t *testing.T) {
 func TestRunnerWithClosedStore(t *testing.T) {
 	// Setup
 	log := logger.NewTestLogger(t)
-	store := testutil.NewMockStore()
+	store := storage.NewMockStore()
 	config := &common.HTTPConfig{
 		Port:              0,
 		ReadTimeout:       30,
@@ -105,7 +105,7 @@ func TestRunnerWithClosedStore(t *testing.T) {
 func TestRunnerWithShortTimeout(t *testing.T) {
 	// Setup
 	log := logger.NewTestLogger(t)
-	store := testutil.NewMockStore()
+	store := storage.NewMockStore()
 	config := &common.HTTPConfig{
 		Port:              0,
 		ReadTimeout:       1,
@@ -134,7 +134,7 @@ func TestRunnerWithShortTimeout(t *testing.T) {
 func TestRunnerWithNilDependencies(t *testing.T) {
 	// Test with nil logger
 	t.Run("nil logger", func(t *testing.T) {
-		store := testutil.NewMockStore()
+		store := storage.NewMockStore()
 		config := &common.HTTPConfig{Port: 0}
 		runner := NewRunner(store, nil, config)
 		require.NotNil(t, runner)
@@ -142,7 +142,7 @@ func TestRunnerWithNilDependencies(t *testing.T) {
 
 	// Test with nil config
 	t.Run("nil config", func(t *testing.T) {
-		store := testutil.NewMockStore()
+		store := storage.NewMockStore()
 		log := logger.NewTestLogger(t)
 		runner := NewRunner(store, log, nil)
 		require.NotNil(t, runner)

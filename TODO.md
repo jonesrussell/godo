@@ -1,194 +1,130 @@
 # Godo - Todo Application with Quick-Note Support
-Current Status: Windows-only (Linux and macOS support planned)
+Current Status: Adding HTTP API to Windows-only Todo App
 
-## ✅ Completed Features
+## ✅ Ready-to-Use Components
 
-### Core Infrastructure
-- [x] Basic Logging with Zap
-  - Application lifecycle tracking
-  - Startup, shutdown, and main operations logging
-- [x] SQLite Storage Implementation
-  - CRUD operations
-  - Migration support
-  - Database operation logging
-- [x] Task Model and Storage Interface
-  - Core task model with ID, Title, Completed
-  - Storage interface with CRUD operations
-  - SQLite and in-memory implementations
-  - Comprehensive tests
+### Core Features
+- [x] Task Management
+  - Core task model (ID, Title, Completed)
+  - Storage interface with CRUD
+  - SQLite implementation
+  - In-memory implementation for testing
+  - Comprehensive test suite
+- [x] Logging System
+  - Zap logger configuration
+  - Lifecycle tracking
+  - Operation logging
 
-### UI Components
+### UI Features (Windows)
 - [x] System Tray Integration
-  - System tray icon and menu
-  - Application icon
-  - Quick note trigger in system tray
-- [x] Quick Note Implementation
-  - Separate package structure
-  - ESC key to close window
-  - Auto-focus input field
-  - Event logging
-- [x] Basic Todo List UI
-  - List view for todos
-  - Mark todos as done
-  - Delete todos
+- [x] Quick Note Window
+- [x] Todo List Interface
+- [x] Keyboard Shortcuts
 
 ### Build System
 - [x] Docker Support
-  - Build tags for Docker/non-Docker environments
-  - Docker mock implementation
-- [x] Windows Hotkey Manager Implementation
+- [x] Windows Build
+- [x] Basic CI Setup
 
-## 🚀 Current Development Focus
+## 🚀 HTTP API Implementation
 
-### HTTP API Implementation (TOP PRIORITY)
+### Required Libraries
+- [ ] Core Libraries
+  - `go-chi/chi/v5`: Lightweight router for HTTP endpoints
+  - `go-chi/render`: JSON response handling and content negotiation
+  - `go-playground/validator/v10`: Request validation (Phase 2)
+  - `gorilla/websocket`: WebSocket support (Phase 3)
 
-#### Phase 1: Core Server Setup (This Week)
-- [ ] HTTP Server Infrastructure
-  - [ ] Choose and set up HTTP router (e.g., chi, gorilla/mux)
-  - [ ] Configure server timeouts and ports
-  - [ ] Implement graceful shutdown
-  - [ ] Add context handling
-- [ ] Middleware Pipeline
-  - [ ] Logging middleware
-  - [ ] Panic recovery middleware
-  - [ ] Request ID middleware
-  - [ ] Response time tracking
-- [ ] Error Handling Framework
-  - [ ] Define API error types
-  - [ ] Create error response structure
-  - [ ] Implement error middleware
-- [ ] Health Check System
-  - [ ] Basic health check endpoint
-  - [ ] Database connectivity check
-  - [ ] System metrics (memory, goroutines)
-
-#### Phase 2: Task Endpoints (Next Week)
-- [ ] Request/Response Models
-  - [ ] Define request validation rules
-  - [ ] Create response DTOs
-  - [ ] Add pagination support
-- [ ] Core Endpoints
+### Phase 1: Minimal Working API (This Week)
+- [ ] Server Setup
+  - [ ] Add chi router
+    - Basic routing setup
+    - Graceful shutdown support
+    - Middleware mounting points
+  - [ ] Add chi/render
+    - JSON response helpers
+    - Error response formatting
+  - [ ] Configure server
+    - Port from config
+    - Timeouts
+    - /health endpoint
+- [ ] First Endpoint
   - [ ] GET /api/v1/tasks
-  - [ ] GET /api/v1/tasks/:id
-  - [ ] Add input validation
-  - [ ] Implement error responses
-- [ ] Testing Infrastructure
-  - [ ] Set up API testing utilities
-  - [ ] Write integration tests
-  - [ ] Add test fixtures
-
-#### Phase 3: Authentication
-- [ ] User Management
-  - [ ] User model and storage
-  - [ ] Password hashing
-  - [ ] User CRUD operations
-- [ ] JWT Implementation
-  - [ ] Token generation and validation
-  - [ ] Refresh token mechanism
-  - [ ] Token blacklisting
-- [ ] Auth Middleware
-  - [ ] JWT verification
-  - [ ] Role-based access control
-  - [ ] Rate limiting per user
+    - JSON response with task list
+    - Basic error responses
+    - Use chi/render for responses
 - [ ] Testing
-  - [ ] Auth flow tests
-  - [ ] Token tests
-  - [ ] Security tests
+  - [ ] Server startup/shutdown test
+  - [ ] Basic endpoint test using httptest
+  - [ ] JSON response validation
 
-#### Phase 4: Write Operations
-- [ ] Endpoints Implementation
+### Phase 2: Complete REST API (Next Week)
+- [ ] Core Endpoints
+  - [ ] GET /api/v1/tasks/:id
   - [ ] POST /api/v1/tasks
   - [ ] PUT /api/v1/tasks/:id
   - [ ] DELETE /api/v1/tasks/:id
-- [ ] Request Validation
-  - [ ] Input sanitization
-  - [ ] Business rule validation
-  - [ ] Concurrency handling
+- [ ] Error Handling
+  - [ ] Standard error responses
+  - [ ] Validation errors
+- [ ] Middleware
+  - [ ] Logging
+  - [ ] Panic recovery
 - [ ] Testing
-  - [ ] Write operation tests
-  - [ ] Concurrency tests
+  - [ ] CRUD operation tests
   - [ ] Error case tests
 
-#### Phase 5: WebSocket Support
-- [ ] WebSocket Infrastructure
-  - [ ] Connection management
-  - [ ] Client tracking
-  - [ ] Connection pools
-- [ ] Real-time Features
-  - [ ] Task change notifications
-  - [ ] Heartbeat system
-  - [ ] Reconnection handling
+### Phase 3: Real-time Updates
+- [ ] WebSocket Basic
+  - [ ] /api/v1/ws endpoint
+  - [ ] Task update notifications
 - [ ] Testing
-  - [ ] Connection tests
-  - [ ] Message handling tests
-  - [ ] Stress tests
+  - [ ] Connection test
+  - [ ] Notification test
 
-#### Phase 6: Advanced Features
-- [ ] Security Features
-  - [ ] CORS configuration
-  - [ ] Rate limiting
-  - [ ] Security headers
-- [ ] Task Features
-  - [ ] GET /api/v1/tags
-  - [ ] Task filtering
-  - [ ] Task sorting
-- [ ] Performance
-  - [ ] Query optimization
-  - [ ] Caching layer
-  - [ ] Load testing
-
-#### Phase 7: Documentation
-- [ ] API Documentation
-  - [ ] OpenAPI/Swagger setup
-  - [ ] API usage examples
-  - [ ] Authentication guide
+### Phase 4: Developer Experience
+- [ ] Documentation
+  - [ ] API endpoints guide
+  - [ ] Example requests/responses
 - [ ] Monitoring
-  - [ ] Metrics collection
-  - [ ] Performance monitoring
+  - [ ] Basic request logging
   - [ ] Error tracking
 
-### 🏗️ Other Development Tasks (On Hold)
+## 📝 Future Improvements
 
-#### Windows Polish
-- [x] Keyboard shortcuts
-- [x] Quick note menu item
-- [ ] Error dialogs for operation failures
-- [ ] Task completion animations
-- [ ] UI layout improvements
-- [ ] Enhanced error handling
-- [ ] Log rotation
-- [ ] Windows auto-start capability
+### Short Term
+- [ ] API Enhancements
+  - [ ] Request validation
+  - [ ] Response pagination
+  - [ ] Sorting and filtering
+- [ ] WebSocket Enhancements
+  - [ ] Better connection management
+  - [ ] Client message handling
+- [ ] Testing Improvements
+  - [ ] Integration test suite
+  - [ ] Load testing
+
+### Long Term
+- [ ] Security
+  - [ ] JWT auth
+  - [ ] Rate limiting
+  - [ ] CORS
+- [ ] Features
+  - [ ] Tags support
+  - [ ] Search
+  - [ ] Task categories
+- [ ] Infrastructure
+  - [ ] Caching
+  - [ ] Performance optimization
+  - [ ] Metrics collection
+
+### Windows App (On Hold)
+- [ ] Error dialogs
+- [ ] UI improvements
+- [ ] Auto-start capability
 - [ ] Update mechanism
 
-#### Build System Completion
-- [ ] Cross-compilation support
-- [ ] Windows release packaging
-- [ ] CI/CD pipeline for Windows builds
-- [ ] Platform-specific hotkey managers
-  - [ ] Linux implementation
-  - [ ] macOS implementation
-
-#### Todo List UI Enhancements
-- [ ] Task sorting (by date, completion)
-- [ ] Task filtering
-- [ ] Todo timestamps display
-- [ ] Task editing capability
-
-## 🔮 Future Roadmap
-
-### Cross-Platform Support
-- [ ] Linux port
-- [ ] macOS port
-- [ ] Platform-specific:
-  - [ ] Installers
-  - [ ] Auto-start mechanisms
-  - [ ] Hotkey systems
-
-### Feature Enhancements
-- [ ] Task categories and tags
-- [ ] Due dates and reminders
-- [ ] Data export/import
-- [ ] Task priority levels
-- [ ] Recurring tasks
-- [ ] Multiple todo lists
-- [ ] Cloud sync support
+### Cross-Platform (On Hold)
+- [ ] Linux support
+- [ ] macOS support
+- [ ] Platform-specific installers

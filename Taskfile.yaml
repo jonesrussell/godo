@@ -1,6 +1,9 @@
 version: '3'
 
 vars:
+  BINARY_NAME: godo
+  BUILD_DIR: bin
+  COVERAGE_DIR: coverage
   GO_VERSION: 1.23
   GOOS:
     sh: go env GOOS
@@ -8,112 +11,165 @@ vars:
 tasks:
   default:
     cmds:
-      - task: run
+    - task --list-all
+    silent: true
+
+  install-tools:
+    desc: Install development tools
+    cmds:
+    - go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+    - go install golang.org/x/tools/cmd/goimports@latest
+    - go install github.com/google/wire/cmd/wire@latest
 
   setup:linux:
     desc: Install Linux dependencies
     cmds:
-      - sudo apt-get update
-      - sudo apt-get install -y xvfb libx11-dev
+    - sudo apt-get update
+    - sudo apt-get install -y xvfb libx11-dev
 
-  run:
-    desc: Run the application
-    deps: [wire]
-    env:
-      CGO_ENABLED: 1
+  deps:
+    desc: Download and tidy dependencies
     cmds:
-      - go run cmd/godo/main.go
+    - go mod download
+    - go mod tidy
 
   fmt:
-    desc: Format Go code
+    desc: Format code
     cmds:
-      - go fmt ./...
+    - gofmt -s -w .
+    - goimports -w .
+
+  lint:
+    desc: Run linters
+    deps: [ wire ]
+    cmds:
+    - golangci-lint run ./...
+
+  test:
+    desc: Run tests with coverage
+    deps: [ wire ]
+    platforms: [ windows ]
+    cmds:
+    - mkdir -p {{.COVERAGE_DIR}}
+    - go test -race -coverprofile={{.COVERAGE_DIR}}/coverage.out -covermode=atomic ./...
+    - go tool cover -html={{.COVERAGE_DIR}}/coverage.out -o {{.COVERAGE_DIR}}/coverage.html
+
+  test:linux:
+    desc: Run tests on Linux with virtual display
+    deps: [ wire ]
+    platforms: [ linux ]
+    cmds:
+    - mkdir -p {{.COVERAGE_DIR}}
+    # Start Xvfb
+    - Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
+    # Wait for Xvfb to start
+    - sleep 1
+    # Run tests with virtual display and coverage
+    - DISPLAY=:99.0 FYNE_RENDERER=software go test -race -coverprofile={{.COVERAGE_DIR}}/coverage.out -covermode=atomic ./...
+    - go tool cover -html={{.COVERAGE_DIR}}/coverage.out -o {{.COVERAGE_DIR}}/coverage.html
+    # Cleanup Xvfb
+    - pkill Xvfb || true
 
   clean:
     desc: Clean up generated files
     cmds:
-      - rm -rf bin/* internal/container/*_wire_gen.go
+    - rm -rf {{.BUILD_DIR}}
+    - rm -rf {{.COVERAGE_DIR}}
+    - rm -rf internal/container/*_wire_gen.go
 
   wire:windows:
     desc: Generate wire code for Windows
+    platforms: [ windows ]
     cmds:
-      - cd internal/container; wire gen -tags windows
+    - cd internal/container; wire gen -tags windows
 
   wire:linux:
     desc: Generate wire code for Linux
+    platforms: [ linux ]
     cmds:
-      - cd internal/container; wire gen -tags linux
+    - cd internal/container; wire gen -tags linux
 
   wire:
     desc: Generate wire code for current platform
     cmds:
-      - task: wire:{{OS}}
-
-  build:
-    desc: Build for current platform
-    cmds:
-      - task: build:{{OS}}
+    - task: wire:{{OS}}
 
   build:windows:
     desc: Build for Windows
-    deps: [wire:windows]
+    deps: [ wire:windows ]
+    platforms: [ windows ]
     env:
       CGO_ENABLED: 1
       GOOS: windows
       GOARCH: amd64
     cmds:
-      - go build -tags "windows" -o bin/godo.exe cmd/godo/main.go
+    - mkdir -p {{.BUILD_DIR}}
+    - go build -tags "windows" -o {{.BUILD_DIR}}/{{.BINARY_NAME}}.exe cmd/godo/main.go
 
   build:linux:
     desc: Build for Linux
-    deps: [wire:linux]
+    deps: [ wire:linux ]
+    platforms: [ linux ]
     env:
       CGO_ENABLED: 1
       GOOS: linux
       GOARCH: amd64
     cmds:
-      - go build -tags "linux" -o bin/godo cmd/godo/main.go
+    - mkdir -p {{.BUILD_DIR}}
+    - go build -tags "linux" -o {{.BUILD_DIR}}/{{.BINARY_NAME}} cmd/godo/main.go
 
-  test:
-    desc: Run tests
-    deps: [wire]
+  build:
+    desc: Build for current platform
     cmds:
-      # Start Xvfb
-      - Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
-      # Wait for Xvfb to start
-      - sleep 1
-      # Run tests with virtual display
-      - DISPLAY=:99.0 FYNE_RENDERER=software go test -v ./...
-      # Cleanup Xvfb
-      - pkill Xvfb || true
+    - task: build:{{OS}}
 
-  lint:
-    desc: Run linters
-    deps: [fmt]
+  run:
+    desc: Run the application
+    deps: [ wire ]
+    env:
+      CGO_ENABLED: 1
     cmds:
-      - golangci-lint run ./...
+    - go run cmd/godo/main.go
+
+  run-debug:
+    desc: Run the application with debug output
+    deps: [ wire ]
+    env:
+      CGO_ENABLED: 1
+      LOG_LEVEL: debug
+    cmds:
+    - go run cmd/godo/main.go
+
+  watch:
+    desc: Watch for changes and rebuild
+    cmds:
+    - watchexec -r -e go "task build && {{if eq OS "windows"}}{{.BUILD_DIR}}/{{.BINARY_NAME}}.exe{{else}}{{.BUILD_DIR}}/{{.BINARY_NAME}}{{end}}"
 
   # CI/CD tasks
   ci:
-    desc: Run CI checks locally
+    desc: Run CI checks
     cmds:
-      - task: fmt
-      - task: lint
-      - task: test
-      - task: build
+    - task: fmt
+    - task: lint
+    - task: test
+    - task: build
 
   act:build:
     desc: Run GitHub Actions build job locally using act
     cmds:
-      - act -j build 
-        -W .github/workflows/go.yml
-        --container-architecture linux/amd64 
-        -s GITHUB_TOKEN="${GITHUB_TOKEN}"
-        --artifact-server-path /tmp/artifacts
-        -P ubuntu-latest=catthehacker/ubuntu:act-latest
+    - act -j build -W .github/workflows/go.yml --container-architecture linux/amd64 -s GITHUB_TOKEN="${GITHUB_TOKEN}" --artifact-server-path /tmp/artifacts -P ubuntu-latest=catthehacker/ubuntu:act-latest
 
-  # Optional helper task to clean up act artifacts
   act:clean:
     desc: Clean up act artifacts
     cmds:
-      - rm -rf /tmp/artifacts
+    - rm -rf /tmp/artifacts
+
+  all:
+    desc: Run all main tasks
+    cmds:
+    - task: deps
+    - task: fmt
+    - task: wire
+    - task: lint
+    - task: test
+    - task: build

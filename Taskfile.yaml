@@ -7,6 +7,12 @@ vars:
   GO_VERSION: 1.23
   GOOS:
     sh: go env GOOS
+  VERSION:
+    sh: git describe --tags --always 2>/dev/null || echo dev
+  COMMIT:
+    sh: git rev-parse --short HEAD 2>/dev/null || echo unknown
+  BUILD_TIME:
+    sh: powershell -Command "(Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')"
 
 tasks:
   default:
@@ -106,11 +112,11 @@ tasks:
     cmds:
     - task: wire:{{OS}}
 
-  # Docker-based builds
+  # Docker-based builds with improved caching and parallel builds
   docker:build-image:
     desc: Build the Docker builder image
     cmds:
-    - docker build -t godo-builder -f build/docker/Dockerfile .
+    - docker build --build-arg VERSION={{.VERSION}} --build-arg COMMIT={{.COMMIT}} --build-arg BUILD_TIME={{.BUILD_TIME}} -t godo-builder -f build/docker/Dockerfile .
 
   docker:build-all:
     desc: Build both Windows and Linux binaries using Docker
@@ -122,14 +128,20 @@ tasks:
     deps: [ wire ]
     cmds:
     - mkdir -p {{.BUILD_DIR}}
-    - docker run --rm -v "{{.BUILD_DIR}}:/go/src/app/dist" godo-builder go build -tags linux -ldflags "-s -w" -o dist/godo ./cmd/godo
+    - docker build --target linux-runtime --build-arg VERSION={{.VERSION}} --build-arg COMMIT={{.COMMIT}} --build-arg BUILD_TIME={{.BUILD_TIME}} -t godo-linux -f build/docker/Dockerfile .
+    - docker create --name godo-linux-temp godo-linux
+    - docker cp godo-linux-temp:/app/godo {{.BUILD_DIR}}/godo
+    - docker rm godo-linux-temp
 
   docker:build-windows:
     desc: Build Windows binary using Docker
     deps: [ wire ]
     cmds:
     - mkdir -p {{.BUILD_DIR}}
-    - docker run --rm -v "{{.BUILD_DIR}}:/go/src/app/dist" -e GOOS=windows -e GOARCH=amd64 -e CGO_ENABLED=1 -e CC=x86_64-w64-mingw32-gcc godo-builder go build -tags windows -ldflags "-s -w" -o dist/godo.exe ./cmd/godo
+    - docker build --target windows-runtime --build-arg VERSION={{.VERSION}} --build-arg COMMIT={{.COMMIT}} --build-arg BUILD_TIME={{.BUILD_TIME}} -t godo-windows -f build/docker/Dockerfile .
+    - docker create --name godo-windows-temp godo-windows
+    - docker cp godo-windows-temp:/godo.exe {{.BUILD_DIR}}/godo.exe
+    - docker rm godo-windows-temp
 
   # Native builds (for development)
   build:windows:
@@ -142,7 +154,7 @@ tasks:
       GOARCH: amd64
     cmds:
     - mkdir -p {{.BUILD_DIR}}
-    - go build -tags "windows" -o {{.BUILD_DIR}}/{{.BINARY_NAME}}.exe cmd/godo/main.go
+    - go build -ldflags "-X main.version={{.VERSION}} -X main.commit={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}} -s -w" -tags windows -o {{.BUILD_DIR}}/{{.BINARY_NAME}}.exe cmd/godo/main.go
 
   build:linux:
     desc: Build for Linux (native)
@@ -154,7 +166,7 @@ tasks:
       GOARCH: amd64
     cmds:
     - mkdir -p {{.BUILD_DIR}}
-    - go build -tags "linux" -o {{.BUILD_DIR}}/{{.BINARY_NAME}} cmd/godo/main.go
+    - go build -ldflags "-X main.version={{.VERSION}} -X main.commit={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}} -s -w" -tags linux -o {{.BUILD_DIR}}/{{.BINARY_NAME}} cmd/godo/main.go
 
   build:
     desc: Build for current platform (native)
@@ -167,7 +179,7 @@ tasks:
     env:
       CGO_ENABLED: 1
     cmds:
-    - go run cmd/godo/main.go
+    - go run -ldflags "-X main.version={{.VERSION}} -X main.commit={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}}" cmd/godo/main.go
 
   run-debug:
     desc: Run the application with debug output
@@ -176,7 +188,7 @@ tasks:
       CGO_ENABLED: 1
       LOG_LEVEL: debug
     cmds:
-    - go run cmd/godo/main.go
+    - go run -ldflags "-X main.version={{.VERSION}} -X main.commit={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}}" cmd/godo/main.go
 
   watch:
     desc: Watch for changes and rebuild
@@ -192,15 +204,33 @@ tasks:
     - task: test
     - task: docker:build-all
 
-  act:build:
-    desc: Run GitHub Actions build job locally using act
+  # New tasks for release management
+  release:prepare:
+    desc: Prepare a new release
     cmds:
-    - act -j build -W .github/workflows/go.yml --container-architecture linux/amd64 -s GITHUB_TOKEN="${GITHUB_TOKEN}" --artifact-server-path /tmp/artifacts -P ubuntu-latest=catthehacker/ubuntu:act-latest
+    - task: clean
+    - task: fmt
+    - task: lint
+    - task: test
+    - task: docker:build-all
 
-  act:clean:
-    desc: Clean up act artifacts
+  release:tag:
+    desc: Create and push a new release tag
+    vars:
+      TAG: '{{.CLI_ARGS}}'
     cmds:
-    - rm -rf /tmp/artifacts
+    - git tag -a {{.TAG}} -m "Release {{.TAG}}"
+    - git push origin {{.TAG}}
+
+  release:docker:
+    desc: Build and push Docker images
+    vars:
+      TAG: '{{.CLI_ARGS}}'
+    cmds:
+    - docker build --target linux-runtime -t jonesrussell/godo:{{.TAG}} -f build/docker/Dockerfile .
+    - docker push jonesrussell/godo:{{.TAG}}
+    - docker tag jonesrussell/godo:{{.TAG}} jonesrussell/godo:latest
+    - docker push jonesrussell/godo:latest
 
   all:
     desc: Run all main tasks

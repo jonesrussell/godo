@@ -24,7 +24,41 @@ type Window struct {
 	store  storage.Store
 	logger logger.Logger
 	win    fyne.Window
-	input  *widget.Entry
+	input  *debugEntry
+}
+
+// debugEntry extends Entry to add key press debugging
+type debugEntry struct {
+	widget.Entry
+	logger logger.Logger
+}
+
+func newDebugEntry(log logger.Logger) *debugEntry {
+	entry := &debugEntry{logger: log}
+	entry.MultiLine = true
+	entry.ExtendBaseWidget(entry)
+	return entry
+}
+
+func (e *debugEntry) KeyDown(key *fyne.KeyEvent) {
+	e.logger.Debug("Key pressed",
+		"key", key.Name,
+		"physical", key.Physical)
+	e.Entry.KeyDown(key)
+}
+
+func (e *debugEntry) TypedShortcut(shortcut fyne.Shortcut) {
+	e.logger.Debug("Shortcut received",
+		"shortcut", fmt.Sprintf("%T", shortcut),
+		"details", fmt.Sprintf("%+v", shortcut))
+	e.Entry.TypedShortcut(shortcut)
+}
+
+func (e *debugEntry) TypedKey(key *fyne.KeyEvent) {
+	e.logger.Debug("Key typed",
+		"key", key.Name,
+		"physical", key.Physical)
+	e.Entry.TypedKey(key)
 }
 
 // New creates a new quick note window
@@ -47,31 +81,38 @@ func (w *Window) Setup() error {
 	w.win.Resize(fyne.NewSize(400, 300))
 	w.win.CenterOnScreen()
 
-	// Create input field
-	w.input = widget.NewMultiLineEntry()
+	// Create input field with debugging
+	w.input = newDebugEntry(w.logger)
 	w.input.SetPlaceHolder("Enter your quick note here...")
 
 	// Create save button with shared save logic
 	saveNote := func() {
+		w.logger.Debug("Attempting to save note")
 		text := w.input.Text
-		if text != "" {
-			// Create and save the task
-			task := storage.Task{
-				ID:        generateID(),
-				Title:     text,
-				Completed: false,
-			}
-
-			if err := w.store.Add(task); err != nil {
-				w.logger.Error("Failed to save note", "error", err)
-				// TODO: Show error to user
-				return
-			}
-
-			w.logger.Debug("Saved quick note as task", "id", task.ID)
-			w.input.SetText("")
-			w.Hide()
+		if text == "" {
+			w.logger.Debug("Note text is empty, skipping save")
+			return
 		}
+
+		w.logger.Debug("Creating task from note", "text", text)
+		// Create and save the task
+		task := storage.Task{
+			ID:        generateID(),
+			Title:     text,
+			Completed: false,
+		}
+
+		if err := w.store.Add(task); err != nil {
+			w.logger.Error("Failed to save note", "error", err, "task", task)
+			// TODO: Show error to user
+			return
+		}
+
+		w.logger.Debug("Successfully saved note as task", "id", task.ID, "text", text)
+		w.input.SetText("")
+		w.logger.Debug("Cleared input field")
+		w.Hide()
+		w.logger.Debug("Hidden quick note window")
 	}
 
 	// Create save button
@@ -96,12 +137,17 @@ func (w *Window) Setup() error {
 		w.Hide()
 	})
 
-	// Add Ctrl+Enter shortcut for saving
+	// Add Shift+Enter shortcut for saving
 	w.win.Canvas().AddShortcut(&desktop.CustomShortcut{
 		KeyName:  fyne.KeyReturn,
-		Modifier: fyne.KeyModifierControl,
+		Modifier: fyne.KeyModifierShift,
 	}, func(shortcut fyne.Shortcut) {
-		w.logger.Debug("Ctrl+Enter pressed, saving quick note")
+		w.logger.Debug("Shift+Enter shortcut triggered")
+		if w.input == nil {
+			w.logger.Error("Input field is nil when handling Shift+Enter")
+			return
+		}
+		w.logger.Debug("Calling saveNote from Shift+Enter handler", "text", w.input.Text)
 		saveNote()
 	})
 

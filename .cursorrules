@@ -66,6 +66,34 @@ content := container.NewHBox(
      - KeyName is used instead of Key in CustomShortcut
      - Use fyne.KeyModifierControl instead of desktop.ControlModifier (deprecated)
      - Other modifiers should also use fyne.KeyModifier* variants
+     - For debugging key events:
+       - Extend widget.Entry for input fields that need key debugging
+       - Override KeyDown(), TypedKey(), and TypedShortcut()
+       - Log key.Name and key.Physical in KeyDown and TypedKey
+       - Log shortcut type and details in TypedShortcut
+       - Call base widget methods after logging
+       - Call ExtendBaseWidget() in constructor
+       - Example debug entry pattern:
+         ```go
+         type debugEntry struct {
+             widget.Entry  // or other base widget
+             logger Logger
+         }
+         
+         func (e *debugEntry) KeyDown(key *fyne.KeyEvent) {
+             e.logger.Debug("Key pressed", 
+                 "key", key.Name,
+                 "physical", key.Physical)
+             e.Entry.KeyDown(key)
+         }
+         
+         func (e *debugEntry) TypedShortcut(shortcut fyne.Shortcut) {
+             e.logger.Debug("Shortcut received",
+                 "shortcut", fmt.Sprintf("%T", shortcut),
+                 "details", fmt.Sprintf("%+v", shortcut))
+             e.Entry.TypedShortcut(shortcut)
+         }
+         ```
   2. Focus and Window Management:
      - No RequestFocus() method
      - Use Canvas().Focus() instead

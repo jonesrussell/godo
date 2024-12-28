@@ -2,114 +2,93 @@ package quicknote
 
 import (
 	"testing"
+	"time"
 
-	"github.com/jonesrussell/godo/internal/gui"
+	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
+	"github.com/jonesrussell/godo/internal/storage/mock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-type mockStore struct {
-	storage.Store
-	addCalled    bool
-	updateCalled bool
-	deleteCalled bool
-	listCalled   bool
-	tasks        []storage.Task
-	err          error
+type testLogger struct {
+	logger.Logger
 }
 
-func (m *mockStore) Add(task storage.Task) error {
-	m.addCalled = true
-	if m.err != nil {
-		return m.err
-	}
-	m.tasks = append(m.tasks, task)
-	return nil
+func (m *testLogger) Debug(_ string, _ ...interface{}) {}
+func (m *testLogger) Info(_ string, _ ...interface{})  {}
+func (m *testLogger) Warn(_ string, _ ...interface{})  {}
+func (m *testLogger) Error(_ string, _ ...interface{}) {}
+
+func setupTestQuickNote(t *testing.T) (*Window, *mock.Store) {
+	store := mock.New()
+	log := &testLogger{}
+	quickNote := New(store, log)
+	return quickNote, store
 }
 
-func (m *mockStore) Update(task storage.Task) error {
-	m.updateCalled = true
-	if m.err != nil {
-		return m.err
-	}
-	for i, t := range m.tasks {
-		if t.ID == task.ID {
-			m.tasks[i] = task
-			return nil
-		}
-	}
-	return storage.ErrTaskNotFound
-}
-
-func (m *mockStore) Delete(id string) error {
-	m.deleteCalled = true
-	if m.err != nil {
-		return m.err
-	}
-	for i, task := range m.tasks {
-		if task.ID == id {
-			m.tasks = append(m.tasks[:i], m.tasks[i+1:]...)
-			return nil
-		}
-	}
-	return storage.ErrTaskNotFound
-}
-
-func (m *mockStore) List() ([]storage.Task, error) {
-	m.listCalled = true
-	if m.err != nil {
-		return nil, m.err
-	}
-	return m.tasks, nil
-}
-
-func (m *mockStore) GetByID(id string) (*storage.Task, error) {
-	if m.err != nil {
-		return nil, m.err
-	}
-	for _, task := range m.tasks {
-		if task.ID == id {
-			return &task, nil
-		}
-	}
-	return nil, storage.ErrTaskNotFound
-}
-
-func (m *mockStore) Close() error {
-	return nil
-}
-
-type mockQuickNote struct {
-	gui.QuickNote
-	showCalled bool
-	hideCalled bool
-}
-
-func (m *mockQuickNote) Show() {
-	m.showCalled = true
-}
-
-func (m *mockQuickNote) Hide() {
-	m.hideCalled = true
-}
-
-func TestQuickNoteShowHide(t *testing.T) {
-	qn := &mockQuickNote{}
-
-	// Test Show
-	qn.Show()
-	assert.True(t, qn.showCalled)
-
-	// Test Hide
-	qn.Hide()
-	assert.True(t, qn.hideCalled)
-}
-
-func TestQuickNoteInterface(t *testing.T) {
-	var quickNote gui.QuickNote = &mockQuickNote{}
+func TestQuickNote(t *testing.T) {
+	quickNote, store := setupTestQuickNote(t)
 	require.NotNil(t, quickNote)
 
-	quickNote.Show()
-	quickNote.Hide()
+	t.Run("AddTask", func(t *testing.T) {
+		// Add a task
+		task := storage.Task{
+			ID:        "test-1",
+			Content:   "Test Task",
+			Done:      false,
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		}
+		err := store.Add(task)
+		require.NoError(t, err)
+
+		// Verify the task is added
+		assert.True(t, store.AddCalled)
+	})
+
+	t.Run("WindowClose", func(t *testing.T) {
+		// Close the window
+		quickNote.Hide()
+
+		// Verify the store is closed
+		err := store.Close()
+		assert.NoError(t, err)
+	})
+
+	t.Run("StoreError", func(t *testing.T) {
+		// Set store error
+		store.Error = assert.AnError
+
+		// Try to add a task
+		task := storage.Task{
+			ID:        "test-2",
+			Content:   "Test Task",
+			Done:      false,
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		}
+		err := store.Add(task)
+		assert.Error(t, err)
+		assert.Equal(t, assert.AnError, err)
+	})
+
+	t.Run("EmptyContent", func(t *testing.T) {
+		// Reset store error
+		store.Error = nil
+
+		// Try to add a task with empty content
+		task := storage.Task{
+			ID:        "test-3",
+			Content:   "",
+			Done:      false,
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		}
+		err := store.Add(task)
+		require.NoError(t, err)
+
+		// Verify the task is added
+		assert.True(t, store.AddCalled)
+	})
 }

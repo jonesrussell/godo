@@ -36,3 +36,28 @@ func TestHotkeyString(t *testing.T) {
 		})
 	}
 }
+
+func TestGetDefaultQuickNoteKey(t *testing.T) {
+	key := GetDefaultQuickNoteKey()
+	assert.NotEmpty(t, key, "Default quick note key should not be empty")
+}
+
+func TestGetDefaultQuickNoteModifiers(t *testing.T) {
+	modifiers := GetDefaultQuickNoteModifiers()
+	assert.NotNil(t, modifiers, "Default quick note modifiers should not be nil")
+}
+
+func TestGetDefaultQuickNoteKeyString(t *testing.T) {
+	keyString := GetDefaultQuickNoteKeyString()
+	assert.NotEmpty(t, keyString, "Default quick note key string should not be empty")
+}
+
+func TestGetDefaultQuickNoteModifiersString(t *testing.T) {
+	modifiersString := GetDefaultQuickNoteModifiersString()
+	assert.NotEmpty(t, modifiersString, "Default quick note modifiers string should not be empty")
+}
+
+func TestGetDefaultQuickNoteHotkey(t *testing.T) {
+	hotkey := GetDefaultQuickNoteHotkey()
+	assert.NotEmpty(t, hotkey, "Default quick note hotkey should not be empty")
+}

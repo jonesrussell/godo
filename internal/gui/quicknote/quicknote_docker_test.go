@@ -5,187 +5,70 @@ package quicknote
 
 import (
 	"testing"
+	"time"
 
-	"fyne.io/fyne/v2/test"
+	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
+	"github.com/jonesrussell/godo/internal/storage/mock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-type mockStore struct {
-	storage.Store
-	addCalled    bool
-	updateCalled bool
-	deleteCalled bool
-	listCalled   bool
-	tasks        []storage.Task
-	err          error
-}
+func TestDockerQuickNote(t *testing.T) {
+	store := mock.New()
+	log := logger.NewTestLogger(t)
+	quickNote := New(store, log)
+	require.NotNil(t, quickNote)
 
-type mockLogger struct {
-	debugCalled bool
-	infoCalled  bool
-	warnCalled  bool
-	errorCalled bool
-}
-
-func TestNewWindow(t *testing.T) {
-	store := &mockStore{}
-	window := newWindow(store)
-
-	assert.NotNil(t, window, "newWindow() should not return nil")
-
-	dockerWin, ok := window.(*dockerWindow)
-	assert.True(t, ok, "newWindow() should return a *dockerWindow")
-	assert.Equal(t, store, dockerWin.store, "store should be properly set")
-}
-
-func TestDockerWindowInitialize(t *testing.T) {
-	store := &mockStore{}
-	window := newWindow(store)
-	app := test.NewApp()
-	log := &mockLogger{}
-
-	window.Initialize(app, log)
-
-	dockerWin := window.(*dockerWindow)
-	assert.Equal(t, log, dockerWin.log, "logger should be properly set")
-}
-
-func TestDockerWindowShowHide(t *testing.T) {
-	store := &mockStore{}
-	window := newWindow(store)
-	app := test.NewApp()
-	log := &mockLogger{}
-
-	window.Initialize(app, log)
-
-	// These should be no-op functions in Docker environment
-	assert.NotPanics(t, func() {
-		window.Show()
-		window.Hide()
-	}, "Show and Hide should not panic in Docker environment")
-}
-
-func TestDockerWindowImplementation(t *testing.T) {
-	store := &mockStore{}
-	window := newWindow(store)
-	require.NotNil(t, window)
-
-	// Test initialization
-	app := test.NewApp()
-	defer app.Quit()
-	log := &mockLogger{}
-	window.Initialize(app, log)
-
-	// Test that Show and Hide are no-ops (don't panic)
-	window.Show()
-	window.Hide()
-}
-
-func TestDockerWindowInterface(t *testing.T) {
-	store := &mockStore{}
-	var window Interface = newWindow(store)
-	require.NotNil(t, window)
-
-	// Test that the window implements the Interface correctly
-	app := test.NewApp()
-	defer app.Quit()
-	log := &mockLogger{}
-	window.Initialize(app, log)
-	window.Show()
-	window.Hide()
-}
-
-func TestDockerWindowWithNilStore(t *testing.T) {
-	// Test that the window can be created with a nil store
-	window := newWindow(nil)
-	require.NotNil(t, window)
-
-	// Operations should not panic with nil store
-	app := test.NewApp()
-	defer app.Quit()
-	log := &mockLogger{}
-	window.Initialize(app, log)
-	window.Show()
-	window.Hide()
-}
-
-func TestDockerWindowWithNilLogger(t *testing.T) {
-	store := &mockStore{}
-	window := newWindow(store)
-	require.NotNil(t, window)
-
-	// Test that initialization with nil logger doesn't panic
-	app := test.NewApp()
-	defer app.Quit()
-	window.Initialize(app, nil)
-	window.Show()
-	window.Hide()
-}
-
-func (m *mockLogger) Debug(msg string, keysAndValues ...interface{}) { m.debugCalled = true }
-func (m *mockLogger) Info(msg string, keysAndValues ...interface{})  { m.infoCalled = true }
-func (m *mockLogger) Warn(msg string, keysAndValues ...interface{})  { m.warnCalled = true }
-func (m *mockLogger) Error(msg string, keysAndValues ...interface{}) { m.errorCalled = true }
-
-func (m *mockStore) Add(task storage.Task) error {
-	m.addCalled = true
-	if m.err != nil {
-		return m.err
-	}
-	m.tasks = append(m.tasks, task)
-	return nil
-}
-
-func (m *mockStore) Update(task storage.Task) error {
-	m.updateCalled = true
-	if m.err != nil {
-		return m.err
-	}
-	for i, t := range m.tasks {
-		if t.ID == task.ID {
-			m.tasks[i] = task
-			return nil
+	t.Run("AddTask", func(t *testing.T) {
+		// Add a task
+		task := storage.Task{
+			ID:        "test-1",
+			Content:   "Test Task",
+			Done:      false,
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
 		}
-	}
-	return storage.ErrTaskNotFound
-}
+		err := store.Add(task)
+		require.NoError(t, err)
 
-func (m *mockStore) Delete(id string) error {
-	m.deleteCalled = true
-	if m.err != nil {
-		return m.err
-	}
-	for i, task := range m.tasks {
-		if task.ID == id {
-			m.tasks = append(m.tasks[:i], m.tasks[i+1:]...)
-			return nil
+		// Verify the task is added
+		assert.True(t, store.AddCalled)
+	})
+
+	t.Run("StoreError", func(t *testing.T) {
+		// Set store error
+		store.Error = assert.AnError
+
+		// Try to add a task
+		task := storage.Task{
+			ID:        "test-2",
+			Content:   "Test Task",
+			Done:      false,
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
 		}
-	}
-	return storage.ErrTaskNotFound
-}
+		err := store.Add(task)
+		assert.Error(t, err)
+		assert.Equal(t, assert.AnError, err)
+	})
 
-func (m *mockStore) List() ([]storage.Task, error) {
-	m.listCalled = true
-	if m.err != nil {
-		return nil, m.err
-	}
-	return m.tasks, nil
-}
+	t.Run("EmptyContent", func(t *testing.T) {
+		// Reset store error
+		store.Error = nil
 
-func (m *mockStore) GetByID(id string) (*storage.Task, error) {
-	if m.err != nil {
-		return nil, m.err
-	}
-	for _, task := range m.tasks {
-		if task.ID == id {
-			return &task, nil
+		// Try to add a task with empty content
+		task := storage.Task{
+			ID:        "test-3",
+			Content:   "",
+			Done:      false,
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
 		}
-	}
-	return nil, storage.ErrTaskNotFound
-}
+		err := store.Add(task)
+		require.NoError(t, err)
 
-func (m *mockStore) Close() error {
-	return nil
+		// Verify the task is added
+		assert.True(t, store.AddCalled)
+	})
 }

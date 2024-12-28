@@ -6,6 +6,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/widget"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
@@ -23,6 +24,7 @@ type Window struct {
 	store  storage.Store
 	logger logger.Logger
 	win    fyne.Window
+	input  *widget.Entry
 }
 
 // New creates a new quick note window
@@ -46,12 +48,12 @@ func (w *Window) Setup() error {
 	w.win.CenterOnScreen()
 
 	// Create input field
-	input := widget.NewMultiLineEntry()
-	input.SetPlaceHolder("Enter your quick note here...")
+	w.input = widget.NewMultiLineEntry()
+	w.input.SetPlaceHolder("Enter your quick note here...")
 
 	// Create save button
 	saveBtn := widget.NewButton("Save", func() {
-		text := input.Text
+		text := w.input.Text
 		if text != "" {
 			// Create and save the task
 			task := storage.Task{
@@ -67,18 +69,27 @@ func (w *Window) Setup() error {
 			}
 
 			w.logger.Debug("Saved quick note as task", "id", task.ID)
-			input.SetText("") // Clear the input
+			w.input.SetText("")
 			w.Hide()
 		}
 	})
 
 	// Create content container
-	content := container.NewBorder(nil, saveBtn, nil, nil, input)
+	content := container.NewBorder(nil, saveBtn, nil, nil, w.input)
 	w.win.SetContent(content)
 
 	// Set window behavior
 	w.win.SetCloseIntercept(func() {
-		input.SetText("") // Clear input on close
+		w.input.SetText("")
+		w.Hide()
+	})
+
+	// Add ESC key handling
+	w.win.Canvas().AddShortcut(&desktop.CustomShortcut{
+		KeyName: fyne.KeyEscape,
+	}, func(shortcut fyne.Shortcut) {
+		w.logger.Debug("ESC key pressed, closing quick note window")
+		w.input.SetText("")
 		w.Hide()
 	})
 
@@ -100,7 +111,9 @@ func (w *Window) Show() {
 		w.logger.Debug("Showing quick note window")
 		w.win.Show()
 		w.win.CenterOnScreen()
-		w.win.RequestFocus()
+		if w.input != nil {
+			w.win.Canvas().Focus(w.input)
+		}
 	} else {
 		w.logger.Error("Cannot show quick note window - window is nil")
 	}

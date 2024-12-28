@@ -148,6 +148,80 @@ func TestTaskOperations(t *testing.T) {
 				assert.Empty(t, w.Body.String())
 			},
 		},
+		{
+			name:   "Patch task - update title only",
+			method: "PATCH",
+			path:   fmt.Sprintf("/api/v1/tasks/%s", testTask.ID),
+			setupFn: func(store *testutil.MockStore) {
+				require.NoError(t, store.Add(testTask))
+			},
+			body: TaskPatch{
+				Title: testutil.StringPtr("Updated Title Only"),
+			},
+			expectedStatus: http.StatusOK,
+			validateFn: func(t *testing.T, w *httptest.ResponseRecorder) {
+				var task storage.Task
+				require.NoError(t, json.NewDecoder(w.Body).Decode(&task))
+				assert.Equal(t, "Updated Title Only", task.Title)
+				assert.Equal(t, testTask.Description, task.Description)
+			},
+		},
+		{
+			name:   "Patch task - update description only",
+			method: "PATCH",
+			path:   fmt.Sprintf("/api/v1/tasks/%s", testTask.ID),
+			setupFn: func(store *testutil.MockStore) {
+				require.NoError(t, store.Add(testTask))
+			},
+			body: TaskPatch{
+				Description: testutil.StringPtr("Updated Description Only"),
+			},
+			expectedStatus: http.StatusOK,
+			validateFn: func(t *testing.T, w *httptest.ResponseRecorder) {
+				var task storage.Task
+				require.NoError(t, json.NewDecoder(w.Body).Decode(&task))
+				assert.Equal(t, testTask.Title, task.Title)
+				assert.Equal(t, "Updated Description Only", task.Description)
+			},
+		},
+		{
+			name:   "Patch task - mark as completed",
+			method: "PATCH",
+			path:   fmt.Sprintf("/api/v1/tasks/%s", testTask.ID),
+			setupFn: func(store *testutil.MockStore) {
+				require.NoError(t, store.Add(testTask))
+			},
+			body: TaskPatch{
+				CompletedAt: &now,
+			},
+			expectedStatus: http.StatusOK,
+			validateFn: func(t *testing.T, w *httptest.ResponseRecorder) {
+				var task storage.Task
+				require.NoError(t, json.NewDecoder(w.Body).Decode(&task))
+				assert.Equal(t, testTask.Title, task.Title)
+				assert.Equal(t, testTask.Description, task.Description)
+				assert.True(t, task.CompletedAt.Equal(now), "CompletedAt time should match")
+			},
+		},
+		{
+			name:   "Patch task - not found",
+			method: "PATCH",
+			path:   "/api/v1/tasks/nonexistent",
+			body: TaskPatch{
+				Title: testutil.StringPtr("Updated Title"),
+			},
+			expectedStatus: http.StatusNotFound,
+		},
+		{
+			name:   "Patch task - invalid body",
+			method: "PATCH",
+			path:   fmt.Sprintf("/api/v1/tasks/%s", testTask.ID),
+			setupFn: func(store *testutil.MockStore) {
+				require.NoError(t, store.Add(testTask))
+			},
+			body:           "{invalid json",
+			expectedStatus: http.StatusBadRequest,
+		},
 	}
 
 	for _, tc := range tests {

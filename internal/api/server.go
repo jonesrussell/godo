@@ -55,6 +55,7 @@ func (s *Server) setupRoutes() {
 		r.Get("/tasks", s.handleListTasks)
 		r.Post("/tasks", s.handleCreateTask)
 		r.Put("/tasks/{id}", s.handleUpdateTask)
+		r.Patch("/tasks/{id}", s.handlePatchTask)
 		r.Delete("/tasks/{id}", s.handleDeleteTask)
 	})
 }
@@ -154,4 +155,64 @@ func (s *Server) handleDeleteTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// TaskPatch represents a partial update to a task
+type TaskPatch struct {
+	Title       *string    `json:"title,omitempty"`
+	Description *string    `json:"description,omitempty"`
+	CompletedAt *time.Time `json:"completed_at,omitempty"`
+}
+
+func (s *Server) handlePatchTask(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+
+	// Get existing task
+	tasks, err := s.store.List()
+	if err != nil {
+		s.logger.Error("Failed to get tasks", "error", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	var existingTask *storage.Task
+	for _, t := range tasks {
+		if t.ID == id {
+			existingTask = &t
+			break
+		}
+	}
+
+	if existingTask == nil {
+		http.Error(w, "Task not found", http.StatusNotFound)
+		return
+	}
+
+	// Decode patch request
+	var patch TaskPatch
+	if err := json.NewDecoder(r.Body).Decode(&patch); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	// Apply patches
+	if patch.Title != nil {
+		existingTask.Title = *patch.Title
+	}
+	if patch.Description != nil {
+		existingTask.Description = *patch.Description
+	}
+	if patch.CompletedAt != nil {
+		existingTask.CompletedAt = *patch.CompletedAt
+	}
+	existingTask.UpdatedAt = time.Now()
+
+	// Update the task
+	if err := s.store.Update(*existingTask); err != nil {
+		s.logger.Error("Failed to update task", "error", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	render.JSON(w, r, existingTask)
 }

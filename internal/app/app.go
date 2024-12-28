@@ -75,12 +75,6 @@ func (a *App) Run() error {
 
 	a.Logger.Info("Application initialized successfully, starting main loop")
 
-	// Make sure the main window is visible
-	if win := a.mainWin.GetWindow(); win != nil {
-		win.Show()
-		win.CenterOnScreen()
-	}
-
 	// Run the application
 	a.fyneApp.Run()
 
@@ -98,6 +92,10 @@ func (a *App) SetupUI() {
 	// Setup systray with menu
 	a.Logger.Debug("Setting up system tray")
 	menu := fyne.NewMenu("Godo",
+		fyne.NewMenuItem("Quick Note", func() {
+			a.Logger.Debug("Quick Note menu item clicked")
+			a.quickNote.Show()
+		}),
 		fyne.NewMenuItem("Show", func() {
 			a.Logger.Debug("Show menu item clicked")
 			if win := a.mainWin.GetWindow(); win != nil {

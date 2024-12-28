@@ -17,7 +17,7 @@ func TestMemoryStore(t *testing.T) {
 	}{
 		{
 			name:  "new store is empty",
-			setup: func(s *MemoryStore) {},
+			setup: func(_ *MemoryStore) {},
 			validate: func(t *testing.T, s *MemoryStore) {
 				tasks, err := s.List()
 				assert.NoError(t, err)

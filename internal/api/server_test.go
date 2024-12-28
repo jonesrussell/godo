@@ -484,9 +484,9 @@ func TestServerTimeouts(t *testing.T) {
 
 	// Start server
 	go func() {
-		err := server.Start(0)
-		if err != nil && err != http.ErrServerClosed {
-			t.Errorf("Server start error: %v", err)
+		startErr := server.Start(0)
+		if startErr != nil && startErr != http.ErrServerClosed {
+			t.Errorf("Server start error: %v", startErr)
 		}
 	}()
 
@@ -496,8 +496,8 @@ func TestServerTimeouts(t *testing.T) {
 	// Test timeouts
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	err = server.Shutdown(ctx)
-	assert.NoError(t, err)
+	shutdownErr := server.Shutdown(ctx)
+	assert.NoError(t, shutdownErr)
 }
 
 func TestServerInvalidRequests(t *testing.T) {
@@ -532,4 +532,20 @@ func TestServerInvalidRequests(t *testing.T) {
 			assert.Equal(t, tc.expectedStatus, w.Code)
 		})
 	}
+}
+
+func TestHandleDeleteTask(t *testing.T) {
+	store := storage.NewMemoryStore()
+
+	// Add a test task
+	task := storage.Task{
+		ID:      "test-id",
+		Content: "Test Task",
+	}
+	err := store.Add(task)
+	require.NoError(t, err)
+
+	// Delete the task
+	deleteErr := store.Delete("test-id")
+	assert.NoError(t, deleteErr)
 }

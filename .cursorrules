@@ -1,320 +1,267 @@
-# Project: Godo - A Todo Application with Quick-Note Support
+# .cursorrules file for Godo - A Todo Application with Quick-Note Support
 
-## Snippets
-1. Fyne Keyboard Shortcuts:
-```go
-// Add keyboard shortcut (e.g., Ctrl+Enter)
-window.Canvas().AddShortcut(&desktop.CustomShortcut{
-    KeyName:  fyne.KeyReturn,  // Or other key like KeyEscape
-    Modifier: fyne.KeyModifierControl,  // Optional, remove for no modifier
-}, func(shortcut fyne.Shortcut) {
-    // Shortcut handler code here
-})
-```
+code_style:
+- description: "Follow standard Go formatting guidelines."
+- formatter: gofmt
+- rules:
+  - use_meaningful_variable_and_function_names: true
+  - implement_dependency_injection: true
+  - use_structured_logging_with_zap: true
+  - keep_functions_small_and_focused: true
+  - use_modern_octal_literal_style: "0o600 instead of 0600"
+  - avoid_time_sleep_for_synchronization: true
+  - prefer_synchronization_primitives: true
+  - implement_ready_state_callbacks: true
+  - use_event_driven_ui_state_management: true
+  - use_build_tags_for_platform_specific_code: true
+  - follow_docker_windows_linux_build_tags: true
+  - follow_restful_api_conventions: true
+  - use_proper_http_status_codes: true
+  - implement_request_validation: true
+  - use_middleware_for_common_http_concerns: true
+  - follow_jwt_best_practices: true
+  - implement_rate_limiting: true
+  - use_proper_websocket_connection_management: true
+  - ensure_api_versioning: true
+  - implement_health_checks: true
+  - plan_for_scalability: true
+  - use_secure_headers: true
+  - monitor_performance: true
 
-2. Fyne Window Setup:
-```go
-// Basic window setup
-win := fyne.CurrentApp().NewWindow("Window Title")
-win.Resize(fyne.NewSize(400, 300))
-win.CenterOnScreen()
+snippets:
+- fyne_keyboard_shortcuts:
+    description: "Add keyboard shortcuts using Fyne."
+    code: |
+      // Add keyboard shortcut (e.g., Ctrl+Enter)
+      window.Canvas().AddShortcut(&desktop.CustomShortcut{
+          KeyName:  fyne.KeyReturn,  // Or other key like KeyEscape
+          Modifier: fyne.KeyModifierControl,  // Optional, remove for no modifier
+      }, func(shortcut fyne.Shortcut) {
+          // Shortcut handler code here
+      })
 
-// Add close interceptor
-win.SetCloseIntercept(func() {
-    // Cleanup code here
-    win.Hide()
-})
+- fyne_window_setup:
+    description: "Set up a Fyne window with basic properties."
+    code: |
+      // Basic window setup
+      win := fyne.CurrentApp().NewWindow("Window Title")
+      win.Resize(fyne.NewSize(400, 300))
+      win.CenterOnScreen()
 
-// Focus an input field
-if input != nil {
-    win.Canvas().Focus(input)
-}
-```
+      // Add close interceptor
+      win.SetCloseIntercept(func() {
+          // Cleanup code here
+          win.Hide()
+      })
 
-3. Fyne Layout Containers:
-```go
-// Border layout with margins
-content := container.NewBorder(
-    top,    // top widget
-    bottom, // bottom widget
-    left,   // left widget
-    right,  // right widget
-    center  // center/main widget
-)
+      // Focus an input field
+      if input != nil {
+          win.Canvas().Focus(input)
+      })
 
-// Vertical box layout
-content := container.NewVBox(
-    widget1,
-    widget2,
-    widget3,
-)
+- fyne_layout_containers:
+    description: "Create Fyne layout containers."
+    code: |
+      // Border layout with margins
+      content := container.NewBorder(
+          top,    // top widget
+          bottom, // bottom widget
+          left,   // left widget
+          right,  // right widget
+          center  // center/main widget
+      )
 
-// Horizontal box layout
-content := container.NewHBox(
-    widget1,
-    widget2,
-    widget3,
-)
-```
+      // Vertical box layout
+      content := container.NewVBox(
+          widget1,
+          widget2,
+          widget3,
+      )
 
-## Important Notes on GUI library
-- fyne.io/fyne/v2 v2.5.3
-  1. Key Events and Shortcuts:
-     - Key.Modifier doesn't exist
-     - Use desktop.CustomShortcut instead of fyne.ShortcutKey
-     - Shortcuts must be registered via Canvas().AddShortcut()
-     - KeyName is used instead of Key in CustomShortcut
-     - Use fyne.KeyModifierControl instead of desktop.ControlModifier (deprecated)
-     - Other modifiers should also use fyne.KeyModifier* variants
-     - For debugging key events:
-       - Extend widget.Entry for input fields that need key debugging
-       - Override KeyDown(), TypedKey(), and TypedShortcut()
-       - Log key.Name and key.Physical in KeyDown and TypedKey
-       - Log shortcut type and details in TypedShortcut
-       - Call base widget methods after logging
-       - Call ExtendBaseWidget() in constructor
-       - Example debug entry pattern:
-         ```go
-         type debugEntry struct {
-             widget.Entry  // or other base widget
-             logger Logger
-         }
-         
-         func (e *debugEntry) KeyDown(key *fyne.KeyEvent) {
-             e.logger.Debug("Key pressed", 
-                 "key", key.Name,
-                 "physical", key.Physical)
-             e.Entry.KeyDown(key)
-         }
-         
-         func (e *debugEntry) TypedShortcut(shortcut fyne.Shortcut) {
-             e.logger.Debug("Shortcut received",
-                 "shortcut", fmt.Sprintf("%T", shortcut),
-                 "details", fmt.Sprintf("%+v", shortcut))
-             e.Entry.TypedShortcut(shortcut)
-         }
-         ```
-  2. Focus and Window Management:
-     - No RequestFocus() method
-     - Use Canvas().Focus() instead
-     - Window.Show() doesn't automatically focus
-     - CenterOnScreen() should be called after Show()
-     - Window visibility in tests uses Canvas().Size().IsZero()
-     - Always defer window.Close() in tests
-     - For popup windows, focus input fields in Show() method
-     - For modal windows, set focus after content is set
-  3. Widget Implementation:
-     - Always call ExtendBaseWidget() in custom widget constructors
-     - Override both KeyDown() and TypedKey() for complete key handling
-     - TypedShortcut() needed for shortcut support
-     - Base widget methods should be called after custom handling
-     - For list widgets:
-       - Always check bounds in update callbacks
-       - Update data before refreshing UI
-       - Store data in the widget struct for access in callbacks
-       - Use container.NewHBox for complex list items
-       - Keep references to child widgets for state updates
-       - Refresh only after all data operations complete
-     - For task list specifically:
-       - Update task state before UI refresh
-       - Handle task deletion by removing from store first
-       - Update completion state in store before UI
-       - Maintain task order during updates
-       - Handle empty list state gracefully
-     - Handle nil cases in all widget callbacks
-     - Use container.NewBorder for complex layouts
-     - Use container.NewVBox for vertical stacking
-     - Prefer composition over inheritance for widgets
-  4. Forms and Dialogs:
-     - Dialog size must be set after creation
-     - Forms don't automatically focus first field
-     - Custom widgets must be properly extended for form usage
-     - For error dialogs:
-       - Use dialog.ShowError() for operation failures
-       - Use dialog.ShowConfirm() for destructive actions
-       - Error dialogs should be modal
-       - Error dialogs should focus OK button
-       - Show errors in the window where action occurred
-       - Include error details but keep messages user-friendly
-  5. Testing Best Practices:
-     - Use test.NewApp() instead of custom mocks where possible
-     - Use test.NewWindow() with defer Close() for window tests
-     - Use test.NewTempApp(t) for temporary app instances
-     - Use test.AssertRendersToImage() for visual tests
-     - Use test.AssertObjectRendersToMarkup() for widget tests
-     - Use httptest.NewServer for HTTP-based tests
-     - Use t.TempDir() for temporary files
-     - Use assert.JSONEq() for JSON comparisons
-     - Use time.After() instead of time.Sleep() for timeouts
-     - Mock interfaces should be small and focused
-     - Always clean up resources with defer
-     - Use build tags for platform-specific tests
-     - Import test package with blank identifier
-     - Test both success and error paths
-     - Test edge cases explicitly
-  6. Resource Management:
-     - Use //go:embed for test resources
-     - Clean up files with defer os.Remove()
-     - Use filepath.Join() for paths
-     - Handle Windows path separators
-     - Use storage.ParseURI() for URIs
-  7. State Management:
-     - Use channels for async notifications
-     - Use AddChangeListener for state changes
-     - Verify state transitions explicitly
-     - Test preference persistence
-     - Test settings overrides
-     - For task state:
-       - Update store before UI
-       - Handle store errors gracefully
-       - Maintain consistency between store and UI
-       - Use proper locking if needed
-       - Consider using events for updates
-  8. Canvas and Rendering:
-     - Use software.NewCanvas() for driver tests
-     - Test with different scale factors
-     - Test with different theme variants
-     - Test with different window sizes
-     - Compare RGBA values exactly
-     - Test transparent backgrounds
-     - Test minimum sizes
-     - Test layout positions
-  9. Error Handling:
-     - Test "not implemented" errors
-     - Test file operation errors
-     - Test corrupt resources
-     - Test invalid states
-     - Test cleanup failures
-     - For task operations:
-       - Show user-friendly error messages
-       - Log detailed error information
-       - Maintain UI state on error
-       - Provide recovery options
-       - Handle network timeouts
+      // Horizontal box layout
+      content := container.NewHBox(
+          widget1,
+          widget2,
+          widget3,
+      )
 
-## Project Overview
-- Todo application with two main features:
-  1. Quick-note capture via global hotkey
-  2. Full-featured todo management interface
-- Built with Go and SQLite
-- Uses Fyne for all UI components
-- Cross-platform compatibility (Windows, Linux)
+gui_library_notes:
+- fyne_io_fyne_v2_5_3:
+    description: "Important notes on Fyne.io/fyne v2.5.3 usage."
+    notes:
+    - key_events_and_shortcuts:
+      - key_modifier_does_not_exist: true
+      - use_desktop_custom_shortcut: true
+      - register_shortcuts_via_canvas: true
+      - use_keyname_instead_of_key: true
+      - prefer_fyne_key_modifier_control: true
+      - debug_key_events_with_extended_widget_entry: true
+    - focus_and_window_management:
+      - no_request_focus_method: true
+      - use_canvas_focus_instead: true
+      - call_center_on_screen_after_show: true
+      - defer_window_close_in_tests: true
+      - set_focus_for_popup_windows_in_show: true
+      - set_focus_for_modal_windows_after_content_set: true
+    - widget_implementation:
+      - call_extend_base_widget_in_constructors: true
+      - override_keydown_and_typedkey_for_key_handling: true
+      - handle_task_list_updates_correctly: true
+      - prefer_composition_over_inheritance_for_widgets: true
+    - forms_and_dialogs:
+      - set_dialog_size_after_creation: true
+      - use_custom_widgets_in_forms: true
+      - use_dialog_show_error_for_failures: true
+      - show_confirm_for_destructive_actions: true
+      - focus_ok_button_in_error_dialogs: true
+    - testing_best_practices:
+      - use_test_new_app_instead_of_custom_mocks: true
+      - use_test_new_window_with_defer_close: true
+      - use_test_assert_renders_to_image_for_visual_tests: true
+      - use_httptest_new_server_for_http_tests: true
+      - use_assert_jsoneq_for_json_comparisons: true
+      - clean_up_resources_with_defer: true
+      - test_success_and_error_paths: true
+      - test_edge_cases_explicitly: true
+    - resource_management:
+      - use_go_embed_for_test_resources: true
+      - clean_up_files_with_defer_os_remove: true
+      - handle_windows_path_separators: true
+      - use_storage_parse_uri_for_uris: true
+    - state_management:
+      - use_channels_for_async_notifications: true
+      - verify_state_transitions_explicitly: true
+      - handle_task_state_in_store_before_ui: true
+    - canvas_and_rendering:
+      - use_software_new_canvas_for_driver_tests: true
+      - test_with_different_scale_factors: true
+      - test_with_different_theme_variants: true
+      - test_with_different_window_sizes: true
+      - compare_rgba_values_exactly: true
+      - test_transparent_backgrounds: true
+    - error_handling:
+      - test_not_implemented_errors: true
+      - show_user_friendly_error_messages: true
+      - log_detailed_error_information: true
+      - handle_network_timeouts: true
 
-## Core Features
-- Quick-Note System
-  - Global hotkey registration
-  - Minimal graphical popup window
-    - Platform-specific implementations
-    - Windows: golang.design/x/hotkey
-    - Linux: golang.design/x/hotkey
-  - Instant task capture
-- Main Application Window
-  - Task organization
-  - Task completion tracking
-  - Task deletion
-  - Modern graphical interface using Fyne widgets
-- Database
-  - SQLite3 storage
-  - Repository pattern
-  - Service layer abstraction
+project_overview:
+- todo_application_features:
+    description: "Main features of the Todo application (Currently Windows-only)."
+    features:
+    - quick_note_capture_via_global_hotkey: true
+    - full_featured_todo_management_interface: true
+    - built_with_go_and_sqlite: true
+    - current_platform: "Windows"
+    - future_platforms: [ "Linux", "macOS" ]
 
-## Technical Requirements
-- Go 1.23 or higher
-- SQLite3
-- MinGW-w64 GCC (for Windows)
-- Task runner for build automation
+core_features:
+- quick_note_system:
+    description: "Features of the Quick-Note system (Windows implementation)."
+    features:
+    - global_hotkey_registration: true
+    - minimal_graphical_popup_window: true
+    - platform_specific_implementations: true
+    - current_platform: "Windows"
+- main_application_window:
+    description: "Features of the main application window."
+    features:
+    - task_organization: true
+    - task_completion_tracking: true
+    - task_deletion: true
+    - modern_graphical_interface_using_fyne_widgets: true
 
-## Code Style & Standards
-- Follow standard Go formatting guidelines
-- Implement dependency injection using Wire
-- Use structured logging with Zap
-- Keep functions small and focused
-- Use meaningful variable and function names
-- Use modern octal literal style (0o600 instead of 0600)
-- Never use time.Sleep for synchronization
-  - Use proper synchronization primitives (channels, WaitGroups, etc.)
-  - Use event-driven approaches for UI state management
-  - Implement proper ready/state callbacks where available
-- Use build tags for platform-specific code
-  - docker - for Docker-specific implementations
-  - windows/linux - for OS-specific features
+database:
+- sqlite3_storage:
+    description: "Using SQLite3 for storage."
+    features:
+    - repository_pattern: true
+    - service_layer_abstraction: true
 
-## Project Structure
-- cmd/
-  - godo/ - Main application entry point
-    - main.go - Application initialization
-- internal/
-  - app/ - Core application logic
-    - app.go - Main application setup
-    - hotkey_common.go - Common hotkey interface
-    - hotkey_default.go - Default hotkey implementation
-    - hotkey_docker.go - Docker-specific implementation
-  - common/ - Shared utilities and types
-    - errors/ - Custom error types
-    - testutils/ - Testing utilities
-  - config/ - Configuration management
-    - config.go - Configuration types
-    - loader.go - Config file loading
-  - gui/ - User interface components
-    - mainwindow/ - Main application window
-      - window.go - Window setup
-      - menu.go - Menu definitions
-      - toolbar.go - Toolbar setup
-    - quicknote/ - Quick note popup
-      - window.go - Quick note window
-    - widgets/ - Custom Fyne widgets
-      - task_list.go - Todo list widget
-      - task_item.go - Individual task widget
-    - theme/ - Custom theming
-      - colors.go - Color definitions
-      - icons.go - Custom icons
-  - model/ - Data models
-    - task.go - Task data structures
-  - storage/ - Data persistence
-    - sqlite/ - SQLite implementation
-      - db.go - Database setup
-      - migrations/ - Schema migrations
-    - repository/ - Data access layer
-      - task.go - Task repository
-- assets/ - Application resources
-  - icons/ - Application icons
-  - themes/ - Theme resources
-- build/ - Build configurations
-  - Dockerfile.linux - Linux Docker build
-- configs/ - Configuration files
-  - default.yaml - Default settings
+technical_requirements:
+- go_version: "1.23 or higher"
+- sqlite3: true
+- mingw_w64_gcc_for_windows: true
+- windows_sdk: true
+- task_runner_for_build_automation: true
+- jwt_authentication: true
+- openapi_swagger: true
+- websocket_support: true
+- cors_enabled: true
+- rate_limiting: true
+- api_versioning: true
+- secure_headers: true
+- performance_monitoring: true
 
-## Testing Requirements
-- Unit tests for all packages
-  - Service tests
-  - Repository tests
-  - Database tests
-  - Hotkey system tests
-- Integration tests
-- CI pipeline integration
+testing_requirements:
+- unit_tests_for_all_packages: true
+- integration_tests: true
+- websocket_connection_tests: true
+- authentication_tests: true
+- load_performance_tests: true
+- ci_pipeline_integration: true
 
-## System Integration
-- Graceful shutdown handling
-- System service support
-  - Windows service
-  - Linux systemd
-- Auto-start capability
-- Update mechanism
+system_integration:
+- graceful_shutdown_handling: true
+- system_service_support: [ "Windows service" ]
+- future_system_service_support: [ "Linux systemd" ]
+- auto_start_capability: "Windows Task Scheduler"
+- update_mechanism: "Windows-specific"
 
-## Documentation
-- Comprehensive README
-- API documentation
-- Usage examples
-- Installation guides
-- Hotkey documentation
+documentation:
+- comprehensive_readme: true
+- api_documentation: true
+- usage_examples: true
+- installation_guides: true
+- hotkey_documentation: true
+- openapi_specification: true
+- configuration_documentation: true
 
-## Future Considerations
-- Task categories/tags
-- Due dates and reminders
-- Data export/import
-- Task priorities
-- Recurring tasks
-- Multiple lists
-- Cloud sync
+future_considerations:
+- task_categories_tags: true
+- due_dates_and_reminders: true
+- data_export_import: true
+- task_priorities: true
+- recurring_tasks: true
+- multiple_lists: true
+- cloud_sync: true
 
-Remember: Focus on reliability, user experience, and cross-platform compatibility while maintaining clean, maintainable code.
+api_features:
+- http_server:
+    description: "HTTP API server features"
+    features:
+    - restful_endpoints: true
+    - jwt_authentication: true
+    - request_validation: true
+    - proper_error_handling: true
+    - openapi_documentation: true
+    - rate_limiting: true
+    - cors_support: true
+- websocket:
+    description: "WebSocket features"
+    features:
+    - real_time_updates: true
+    - connection_management: true
+    - heartbeat_mechanism: true
+    - task_notifications: true
+
+endpoints:
+- get_tasks: "/api/v1/tasks"
+- get_task_by_id: "/api/v1/tasks/:id"
+- create_task: "/api/v1/tasks"
+- update_task: "/api/v1/tasks/:id"
+- delete_task: "/api/v1/tasks/:id"
+- list_tags: "/api/v1/tags"
+
+configuration:
+- http_port: "Set the port for the HTTP server"
+- websocket_settings: "Configure WebSocket connection settings"
+- authentication_settings: "JWT secret, token expiration, etc."
+- cors_configuration: "Allowed origins, methods, headers"
+- rate_limiting: "Requests per second, burst limit"
+
+error_handling:
+- use_standard_http_status_codes: true
+- provide_meaningful_error_messages: true
+- log_errors_with_context: true
+- return_consistent_error_responses: true

@@ -53,8 +53,22 @@ func (s *Store) List() ([]storage.Task, error) {
 	var tasks []storage.Task
 	for rows.Next() {
 		var task storage.Task
-		if err := rows.Scan(&task.ID, &task.Title, &task.Description, &task.CreatedAt, &task.UpdatedAt, &task.CompletedAt); err != nil {
+		var description sql.NullString
+		var completedAt sql.NullTime
+		if err := rows.Scan(
+			&task.ID,
+			&task.Title,
+			&description,
+			&task.CreatedAt,
+			&task.UpdatedAt,
+			&completedAt,
+		); err != nil {
 			return nil, err
+		}
+
+		task.Description = description.String
+		if completedAt.Valid {
+			task.CompletedAt = completedAt.Time
 		}
 		tasks = append(tasks, task)
 	}

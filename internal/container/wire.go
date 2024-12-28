@@ -106,7 +106,7 @@ var (
 	// TestSet provides mock dependencies for testing
 	TestSet = wire.NewSet(
 		ProvideMockStore,
-		 ProvideMockMainWindow,
+		ProvideMockMainWindow,
 		ProvideMockQuickNote,
 		ProvideMockHotkey,
 		wire.Bind(new(gui.MainWindow), new(*gui.MockMainWindow)),

@@ -67,3 +67,13 @@ func (a *App) Cleanup() {
 		a.logger.Error("Failed to close store", "error", err)
 	}
 }
+
+// Logger returns the application's logger
+func (a *App) Logger() logger.Logger {
+	return a.logger
+}
+
+// Store returns the application's store
+func (a *App) Store() storage.Store {
+	return a.store
+}

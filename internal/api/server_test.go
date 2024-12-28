@@ -2,23 +2,182 @@ package api
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
-	"github.com/go-chi/chi/v5"
-	"github.com/jonesrussell/godo/internal/common"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
-	"github.com/jonesrussell/godo/internal/testutil"
+	"github.com/jonesrussell/godo/internal/storage/mock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
+func setupTestServer(t *testing.T) (*Server, *mock.Store) {
+	store := mock.New()
+	log := logger.NewTestLogger(t)
+	server := NewServer(store, log)
+	return server, store
+}
+
+func TestHandleAddTask(t *testing.T) {
+	server, store := setupTestServer(t)
+
+	tests := []struct {
+		name       string
+		task       storage.Task
+		setupStore func()
+		wantStatus int
+		wantErr    bool
+	}{
+		{
+			name: "valid task",
+			task: storage.Task{
+				ID:      "test-1",
+				Content: "Test Task",
+			},
+			setupStore: func() {},
+			wantStatus: http.StatusCreated,
+			wantErr:    false,
+		},
+		{
+			name: "empty ID",
+			task: storage.Task{
+				Content: "Test Task",
+			},
+			setupStore: func() {},
+			wantStatus: http.StatusBadRequest,
+			wantErr:    true,
+		},
+		{
+			name: "duplicate ID",
+			task: storage.Task{
+				ID:      "test-1",
+				Content: "Test Task",
+			},
+			setupStore: func() {
+				store.Error = storage.ErrDuplicateID
+			},
+			wantStatus: http.StatusConflict,
+			wantErr:    true,
+		},
+		{
+			name: "store error",
+			task: storage.Task{
+				ID:      "test-1",
+				Content: "Test Task",
+			},
+			setupStore: func() {
+				store.Error = assert.AnError
+			},
+			wantStatus: http.StatusInternalServerError,
+			wantErr:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			store.Reset()
+			tt.setupStore()
+
+			body, err := json.Marshal(tt.task)
+			require.NoError(t, err)
+
+			req := httptest.NewRequest(http.MethodPost, "/api/v1/tasks", bytes.NewReader(body))
+			req.Header.Set("Content-Type", "application/json")
+			w := httptest.NewRecorder()
+
+			server.handleAddTask(w, req)
+
+			assert.Equal(t, tt.wantStatus, w.Code)
+			if !tt.wantErr {
+				var response storage.Task
+				err = json.NewDecoder(w.Body).Decode(&response)
+				require.NoError(t, err)
+				assert.Equal(t, tt.task.ID, response.ID)
+				assert.Equal(t, tt.task.Content, response.Content)
+			}
+		})
+	}
+}
+
+func TestHandleGetTask(t *testing.T) {
+	server, store := setupTestServer(t)
+
+	existingTask := storage.Task{
+		ID:        "test-1",
+		Content:   "Test Task",
+		Done:      false,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+
+	tests := []struct {
+		name       string
+		taskID     string
+		setupStore func()
+		wantStatus int
+		wantTask   *storage.Task
+	}{
+		{
+			name:   "existing task",
+			taskID: existingTask.ID,
+			setupStore: func() {
+				store.Add(existingTask)
+			},
+			wantStatus: http.StatusOK,
+			wantTask:   &existingTask,
+		},
+		{
+			name:   "nonexistent task",
+			taskID: "nonexistent",
+			setupStore: func() {
+				store.Error = storage.ErrTaskNotFound
+			},
+			wantStatus: http.StatusNotFound,
+			wantTask:   nil,
+		},
+		{
+			name:   "store error",
+			taskID: "test-1",
+			setupStore: func() {
+				store.Error = assert.AnError
+			},
+			wantStatus: http.StatusInternalServerError,
+			wantTask:   nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			store.Reset()
+			tt.setupStore()
+
+			req := httptest.NewRequest(http.MethodGet, "/api/v1/tasks/"+tt.taskID, nil)
+			w := httptest.NewRecorder()
+
+			server.handleGetTask(w, req)
+
+			assert.Equal(t, tt.wantStatus, w.Code)
+			if tt.wantTask != nil {
+				var response storage.Task
+				err := json.NewDecoder(w.Body).Decode(&response)
+				require.NoError(t, err)
+				assert.Equal(t, tt.wantTask.ID, response.ID)
+				assert.Equal(t, tt.wantTask.Content, response.Content)
+				assert.Equal(t, tt.wantTask.Done, response.Done)
+			}
+		})
+	}
+}
+
+func TestHandleUpdateTask(t *testing.T) {
+	server, store := setupTestServer(t)
+
+	existingTask := storage.Task{
+		ID:        "test-1",
 type testCase struct {
 	name           string
 	method         string

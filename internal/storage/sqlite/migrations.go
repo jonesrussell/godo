@@ -14,34 +14,15 @@ type migrationSet struct {
 func newMigrationSet() *migrationSet {
 	return &migrationSet{
 		migrations: []string{
-			// Initial schema
-			`CREATE TABLE IF NOT EXISTS tasks (
+			// Initial schema - create tasks table if it doesn't exist
+			`DROP TABLE IF EXISTS tasks;
+			CREATE TABLE tasks (
 				id TEXT PRIMARY KEY,
 				content TEXT NOT NULL,
 				done BOOLEAN NOT NULL DEFAULT 0,
 				created_at TIMESTAMP NOT NULL,
 				updated_at TIMESTAMP NOT NULL
 			);`,
-			// Add new columns if they don't exist
-			`PRAGMA foreign_keys=off;
-			BEGIN TRANSACTION;
-			
-			CREATE TABLE IF NOT EXISTS _tasks_new (
-				id TEXT PRIMARY KEY,
-				content TEXT NOT NULL,
-				done BOOLEAN NOT NULL DEFAULT 0,
-				created_at TIMESTAMP NOT NULL,
-				updated_at TIMESTAMP NOT NULL
-			);
-			
-			INSERT INTO _tasks_new (id, content, done, created_at, updated_at)
-			SELECT id, content, done, created_at, updated_at FROM tasks;
-			
-			DROP TABLE IF EXISTS tasks;
-			ALTER TABLE _tasks_new RENAME TO tasks;
-			
-			COMMIT;
-			PRAGMA foreign_keys=on;`,
 		},
 	}
 }

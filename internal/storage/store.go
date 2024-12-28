@@ -3,15 +3,11 @@ package storage
 
 import (
 	"database/sql"
-	"errors"
 	"sync"
 	"time"
 
 	_ "modernc.org/sqlite" // SQLite driver for database connectivity
 )
-
-// ErrTaskNotFound is returned when a task cannot be found
-var ErrTaskNotFound = errors.New("task not found")
 
 // Task represents a todo task
 type Task struct {

@@ -16,10 +16,15 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	if os.Getenv("CI") == "true" {
-		os.Exit(0) // Skip tests in CI environment
-	}
-	os.Exit(m.Run())
+	// Setup test environment
+	os.Setenv("GODO_ENV", "test")
+
+	// Run tests
+	code := m.Run()
+
+	// Cleanup
+	os.Unsetenv("GODO_ENV")
+	os.Exit(code)
 }
 
 func TestConfig(t *testing.T) {

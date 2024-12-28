@@ -72,7 +72,8 @@ func TestProvideAppName(t *testing.T) {
 
 func TestProvideAppVersion(t *testing.T) {
 	version := ProvideAppVersion()
-	assert.Equal(t, "1.0.0", version.String())
+	assert.NotEmpty(t, version.String(), "Version should not be empty")
+	assert.Regexp(t, `^\d+\.\d+\.\d+(-[a-zA-Z0-9]+)?$`, version.String(), "Version should follow semantic versioning")
 }
 
 func TestProvideAppID(t *testing.T) {

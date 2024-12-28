@@ -50,7 +50,7 @@ tasks:
     deps: [ wire ]
     platforms: [ windows ]
     cmds:
-    - mkdir -p {{.COVERAGE_DIR}}
+    - powershell New-Item -ItemType Directory -Force -Path {{.COVERAGE_DIR}}
     - go test -race -coverprofile={{.COVERAGE_DIR}}/coverage.out -covermode=atomic ./...
     - go tool cover -html={{.COVERAGE_DIR}}/coverage.out -o {{.COVERAGE_DIR}}/coverage.html
 

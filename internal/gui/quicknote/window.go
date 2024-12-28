@@ -1,7 +1,12 @@
 package quicknote
 
 import (
+	"fmt"
+	"time"
+
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/widget"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
 )
@@ -34,14 +39,49 @@ func newWindow(store storage.Store, logger logger.Logger) Interface {
 
 func (w *Window) Setup() error {
 	w.logger.Debug("Setting up quick note window")
-	
+
 	// Create the window
 	w.win = fyne.CurrentApp().NewWindow("Quick Note")
 	w.win.Resize(fyne.NewSize(400, 300))
 	w.win.CenterOnScreen()
-	
-	// TODO: Add text input and save button
-	
+
+	// Create input field
+	input := widget.NewMultiLineEntry()
+	input.SetPlaceHolder("Enter your quick note here...")
+
+	// Create save button
+	saveBtn := widget.NewButton("Save", func() {
+		text := input.Text
+		if text != "" {
+			// Create and save the task
+			task := storage.Task{
+				ID:        generateID(),
+				Title:     text,
+				Completed: false,
+			}
+
+			if err := w.store.Add(task); err != nil {
+				w.logger.Error("Failed to save note", "error", err)
+				// TODO: Show error to user
+				return
+			}
+
+			w.logger.Debug("Saved quick note as task", "id", task.ID)
+			input.SetText("") // Clear the input
+			w.Hide()
+		}
+	})
+
+	// Create content container
+	content := container.NewBorder(nil, saveBtn, nil, nil, input)
+	w.win.SetContent(content)
+
+	// Set window behavior
+	w.win.SetCloseIntercept(func() {
+		input.SetText("") // Clear input on close
+		w.Hide()
+	})
+
 	w.logger.Debug("Quick note window setup complete")
 	return nil
 }
@@ -64,4 +104,8 @@ func (w *Window) Show() {
 	} else {
 		w.logger.Error("Cannot show quick note window - window is nil")
 	}
+}
+
+func generateID() string {
+	return fmt.Sprintf("%d", time.Now().UnixNano())
 }

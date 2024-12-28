@@ -1,148 +1,162 @@
 # Godo API Documentation
 
-This document describes the HTTP API for the Godo task management application.
+## Overview
+
+The Godo API provides a RESTful interface for managing tasks. All endpoints return JSON responses and follow standard HTTP status codes.
 
 ## Base URL
 
-The API is served at `http://localhost:8080` by default.
-
-## API Versioning
-
-The API is versioned using URL prefixes. The current version is `v1` and is accessed at `/api/v1/`.
+```
+http://localhost:8080
+```
 
 ## Authentication
 
-Authentication is not currently implemented. All endpoints are publicly accessible.
+Currently, the API is open and does not require authentication. Authentication will be added in a future update.
 
 ## Endpoints
 
 ### Health Check
 
+Check if the API is running.
+
 ```
 GET /health
 ```
 
-Returns the health status of the API server.
-
-**Response**
+Response:
 ```json
 {
-  "status": "ok"
+    "status": "ok"
 }
 ```
 
-### List Tasks
+### Tasks
+
+#### List Tasks
+
+Retrieve all tasks.
 
 ```
 GET /api/v1/tasks
 ```
 
-Returns a list of all tasks.
-
-**Response**
+Response:
 ```json
 [
-  {
-    "id": "string",
-    "title": "string",
-    "completed": boolean
-  }
+    {
+        "id": "uuid-string",
+        "title": "Task title",
+        "description": "Task description",
+        "created_at": "2024-12-28T09:26:00Z",
+        "updated_at": "2024-12-28T09:26:00Z",
+        "completed_at": "0001-01-01T00:00:00Z"
+    }
 ]
 ```
 
-### Create Task
+#### Create Task
+
+Create a new task.
 
 ```
 POST /api/v1/tasks
 ```
 
-Creates a new task.
-
-**Request Body**
+Request Body:
 ```json
 {
-  "title": "string",
-  "completed": boolean
+    "title": "Buy groceries",
+    "description": "Milk, bread, eggs"
 }
 ```
 
-**Response**
+Response:
 ```json
 {
-  "id": "string",
-  "title": "string",
-  "completed": boolean
+    "id": "uuid-string",
+    "title": "Buy groceries",
+    "description": "Milk, bread, eggs",
+    "created_at": "2024-12-28T09:26:00Z",
+    "updated_at": "2024-12-28T09:26:00Z",
+    "completed_at": "0001-01-01T00:00:00Z"
 }
 ```
 
-Status: 201 Created
+#### Update Task
 
-### Update Task
+Update an existing task.
 
 ```
 PUT /api/v1/tasks/{id}
 ```
 
-Updates an existing task.
-
-**Parameters**
-- `id`: Task ID (string, required)
-
-**Request Body**
+Request Body:
 ```json
 {
-  "title": "string",
-  "completed": boolean
+    "title": "Updated title",
+    "description": "Updated description"
 }
 ```
 
-**Response**
+Response:
 ```json
 {
-  "id": "string",
-  "title": "string",
-  "completed": boolean
+    "id": "uuid-string",
+    "title": "Updated title",
+    "description": "Updated description",
+    "created_at": "2024-12-28T09:26:00Z",
+    "updated_at": "2024-12-28T09:26:15Z",
+    "completed_at": "0001-01-01T00:00:00Z"
 }
 ```
 
-### Delete Task
+#### Delete Task
+
+Delete a task.
 
 ```
 DELETE /api/v1/tasks/{id}
 ```
 
-Deletes a task.
+Response: `204 No Content`
 
-**Parameters**
-- `id`: Task ID (string, required)
+## Status Codes
 
-**Response**
-Status: 204 No Content
+- `200 OK` - Request succeeded
+- `201 Created` - Resource created
+- `204 No Content` - Request succeeded, no content to return
+- `400 Bad Request` - Invalid request body
+- `404 Not Found` - Resource not found
+- `500 Internal Server Error` - Server error
 
-## Error Responses
+## Testing with HTTPie
 
-The API uses standard HTTP status codes to indicate the success or failure of requests:
+[HTTPie](https://httpie.io/) is a user-friendly command-line HTTP client. Here are examples of using it with the Godo API:
 
-- `200 OK`: Request succeeded
-- `201 Created`: Resource was successfully created
-- `204 No Content`: Request succeeded with no response body
-- `400 Bad Request`: Invalid request body or parameters
-- `404 Not Found`: Resource not found
-- `500 Internal Server Error`: Server error
+```bash
+# Health check
+http :8080/health
 
-Error responses include a message in the response body:
+# List all tasks
+http :8080/api/v1/tasks
 
-```json
-{
-  "error": "string"
-}
+# Create a task
+http POST :8080/api/v1/tasks title="Buy groceries" description="Milk, bread, eggs"
+
+# Update a task
+http PUT :8080/api/v1/tasks/{id} title="Updated title" description="New description"
+
+# Delete a task
+http DELETE :8080/api/v1/tasks/{id}
 ```
 
 ## Future Enhancements
 
-1. Authentication and authorization
-2. Rate limiting
-3. Request validation
-4. Pagination for list endpoints
-5. Search and filtering
-6. WebSocket support for real-time updates 
+- Authentication
+- Request validation
+- Rate limiting
+- Pagination
+- Sorting and filtering
+- Search endpoint
+- WebSocket support for real-time updates 

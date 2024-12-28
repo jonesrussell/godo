@@ -1,14 +1,15 @@
 # Godo
 
-A minimalist todo application with quick-note hotkey support.
+A minimalist todo application with quick-note hotkey support and REST API.
 
 ## Overview
 
-Godo combines two powerful features:
+Godo combines three powerful features:
 1. A global hotkey that triggers a lightweight graphical popup for instantly capturing thoughts and tasks
 2. A full-featured graphical interface for detailed todo management
+3. A REST API for programmatic task management and integration
 
-The quick-note feature uses a minimal graphical window that appears when you press the hotkey - type your note, hit enter, and it disappears. The main todo management interface provides efficient task organization with a clean, modern design.
+The quick-note feature uses a minimal graphical window that appears when you press the hotkey - type your note, hit enter, and it disappears. The main todo management interface provides efficient task organization with a clean, modern design. The REST API allows for integration with other tools and services.
 
 ## Features
 
@@ -20,11 +21,47 @@ The quick-note feature uses a minimal graphical window that appears when you pre
   - Organize and manage tasks
   - Mark tasks as complete
   - Delete tasks when done
+- REST API
+  - Full CRUD operations for tasks
+  - JSON responses
+  - Health check endpoint
+  - Proper error handling
 - Runs as a system service
 - SQLite database for reliable data storage
 - Cross-platform compatibility using Fyne toolkit
   - Windows
   - Linux
+
+## API Endpoints
+
+All endpoints return JSON responses. The base URL is `http://localhost:8080`.
+
+### Health Check
+```
+GET /health
+Response: {"status": "ok"}
+```
+
+### Tasks
+- List all tasks: `GET /api/v1/tasks`
+- Create task: `POST /api/v1/tasks`
+- Update task: `PUT /api/v1/tasks/{id}`
+- Delete task: `DELETE /api/v1/tasks/{id}`
+
+Example using HTTPie:
+```bash
+# List tasks
+http :8080/api/v1/tasks
+
+# Create task
+http POST :8080/api/v1/tasks title="Buy groceries" description="Milk, bread, eggs"
+
+# Update task
+http PUT :8080/api/v1/tasks/{id} title="Updated title" description="New description"
+
+# Delete task
+http DELETE :8080/api/v1/tasks/{id}
+```
 
 ## Prerequisites
 

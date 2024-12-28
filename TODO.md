@@ -5,10 +5,10 @@
   - [x] Add proper Docker support
   - [x] Add build tags for Docker/non-Docker environments
   - [ ] Implement platform-specific hotkey managers
-    - [ ] Windows implementation
+    - [x] Windows implementation
     - [ ] Linux implementation
     - [ ] macOS implementation
-    - [ ] Docker mock implementation
+    - [x] Docker mock implementation
   - [ ] Add proper cross-compilation support
   - [ ] Add release packaging
   - [ ] Add CI/CD pipeline
@@ -30,6 +30,8 @@
   - [x] Move quick note logic to separate package
   - [x] Keep the same functionality but callable from system tray
   - [x] Add logging for quick note operations
+  - [x] Add ESC key to close window
+  - [x] Auto-focus input field on show
 
 - [x] Step 4: Basic Todo Storage
   - [x] Add simple in-memory todo storage
@@ -45,6 +47,9 @@
 ## Next Steps
 - [ ] Step 6: Polish
   - [x] Add keyboard shortcuts
+  - [x] Add quick note menu item
+  - [ ] Add error dialogs for operation failures
+  - [ ] Add task completion animations
   - [ ] Improve UI layout
   - [ ] Add basic error handling
   - [ ] Enhance logging with contextual information
@@ -53,10 +58,13 @@
   - [ ] Add update mechanism
 
 - [ ] Step 7: Todo List UI
-  - [ ] Add a list view to display all todos
-  - [ ] Add ability to mark todos as done
-  - [ ] Add ability to delete todos
+  - [x] Add a list view to display all todos
+  - [x] Add ability to mark todos as done
+  - [x] Add ability to delete todos
+  - [ ] Add task sorting (by date, completion)
+  - [ ] Add task filtering
   - [ ] Show todo creation time and last update time
+  - [ ] Add task editing capability
 
 ## Future Enhancements
 - [ ] Task categories/tags

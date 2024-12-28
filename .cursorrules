@@ -14,16 +14,25 @@
      - CenterOnScreen() should be called after Show()
      - Window visibility in tests uses Canvas().Size().IsZero()
      - Always defer window.Close() in tests
+     - For popup windows, focus input fields in Show() method
+     - For modal windows, set focus after content is set
   3. Widget Implementation:
      - Always call ExtendBaseWidget() in custom widget constructors
      - Override both KeyDown() and TypedKey() for complete key handling
      - TypedShortcut() needed for shortcut support
      - Base widget methods should be called after custom handling
      - Test widget rendering with test.AssertRendersToMarkup()
+     - For list widgets, always check bounds in update callbacks
+     - For task lists, update data before refreshing UI
+     - Handle nil cases in all widget callbacks
   4. Forms and Dialogs:
      - Dialog size must be set after creation
      - Forms don't automatically focus first field
      - Custom widgets must be properly extended for form usage
+     - For error dialogs, use dialog.ShowError()
+     - For confirmations, use dialog.ShowConfirm()
+     - Error dialogs should be modal
+     - Error dialogs should focus OK button
   5. Testing Best Practices:
      - Use test.NewApp() instead of custom mocks where possible
      - Use test.NewWindow() with defer Close() for window tests

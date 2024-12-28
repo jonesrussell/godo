@@ -114,9 +114,8 @@ tasks:
 
   docker:build-all:
     desc: Build both Windows and Linux binaries using Docker
-    deps: [ wire ]
     cmds:
-    - powershell ./build/build.ps1
+    - powershell -ExecutionPolicy Bypass -File ./build/build.ps1
 
   docker:build-linux:
     desc: Build Linux binary using Docker

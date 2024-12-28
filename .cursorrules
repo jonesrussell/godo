@@ -21,18 +21,34 @@
      - Override both KeyDown() and TypedKey() for complete key handling
      - TypedShortcut() needed for shortcut support
      - Base widget methods should be called after custom handling
-     - Test widget rendering with test.AssertRendersToMarkup()
-     - For list widgets, always check bounds in update callbacks
-     - For task lists, update data before refreshing UI
+     - For list widgets:
+       - Always check bounds in update callbacks
+       - Update data before refreshing UI
+       - Store data in the widget struct for access in callbacks
+       - Use container.NewHBox for complex list items
+       - Keep references to child widgets for state updates
+       - Refresh only after all data operations complete
+     - For task list specifically:
+       - Update task state before UI refresh
+       - Handle task deletion by removing from store first
+       - Update completion state in store before UI
+       - Maintain task order during updates
+       - Handle empty list state gracefully
      - Handle nil cases in all widget callbacks
+     - Use container.NewBorder for complex layouts
+     - Use container.NewVBox for vertical stacking
+     - Prefer composition over inheritance for widgets
   4. Forms and Dialogs:
      - Dialog size must be set after creation
      - Forms don't automatically focus first field
      - Custom widgets must be properly extended for form usage
-     - For error dialogs, use dialog.ShowError()
-     - For confirmations, use dialog.ShowConfirm()
-     - Error dialogs should be modal
-     - Error dialogs should focus OK button
+     - For error dialogs:
+       - Use dialog.ShowError() for operation failures
+       - Use dialog.ShowConfirm() for destructive actions
+       - Error dialogs should be modal
+       - Error dialogs should focus OK button
+       - Show errors in the window where action occurred
+       - Include error details but keep messages user-friendly
   5. Testing Best Practices:
      - Use test.NewApp() instead of custom mocks where possible
      - Use test.NewWindow() with defer Close() for window tests
@@ -61,6 +77,12 @@
      - Verify state transitions explicitly
      - Test preference persistence
      - Test settings overrides
+     - For task state:
+       - Update store before UI
+       - Handle store errors gracefully
+       - Maintain consistency between store and UI
+       - Use proper locking if needed
+       - Consider using events for updates
   8. Canvas and Rendering:
      - Use software.NewCanvas() for driver tests
      - Test with different scale factors
@@ -76,6 +98,12 @@
      - Test corrupt resources
      - Test invalid states
      - Test cleanup failures
+     - For task operations:
+       - Show user-friendly error messages
+       - Log detailed error information
+       - Maintain UI state on error
+       - Provide recovery options
+       - Handle network timeouts
 
 ## Project Overview
 - Todo application with two main features:

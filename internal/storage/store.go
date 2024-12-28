@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	_ "modernc.org/sqlite"
+	_ "modernc.org/sqlite" // SQLite driver for database connectivity
 )
 
 // ErrTaskNotFound is returned when a task cannot be found
@@ -185,6 +185,7 @@ func (s *SQLiteStore) Delete(id string) error {
 	return nil
 }
 
+// Close closes the database connection
 func (s *SQLiteStore) Close() error {
 	return s.db.Close()
 }

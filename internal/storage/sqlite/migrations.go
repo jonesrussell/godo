@@ -1,3 +1,4 @@
+// Package sqlite provides SQLite-based implementation of the storage interface
 package sqlite
 
 import (

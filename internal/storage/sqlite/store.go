@@ -1,3 +1,4 @@
+// Package sqlite provides SQLite-based implementation of the storage interface
 package sqlite
 
 import (
@@ -35,6 +36,7 @@ func New(path string, logger logger.Logger) (*Store, error) {
 	return store, nil
 }
 
+// Add creates a new task in the store
 func (s *Store) Add(task storage.Task) error {
 	_, err := s.db.Exec(
 		"INSERT INTO tasks (id, content, done, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
@@ -43,6 +45,7 @@ func (s *Store) Add(task storage.Task) error {
 	return err
 }
 
+// List returns all tasks in the store
 func (s *Store) List() ([]storage.Task, error) {
 	rows, err := s.db.Query("SELECT id, content, done, created_at, updated_at FROM tasks")
 	if err != nil {
@@ -67,6 +70,7 @@ func (s *Store) List() ([]storage.Task, error) {
 	return tasks, rows.Err()
 }
 
+// Update modifies an existing task
 func (s *Store) Update(task storage.Task) error {
 	result, err := s.db.Exec(
 		"UPDATE tasks SET content = ?, done = ?, updated_at = ? WHERE id = ?",
@@ -87,6 +91,7 @@ func (s *Store) Update(task storage.Task) error {
 	return nil
 }
 
+// Delete removes a task by ID
 func (s *Store) Delete(id string) error {
 	result, err := s.db.Exec("DELETE FROM tasks WHERE id = ?", id)
 	if err != nil {

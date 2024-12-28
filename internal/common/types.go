@@ -167,3 +167,28 @@ func NewError(code, message string, err error) *Error {
 		Err:     err,
 	}
 }
+
+// Distinct types for common dependencies
+type (
+	// DatabasePath is a distinct type for database file path
+	DatabasePath string
+
+	// AppName is a distinct type for application name
+	AppName string
+
+	// AppVersion is a distinct type for application version
+	AppVersion string
+
+	// AppID is a distinct type for application ID
+	AppID string
+
+	// LogLevel is a distinct type for log level
+	LogLevel string
+)
+
+// String implements the Stringer interface
+func (d DatabasePath) String() string { return string(d) }
+func (a AppName) String() string      { return string(a) }
+func (v AppVersion) String() string   { return string(v) }
+func (i AppID) String() string        { return string(i) }
+func (l LogLevel) String() string     { return string(l) }

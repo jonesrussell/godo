@@ -17,6 +17,7 @@ import (
 	"github.com/jonesrussell/godo/internal/gui/quicknote"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
+	"github.com/jonesrussell/godo/internal/storage/sqlite"
 	"golang.design/x/hotkey"
 )
 
@@ -63,7 +64,7 @@ var (
 	StorageSet = wire.NewSet(
 		ProvideDatabasePath,
 		ProvideSQLiteStore,
-		wire.Bind(new(storage.Store), new(*storage.SQLiteStore)),
+		wire.Bind(new(storage.Store), new(*sqlite.Store)),
 	)
 
 	// HTTPSet provides HTTP server dependencies
@@ -172,8 +173,8 @@ func ProvideLogger(opts *LoggerOptions) (*logger.ZapLogger, func(), error) {
 }
 
 // ProvideSQLiteStore provides a SQLite store instance
-func ProvideSQLiteStore(logger logger.Logger) (*storage.SQLiteStore, error) {
-	return storage.NewSQLiteStore(string(ProvideDatabasePath()))
+func ProvideSQLiteStore(logger logger.Logger) (*sqlite.Store, error) {
+	return sqlite.New(string(ProvideDatabasePath()), logger)
 }
 
 // ProvideHotkeyManager provides a hotkey manager instance using options

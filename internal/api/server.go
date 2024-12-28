@@ -168,22 +168,14 @@ func (s *Server) handlePatchTask(w http.ResponseWriter, r *http.Request) {
 	taskID := chi.URLParam(r, "id")
 
 	// Get existing task
-	tasks, err := s.store.List()
+	existingTask, err := s.store.GetByID(taskID)
 	if err != nil {
-		http.Error(w, "Failed to retrieve tasks", http.StatusInternalServerError)
-		return
-	}
-
-	var existingTask *storage.Task
-	for i := range tasks {
-		if tasks[i].ID == taskID {
-			existingTask = &tasks[i]
-			break
+		if err == storage.ErrTaskNotFound {
+			http.Error(w, "Task not found", http.StatusNotFound)
+			return
 		}
-	}
-
-	if existingTask == nil {
-		http.Error(w, "Task not found", http.StatusNotFound)
+		s.logger.Error("Failed to retrieve task", "error", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 
@@ -191,6 +183,12 @@ func (s *Server) handlePatchTask(w http.ResponseWriter, r *http.Request) {
 	var patch TaskPatch
 	if err := json.NewDecoder(r.Body).Decode(&patch); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	// Validate patch request
+	if patch.Content == nil && patch.Done == nil {
+		http.Error(w, "At least one field must be provided", http.StatusBadRequest)
 		return
 	}
 
@@ -205,11 +203,11 @@ func (s *Server) handlePatchTask(w http.ResponseWriter, r *http.Request) {
 
 	// Update the task
 	if err := s.store.Update(*existingTask); err != nil {
-		http.Error(w, "Failed to update task", http.StatusInternalServerError)
+		s.logger.Error("Failed to update task", "error", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 
 	// Return updated task
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(existingTask)
+	render.JSON(w, r, existingTask)
 }

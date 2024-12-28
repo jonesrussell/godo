@@ -220,4 +220,51 @@ func TestSQLiteStoreComprehensive(t *testing.T) {
 		}
 		assert.True(t, found, "Task should persist after close and reopen")
 	})
+
+	t.Run("GetByID", func(t *testing.T) {
+		// Create a new store for this test to avoid interference
+		testStore, err := New(filepath.Join(tempDir, "getbyid.db"), log)
+		require.NoError(t, err)
+		defer func() {
+			testStore.Close()
+			os.Remove(filepath.Join(tempDir, "getbyid.db"))
+		}()
+
+		// Add a task
+		task := storage.Task{
+			ID:        "get-by-id-test",
+			Content:   "Test Task",
+			Done:      false,
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
+		err = testStore.Add(task)
+		assert.NoError(t, err)
+
+		// Test successful retrieval
+		retrieved, err := testStore.GetByID(task.ID)
+		assert.NoError(t, err)
+		assert.NotNil(t, retrieved)
+		assert.Equal(t, task.ID, retrieved.ID)
+		assert.Equal(t, task.Content, retrieved.Content)
+		assert.Equal(t, task.Done, retrieved.Done)
+		assert.WithinDuration(t, task.CreatedAt, retrieved.CreatedAt, time.Second)
+		assert.WithinDuration(t, task.UpdatedAt, retrieved.UpdatedAt, time.Second)
+
+		// Test non-existent task
+		retrieved, err = testStore.GetByID("nonexistent")
+		assert.ErrorIs(t, err, storage.ErrTaskNotFound)
+		assert.Nil(t, retrieved)
+
+		// Test empty ID
+		retrieved, err = testStore.GetByID("")
+		assert.ErrorIs(t, err, ErrEmptyID)
+		assert.Nil(t, retrieved)
+
+		// Test with closed store
+		testStore.Close()
+		retrieved, err = testStore.GetByID(task.ID)
+		assert.ErrorIs(t, err, ErrStoreClosed)
+		assert.Nil(t, retrieved)
+	})
 }

@@ -68,3 +68,15 @@ func (s *MockStore) Delete(id string) error {
 func (s *MockStore) Close() error {
 	return nil
 }
+
+// GetByID retrieves a task by its ID
+func (s *MockStore) GetByID(id string) (*Task, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	task, exists := s.tasks[id]
+	if !exists {
+		return nil, ErrTaskNotFound
+	}
+	return &task, nil
+}

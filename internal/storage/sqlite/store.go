@@ -172,6 +172,31 @@ func (s *Store) Delete(id string) error {
 	return nil
 }
 
+// GetByID retrieves a task by its ID
+func (s *Store) GetByID(id string) (*storage.Task, error) {
+	if err := s.checkClosed(); err != nil {
+		return nil, err
+	}
+	if err := s.validateID(id); err != nil {
+		return nil, err
+	}
+
+	var task storage.Task
+	err := s.db.QueryRow(
+		"SELECT id, content, done, created_at, updated_at FROM tasks WHERE id = ?",
+		id,
+	).Scan(&task.ID, &task.Content, &task.Done, &task.CreatedAt, &task.UpdatedAt)
+
+	if err == sql.ErrNoRows {
+		return nil, storage.ErrTaskNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return &task, nil
+}
+
 // Close closes the database connection
 func (s *Store) Close() error {
 	if s.closed {

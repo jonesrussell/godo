@@ -59,6 +59,16 @@ code_style:
   - handle_database_errors: "Properly handle and wrap database errors"
   - test_error_conditions: "Add tests for error conditions and edge cases"
   - maintain_high_test_coverage: "Maintain >65% test coverage for critical packages"
+  - use_interface_segregation: "Split interfaces by responsibility (read/write operations)"
+  - implement_transaction_support: "Support atomic operations with proper rollback"
+  - validate_connection_lifecycle: "Track and validate database connection state"
+  - use_prepared_statements: "Use prepared statements for SQL operations"
+  - implement_connection_pooling: "Use connection pooling for better performance"
+  - handle_concurrent_access: "Implement proper concurrency controls"
+  - provide_snapshot_support: "Support data snapshots for testing"
+  - implement_audit_logging: "Log all write operations for auditing"
+  - use_structured_errors: "Return structured errors with context"
+  - validate_migrations: "Test and validate all database migrations"
 
 snippets:
 - fyne_keyboard_shortcuts:

@@ -123,3 +123,92 @@ The HTTP API includes:
    - OpenAPI/Swagger specs
    - Usage examples
    - Integration guides 
+
+## Storage Layer Architecture
+
+### Interface Segregation
+The storage layer follows the Interface Segregation Principle (ISP) by breaking down the monolithic `Store` interface into more focused interfaces:
+
+1. `TaskReader` - Read-only operations
+   - `List() ([]Task, error)`
+   - `GetByID(id string) (*Task, error)`
+   - Enables read-only access patterns
+   - Supports caching implementations
+
+2. `TaskWriter` - Write operations
+   - `Add(task Task) error`
+   - `Update(task Task) error`
+   - `Delete(id string) error`
+   - Enforces write-specific validation
+   - Supports audit logging
+
+3. `TaskStore` - Combined interface
+   - Embeds `TaskReader` and `TaskWriter`
+   - Adds `io.Closer` for resource management
+   - Primary interface for full access
+
+4. `TaskTx` - Transaction support
+   - Extends `TaskStore`
+   - Adds `Begin()`, `Commit()`, `Rollback()`
+   - Ensures data consistency
+   - Supports atomic operations
+
+### Validation Layer
+- Input validation before storage operations
+- State validation for connection management
+- Data integrity checks (IDs, duplicates)
+- Custom error types for specific failures
+
+### Error Handling
+- Domain-specific error types
+- Error wrapping for context
+- Error code system for client handling
+- Structured logging integration
+
+### Implementation Guidelines
+1. SQLite Implementation
+   - Transaction support using `database/sql`
+   - Connection pooling
+   - Statement preparation
+   - Error mapping
+
+2. Memory Implementation
+   - Thread-safe operations
+   - Snapshot support for testing
+   - Simulated transactions
+   - Configurable failure modes
+
+### Testing Strategy
+1. Unit Tests
+   - Interface compliance tests
+   - Error condition coverage
+   - Transaction rollback scenarios
+   - Concurrent access patterns
+
+2. Integration Tests
+   - Database migrations
+   - Data consistency
+   - Performance benchmarks
+   - Resource cleanup
+
+### Migration Path
+1. Phase 1: Interface Definition
+   - Define new interfaces
+   - Document migration guide
+   - Add validation layer
+
+2. Phase 2: Implementation
+   - Update SQLite store
+   - Complete memory store
+   - Add transaction support
+
+3. Phase 3: Client Migration
+   - Update existing clients
+   - Add interface adapters
+   - Deprecate old interfaces
+
+### Success Metrics
+- Test coverage > 80%
+- No data inconsistencies
+- Proper resource cleanup
+- Clear error messages 

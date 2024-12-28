@@ -168,3 +168,152 @@ Current Status: Cross-platform Todo App with REST API and CI/CD Pipeline
   - [ ] Linux support
   - [ ] macOS support
   - [ ] Platform-specific installers
+
+## 🔄 Separation of Concerns & Testability Improvements
+
+### Phase 1: Interface Definitions and Core Types
+- [ ] Storage Layer
+  - [x] Define Extended Interfaces
+    - [x] TaskReader interface for read operations
+    - [x] TaskWriter interface for write operations
+    - [x] TaskStore interface combining read/write
+    - [x] TaskTx interface for transaction support
+  - [ ] Add Validation Layer
+    - [ ] Input validation
+    - [ ] State validation
+    - [ ] Connection validation
+  - [ ] Error Types
+    - [ ] Domain-specific error types
+    - [ ] Error wrapping support
+    - [ ] Error code system
+  - [x] Documentation
+    - [x] Architecture decisions
+    - [x] Interface documentation
+    - [x] Implementation guidelines
+    - [x] Migration path
+    - [x] Testing strategy
+
+- [ ] API Layer
+  - [ ] Handler Interfaces
+    - [ ] TaskHandler interface
+    - [ ] Middleware interface
+    - [ ] Response writer interface
+  - [ ] Request/Response Types
+    - [ ] Strongly typed request structs
+    - [ ] Response envelope types
+    - [ ] Error response types
+  - [ ] Validation
+    - [ ] Request validation middleware
+    - [ ] Custom validators
+    - [ ] Validation error types
+
+- [ ] GUI Layer
+  - [ ] Window Management
+    - [ ] Window interface
+    - [ ] View interface
+    - [ ] Dialog interface
+  - [ ] Event System
+    - [ ] Event handler interfaces
+    - [ ] Event dispatcher
+    - [ ] Event subscriber pattern
+  - [ ] Platform Abstractions
+    - [ ] Platform-specific interfaces
+    - [ ] Feature detection
+    - [ ] Capability interfaces
+
+### Phase 2: Implementation Improvements
+- [ ] Storage Implementation
+  - [ ] SQLite Store
+    - [ ] Implement new interfaces
+    - [ ] Add transaction support
+    - [ ] Improve error handling
+  - [ ] Memory Store
+    - [ ] Complete test implementation
+    - [ ] Add snapshot support
+    - [ ] Add consistency checks
+
+- [ ] API Implementation
+  - [ ] Handler Implementation
+    - [ ] Implement TaskHandler interface
+    - [ ] Add middleware chain
+    - [ ] Improve error responses
+  - [ ] Request Processing
+    - [ ] Add request validation
+    - [ ] Implement rate limiting
+    - [ ] Add request tracing
+
+- [ ] GUI Implementation
+  - [ ] Window Management
+    - [ ] Implement window interfaces
+    - [ ] Add event handling
+    - [ ] Improve state management
+  - [ ] Components
+    - [ ] Implement view interfaces
+    - [ ] Add component lifecycle
+    - [ ] Improve rendering performance
+
+### Phase 3: Testing Infrastructure
+- [ ] Test Utilities
+  - [ ] Mock Implementations
+    - [ ] MockStore implementation
+    - [ ] MockWindow implementation
+    - [ ] MockConfig implementation
+  - [ ] Test Fixtures
+    - [ ] Task fixtures
+    - [ ] Config fixtures
+    - [ ] HTTP fixtures
+  - [ ] Test Helpers
+    - [ ] Assertion helpers
+    - [ ] HTTP test utilities
+    - [ ] GUI test utilities
+
+- [ ] Test Implementation
+  - [ ] Unit Tests
+    - [ ] Storage layer tests
+    - [ ] API layer tests
+    - [ ] GUI layer tests
+  - [ ] Integration Tests
+    - [ ] API integration tests
+    - [ ] GUI integration tests
+    - [ ] Storage integration tests
+  - [ ] Performance Tests
+    - [ ] API benchmarks
+    - [ ] Storage benchmarks
+    - [ ] Memory profiling
+
+### Phase 4: Dependency Injection
+- [ ] Wire Setup
+  - [ ] Provider Sets
+    - [ ] Storage provider set
+    - [ ] API provider set
+    - [ ] GUI provider set
+  - [ ] Validation
+    - [ ] Provider validation
+    - [ ] Dependency validation
+    - [ ] Lifecycle validation
+  - [ ] Cleanup
+    - [ ] Resource cleanup
+    - [ ] Graceful shutdown
+    - [ ] Error handling
+
+### Phase 5: Documentation and Standards
+- [ ] Code Documentation
+  - [ ] Interface documentation
+  - [ ] Implementation notes
+  - [ ] Examples and usage
+- [ ] Architecture Documentation
+  - [ ] Component diagrams
+  - [ ] Interaction flows
+  - [ ] Decision records
+- [ ] Testing Documentation
+  - [ ] Test patterns
+  - [ ] Mock usage
+  - [ ] Test data management
+
+### Success Criteria
+- [ ] Improved test coverage (>80%)
+- [ ] Reduced coupling between components
+- [ ] Clear interface boundaries
+- [ ] Consistent error handling
+- [ ] Comprehensive documentation
+- [ ] Improved maintainability metrics

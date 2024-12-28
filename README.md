@@ -32,10 +32,16 @@ The quick-note feature uses a minimal graphical window that appears when you pre
   - Proper error handling
 - Robust storage system
   - SQLite-based persistence with comprehensive validation
+  - Interface segregation (TaskReader, TaskWriter, TaskStore)
+  - Transaction support with proper rollback
+  - Connection pooling and prepared statements
+  - Thread-safe operations with proper concurrency
+  - Snapshot support for testing
   - Prevents data inconsistencies (empty IDs, duplicates)
   - Connection state management
+  - Structured error handling
   - Automated migrations
-  - High test coverage (66%+)
+  - High test coverage (80%+)
 - Robust logging system
   - Structured logging with multiple implementations
   - Test-friendly logging for better test output

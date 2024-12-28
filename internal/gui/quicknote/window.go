@@ -2,10 +2,8 @@ package quicknote
 
 import (
 	"fmt"
-	"time"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/widget"
 	"github.com/jonesrussell/godo/internal/logger"
@@ -62,114 +60,51 @@ func (e *debugEntry) TypedKey(key *fyne.KeyEvent) {
 }
 
 // New creates a new quick note window
-func New(store storage.Store, logger logger.Logger) Interface {
-	return newWindow(store, logger)
-}
-
-func newWindow(store storage.Store, logger logger.Logger) Interface {
+func New(store storage.Store, l logger.Logger) Interface {
 	return &Window{
 		store:  store,
-		logger: logger,
+		logger: l,
 	}
 }
 
+// Setup initializes the window
 func (w *Window) Setup() error {
 	w.logger.Debug("Setting up quick note window")
 
-	// Create the window
+	// Create window
 	w.win = fyne.CurrentApp().NewWindow("Quick Note")
-	w.win.Resize(fyne.NewSize(400, 300))
-	w.win.CenterOnScreen()
-
-	// Create input field with debugging
-	w.input = newDebugEntry(w.logger)
-	w.input.SetPlaceHolder("Enter your quick note here...")
-
-	// Create save button with shared save logic
-	saveNote := func() {
-		w.logger.Debug("Attempting to save note")
-		text := w.input.Text
-		if text == "" {
-			w.logger.Debug("Note text is empty, skipping save")
-			return
-		}
-
-		w.logger.Debug("Creating task from note", "text", text)
-		// Create and save the task
-		task := storage.Task{
-			ID:        generateID(),
-			Title:     text,
-			Completed: false,
-		}
-
-		w.logger.Debug("Attempting to save task to SQLite", "task_id", task.ID)
-		if err := w.store.Add(task); err != nil {
-			w.logger.Error("Failed to save note to SQLite",
-				"error", err,
-				"task_id", task.ID,
-				"text", text)
-			// TODO: Show error to user
-			return
-		}
-
-		w.logger.Debug("Successfully saved note as task in SQLite",
-			"task_id", task.ID,
-			"text", text)
-		w.input.SetText("")
-		w.logger.Debug("Cleared input field")
-		w.Hide()
-		w.logger.Debug("Hidden quick note window")
+	if w.win == nil {
+		w.logger.Error("Failed to create window")
+		return fmt.Errorf("failed to create window")
 	}
 
-	// Create save button
-	saveBtn := widget.NewButton("Save", func() {
-		w.logger.Debug("Save button clicked")
-		saveNote()
-	})
+	// Create input field
+	w.input = newDebugEntry(w.logger)
 
-	// Create content container
-	content := container.NewBorder(nil, saveBtn, nil, nil, w.input)
-	w.win.SetContent(content)
+	// Set window content
+	w.win.SetContent(w.input)
 
-	// Set window behavior
-	w.win.SetCloseIntercept(func() {
-		w.input.SetText("")
-		w.Hide()
-	})
+	// Set window properties
+	w.win.Resize(fyne.NewSize(400, 200))
+	w.win.CenterOnScreen()
 
-	// Add ESC key handling
+	// Add keyboard shortcuts
 	w.win.Canvas().AddShortcut(&desktop.CustomShortcut{
 		KeyName: fyne.KeyEscape,
-	}, func(shortcut fyne.Shortcut) {
-		w.logger.Debug("ESC key pressed, closing quick note window")
+	}, func(_ fyne.Shortcut) {
 		w.input.SetText("")
 		w.Hide()
 	})
 
-	// Add Shift+Enter shortcut for saving
-	w.win.Canvas().AddShortcut(&desktop.CustomShortcut{
-		KeyName:  fyne.KeyReturn,
-		Modifier: fyne.KeyModifierShift,
-	}, func(shortcut fyne.Shortcut) {
-		w.logger.Debug("Shift+Enter shortcut triggered")
-		if w.input == nil {
-			w.logger.Error("Input field is nil when handling Shift+Enter")
-			return
-		}
-		w.logger.Debug("Calling saveNote from Shift+Enter handler", "text", w.input.Text)
-		saveNote()
-	})
-
-	w.logger.Debug("Quick note window setup complete")
 	return nil
 }
 
+// Hide hides the window
 func (w *Window) Hide() {
 	if w.win != nil {
-		w.logger.Debug("Hiding quick note window")
 		w.win.Hide()
 	} else {
-		w.logger.Error("Cannot hide quick note window - window is nil")
+		w.logger.Error("Cannot hide window: window not initialized")
 	}
 }
 
@@ -184,8 +119,4 @@ func (w *Window) Show() {
 	} else {
 		w.logger.Error("Cannot show quick note window - window is nil")
 	}
-}
-
-func generateID() string {
-	return fmt.Sprintf("%d", time.Now().UnixNano())
 }

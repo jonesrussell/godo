@@ -20,10 +20,10 @@ type Window struct {
 }
 
 // New creates a new main window
-func New(store storage.Store, logger logger.Logger) *Window {
+func New(store storage.Store, l logger.Logger) *Window {
 	return &Window{
 		store:  store,
-		logger: logger,
+		logger: l,
 	}
 }
 

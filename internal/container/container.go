@@ -1,8 +1,6 @@
 package container
 
 import (
-	"fmt"
-
 	"fyne.io/fyne/v2/app"
 	godoapp "github.com/jonesrussell/godo/internal/app"
 	"github.com/jonesrussell/godo/internal/app/hotkey"
@@ -44,9 +42,6 @@ func Initialize(zapLogger *zap.SugaredLogger) (*Container, error) {
 
 	// Create Fyne app
 	fyneApp := app.NewWithID("com.jonesrussell.godo")
-	if fyneApp == nil {
-		return nil, fmt.Errorf("failed to create Fyne application")
-	}
 
 	// Create main window
 	var mainWin gui.MainWindow = mainwindow.New(store, log)

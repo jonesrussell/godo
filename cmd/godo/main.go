@@ -8,7 +8,7 @@ import (
 	"syscall"
 
 	"github.com/jonesrussell/godo/internal/api"
-	"github.com/jonesrussell/godo/internal/container"
+	godocontainer "github.com/jonesrussell/godo/internal/container"
 	"go.uber.org/zap"
 )
 
@@ -21,10 +21,14 @@ func run() error {
 		fmt.Printf("Failed to create logger: %v\n", err)
 		return err
 	}
-	defer logger.Sync()
+	defer func() {
+		if err := logger.Sync(); err != nil {
+			fmt.Printf("Failed to sync logger: %v\n", err)
+		}
+	}()
 
 	// Create application container
-	container, err := container.Initialize(logger.Sugar())
+	container, err := godocontainer.Initialize(logger.Sugar())
 	if err != nil {
 		fmt.Printf("Failed to initialize container: %v\n", err)
 		logger.Error("Failed to initialize container", zap.Error(err))

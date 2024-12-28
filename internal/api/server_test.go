@@ -40,7 +40,7 @@ func setupTestServer(t *testing.T) (*Server, *testutil.MockStore) {
 func TestHealthCheck(t *testing.T) {
 	server, _ := setupTestServer(t)
 
-	req := httptest.NewRequest("GET", "/health", nil)
+	req := httptest.NewRequest("GET", "/health", http.NoBody)
 	w := httptest.NewRecorder()
 
 	server.handleHealth(w, req)
@@ -64,7 +64,7 @@ func TestListTasks(t *testing.T) {
 	err := store.Add(task)
 	require.NoError(t, err)
 
-	req := httptest.NewRequest("GET", "/api/v1/tasks", nil)
+	req := httptest.NewRequest("GET", "/api/v1/tasks", http.NoBody)
 	w := httptest.NewRecorder()
 
 	server.handleListTasks(w, req)
@@ -141,7 +141,7 @@ func TestDeleteTask(t *testing.T) {
 	err := store.Add(task)
 	require.NoError(t, err)
 
-	req := httptest.NewRequest("DELETE", "/api/v1/tasks/1", nil)
+	req := httptest.NewRequest("DELETE", "/api/v1/tasks/1", http.NoBody)
 	req = req.WithContext(req.Context())
 	w := httptest.NewRecorder()
 

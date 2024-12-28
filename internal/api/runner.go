@@ -14,10 +14,10 @@ type Runner struct {
 }
 
 // NewRunner creates a new HTTP server runner
-func NewRunner(store storage.Store, logger logger.Logger) *Runner {
+func NewRunner(store storage.Store, l logger.Logger) *Runner {
 	return &Runner{
-		server: NewServer(store, logger),
-		logger: logger,
+		server: NewServer(store, l),
+		logger: l,
 	}
 }
 

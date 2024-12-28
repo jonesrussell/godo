@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -22,11 +23,11 @@ type Server struct {
 }
 
 // NewServer creates a new HTTP server instance
-func NewServer(store storage.Store, logger logger.Logger) *Server {
+func NewServer(store storage.Store, l logger.Logger) *Server {
 	s := &Server{
 		router: chi.NewRouter(),
 		store:  store,
-		logger: logger,
+		logger: l,
 	}
 
 	// Set up middleware
@@ -52,8 +53,12 @@ func NewServer(store storage.Store, logger logger.Logger) *Server {
 func (s *Server) Start(port int) error {
 	addr := fmt.Sprintf(":%d", port)
 	s.server = &http.Server{
-		Addr:    addr,
-		Handler: s.router,
+		Addr:              addr,
+		Handler:           s.router,
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       120 * time.Second,
 	}
 
 	s.logger.Info("Starting HTTP server", "port", port)

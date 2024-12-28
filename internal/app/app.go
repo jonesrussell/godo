@@ -25,7 +25,7 @@ type App struct {
 
 // New creates a new application instance
 func New(
-	logger logger.Logger,
+	l logger.Logger,
 	fyneApp fyne.App,
 	store storage.Store,
 	mainWin gui.MainWindow,
@@ -33,7 +33,7 @@ func New(
 	hotkeys hotkey.Manager,
 ) *App {
 	return &App{
-		Logger:    logger,
+		Logger:    l,
 		fyneApp:   fyneApp,
 		Store:     store,
 		mainWin:   mainWin,

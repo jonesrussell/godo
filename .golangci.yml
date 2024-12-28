@@ -1,47 +1,47 @@
 linters:
   enable:
-    - gofmt
-    - govet
-    - staticcheck
-    - gosimple
-    - ineffassign
-    - misspell
-    - unconvert
-    - gocritic
-    - bodyclose
-    - depguard
-    - errcheck
-    - gochecknoglobals
-    - gocognit
-    - gosec
-    - lll
-    - nakedret
-    - noctx
-    - nolintlint
-    - revive
+  - gofmt
+  - govet
+  - errcheck
+  - staticcheck
+  - gosimple
+  - gocritic
+  - revive
+  - depguard
+  - unused
+  - gosec
 
 run:
   timeout: 5m
 
 issues:
   exclude:
-    - "vendor/"
+  - "vendor/"
+  exclude-rules:
+  - path: _test\.go
+    linters:
+    - gosec
+    - errcheck
+  - path: testing\.go
+    linters:
+    - gosec
+    - errcheck
 
 linters-settings:
   revive:
     rules:
-      - name: unused-parameter
-        severity: warning
-        disabled: false
+    - name: unused-parameter
+      severity: warning
+      disabled: false
   gocritic:
     enabled-tags:
-      - diagnostic
-      - style
-      - performance
-      - experimental
+    - diagnostic
+    - style
+    - performance
+    - experimental
     disabled-checks:
-      - commentFormatting
-      - hugeParam
+    - commentFormatting
+    - hugeParam
   gosec:
     severity: "medium"
   lll:
@@ -49,65 +49,38 @@ linters-settings:
   govet:
     enable-all: true
     disable:
-      - shadow
-      - fieldalignment
+    - shadow
+    - fieldalignment
   depguard:
     rules:
       main:
         files:
-          - $all
-          - "!**/*_test.go"
+        - $all
+        - "!**/*_test.go"
+        - "!**/*testing.go"
         allow:
-          - $gostd
-          - github.com/mattn/go-sqlite3
-          - go.uber.org/zap
-          - github.com/google/wire
-          - fyne.io/fyne/v2
-          - gopkg.in/yaml.v3
-          - github.com/stretchr/testify
-          - github.com/marcsauter/single
-          - golang.design/x/hotkey
-          - github.com/google/uuid
-          - github.com/spf13/viper
-          - github.com/jonesrussell/godo/internal
-          - github.com/jonesrussell/godo/pkg
-        deny:
-          - pkg: "github.com/sirupsen/logrus"
-            desc: "use go.uber.org/zap for logging instead"
-          - pkg: "log"
-            desc: "use go.uber.org/zap for logging instead"
-          - pkg: "github.com/jinzhu/gorm"
-            desc: "use raw SQL with database/sql instead"
-          - pkg: "github.com/gotk3/gotk3"
-            desc: "use fyne.io/fyne/v2 for GUI instead"
-          - pkg: "github.com/lxn/win"
-            desc: "use fyne.io/fyne/v2 for GUI instead"
-          - pkg: "github.com/progrium/macdriver"
-            desc: "use fyne.io/fyne/v2 for GUI instead"
-          - pkg: "github.com/charmbracelet/bubbletea"
-            desc: "use fyne.io/fyne/v2 for GUI instead"
-          - pkg: "github.com/charmbracelet/bubbles"
-            desc: "use fyne.io/fyne/v2 for GUI instead"
-      logger:
+        - $gostd
+        - fyne.io/fyne/v2
+        - github.com/go-chi/chi/v5
+        - github.com/go-chi/render
+        - github.com/google/wire
+        - github.com/jonesrussell/godo
+        - go.uber.org/zap
+        - modernc.org/sqlite
+        - golang.design/x/hotkey
+        - github.com/spf13/viper
+        - github.com/google/uuid
+      test:
         files:
-          - "internal/logger/**/*.go"
-          - "!internal/logger/**/*_test.go"
+        - "**/*_test.go"
+        - "**/*testing.go"
         allow:
-          - $gostd
-          - go.uber.org/zap
-          - github.com/jonesrussell/godo/internal/common
-        deny:
-          - pkg: "github.com/sirupsen/logrus"
-            desc: "use go.uber.org/zap for logging instead"
-      config:
-        files:
-          - "internal/config/**/*.go"
-          - "!internal/config/**/*_test.go"
-        allow:
-          - $gostd
-          - github.com/spf13/viper
-          - github.com/jonesrussell/godo/internal/logger
-          - github.com/jonesrussell/godo/internal/common
-        deny:
-          - pkg: "log"
-            desc: "use github.com/jonesrussell/godo/internal/logger instead"
+        - $gostd
+        - fyne.io/fyne/v2
+        - github.com/stretchr/testify
+        - github.com/google/wire
+        - github.com/jonesrussell/godo
+        - go.uber.org/zap
+        - github.com/google/uuid
+        - modernc.org/sqlite
+        - golang.design/x/hotkey

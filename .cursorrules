@@ -6,7 +6,8 @@ code_style:
 - rules:
   - use_meaningful_variable_and_function_names: true
   - implement_dependency_injection: true
-  - use_structured_logging_with_zap: true
+  - use_logger_abstraction: true
+  - use_structured_logging_with_zap: "Only in logger package implementation"
   - keep_functions_small_and_focused: true
   - use_modern_octal_literal_style: "0o600 instead of 0600"
   - avoid_time_sleep_for_synchronization: true

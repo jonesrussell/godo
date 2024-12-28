@@ -1,80 +1,96 @@
-// Package memory provides an in-memory implementation of the storage interface
+// Package memory provides an in-memory implementation of the storage.TaskStore interface
 package memory
 
 import (
+	"context"
 	"sync"
 
 	"github.com/jonesrussell/godo/internal/storage"
 )
 
-// Store provides an in-memory task storage implementation
+// Store implements storage.TaskStore interface using in-memory storage
 type Store struct {
-	tasks []storage.Task
+	tasks map[string]storage.Task
 	mu    sync.RWMutex
 }
 
-// New creates a new in-memory store
+// New creates a new memory store
 func New() *Store {
 	return &Store{
-		tasks: make([]storage.Task, 0),
+		tasks: make(map[string]storage.Task),
 	}
 }
 
-// Add stores a new task
-func (s *Store) Add(task storage.Task) error {
+// Add adds a new task to the store
+func (s *Store) Add(ctx context.Context, task storage.Task) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.tasks = append(s.tasks, task)
+
+	if _, exists := s.tasks[task.ID]; exists {
+		return storage.ErrDuplicateID
+	}
+
+	s.tasks[task.ID] = task
 	return nil
 }
 
-// List returns all stored tasks
-func (s *Store) List() ([]storage.Task, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	return s.tasks, nil
-}
-
-// Update modifies an existing task
-func (s *Store) Update(task storage.Task) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	for i, t := range s.tasks {
-		if t.ID == task.ID {
-			s.tasks[i] = task
-			return nil
-		}
-	}
-	return storage.ErrTaskNotFound
-}
-
-// Delete removes a task by ID
-func (s *Store) Delete(id string) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	for i, task := range s.tasks {
-		if task.ID == id {
-			s.tasks = append(s.tasks[:i], s.tasks[i+1:]...)
-			return nil
-		}
-	}
-	return storage.ErrTaskNotFound
-}
-
 // GetByID retrieves a task by its ID
-func (s *Store) GetByID(id string) (*storage.Task, error) {
+func (s *Store) GetByID(ctx context.Context, id string) (*storage.Task, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	for _, task := range s.tasks {
-		if task.ID == id {
-			return &task, nil
-		}
+	task, exists := s.tasks[id]
+	if !exists {
+		return nil, storage.ErrTaskNotFound
 	}
-	return nil, storage.ErrTaskNotFound
+
+	return &task, nil
 }
 
-// Close is a no-op for memory store
+// List returns all tasks in the store
+func (s *Store) List(ctx context.Context) ([]storage.Task, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	tasks := make([]storage.Task, 0, len(s.tasks))
+	for _, task := range s.tasks {
+		tasks = append(tasks, task)
+	}
+
+	return tasks, nil
+}
+
+// Update updates an existing task
+func (s *Store) Update(ctx context.Context, task storage.Task) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if _, exists := s.tasks[task.ID]; !exists {
+		return storage.ErrTaskNotFound
+	}
+
+	s.tasks[task.ID] = task
+	return nil
+}
+
+// Delete removes a task from the store
+func (s *Store) Delete(ctx context.Context, id string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if _, exists := s.tasks[id]; !exists {
+		return storage.ErrTaskNotFound
+	}
+
+	delete(s.tasks, id)
+	return nil
+}
+
+// Close implements storage.TaskStore interface
 func (s *Store) Close() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.tasks = make(map[string]storage.Task)
 	return nil
 }

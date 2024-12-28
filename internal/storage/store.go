@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// Task represents a todo task
+// Task represents a todo item
 type Task struct {
 	ID        string    `json:"id"`
 	Content   string    `json:"content"`
@@ -16,46 +16,46 @@ type Task struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// TaskReader defines read-only operations for tasks
+// TaskReader defines methods for reading tasks
 type TaskReader interface {
-	// List returns all stored tasks
+	// List returns all tasks
 	List(ctx context.Context) ([]Task, error)
-
-	// GetByID retrieves a task by its ID
+	// GetByID returns a task by its ID
 	GetByID(ctx context.Context, id string) (*Task, error)
 }
 
-// TaskWriter defines write operations for tasks
+// TaskWriter defines methods for writing tasks
 type TaskWriter interface {
-	// Add stores a new task
+	// Add creates a new task
 	Add(ctx context.Context, task Task) error
-
-	// Update modifies an existing task
+	// Update replaces an existing task
 	Update(ctx context.Context, task Task) error
-
-	// Delete removes a task by ID
+	// Delete removes a task
 	Delete(ctx context.Context, id string) error
 }
 
-// TaskStore combines read and write operations with resource management
+// TaskStore combines TaskReader and TaskWriter with io.Closer
 type TaskStore interface {
 	TaskReader
 	TaskWriter
 	io.Closer
 }
 
-// TaskTx defines a transaction interface for atomic operations
+// TaskTx represents a transaction for task operations
 type TaskTx interface {
-	TaskStore
-
-	// Begin starts a new transaction
-	Begin(ctx context.Context) (TaskTx, error)
-
+	TaskReader
+	TaskWriter
 	// Commit commits the transaction
 	Commit() error
-
-	// Rollback aborts the transaction
+	// Rollback rolls back the transaction
 	Rollback() error
+}
+
+// TaskTxStore extends TaskStore with transaction support
+type TaskTxStore interface {
+	TaskStore
+	// BeginTx starts a new transaction
+	BeginTx(ctx context.Context) (TaskTx, error)
 }
 
 // ValidationError represents a task validation error

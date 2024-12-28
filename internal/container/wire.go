@@ -3,6 +3,7 @@
 package container
 
 import (
+	"database/sql"
 	"fmt"
 
 	"fyne.io/fyne/v2"
@@ -64,7 +65,9 @@ var (
 	StorageSet = wire.NewSet(
 		ProvideDatabasePath,
 		ProvideSQLiteStore,
-		wire.Bind(new(storage.Store), new(*sqlite.Store)),
+		wire.Bind(new(storage.TaskStore), new(*sqlite.Store)),
+		ProvideStoreAdapter,
+		wire.Bind(new(storage.Store), new(*storage.StoreAdapter)),
 	)
 
 	// HTTPSet provides HTTP server dependencies
@@ -173,8 +176,18 @@ func ProvideLogger(opts *LoggerOptions) (*logger.ZapLogger, func(), error) {
 }
 
 // ProvideSQLiteStore provides a SQLite store instance
-func ProvideSQLiteStore(logger logger.Logger) (*sqlite.Store, error) {
-	return sqlite.New(string(ProvideDatabasePath()), logger)
+func ProvideSQLiteStore(log logger.Logger) (*sqlite.Store, func(), error) {
+	dbPath := string(ProvideDatabasePath())
+	store, err := sqlite.New(dbPath, log)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to create store: %w", err)
+	}
+
+	cleanup := func() {
+		store.Close()
+	}
+
+	return store, cleanup, nil
 }
 
 // ProvideHotkeyManager provides a hotkey manager instance using options
@@ -213,12 +226,12 @@ func ProvideFyneApp() fyne.App {
 	return app
 }
 
-// ProvideMainWindow provides the main window instance
+// ProvideMainWindow provides a main window instance
 func ProvideMainWindow(store storage.Store, logger logger.Logger) *mainwindow.Window {
 	return mainwindow.New(store, logger)
 }
 
-// ProvideQuickNote provides the quick note window instance
+// ProvideQuickNote provides a quick note window instance
 func ProvideQuickNote(store storage.Store, logger logger.Logger) *quicknote.Window {
 	return quicknote.New(store, logger)
 }
@@ -316,4 +329,9 @@ func ProvideHeaderTimeout() common.HeaderTimeoutSeconds {
 
 func ProvideIdleTimeout() common.IdleTimeoutSeconds {
 	return common.IdleTimeoutSeconds(120)
+}
+
+// ProvideStoreAdapter provides a store adapter instance
+func ProvideStoreAdapter(store storage.TaskStore) *storage.StoreAdapter {
+	return storage.NewStoreAdapter(store).(*storage.StoreAdapter)
 }

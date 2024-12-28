@@ -3,211 +3,218 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
 
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
-	"github.com/go-chi/render"
 	"github.com/google/uuid"
-	"github.com/jonesrussell/godo/internal/common"
+	"github.com/gorilla/mux"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
 )
 
 // Server represents the HTTP server
 type Server struct {
-	router *chi.Mux
-	server *http.Server
-	store  storage.Store
-	logger logger.Logger
-	config *common.HTTPConfig
+	store  storage.TaskStore
+	log    logger.Logger
+	router *mux.Router
+	srv    *http.Server
 }
 
-// NewServer creates a new HTTP server instance
-func NewServer(store storage.Store, l logger.Logger, config *common.HTTPConfig) *Server {
+// NewServer creates a new Server instance
+func NewServer(store storage.TaskStore, log logger.Logger) *Server {
 	s := &Server{
-		router: chi.NewRouter(),
 		store:  store,
-		logger: l,
-		config: config,
+		log:    log,
+		router: mux.NewRouter(),
 	}
-
-	// Set up middleware
-	s.router.Use(middleware.RequestID)
-	s.router.Use(middleware.RealIP)
-	s.router.Use(middleware.Logger)
-	s.router.Use(middleware.Recoverer)
-	s.router.Use(render.SetContentType(render.ContentTypeJSON))
-
-	// Set up routes
-	s.setupRoutes()
-
+	s.routes()
 	return s
 }
 
-// setupRoutes configures all the server routes
-func (s *Server) setupRoutes() {
-	s.router.Get("/health", s.handleHealth)
-	s.router.Route("/api/v1", func(r chi.Router) {
-		r.Get("/tasks", s.handleListTasks)
-		r.Post("/tasks", s.handleCreateTask)
-		r.Put("/tasks/{id}", s.handleUpdateTask)
-		r.Patch("/tasks/{id}", s.handlePatchTask)
-		r.Delete("/tasks/{id}", s.handleDeleteTask)
-	})
+// ServeHTTP implements the http.Handler interface
+func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	s.router.ServeHTTP(w, r)
 }
 
-// Start starts the HTTP server
-func (s *Server) Start(port int) error {
-	addr := fmt.Sprintf(":%d", port)
-	s.server = &http.Server{
-		Addr:              addr,
-		Handler:           s.router,
-		ReadHeaderTimeout: s.config.GetReadHeaderTimeout(),
-		ReadTimeout:       s.config.GetReadTimeout(),
-		WriteTimeout:      s.config.GetWriteTimeout(),
-		IdleTimeout:       s.config.GetIdleTimeout(),
-	}
+// routes sets up the server routes
+func (s *Server) routes() {
+	api := s.router.PathPrefix("/api/v1").Subrouter()
 
-	s.logger.Info("Starting HTTP server", "port", port)
-	return s.server.ListenAndServe()
-}
+	// Tasks
+	api.HandleFunc("/tasks", Chain(s.handleListTasks,
+		WithLogging(s.log),
+		WithErrorHandling(s.log),
+	)).Methods(http.MethodGet)
 
-// Shutdown gracefully shuts down the HTTP server
-func (s *Server) Shutdown(ctx context.Context) error {
-	s.logger.Info("Shutting down HTTP server")
-	return s.server.Shutdown(ctx)
-}
+	api.HandleFunc("/tasks", Chain(s.handleCreateTask,
+		WithLogging(s.log),
+		WithErrorHandling(s.log),
+		WithValidation[CreateTaskRequest](s.log),
+	)).Methods(http.MethodPost)
 
-func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
-	render.JSON(w, r, map[string]string{"status": "ok"})
+	api.HandleFunc("/tasks/{id}", Chain(s.handleGetTask,
+		WithLogging(s.log),
+		WithErrorHandling(s.log),
+	)).Methods(http.MethodGet)
+
+	api.HandleFunc("/tasks/{id}", Chain(s.handleUpdateTask,
+		WithLogging(s.log),
+		WithErrorHandling(s.log),
+		WithValidation[UpdateTaskRequest](s.log),
+	)).Methods(http.MethodPut)
+
+	api.HandleFunc("/tasks/{id}", Chain(s.handlePatchTask,
+		WithLogging(s.log),
+		WithErrorHandling(s.log),
+		WithValidation[PatchTaskRequest](s.log),
+	)).Methods(http.MethodPatch)
+
+	api.HandleFunc("/tasks/{id}", Chain(s.handleDeleteTask,
+		WithLogging(s.log),
+		WithErrorHandling(s.log),
+	)).Methods(http.MethodDelete)
 }
 
 func (s *Server) handleListTasks(w http.ResponseWriter, r *http.Request) {
-	tasks, err := s.store.List()
+	tasks, err := s.store.List(r.Context())
 	if err != nil {
-		s.logger.Error("Failed to list tasks", "error", err)
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		status, code, msg := mapError(err)
+		writeError(w, status, code, msg)
 		return
 	}
 
-	render.JSON(w, r, tasks)
+	writeJSON(w, http.StatusOK, NewTaskListResponse(tasks))
 }
 
 func (s *Server) handleCreateTask(w http.ResponseWriter, r *http.Request) {
-	var task storage.Task
-	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+	req, ok := GetRequest[CreateTaskRequest](r)
+	if !ok {
+		writeError(w, http.StatusBadRequest, "invalid_request", "Invalid request")
 		return
 	}
 
-	// Generate UUID and set timestamps
-	now := time.Now()
-	task.ID = uuid.New().String()
-	task.CreatedAt = now
-	task.UpdatedAt = now
+	task := storage.Task{
+		ID:        uuid.New().String(),
+		Content:   req.Content,
+		Done:      false,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
 
-	if err := s.store.Add(task); err != nil {
-		s.logger.Error("Failed to create task", "error", err)
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+	if err := s.store.Add(r.Context(), task); err != nil {
+		status, code, msg := mapError(err)
+		writeError(w, status, code, msg)
 		return
 	}
 
-	render.Status(r, http.StatusCreated)
-	render.JSON(w, r, task)
+	writeJSON(w, http.StatusCreated, NewTaskResponse(task))
+}
+
+func (s *Server) handleGetTask(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	task, err := s.store.GetByID(r.Context(), id)
+	if err != nil {
+		status, code, msg := mapError(err)
+		writeError(w, status, code, msg)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, NewTaskResponse(*task))
 }
 
 func (s *Server) handleUpdateTask(w http.ResponseWriter, r *http.Request) {
-	id := chi.URLParam(r, "id")
-	var task storage.Task
-	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	req, ok := GetRequest[UpdateTaskRequest](r)
+	if !ok {
+		writeError(w, http.StatusBadRequest, "invalid_request", "Invalid request")
 		return
 	}
 
-	task.ID = id
-	if err := s.store.Update(task); err != nil {
-		if err == storage.ErrTaskNotFound {
-			http.Error(w, "Task not found", http.StatusNotFound)
-			return
-		}
-		s.logger.Error("Failed to update task", "error", err)
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+	task := storage.Task{
+		ID:        id,
+		Content:   req.Content,
+		Done:      req.Done,
+		UpdatedAt: time.Now(),
+	}
+
+	if err := s.store.Update(r.Context(), task); err != nil {
+		status, code, msg := mapError(err)
+		writeError(w, status, code, msg)
 		return
 	}
 
-	render.JSON(w, r, task)
+	writeJSON(w, http.StatusOK, NewTaskResponse(task))
+}
+
+func (s *Server) handlePatchTask(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	req, ok := GetRequest[PatchTaskRequest](r)
+	if !ok {
+		writeError(w, http.StatusBadRequest, "invalid_request", "Invalid request")
+		return
+	}
+
+	task, err := s.store.GetByID(r.Context(), id)
+	if err != nil {
+		status, code, msg := mapError(err)
+		writeError(w, status, code, msg)
+		return
+	}
+
+	if req.Content != nil {
+		task.Content = *req.Content
+	}
+	if req.Done != nil {
+		task.Done = *req.Done
+	}
+	task.UpdatedAt = time.Now()
+
+	if err := s.store.Update(r.Context(), *task); err != nil {
+		status, code, msg := mapError(err)
+		writeError(w, status, code, msg)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, NewTaskResponse(*task))
 }
 
 func (s *Server) handleDeleteTask(w http.ResponseWriter, r *http.Request) {
-	id := chi.URLParam(r, "id")
-	if err := s.store.Delete(id); err != nil {
-		if err == storage.ErrTaskNotFound {
-			http.Error(w, "Task not found", http.StatusNotFound)
-			return
-		}
-		s.logger.Error("Failed to delete task", "error", err)
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	if err := s.store.Delete(r.Context(), id); err != nil {
+		status, code, msg := mapError(err)
+		writeError(w, status, code, msg)
 		return
 	}
 
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// TaskPatch represents a partial update to a task
-type TaskPatch struct {
-	Content *string `json:"content,omitempty"`
-	Done    *bool   `json:"done,omitempty"`
+// Start starts the HTTP server on the specified port
+func (s *Server) Start(port int) error {
+	s.srv = &http.Server{
+		Addr:              fmt.Sprintf(":%d", port),
+		Handler:           s,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		ReadHeaderTimeout: 10 * time.Second,
+		IdleTimeout:       120 * time.Second,
+	}
+	return s.srv.ListenAndServe()
 }
 
-func (s *Server) handlePatchTask(w http.ResponseWriter, r *http.Request) {
-	// Get task ID from URL
-	taskID := chi.URLParam(r, "id")
-
-	// Get existing task
-	existingTask, err := s.store.GetByID(taskID)
-	if err != nil {
-		if err == storage.ErrTaskNotFound {
-			http.Error(w, "Task not found", http.StatusNotFound)
-			return
-		}
-		s.logger.Error("Failed to retrieve task", "error", err)
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
+// Shutdown gracefully shuts down the HTTP server
+func (s *Server) Shutdown(ctx context.Context) error {
+	if s.srv != nil {
+		return s.srv.Shutdown(ctx)
 	}
-
-	// Decode patch request
-	var patch TaskPatch
-	if err := json.NewDecoder(r.Body).Decode(&patch); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		return
-	}
-
-	// Validate patch request
-	if patch.Content == nil && patch.Done == nil {
-		http.Error(w, "At least one field must be provided", http.StatusBadRequest)
-		return
-	}
-
-	// Apply patches
-	if patch.Content != nil {
-		existingTask.Content = *patch.Content
-	}
-	if patch.Done != nil {
-		existingTask.Done = *patch.Done
-	}
-	existingTask.UpdatedAt = time.Now()
-
-	// Update the task
-	if err := s.store.Update(*existingTask); err != nil {
-		s.logger.Error("Failed to update task", "error", err)
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
-	}
-
-	// Return updated task
-	render.JSON(w, r, existingTask)
+	return nil
 }

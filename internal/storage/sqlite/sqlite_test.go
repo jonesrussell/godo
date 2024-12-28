@@ -1,6 +1,7 @@
 package sqlite
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -26,6 +27,7 @@ func TestSQLiteStore(t *testing.T) {
 	}()
 
 	now := time.Now()
+	ctx := context.Background()
 
 	t.Run("Add and List", func(t *testing.T) {
 		task := storage.Task{
@@ -36,10 +38,10 @@ func TestSQLiteStore(t *testing.T) {
 			UpdatedAt: now,
 		}
 
-		err := store.Add(task)
+		err := store.Add(ctx, task)
 		assert.NoError(t, err)
 
-		tasks, err := store.List()
+		tasks, err := store.List(ctx)
 		assert.NoError(t, err)
 		assert.Len(t, tasks, 1)
 
@@ -61,24 +63,24 @@ func TestSQLiteStore(t *testing.T) {
 			UpdatedAt: now,
 		}
 
-		err := store.Update(task)
+		err := store.Update(ctx, task)
 		assert.NoError(t, err)
 
-		tasks, err := store.List()
+		tasks, err := store.List(ctx)
 		assert.NoError(t, err)
 		assert.Equal(t, "Updated Task", tasks[0].Content)
 		assert.True(t, tasks[0].Done)
 	})
 
 	t.Run("Delete", func(t *testing.T) {
-		err := store.Delete("1")
+		err := store.Delete(ctx, "1")
 		assert.NoError(t, err)
 
-		tasks, err := store.List()
+		tasks, err := store.List(ctx)
 		assert.NoError(t, err)
 		assert.Empty(t, tasks)
 
-		err = store.Delete("1")
+		err = store.Delete(ctx, "1")
 		assert.ErrorIs(t, err, storage.ErrTaskNotFound)
 	})
 }

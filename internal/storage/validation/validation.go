@@ -20,7 +20,7 @@ func NewTaskValidator(store storage.TaskReader) *TaskValidator {
 
 // ValidateTask validates a task for creation or update
 func (v *TaskValidator) ValidateTask(task storage.Task) error {
-	if err := v.validateID(task.ID); err != nil {
+	if err := v.ValidateID(task.ID); err != nil {
 		return &storage.ValidationError{
 			Field:   "id",
 			Message: err.Error(),
@@ -44,8 +44,8 @@ func (v *TaskValidator) ValidateTask(task storage.Task) error {
 	return nil
 }
 
-// validateID validates the task ID
-func (v *TaskValidator) validateID(id string) error {
+// ValidateID validates the task ID
+func (v *TaskValidator) ValidateID(id string) error {
 	if id == "" {
 		return fmt.Errorf("task ID cannot be empty")
 	}

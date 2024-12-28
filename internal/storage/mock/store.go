@@ -2,27 +2,17 @@
 package mock
 
 import (
+	"context"
 	"sync"
 
 	"github.com/jonesrussell/godo/internal/storage"
-	"github.com/jonesrussell/godo/internal/storage/errors"
 )
 
-// Store provides a mock implementation of storage.Store for testing
+// Store implements storage.TaskStore for testing
 type Store struct {
-	mu     sync.RWMutex
-	tasks  map[string]storage.Task
-	closed bool
-
-	// Operation tracking for tests
-	AddCalled     bool
-	UpdateCalled  bool
-	DeleteCalled  bool
-	ListCalled    bool
-	GetByIDCalled bool
-
-	// Error simulation
-	Error error
+	tasks map[string]storage.Task
+	mu    sync.RWMutex
+	err   error
 }
 
 // New creates a new mock store
@@ -32,159 +22,237 @@ func New() *Store {
 	}
 }
 
-// Add simulates adding a task
-func (m *Store) Add(task storage.Task) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	m.AddCalled = true
-	if m.Error != nil {
-		return m.Error
-	}
-
-	if m.closed {
-		return errors.ErrStoreClosed
-	}
-
-	if task.ID == "" {
-		return errors.ErrEmptyID
-	}
-
-	if _, exists := m.tasks[task.ID]; exists {
-		return errors.ErrDuplicateID
-	}
-
-	m.tasks[task.ID] = task
-	return nil
+// SetError sets the error to be returned by store operations
+func (s *Store) SetError(err error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.err = err
 }
 
-// Update simulates updating a task
-func (m *Store) Update(task storage.Task) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	m.UpdateCalled = true
-	if m.Error != nil {
-		return m.Error
-	}
-
-	if m.closed {
-		return errors.ErrStoreClosed
-	}
-
-	if task.ID == "" {
-		return errors.ErrEmptyID
-	}
-
-	if _, exists := m.tasks[task.ID]; !exists {
-		return errors.ErrTaskNotFound
-	}
-
-	m.tasks[task.ID] = task
-	return nil
+// Reset clears all tasks and errors
+func (s *Store) Reset() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.tasks = make(map[string]storage.Task)
+	s.err = nil
 }
 
-// Delete simulates deleting a task
-func (m *Store) Delete(id string) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
+// List returns all tasks
+func (s *Store) List(ctx context.Context) ([]storage.Task, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 
-	m.DeleteCalled = true
-	if m.Error != nil {
-		return m.Error
+	if s.err != nil {
+		return nil, s.err
 	}
 
-	if m.closed {
-		return errors.ErrStoreClosed
-	}
-
-	if id == "" {
-		return errors.ErrEmptyID
-	}
-
-	if _, exists := m.tasks[id]; !exists {
-		return errors.ErrTaskNotFound
-	}
-
-	delete(m.tasks, id)
-	return nil
-}
-
-// List simulates listing all tasks
-func (m *Store) List() ([]storage.Task, error) {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-
-	m.ListCalled = true
-	if m.Error != nil {
-		return nil, m.Error
-	}
-
-	if m.closed {
-		return nil, errors.ErrStoreClosed
-	}
-
-	tasks := make([]storage.Task, 0, len(m.tasks))
-	for _, task := range m.tasks {
+	tasks := make([]storage.Task, 0, len(s.tasks))
+	for _, task := range s.tasks {
 		tasks = append(tasks, task)
 	}
 	return tasks, nil
 }
 
-// GetByID simulates retrieving a task by ID
-func (m *Store) GetByID(id string) (*storage.Task, error) {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
+// GetByID returns a task by its ID
+func (s *Store) GetByID(ctx context.Context, id string) (*storage.Task, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 
-	m.GetByIDCalled = true
-	if m.Error != nil {
-		return nil, m.Error
+	if s.err != nil {
+		return nil, s.err
 	}
 
-	if m.closed {
-		return nil, errors.ErrStoreClosed
+	task, ok := s.tasks[id]
+	if !ok {
+		return nil, storage.ErrTaskNotFound
 	}
-
-	if id == "" {
-		return nil, errors.ErrEmptyID
-	}
-
-	task, exists := m.tasks[id]
-	if !exists {
-		return nil, errors.ErrTaskNotFound
-	}
-
 	return &task, nil
 }
 
-// Close simulates closing the store
-func (m *Store) Close() error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
+// Add creates a new task
+func (s *Store) Add(ctx context.Context, task storage.Task) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
-	if m.Error != nil {
-		return m.Error
+	if s.err != nil {
+		return s.err
 	}
 
-	if m.closed {
-		return errors.ErrStoreClosed
+	if _, exists := s.tasks[task.ID]; exists {
+		return storage.ErrDuplicateID
 	}
 
-	m.closed = true
+	s.tasks[task.ID] = task
 	return nil
 }
 
-// Reset resets the mock store to its initial state
-func (m *Store) Reset() {
-	m.mu.Lock()
-	defer m.mu.Unlock()
+// Update replaces an existing task
+func (s *Store) Update(ctx context.Context, task storage.Task) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
-	m.tasks = make(map[string]storage.Task)
-	m.closed = false
-	m.AddCalled = false
-	m.UpdateCalled = false
-	m.DeleteCalled = false
-	m.ListCalled = false
-	m.GetByIDCalled = false
-	m.Error = nil
+	if s.err != nil {
+		return s.err
+	}
+
+	if _, exists := s.tasks[task.ID]; !exists {
+		return storage.ErrTaskNotFound
+	}
+
+	s.tasks[task.ID] = task
+	return nil
+}
+
+// Delete removes a task
+func (s *Store) Delete(ctx context.Context, id string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.err != nil {
+		return s.err
+	}
+
+	if _, exists := s.tasks[id]; !exists {
+		return storage.ErrTaskNotFound
+	}
+
+	delete(s.tasks, id)
+	return nil
+}
+
+// Close implements io.Closer
+func (s *Store) Close() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.err != nil {
+		return s.err
+	}
+
+	s.tasks = nil
+	return nil
+}
+
+// BeginTx starts a new transaction
+func (s *Store) BeginTx(ctx context.Context) (storage.TaskTx, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.err != nil {
+		return nil, s.err
+	}
+
+	// Create a snapshot of current tasks
+	tasks := make(map[string]storage.Task)
+	for k, v := range s.tasks {
+		tasks[k] = v
+	}
+
+	return &Tx{
+		store:    s,
+		tasks:    tasks,
+		original: s.tasks,
+	}, nil
+}
+
+// Tx implements storage.TaskTx for testing
+type Tx struct {
+	store    *Store
+	tasks    map[string]storage.Task
+	original map[string]storage.Task
+	mu       sync.RWMutex
+}
+
+// List returns all tasks within the transaction
+func (t *Tx) List(ctx context.Context) ([]storage.Task, error) {
+	t.mu.RLock()
+	defer t.mu.RUnlock()
+
+	tasks := make([]storage.Task, 0, len(t.tasks))
+	for _, task := range t.tasks {
+		tasks = append(tasks, task)
+	}
+	return tasks, nil
+}
+
+// GetByID returns a task by its ID within the transaction
+func (t *Tx) GetByID(ctx context.Context, id string) (*storage.Task, error) {
+	t.mu.RLock()
+	defer t.mu.RUnlock()
+
+	task, ok := t.tasks[id]
+	if !ok {
+		return nil, storage.ErrTaskNotFound
+	}
+	return &task, nil
+}
+
+// Add creates a new task within the transaction
+func (t *Tx) Add(ctx context.Context, task storage.Task) error {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+
+	if _, exists := t.tasks[task.ID]; exists {
+		return storage.ErrDuplicateID
+	}
+
+	t.tasks[task.ID] = task
+	return nil
+}
+
+// Update replaces an existing task within the transaction
+func (t *Tx) Update(ctx context.Context, task storage.Task) error {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+
+	if _, exists := t.tasks[task.ID]; !exists {
+		return storage.ErrTaskNotFound
+	}
+
+	t.tasks[task.ID] = task
+	return nil
+}
+
+// Delete removes a task within the transaction
+func (t *Tx) Delete(ctx context.Context, id string) error {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+
+	if _, exists := t.tasks[id]; !exists {
+		return storage.ErrTaskNotFound
+	}
+
+	delete(t.tasks, id)
+	return nil
+}
+
+// Commit commits the transaction
+func (t *Tx) Commit() error {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+
+	t.store.mu.Lock()
+	defer t.store.mu.Unlock()
+
+	// Update store's tasks with transaction's tasks
+	t.store.tasks = make(map[string]storage.Task)
+	for k, v := range t.tasks {
+		t.store.tasks[k] = v
+	}
+
+	return nil
+}
+
+// Rollback rolls back the transaction
+func (t *Tx) Rollback() error {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+
+	// Restore original tasks
+	t.tasks = make(map[string]storage.Task)
+	for k, v := range t.original {
+		t.tasks[k] = v
+	}
+
+	return nil
 }

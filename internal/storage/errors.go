@@ -19,4 +19,7 @@ var (
 
 	// ErrInvalidPath is returned when an invalid database path is provided
 	ErrInvalidPath = errors.New("invalid database path")
+
+	// ErrInvalidID is returned when a task ID is invalid
+	ErrInvalidID = errors.New("invalid task ID")
 )

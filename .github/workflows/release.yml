@@ -57,26 +57,55 @@ jobs:
                 return;
               }
 
-              // Get discussion categories to find the Releases category
-              const categories = await github.rest.discussions.listDiscussionCategories({
+              // Get discussion categories using the GraphQL API
+              const query = `
+                query($owner: String!, $repo: String!) {
+                  repository(owner: $owner, name: $repo) {
+                    discussionCategories(first: 10) {
+                      nodes {
+                        id
+                        name
+                      }
+                    }
+                  }
+                }
+              `;
+
+              const result = await github.graphql(query, {
                 owner: context.repo.owner,
                 repo: context.repo.repo
               });
+
+              const categories = result.repository.discussionCategories.nodes;
+              const releasesCategory = categories.find(c => c.name === 'Releases');
               
-              const releasesCategory = categories.data.find(c => c.name === 'Releases');
               if (!releasesCategory) {
                 console.log('Releases discussion category not found');
                 return;
               }
 
-              // Create the discussion
-              await github.rest.discussions.create({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                category_id: releasesCategory.id,
-                title: `Release ${tag}`,
-                body: release.body
+              // Create the discussion using GraphQL
+              const createDiscussion = `
+                mutation($input: CreateDiscussionInput!) {
+                  createDiscussion(input: $input) {
+                    discussion {
+                      id
+                      url
+                    }
+                  }
+                }
+              `;
+
+              const discussionResult = await github.graphql(createDiscussion, {
+                input: {
+                  repositoryId: result.repository.id,
+                  categoryId: releasesCategory.id,
+                  title: `Release ${tag}`,
+                  body: release.body || 'No release notes provided.'
+                }
               });
+
+              console.log('Discussion created:', discussionResult.createDiscussion.discussion.url);
             } catch (error) {
               console.log('Error creating discussion:', error);
               // Don't fail the workflow if discussion creation fails

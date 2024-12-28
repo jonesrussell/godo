@@ -1,3 +1,4 @@
+// Package config handles application configuration management
 package config
 
 import (
@@ -263,4 +264,11 @@ func (e *ConfigError) Error() string {
 
 func (e *ConfigError) Unwrap() error {
 	return e.Err
+}
+
+// Error represents a configuration error
+type Error struct {
+	Code    string
+	Message string
+	Err     error
 }

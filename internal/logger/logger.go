@@ -1,3 +1,4 @@
+// Package logger provides logging functionality for the application
 package logger
 
 // Logger defines the minimum logging interface needed by your application

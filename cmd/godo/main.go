@@ -1,3 +1,4 @@
+// Package main is the entry point for the Godo application
 package main
 
 import (
@@ -10,6 +11,11 @@ import (
 	"github.com/jonesrussell/godo/internal/api"
 	godocontainer "github.com/jonesrussell/godo/internal/container"
 	"go.uber.org/zap"
+)
+
+const (
+	// Default HTTP server port
+	defaultHTTPPort = 8080
 )
 
 func run() error {
@@ -37,7 +43,7 @@ func run() error {
 
 	// Create HTTP server runner
 	httpRunner := api.NewRunner(container.Store, container.Logger)
-	httpRunner.Start(8080)
+	httpRunner.Start(defaultHTTPPort)
 
 	// Setup signal handling
 	sigChan := make(chan os.Signal, 1)

@@ -1,3 +1,4 @@
+// Package storage provides interfaces and implementations for task persistence
 package storage
 
 import "errors"

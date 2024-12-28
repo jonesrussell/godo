@@ -1,3 +1,4 @@
+// Package gui defines interfaces for the graphical user interface components
 package gui
 
 import "fyne.io/fyne/v2"

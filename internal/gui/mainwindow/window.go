@@ -1,3 +1,4 @@
+// Package mainwindow implements the main application window
 package mainwindow
 
 import (
@@ -8,6 +9,12 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
+)
+
+const (
+	// Window dimensions
+	defaultWidth  = 800
+	defaultHeight = 600
 )
 
 // Window represents the main application window
@@ -52,8 +59,8 @@ func (w *Window) Setup() error {
 	})
 
 	fmt.Println("Resizing window")
-	w.logger.Debug("Resizing window", "width", 800, "height", 600)
-	w.win.Resize(fyne.NewSize(800, 600))
+	w.logger.Debug("Resizing window", "width", defaultWidth, "height", defaultHeight)
+	w.win.Resize(fyne.NewSize(defaultWidth, defaultHeight))
 	w.win.CenterOnScreen()
 
 	fmt.Println("Creating main content")

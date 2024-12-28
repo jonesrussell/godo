@@ -1,3 +1,4 @@
+// Package systray provides system tray integration for the application
 package systray
 
 import (
@@ -9,6 +10,7 @@ import (
 	"github.com/jonesrussell/godo/internal/logger"
 )
 
+// Systray manages the system tray icon and menu
 type Systray struct {
 	app   fyne.App
 	log   logger.Logger
@@ -18,6 +20,7 @@ type Systray struct {
 	desk  desktop.App
 }
 
+// New creates a new Systray instance
 func New(app fyne.App, log logger.Logger) *Systray {
 	s := &Systray{
 		app: app,
@@ -59,7 +62,8 @@ func New(app fyne.App, log logger.Logger) *Systray {
 	return s
 }
 
-func (s *Systray) Setup(menu *fyne.Menu) {
+// Setup initializes the system tray icon and menu
+func (s *Systray) Setup(menu *fyne.Menu) error {
 	s.log.Debug("Setting up system tray menu",
 		"menu_label", menu.Label,
 		"menu_type", fmt.Sprintf("%T", menu),
@@ -89,9 +93,12 @@ func (s *Systray) Setup(menu *fyne.Menu) {
 			"has_menu", s.menu != nil,
 		)
 	}
+
+	return nil
 }
 
-func (s *Systray) SetIcon(resource fyne.Resource) {
+// SetIcon sets the system tray icon
+func (s *Systray) SetIcon(resource fyne.Resource) error {
 	s.log.Debug("Setting system tray icon",
 		"resource_name", resource.Name(),
 		"content_length", len(resource.Content()),
@@ -112,8 +119,11 @@ func (s *Systray) SetIcon(resource fyne.Resource) {
 			"has_icon", s.icon != nil,
 		)
 	}
+
+	return nil
 }
 
+// IsReady returns true if the system tray is ready
 func (s *Systray) IsReady() bool {
 	s.log.Debug("System tray state",
 		"ready", s.ready,

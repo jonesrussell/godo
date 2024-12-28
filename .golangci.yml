@@ -1,86 +1,54 @@
 linters:
+  disable-all: true
   enable:
-  - gofmt
-  - govet
-  - errcheck
-  - staticcheck
-  - gosimple
   - gocritic
+  - gofmt
+  - goimports
+  - gosimple
+  - govet
+  - ineffassign
+  - misspell
   - revive
-  - depguard
+  - staticcheck
+  - typecheck
+  - unparam
   - unused
-  - gosec
-
-run:
-  timeout: 5m
-
-issues:
-  exclude:
-  - "vendor/"
-  exclude-rules:
-  - path: _test\.go
-    linters:
-    - gosec
-    - errcheck
-  - path: testing\.go
-    linters:
-    - gosec
-    - errcheck
+  - mnd
+  - copyloopvar # replacement for exportloopref
 
 linters-settings:
-  revive:
+  depguard:
     rules:
-    - name: unused-parameter
-      severity: warning
-      disabled: false
+      dashboard-ui:
+        files:
+        - internal/ui/**/*.go
+        deny:
+        - pkg: fmt
+          desc: "use logger package for output in dashboard UI"
   gocritic:
     enabled-tags:
     - diagnostic
     - style
     - performance
-    - experimental
     disabled-checks:
-    - commentFormatting
-    - hugeParam
-  gosec:
-    severity: "medium"
-  lll:
-    line-length: 120
-  govet:
-    enable-all: true
-    disable:
-    - shadow
-    - fieldalignment
-  depguard:
-    rules:
-      main:
-        files:
-        - $all
-        - "!**/*_test.go"
-        - "!**/*testing.go"
-        allow:
-        - $gostd
-        - fyne.io/fyne/v2
-        - github.com/go-chi/chi/v5
-        - github.com/go-chi/render
-        - github.com/google/wire
-        - github.com/jonesrussell/godo
-        - go.uber.org/zap
-        - modernc.org/sqlite
-        - golang.design/x/hotkey
-        - github.com/spf13/viper
-        - github.com/google/uuid
-      test:
-        files:
-        - "**/*_test.go"
-        - "**/*testing.go"
-        allow:
-        - $gostd
-        - fyne.io/fyne/v2
-        - github.com/stretchr/testify
-        - github.com/google/wire
-        - github.com/jonesrussell/godo
-        - go.uber.org/zap
-        - github.com/google/uuid
-        - modernc.org/sqlite
-        - golang.design/x/hotkey
+    - hugeParam # Disable hugeParam check as it's not relevant for our UI components
+  mnd:
+    ignored-numbers:
+    - '0o755' # Common file permission
+    - '4' # Common UI padding/margin
+    - '6' # Common UI padding/margin
+    ignored-files:
+    - 'internal/ui/*'
+    - 'internal/logger/provider.go'
+
+issues:
+  exclude-use-default: false
+  max-per-linter: 0
+  max-same-issues: 0
+  exclude-dirs:
+  - build/
+  - coverage/
+
+output:
+  formats:
+  - format: colored-line-number

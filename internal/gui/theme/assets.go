@@ -1,3 +1,4 @@
+// Package theme provides UI theme and asset management for the application
 package theme
 
 import (

@@ -1,3 +1,4 @@
+// Package model defines the core domain models for the application
 package model
 
 import (

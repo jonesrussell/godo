@@ -1,3 +1,4 @@
+// Package api implements the HTTP server and API endpoints
 package api
 
 import (
@@ -12,6 +13,14 @@ import (
 	"github.com/go-chi/render"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
+)
+
+const (
+	// Server timeouts
+	readHeaderTimeout = 10 * time.Second
+	readTimeout       = 30 * time.Second
+	writeTimeout      = 30 * time.Second
+	idleTimeout       = 120 * time.Second
 )
 
 // Server represents the HTTP server
@@ -55,10 +64,10 @@ func (s *Server) Start(port int) error {
 	s.server = &http.Server{
 		Addr:              addr,
 		Handler:           s.router,
-		ReadHeaderTimeout: 10 * time.Second,
-		ReadTimeout:       30 * time.Second,
-		WriteTimeout:      30 * time.Second,
-		IdleTimeout:       120 * time.Second,
+		ReadHeaderTimeout: readHeaderTimeout,
+		ReadTimeout:       readTimeout,
+		WriteTimeout:      writeTimeout,
+		IdleTimeout:       idleTimeout,
 	}
 
 	s.logger.Info("Starting HTTP server", "port", port)

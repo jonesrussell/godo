@@ -1,3 +1,4 @@
+// Package quicknote implements the quick note window functionality
 package quicknote
 
 import (
@@ -8,6 +9,12 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
+)
+
+const (
+	// Window dimensions
+	defaultWidth  = 400
+	defaultHeight = 200
 )
 
 // Interface defines the behavior of a quick note window
@@ -85,7 +92,7 @@ func (w *Window) Setup() error {
 	w.win.SetContent(w.input)
 
 	// Set window properties
-	w.win.Resize(fyne.NewSize(400, 200))
+	w.win.Resize(fyne.NewSize(defaultWidth, defaultHeight))
 	w.win.CenterOnScreen()
 
 	// Add keyboard shortcuts
@@ -108,6 +115,7 @@ func (w *Window) Hide() {
 	}
 }
 
+// Show displays the quick note window and focuses the input field
 func (w *Window) Show() {
 	if w.win != nil {
 		w.logger.Debug("Showing quick note window")

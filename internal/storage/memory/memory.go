@@ -1,31 +1,44 @@
+// Package memory provides an in-memory implementation of the storage interface
 package memory
 
 import (
+	"sync"
+
 	"github.com/jonesrussell/godo/internal/storage"
 )
 
-// MemoryStore provides an in-memory implementation of Store
-type MemoryStore struct {
+// Store provides an in-memory task storage implementation
+type Store struct {
 	tasks []storage.Task
+	mu    sync.RWMutex
 }
 
-// NewMemoryStore creates a new in-memory store
-func NewMemoryStore() *MemoryStore {
-	return &MemoryStore{
+// New creates a new in-memory store
+func New() *Store {
+	return &Store{
 		tasks: make([]storage.Task, 0),
 	}
 }
 
-func (s *MemoryStore) Add(task storage.Task) error {
+// Add stores a new task
+func (s *Store) Add(task storage.Task) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.tasks = append(s.tasks, task)
 	return nil
 }
 
-func (s *MemoryStore) List() ([]storage.Task, error) {
+// List returns all stored tasks
+func (s *Store) List() ([]storage.Task, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	return s.tasks, nil
 }
 
-func (s *MemoryStore) Update(task storage.Task) error {
+// Update modifies an existing task
+func (s *Store) Update(task storage.Task) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	for i, t := range s.tasks {
 		if t.ID == task.ID {
 			s.tasks[i] = task
@@ -35,9 +48,12 @@ func (s *MemoryStore) Update(task storage.Task) error {
 	return storage.ErrTaskNotFound
 }
 
-func (s *MemoryStore) Delete(id string) error {
-	for i, t := range s.tasks {
-		if t.ID == id {
+// Delete removes a task by ID
+func (s *Store) Delete(id string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for i, task := range s.tasks {
+		if task.ID == id {
 			s.tasks = append(s.tasks[:i], s.tasks[i+1:]...)
 			return nil
 		}

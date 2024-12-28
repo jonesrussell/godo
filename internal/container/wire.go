@@ -3,7 +3,6 @@
 package container
 
 import (
-	"database/sql"
 	"fmt"
 
 	"fyne.io/fyne/v2"
@@ -66,8 +65,6 @@ var (
 		ProvideDatabasePath,
 		ProvideSQLiteStore,
 		wire.Bind(new(storage.TaskStore), new(*sqlite.Store)),
-		ProvideStoreAdapter,
-		wire.Bind(new(storage.Store), new(*storage.StoreAdapter)),
 	)
 
 	// HTTPSet provides HTTP server dependencies
@@ -227,12 +224,12 @@ func ProvideFyneApp() fyne.App {
 }
 
 // ProvideMainWindow provides a main window instance
-func ProvideMainWindow(store storage.Store, logger logger.Logger) *mainwindow.Window {
+func ProvideMainWindow(store storage.TaskStore, logger logger.Logger) *mainwindow.Window {
 	return mainwindow.New(store, logger)
 }
 
 // ProvideQuickNote provides a quick note window instance
-func ProvideQuickNote(store storage.Store, logger logger.Logger) *quicknote.Window {
+func ProvideQuickNote(store storage.TaskStore, logger logger.Logger) *quicknote.Window {
 	return quicknote.New(store, logger)
 }
 
@@ -271,7 +268,7 @@ func InitializeTestApp() (*app.TestApp, func(), error) {
 }
 
 // Mock providers for testing
-func ProvideMockStore() storage.Store {
+func ProvideMockStore() storage.TaskStore {
 	return storage.NewMockStore()
 }
 

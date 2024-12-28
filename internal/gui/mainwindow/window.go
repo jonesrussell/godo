@@ -9,13 +9,13 @@ import (
 
 // Window implements the main window functionality
 type Window struct {
-	store  storage.Store
+	store  storage.TaskStore
 	logger logger.Logger
 	window fyne.Window
 }
 
 // New creates a new main window
-func New(store storage.Store, logger logger.Logger) *Window {
+func New(store storage.TaskStore, logger logger.Logger) *Window {
 	return &Window{
 		store:  store,
 		logger: logger,

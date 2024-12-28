@@ -202,10 +202,11 @@ func TestProvideDatabaseConfig(t *testing.T) {
 
 func TestProvideSQLiteStore(t *testing.T) {
 	log := logger.NewTestLogger(t)
-	store, err := ProvideSQLiteStore(log)
+	store, cleanup, err := ProvideSQLiteStore(log)
 	assert.NoError(t, err)
 	assert.NotNil(t, store)
-	defer store.Close()
+	assert.NotNil(t, cleanup)
+	defer cleanup()
 }
 
 func TestProvideTimeouts(t *testing.T) {

@@ -3,6 +3,7 @@ package app
 
 import (
 	"fyne.io/fyne/v2"
+	"github.com/jonesrussell/godo/internal/app/hotkey"
 	"github.com/jonesrussell/godo/internal/gui/mainwindow"
 	"github.com/jonesrussell/godo/internal/gui/mainwindow/systray"
 	"github.com/jonesrussell/godo/internal/gui/quicknote"
@@ -18,64 +19,96 @@ type App struct {
 	store     storage.Store
 	mainWin   *mainwindow.Window
 	quickNote quicknote.Interface
-	Hotkeys   HotkeyManager
+	Hotkeys   hotkey.Manager
 	version   string
 }
 
 // New creates a new application instance
-func New(log logger.Logger, fyneApp fyne.App, store storage.Store, hotkeys HotkeyManager) *App {
+func New(log logger.Logger, fyneApp fyne.App, store storage.Store, quickNote quicknote.Interface, hotkeys hotkey.Manager) *App {
 	return &App{
-		Logger:  log,
-		fyneApp: fyneApp,
-		store:   store,
-		Hotkeys: hotkeys,
-		version: "0.1.0",
+		Logger:    log,
+		fyneApp:   fyneApp,
+		store:     store,
+		quickNote: quickNote,
+		Hotkeys:   hotkeys,
+		version:   "0.1.0",
 	}
 }
 
 // Run starts the application
 func (a *App) Run() error {
+	a.Logger.Info("Starting application", "version", a.version)
+
+	// Setup UI components first
+	a.Logger.Debug("Setting up UI components")
+	a.SetupUI()
+
 	// Setup windows
+	a.Logger.Debug("Setting up main window")
 	if err := a.mainWin.Setup(); err != nil {
 		a.Logger.Error("Failed to setup main window", "error", err)
 		return err
 	}
+	a.Logger.Debug("Main window setup complete")
 
+	a.Logger.Debug("Setting up quick note window")
 	if err := a.quickNote.Setup(); err != nil {
 		a.Logger.Error("Failed to setup quick note window", "error", err)
 		return err
 	}
+	a.Logger.Debug("Quick note window setup complete")
 
-	// Register global hotkeys
+	// Register global hotkeys last, after all windows are set up
+	a.Logger.Debug("Registering global hotkeys")
 	if err := a.Hotkeys.Register(); err != nil {
 		a.Logger.Error("Failed to register hotkeys", "error", err)
 		return err
 	}
+	a.Logger.Debug("Global hotkeys registered successfully")
+
 	defer func() {
+		a.Logger.Debug("Unregistering global hotkeys")
 		if err := a.Hotkeys.Unregister(); err != nil {
 			a.Logger.Error("Failed to unregister hotkeys", "error", err)
 		}
 	}()
 
+	a.Logger.Info("Application initialized successfully, starting main loop")
+
+	// Make sure the main window is visible
+	if win := a.mainWin.GetWindow(); win != nil {
+		win.Show()
+		win.CenterOnScreen()
+	}
+
 	// Run the application
 	a.fyneApp.Run()
 
+	a.Logger.Info("Application main loop completed")
 	return nil
 }
 
 // SetupUI initializes the application UI
 func (a *App) SetupUI() {
 	// Create main window
+	a.Logger.Debug("Creating main window instance")
 	a.mainWin = mainwindow.New(a.store, a.Logger)
+	a.Logger.Debug("Main window instance created")
 
 	// Setup systray with menu
+	a.Logger.Debug("Setting up system tray")
 	menu := fyne.NewMenu("Godo",
 		fyne.NewMenuItem("Show", func() {
+			a.Logger.Debug("Show menu item clicked")
 			if win := a.mainWin.GetWindow(); win != nil {
 				win.Show()
+				a.Logger.Debug("Main window shown")
+			} else {
+				a.Logger.Error("Main window is nil")
 			}
 		}),
 		fyne.NewMenuItem("Quit", func() {
+			a.Logger.Debug("Quit menu item clicked")
 			a.fyneApp.Quit()
 		}),
 	)
@@ -83,9 +116,7 @@ func (a *App) SetupUI() {
 	systray := systray.New(a.fyneApp, a.Logger)
 	systray.Setup(menu)
 	systray.SetIcon(theme.AppIcon())
-
-	// Create quick note window
-	a.quickNote = quicknote.New(a.store, a.Logger)
+	a.Logger.Debug("System tray setup complete")
 }
 
 // GetVersion returns the application version

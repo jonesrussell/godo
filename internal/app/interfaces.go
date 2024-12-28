@@ -17,9 +17,3 @@ type Application interface {
 	Run()
 	Cleanup()
 }
-
-// QuickNoteService defines quick note operations
-type QuickNoteService interface {
-	Show()
-	Hide()
-}

@@ -6,8 +6,19 @@ import (
 	"os"
 	"testing"
 
+	"github.com/jonesrussell/godo/internal/gui/quicknote"
 	"github.com/stretchr/testify/assert"
 )
+
+// mockQuickNote is a mock implementation of quicknote.Interface for testing
+type mockQuickNote struct{}
+
+// Ensure mockQuickNote implements quicknote.Interface
+var _ quicknote.Interface = (*mockQuickNote)(nil)
+
+func (m *mockQuickNote) Setup() error { return nil }
+func (m *mockQuickNote) Show()        {}
+func (m *mockQuickNote) Hide()        {}
 
 func TestMain(m *testing.M) {
 	if os.Getenv("CI") == "true" {
@@ -38,6 +49,10 @@ func TestProvideHotkeyManager(t *testing.T) {
 	if os.Getenv("CI") == "true" {
 		t.Skip("Skipping hotkey test in CI environment")
 	}
-	manager := ProvideHotkeyManager()
+
+	// Create a mock quick note service
+	mockNote := &mockQuickNote{}
+
+	manager := ProvideHotkeyManager(mockNote)
 	assert.NotNil(t, manager)
 }

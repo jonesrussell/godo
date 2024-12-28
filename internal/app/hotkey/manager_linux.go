@@ -1,23 +1,24 @@
-//go:build linux
+//go:build linux && !windows && !darwin
+// +build linux,!windows,!darwin
 
-package app
+package hotkey
 
 import (
 	"golang.design/x/hotkey"
 )
 
-type linuxHotkeyManager struct {
+type platformManager struct {
 	hk        *hotkey.Hotkey
 	quickNote QuickNoteService
 }
 
-func NewHotkeyManager(quickNote QuickNoteService) HotkeyManager {
-	return &linuxHotkeyManager{
+func newPlatformManager(quickNote QuickNoteService) Manager {
+	return &platformManager{
 		quickNote: quickNote,
 	}
 }
 
-func (m *linuxHotkeyManager) Register() error {
+func (m *platformManager) Register() error {
 	hk := hotkey.New([]hotkey.Modifier{hotkey.ModCtrl, hotkey.ModShift}, hotkey.KeyN)
 	if err := hk.Register(); err != nil {
 		return err
@@ -36,11 +37,9 @@ func (m *linuxHotkeyManager) Register() error {
 	return nil
 }
 
-func (m *linuxHotkeyManager) Unregister() error {
+func (m *platformManager) Unregister() error {
 	if m.hk != nil {
 		return m.hk.Unregister()
 	}
 	return nil
 }
-
-// Implementation details...

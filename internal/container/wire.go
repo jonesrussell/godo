@@ -3,10 +3,15 @@
 package container
 
 import (
+	"fmt"
+	"os"
+
 	"fyne.io/fyne/v2"
 	fyneapp "fyne.io/fyne/v2/app"
+	"fyne.io/fyne/v2/theme"
 	"github.com/google/wire"
 	"github.com/jonesrussell/godo/internal/app"
+	"github.com/jonesrussell/godo/internal/app/hotkey"
 	"github.com/jonesrussell/godo/internal/common"
 	"github.com/jonesrussell/godo/internal/gui/quicknote"
 	"github.com/jonesrussell/godo/internal/logger"
@@ -35,7 +40,23 @@ func ProvideLogger() (logger.Logger, func(), error) {
 
 // ProvideFyneApp provides a Fyne application instance
 func ProvideFyneApp() fyne.App {
-	return fyneapp.New()
+	fmt.Println("Creating Fyne application...")
+
+	// Set any required environment variables
+	os.Setenv("FYNE_SCALE", "1.0") // Force 1.0 scale for now
+
+	// Create the app
+	app := fyneapp.NewWithID("com.jonesrussell.godo")
+	if app == nil {
+		fmt.Println("ERROR: Failed to create Fyne application")
+		return nil
+	}
+
+	// Set theme and other settings
+	app.Settings().SetTheme(theme.DefaultTheme())
+
+	fmt.Println("Fyne application created successfully")
+	return app
 }
 
 // ProvideStorage provides a storage instance
@@ -49,8 +70,8 @@ func ProvideQuickNote(store storage.Store, logger logger.Logger) quicknote.Inter
 }
 
 // ProvideHotkeyManager provides the platform-specific hotkey manager
-func ProvideHotkeyManager(quickNote quicknote.Interface) app.HotkeyManager {
-	return app.NewHotkeyManager(quickNote)
+func ProvideHotkeyManager(quickNote quicknote.Interface) hotkey.Manager {
+	return hotkey.New(quickNote)
 }
 
 var Set = wire.NewSet(
@@ -59,6 +80,7 @@ var Set = wire.NewSet(
 	ProvideStorage,
 	ProvideQuickNote,
 	ProvideHotkeyManager,
+	wire.Bind(new(hotkey.QuickNoteService), new(quicknote.Interface)),
 	app.New,
 )
 

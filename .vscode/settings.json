@@ -4,7 +4,12 @@
         "staticcheck": true,
         "completeUnimported": true,
         "matcher": "fuzzy",
-        "usePlaceholders": true
+        "usePlaceholders": true,
+        "env": {
+            "GOOS": "windows",
+            "GOARCH": "amd64",
+            "CGO_ENABLED": "1"
+        }
     },
     "go.formatTool": "goimports",
     "go.lintTool": "golangci-lint",
@@ -26,7 +31,6 @@
             "source.organizeImports": "explicit"
         }
     },
-    "go.coverOnSave": true,
     "go.coverOnSingleTest": true,
     "go.coverageDecorator": {
         "type": "highlight",
@@ -36,7 +40,7 @@
         "uncoveredGutterStyle": "blockred"
     },
     "go.testFlags": ["-v"],
-    "go.testOnSave": true,
+    "go.testOnSave": false,
     "go.testTags": "windows",
     "go.testTimeout": "5m"
 }

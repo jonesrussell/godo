@@ -1,4 +1,4 @@
-//go:build wireinject
+//go:build wireinject && windows
 
 package container
 
@@ -10,28 +10,29 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"github.com/google/wire"
 	"github.com/jonesrussell/godo/internal/app"
-	"github.com/jonesrussell/godo/internal/app/hotkey"
+	apphotkey "github.com/jonesrussell/godo/internal/app/hotkey"
 	"github.com/jonesrussell/godo/internal/common"
 	"github.com/jonesrussell/godo/internal/gui"
 	"github.com/jonesrussell/godo/internal/gui/mainwindow"
 	"github.com/jonesrussell/godo/internal/gui/quicknote"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
+	"golang.design/x/hotkey"
 )
 
 // Options structs for complex providers
 type LoggerOptions struct {
 	Level       common.LogLevel
-	Output      common.OutputPaths
-	ErrorOutput common.OutputPaths
+	Output      common.LogOutputPaths
+	ErrorOutput common.ErrorOutputPaths
 }
 
 type HTTPOptions struct {
 	Port              common.HTTPPort
-	ReadTimeout       common.TimeoutSeconds
-	WriteTimeout      common.TimeoutSeconds
-	ReadHeaderTimeout common.TimeoutSeconds
-	IdleTimeout       common.TimeoutSeconds
+	ReadTimeout       common.ReadTimeoutSeconds
+	WriteTimeout      common.WriteTimeoutSeconds
+	ReadHeaderTimeout common.HeaderTimeoutSeconds
+	IdleTimeout       common.IdleTimeoutSeconds
 }
 
 type HotkeyOptions struct {
@@ -50,6 +51,9 @@ var (
 
 	// LoggingSet provides logging dependencies
 	LoggingSet = wire.NewSet(
+		ProvideLogLevel,
+		ProvideLogOutputPaths,
+		ProvideErrorOutputPaths,
 		wire.Struct(new(LoggerOptions), "*"),
 		ProvideLogger,
 		wire.Bind(new(logger.Logger), new(*logger.ZapLogger)),
@@ -70,9 +74,11 @@ var (
 
 	// HotkeySet provides hotkey dependencies
 	HotkeySet = wire.NewSet(
+		ProvideModifierKeys,
+		ProvideKeyCode,
 		wire.Struct(new(HotkeyOptions), "*"),
 		ProvideHotkeyManager,
-		wire.Bind(new(hotkey.Manager), new(*hotkey.DefaultManager)),
+		wire.Bind(new(apphotkey.Manager), new(*apphotkey.DefaultManager)),
 	)
 
 	// GUISet provides GUI dependencies
@@ -96,10 +102,9 @@ var (
 		ProvideMockMainWindow,
 		ProvideMockQuickNote,
 		ProvideMockHotkey,
-		wire.Bind(new(storage.Store), new(*storage.MockStore)),
 		wire.Bind(new(gui.MainWindow), new(*gui.MockMainWindow)),
 		wire.Bind(new(gui.QuickNote), new(*gui.MockQuickNote)),
-		wire.Bind(new(hotkey.Manager), new(*hotkey.MockManager)),
+		wire.Bind(new(apphotkey.Manager), new(*apphotkey.MockManager)),
 	)
 )
 
@@ -158,12 +163,31 @@ func ProvideSQLiteStore(logger logger.Logger) (*storage.SQLiteStore, error) {
 }
 
 // ProvideHotkeyManager provides a hotkey manager instance using options
-func ProvideHotkeyManager(opts *HotkeyOptions) (*hotkey.DefaultManager, error) {
-	binding := &common.HotkeyBinding{
-		Modifiers: opts.Modifiers.Slice(),
-		Key:       opts.Key.String(),
+func ProvideHotkeyManager(opts *HotkeyOptions) (*apphotkey.DefaultManager, error) {
+	// Convert string modifiers to hotkey.Modifier
+	modifiers := make([]hotkey.Modifier, 0, len(opts.Modifiers.Slice()))
+	for _, mod := range opts.Modifiers.Slice() {
+		switch mod {
+		case "Ctrl":
+			modifiers = append(modifiers, hotkey.ModCtrl)
+		case "Alt":
+			modifiers = append(modifiers, hotkey.ModAlt)
+		case "Shift":
+			modifiers = append(modifiers, hotkey.ModShift)
+		}
 	}
-	return hotkey.NewManager(binding, 0)
+
+	// Convert key string to hotkey.Key
+	var key hotkey.Key
+	switch opts.Key.String() {
+	case "N":
+		key = hotkey.KeyN
+	// Add other key mappings as needed
+	default:
+		return nil, fmt.Errorf("unsupported key: %s", opts.Key)
+	}
+
+	return apphotkey.NewManager(modifiers, key)
 }
 
 // ProvideFyneApp provides a Fyne application instance
@@ -235,6 +259,26 @@ func ProvideMockQuickNote() *gui.MockQuickNote {
 }
 
 // ProvideMockHotkey provides a mock hotkey manager for testing
-func ProvideMockHotkey() *hotkey.MockManager {
-	return hotkey.NewMockManager()
+func ProvideMockHotkey() *apphotkey.MockManager {
+	return apphotkey.NewMockManager()
+}
+
+// ProvideLogOutputPaths provides the default log output paths
+func ProvideLogOutputPaths() common.LogOutputPaths {
+	return common.LogOutputPaths{"stdout"}
+}
+
+// ProvideErrorOutputPaths provides the default error output paths
+func ProvideErrorOutputPaths() common.ErrorOutputPaths {
+	return common.ErrorOutputPaths{"stderr"}
+}
+
+// ProvideModifierKeys provides the default hotkey modifiers
+func ProvideModifierKeys() common.ModifierKeys {
+	return common.ModifierKeys{"Ctrl", "Shift"}
+}
+
+// ProvideKeyCode provides the default hotkey key code
+func ProvideKeyCode() common.KeyCode {
+	return common.KeyCode("N")
 }

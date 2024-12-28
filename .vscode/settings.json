@@ -17,5 +17,8 @@
         "editor.codeActionsOnSave": {
             "source.organizeImports": "explicit"
         }
+    },
+    "editor.codeActionsOnSave": {
+        "source.organizeImports": "never"
     }
 } 

@@ -12,16 +12,9 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
 	"github.com/google/uuid"
+	"github.com/jonesrussell/godo/internal/common"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
-)
-
-const (
-	// Server timeouts
-	readHeaderTimeout = 10 * time.Second
-	readTimeout       = 30 * time.Second
-	writeTimeout      = 30 * time.Second
-	idleTimeout       = 120 * time.Second
 )
 
 // Server represents the HTTP server
@@ -30,14 +23,16 @@ type Server struct {
 	server *http.Server
 	store  storage.Store
 	logger logger.Logger
+	config *common.HTTPConfig
 }
 
 // NewServer creates a new HTTP server instance
-func NewServer(store storage.Store, l logger.Logger) *Server {
+func NewServer(store storage.Store, l logger.Logger, config *common.HTTPConfig) *Server {
 	s := &Server{
 		router: chi.NewRouter(),
 		store:  store,
 		logger: l,
+		config: config,
 	}
 
 	// Set up middleware
@@ -48,6 +43,13 @@ func NewServer(store storage.Store, l logger.Logger) *Server {
 	s.router.Use(render.SetContentType(render.ContentTypeJSON))
 
 	// Set up routes
+	s.setupRoutes()
+
+	return s
+}
+
+// setupRoutes configures all the server routes
+func (s *Server) setupRoutes() {
 	s.router.Get("/health", s.handleHealth)
 	s.router.Route("/api/v1", func(r chi.Router) {
 		r.Get("/tasks", s.handleListTasks)
@@ -55,8 +57,6 @@ func NewServer(store storage.Store, l logger.Logger) *Server {
 		r.Put("/tasks/{id}", s.handleUpdateTask)
 		r.Delete("/tasks/{id}", s.handleDeleteTask)
 	})
-
-	return s
 }
 
 // Start starts the HTTP server
@@ -65,10 +65,10 @@ func (s *Server) Start(port int) error {
 	s.server = &http.Server{
 		Addr:              addr,
 		Handler:           s.router,
-		ReadHeaderTimeout: readHeaderTimeout,
-		ReadTimeout:       readTimeout,
-		WriteTimeout:      writeTimeout,
-		IdleTimeout:       idleTimeout,
+		ReadHeaderTimeout: s.config.GetReadHeaderTimeout(),
+		ReadTimeout:       s.config.GetReadTimeout(),
+		WriteTimeout:      s.config.GetWriteTimeout(),
+		IdleTimeout:       s.config.GetIdleTimeout(),
 	}
 
 	s.logger.Info("Starting HTTP server", "port", port)

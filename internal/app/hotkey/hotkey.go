@@ -1,6 +1,8 @@
 // Package hotkey provides global hotkey functionality for the application
 package hotkey
 
+import "github.com/jonesrussell/godo/internal/common"
+
 // Manager defines the interface for global hotkey functionality
 type Manager interface {
 	Register() error
@@ -14,6 +16,6 @@ type QuickNoteService interface {
 }
 
 // New creates a new platform-specific hotkey manager
-func New(quickNote QuickNoteService) Manager {
-	return newPlatformManager(quickNote)
+func New(quickNote QuickNoteService, binding *common.HotkeyBinding) Manager {
+	return newPlatformManager(quickNote, binding)
 }

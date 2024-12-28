@@ -1,4 +1,4 @@
-//go:build !docker
+//go:build !docker && wireinject && windows
 
 package container
 
@@ -6,7 +6,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/jonesrussell/godo/internal/common"
 	"github.com/jonesrussell/godo/internal/gui"
 	"github.com/stretchr/testify/assert"
 )
@@ -28,7 +27,12 @@ func TestMain(m *testing.M) {
 }
 
 func TestProvideLogger(t *testing.T) {
-	logger, cleanup, err := ProvideLogger()
+	opts := &LoggerOptions{
+		Level:       ProvideLogLevel(),
+		Output:      ProvideLogOutputPaths(),
+		ErrorOutput: ProvideErrorOutputPaths(),
+	}
+	logger, cleanup, err := ProvideLogger(opts)
 	assert.NoError(t, err)
 	assert.NotNil(t, logger)
 	assert.NotNil(t, cleanup)
@@ -41,11 +45,28 @@ func TestProvideFyneApp(t *testing.T) {
 }
 
 func TestProvideHotkeyManager(t *testing.T) {
-	binding := &common.HotkeyBinding{
-		Key:       "N",
-		Modifiers: []string{"Ctrl"},
+	opts := &HotkeyOptions{
+		Key:       ProvideKeyCode(),
+		Modifiers: ProvideModifierKeys(),
 	}
-	manager, err := ProvideHotkeyManager(binding)
+	manager, err := ProvideHotkeyManager(opts)
 	assert.NoError(t, err)
 	assert.NotNil(t, manager)
+}
+
+func TestProvideHTTPConfig(t *testing.T) {
+	opts := &HTTPOptions{
+		Port:              ProvideHTTPPort(),
+		ReadTimeout:       ProvideReadTimeout(),
+		WriteTimeout:      ProvideWriteTimeout(),
+		ReadHeaderTimeout: ProvideHeaderTimeout(),
+		IdleTimeout:       ProvideIdleTimeout(),
+	}
+	config := ProvideHTTPConfig(opts)
+	assert.NotNil(t, config)
+	assert.Equal(t, 8080, config.Port)
+	assert.Equal(t, 30, config.ReadTimeout)
+	assert.Equal(t, 30, config.WriteTimeout)
+	assert.Equal(t, 10, config.ReadHeaderTimeout)
+	assert.Equal(t, 120, config.IdleTimeout)
 }

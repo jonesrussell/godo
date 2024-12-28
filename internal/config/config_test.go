@@ -79,7 +79,7 @@ func TestConfig(t *testing.T) {
 		assert.Error(t, err, "should fail validation with empty app name and invalid log level")
 
 		// Optional: Check specific validation errors
-		if configErr, ok := err.(*config.ConfigError); ok {
+		if configErr, ok := err.(*config.Error); ok {
 			assert.Contains(t, configErr.Error(), "app name is required")
 			assert.Contains(t, configErr.Error(), "invalid log level")
 		}
@@ -146,7 +146,7 @@ func TestNewDefaultConfig(t *testing.T) {
 
 func TestConfigError(t *testing.T) {
 	t.Run("Error string format", func(t *testing.T) {
-		err := &config.ConfigError{
+		err := &config.Error{
 			Op:  "test",
 			Err: fmt.Errorf("test error"),
 		}
@@ -155,7 +155,7 @@ func TestConfigError(t *testing.T) {
 
 	t.Run("Error unwrap", func(t *testing.T) {
 		innerErr := fmt.Errorf("inner error")
-		err := &config.ConfigError{
+		err := &config.Error{
 			Op:  "test",
 			Err: innerErr,
 		}
@@ -369,4 +369,158 @@ app:
 		assert.Equal(t, config.DefaultAppName, cfg.App.Name)
 		assert.Equal(t, config.DefaultAppVersion, cfg.App.Version)
 	})
+}
+
+func TestValidateConfig(t *testing.T) {
+	tests := []struct {
+		name    string
+		cfg     *config.Config
+		wantErr bool
+	}{
+		{
+			name: "valid config",
+			cfg: &config.Config{
+				App: config.AppConfig{
+					Name: "test",
+				},
+				Logger: common.LogConfig{
+					Level: "info",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "missing app name",
+			cfg: &config.Config{
+				App: config.AppConfig{},
+				Logger: common.LogConfig{
+					Level: "info",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid log level",
+			cfg: &config.Config{
+				App: config.AppConfig{
+					Name: "test",
+				},
+				Logger: common.LogConfig{
+					Level: "invalid",
+				},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := config.ValidateConfig(tt.cfg)
+			if tt.wantErr {
+				assert.Error(t, err)
+				var configErr *config.Error
+				assert.ErrorAs(t, err, &configErr)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestResolvePaths(t *testing.T) {
+	tests := []struct {
+		name      string
+		cfg       *config.Config
+		testMode  bool
+		wantError bool
+	}{
+		{
+			name: "test mode skips resolution",
+			cfg: &config.Config{
+				Database: config.DatabaseConfig{
+					Path: "test.db",
+				},
+			},
+			testMode:  true,
+			wantError: false,
+		},
+		{
+			name: "relative path gets resolved",
+			cfg: &config.Config{
+				Database: config.DatabaseConfig{
+					Path: "test.db",
+				},
+			},
+			testMode:  false,
+			wantError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.testMode {
+				t.Setenv("GODO_TEST_MODE", "true")
+			}
+
+			provider := config.NewProvider([]string{"."}, "test", "yaml")
+			err := provider.ResolvePaths(tt.cfg)
+
+			if tt.wantError {
+				assert.Error(t, err)
+				var configErr *config.Error
+				assert.ErrorAs(t, err, &configErr)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestLoad(t *testing.T) {
+	tests := []struct {
+		name      string
+		setup     func() (*config.Provider, func())
+		wantError bool
+	}{
+		{
+			name: "valid config",
+			setup: func() (*config.Provider, func()) {
+				return config.NewProvider([]string{"testdata"}, "config", "yaml"), func() {}
+			},
+			wantError: false,
+		},
+		{
+			name: "invalid config",
+			setup: func() (*config.Provider, func()) {
+				dir := t.TempDir()
+				invalidConfig := []byte(`
+app:
+  name: "" # Invalid: empty name
+logger:
+  level: "invalid" # Invalid: wrong log level
+`)
+				err := os.WriteFile(filepath.Join(dir, "invalid.yaml"), invalidConfig, 0o600)
+				require.NoError(t, err)
+				return config.NewProvider([]string{dir}, "invalid", "yaml"), func() {}
+			},
+			wantError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			provider, cleanup := tt.setup()
+			defer cleanup()
+
+			cfg, err := provider.Load()
+			if tt.wantError {
+				assert.Error(t, err)
+				var configErr *config.Error
+				assert.ErrorAs(t, err, &configErr)
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, cfg)
+			}
+		})
+	}
 }

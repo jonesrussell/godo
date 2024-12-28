@@ -10,7 +10,7 @@ bin/
 vendor/
 coverage
 coverage.html
-internal/container/wire_*.go
+internal/container/wire_gen.go
 
 # Build output
 dist/

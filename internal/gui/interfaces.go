@@ -12,6 +12,9 @@ type QuickNote interface {
 // MainWindow defines the interface for main window functionality
 type MainWindow interface {
 	Show()
-	Setup() error
+	Hide()
+	SetContent(content fyne.CanvasObject)
+	Resize(size fyne.Size)
+	CenterOnScreen()
 	GetWindow() fyne.Window
 }

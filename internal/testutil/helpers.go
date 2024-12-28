@@ -1,4 +1,4 @@
-// Package testutil provides testing utilities
+// Package testutil provides testing utilities and mock implementations
 package testutil
 
 import (
@@ -31,7 +31,7 @@ func NewMockStore() *MockStore {
 	}
 }
 
-// Add implements storage.Store
+// Add creates a new task in the mock store
 func (s *MockStore) Add(task storage.Task) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -39,14 +39,14 @@ func (s *MockStore) Add(task storage.Task) error {
 	return nil
 }
 
-// List implements storage.Store
+// List returns all tasks in the mock store
 func (s *MockStore) List() ([]storage.Task, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.tasks, nil
 }
 
-// Update implements storage.Store
+// Update modifies an existing task
 func (s *MockStore) Update(task storage.Task) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -59,7 +59,7 @@ func (s *MockStore) Update(task storage.Task) error {
 	return storage.ErrTaskNotFound
 }
 
-// Delete implements storage.Store
+// Delete removes a task by ID
 func (s *MockStore) Delete(id string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -70,4 +70,9 @@ func (s *MockStore) Delete(id string) error {
 		}
 	}
 	return storage.ErrTaskNotFound
+}
+
+// Close is a no-op for the mock store
+func (s *MockStore) Close() error {
+	return nil
 }

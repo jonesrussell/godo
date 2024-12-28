@@ -1,24 +1,23 @@
-package memory
+package storage
 
 import (
 	"testing"
 	"time"
 
-	"github.com/jonesrussell/godo/internal/storage"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestMemoryStore(t *testing.T) {
-	store := New()
+	store := NewMemoryStore()
 	now := time.Now()
 
 	t.Run("Add and List", func(t *testing.T) {
-		task := storage.Task{
-			ID:          "1",
-			Title:       "Test Task",
-			Description: "Test Description",
-			CreatedAt:   now,
-			UpdatedAt:   now,
+		task := Task{
+			ID:        "1",
+			Content:   "Test Task",
+			Done:      false,
+			CreatedAt: now,
+			UpdatedAt: now,
 		}
 
 		err := store.Add(task)
@@ -31,13 +30,12 @@ func TestMemoryStore(t *testing.T) {
 	})
 
 	t.Run("Update", func(t *testing.T) {
-		task := storage.Task{
-			ID:          "1",
-			Title:       "Updated Task",
-			Description: "Updated Description",
-			CreatedAt:   now,
-			UpdatedAt:   now,
-			CompletedAt: now,
+		task := Task{
+			ID:        "1",
+			Content:   "Updated Task",
+			Done:      true,
+			CreatedAt: now,
+			UpdatedAt: now,
 		}
 
 		err := store.Update(task)
@@ -45,9 +43,8 @@ func TestMemoryStore(t *testing.T) {
 
 		tasks, err := store.List()
 		assert.NoError(t, err)
-		assert.Equal(t, "Updated Task", tasks[0].Title)
-		assert.Equal(t, "Updated Description", tasks[0].Description)
-		assert.Equal(t, now, tasks[0].CompletedAt)
+		assert.Equal(t, "Updated Task", tasks[0].Content)
+		assert.True(t, tasks[0].Done)
 	})
 
 	t.Run("Delete", func(t *testing.T) {
@@ -59,6 +56,6 @@ func TestMemoryStore(t *testing.T) {
 		assert.Empty(t, tasks)
 
 		err = store.Delete("1")
-		assert.ErrorIs(t, err, storage.ErrTaskNotFound)
+		assert.ErrorIs(t, err, ErrTaskNotFound)
 	})
 }

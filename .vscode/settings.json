@@ -1,5 +1,26 @@
 {
+    "go.lintTool": "golangci-lint",
+    "go.lintFlags": [
+        "--fast"
+    ],
+    "go.lintOnSave": "package",
+    "go.useLanguageServer": true,
     "gopls": {
-        "buildFlags": ["-tags=wireinject,!wireinject"]
+        "formatting.gofumpt": true,
+        "ui.diagnostic.analyses": {
+            "unusedparams": true,
+            "shadow": true
+        },
+        "buildFlags": ["-tags=wireinject,windows"]
+    },
+    "[go]": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "golang.go",
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "never"
+        }
+    },
+    "editor.codeActionsOnSave": {
+        "source.organizeImports": "never"
     }
 } 

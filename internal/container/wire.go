@@ -1,24 +1,147 @@
-//go:build wireinject
+//go:build wireinject && windows
 
 package container
 
 import (
 	"fmt"
-	"os"
 
 	"fyne.io/fyne/v2"
 	fyneapp "fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/theme"
 	"github.com/google/wire"
 	"github.com/jonesrussell/godo/internal/app"
-	"github.com/jonesrussell/godo/internal/app/hotkey"
+	apphotkey "github.com/jonesrussell/godo/internal/app/hotkey"
 	"github.com/jonesrussell/godo/internal/common"
 	"github.com/jonesrussell/godo/internal/gui"
 	"github.com/jonesrussell/godo/internal/gui/mainwindow"
 	"github.com/jonesrussell/godo/internal/gui/quicknote"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
+	"golang.design/x/hotkey"
 )
+
+// Options structs for complex providers
+type LoggerOptions struct {
+	Level       common.LogLevel
+	Output      common.LogOutputPaths
+	ErrorOutput common.ErrorOutputPaths
+}
+
+type HTTPOptions struct {
+	Port              common.HTTPPort
+	ReadTimeout       common.ReadTimeoutSeconds
+	WriteTimeout      common.WriteTimeoutSeconds
+	ReadHeaderTimeout common.HeaderTimeoutSeconds
+	IdleTimeout       common.IdleTimeoutSeconds
+}
+
+type HotkeyOptions struct {
+	Modifiers common.ModifierKeys
+	Key       common.KeyCode
+}
+
+// Provider Sets
+var (
+	// BaseSet provides basic application metadata
+	BaseSet = wire.NewSet(
+		ProvideAppName,
+		ProvideAppVersion,
+		ProvideAppID,
+	)
+
+	// LoggingSet provides logging dependencies
+	LoggingSet = wire.NewSet(
+		ProvideLogLevel,
+		ProvideLogOutputPaths,
+		ProvideErrorOutputPaths,
+		wire.Struct(new(LoggerOptions), "*"),
+		ProvideLogger,
+		wire.Bind(new(logger.Logger), new(*logger.ZapLogger)),
+	)
+
+	// StorageSet provides storage dependencies
+	StorageSet = wire.NewSet(
+		ProvideDatabasePath,
+		ProvideSQLiteStore,
+		wire.Bind(new(storage.Store), new(*storage.SQLiteStore)),
+	)
+
+	// HTTPSet provides HTTP server dependencies
+	HTTPSet = wire.NewSet(
+		ProvideHTTPPort,
+		ProvideReadTimeout,
+		ProvideWriteTimeout,
+		ProvideHeaderTimeout,
+		ProvideIdleTimeout,
+		wire.Struct(new(HTTPOptions), "*"),
+		ProvideHTTPConfig,
+	)
+
+	// HotkeySet provides hotkey dependencies
+	HotkeySet = wire.NewSet(
+		ProvideModifierKeys,
+		ProvideKeyCode,
+		wire.Struct(new(HotkeyOptions), "*"),
+		ProvideHotkeyManager,
+		wire.Bind(new(apphotkey.Manager), new(*apphotkey.DefaultManager)),
+	)
+
+	// GUISet provides GUI dependencies
+	GUISet = wire.NewSet(
+		ProvideFyneApp,
+		ProvideMainWindow,
+		ProvideQuickNote,
+		wire.Bind(new(gui.MainWindow), new(*mainwindow.Window)),
+		wire.Bind(new(gui.QuickNote), new(*quicknote.Window)),
+	)
+
+	// AppSet provides application dependencies
+	AppSet = wire.NewSet(
+		app.New,
+		wire.Bind(new(app.Application), new(*app.App)),
+		BaseSet,
+		HTTPSet,
+	)
+
+	// TestSet provides mock dependencies for testing
+	TestSet = wire.NewSet(
+		ProvideMockStore,
+		ProvideMockMainWindow,
+		ProvideMockQuickNote,
+		ProvideMockHotkey,
+		ProvideHTTPPort,
+		ProvideReadTimeout,
+		ProvideWriteTimeout,
+		ProvideHeaderTimeout,
+		ProvideIdleTimeout,
+		wire.Struct(new(HTTPOptions), "*"),
+		ProvideHTTPConfig,
+		wire.Bind(new(gui.MainWindow), new(*gui.MockMainWindow)),
+		wire.Bind(new(gui.QuickNote), new(*gui.MockQuickNote)),
+		wire.Bind(new(apphotkey.Manager), new(*apphotkey.MockManager)),
+	)
+)
+
+// Provider functions for common types
+func ProvideAppName() common.AppName {
+	return "Godo"
+}
+
+func ProvideAppVersion() common.AppVersion {
+	return "1.0.0"
+}
+
+func ProvideAppID() common.AppID {
+	return "com.jonesrussell.godo"
+}
+
+func ProvideDatabasePath() common.DatabasePath {
+	return "godo.db"
+}
+
+func ProvideLogLevel() common.LogLevel {
+	return "info"
+}
 
 // ProvideHotkeyBinding provides the default hotkey binding configuration
 func ProvideHotkeyBinding() *common.HotkeyBinding {
@@ -28,15 +151,15 @@ func ProvideHotkeyBinding() *common.HotkeyBinding {
 	}
 }
 
-// ProvideLogger provides a zap logger instance
-func ProvideLogger() (logger.Logger, func(), error) {
+// ProvideLogger provides a zap logger instance using options
+func ProvideLogger(opts *LoggerOptions) (*logger.ZapLogger, func(), error) {
 	config := &common.LogConfig{
-		Level:       "info",
-		Output:      []string{"stdout"},
-		ErrorOutput: []string{"stderr"},
+		Level:       opts.Level.String(),
+		Output:      opts.Output.Slice(),
+		ErrorOutput: opts.ErrorOutput.Slice(),
 	}
 
-	log, err := logger.New(config)
+	log, err := logger.NewZapLogger(config)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -48,35 +171,45 @@ func ProvideLogger() (logger.Logger, func(), error) {
 	return log, cleanup, nil
 }
 
+// ProvideSQLiteStore provides a SQLite store instance
+func ProvideSQLiteStore(logger logger.Logger) (*storage.SQLiteStore, error) {
+	return storage.NewSQLiteStore(string(ProvideDatabasePath()))
+}
+
+// ProvideHotkeyManager provides a hotkey manager instance using options
+func ProvideHotkeyManager(opts *HotkeyOptions) (*apphotkey.DefaultManager, error) {
+	// Convert string modifiers to hotkey.Modifier
+	modifiers := make([]hotkey.Modifier, 0, len(opts.Modifiers.Slice()))
+	for _, mod := range opts.Modifiers.Slice() {
+		switch mod {
+		case "Ctrl":
+			modifiers = append(modifiers, hotkey.ModCtrl)
+		case "Alt":
+			modifiers = append(modifiers, hotkey.ModAlt)
+		case "Shift":
+			modifiers = append(modifiers, hotkey.ModShift)
+		}
+	}
+
+	// Convert key string to hotkey.Key
+	var key hotkey.Key
+	switch opts.Key.String() {
+	case "N":
+		key = hotkey.KeyN
+	// Add other key mappings as needed
+	default:
+		return nil, fmt.Errorf("unsupported key: %s", opts.Key)
+	}
+
+	return apphotkey.NewManager(modifiers, key)
+}
+
 // ProvideFyneApp provides a Fyne application instance
 func ProvideFyneApp() fyne.App {
 	fmt.Println("Creating Fyne application...")
-
-	// Set any required environment variables
-	os.Setenv("FYNE_SCALE", "1.0") // Force 1.0 scale for now
-
-	// Create the app
-	app := fyneapp.NewWithID("com.jonesrussell.godo")
-	if app == nil {
-		fmt.Println("ERROR: Failed to create Fyne application")
-		return nil
-	}
-
-	// Set theme and other settings
+	app := fyneapp.New()
 	app.Settings().SetTheme(theme.DefaultTheme())
-
-	fmt.Println("Fyne application created successfully")
 	return app
-}
-
-// ProvideStorage provides a storage instance
-func ProvideStorage() storage.Store {
-	return storage.NewMemoryStore()
-}
-
-// ProvideQuickNote provides a quick note window instance
-func ProvideQuickNote(store storage.Store, logger logger.Logger) quicknote.Interface {
-	return quicknote.New(store, logger)
 }
 
 // ProvideMainWindow provides the main window instance
@@ -84,26 +217,102 @@ func ProvideMainWindow(store storage.Store, logger logger.Logger) *mainwindow.Wi
 	return mainwindow.New(store, logger)
 }
 
-// ProvideHotkeyManager provides the platform-specific hotkey manager
-func ProvideHotkeyManager(quickNote quicknote.Interface, binding *common.HotkeyBinding) hotkey.Manager {
-	return hotkey.New(quickNote, binding)
+// ProvideQuickNote provides the quick note window instance
+func ProvideQuickNote(store storage.Store, logger logger.Logger) *quicknote.Window {
+	return quicknote.New(store, logger)
 }
 
-var Set = wire.NewSet(
-	ProvideLogger,
-	ProvideFyneApp,
-	ProvideStorage,
-	ProvideQuickNote,
-	ProvideMainWindow,
-	ProvideHotkeyManager,
-	ProvideHotkeyBinding,
-	wire.Bind(new(hotkey.QuickNoteService), new(quicknote.Interface)),
-	wire.Bind(new(gui.MainWindow), new(*mainwindow.Window)),
-	app.New,
-)
+// ProvideHTTPConfig provides HTTP configuration using options
+func ProvideHTTPConfig(opts *HTTPOptions) *common.HTTPConfig {
+	return &common.HTTPConfig{
+		Port:              opts.Port.Int(),
+		ReadTimeout:       int(opts.ReadTimeout),
+		WriteTimeout:      int(opts.WriteTimeout),
+		ReadHeaderTimeout: int(opts.ReadHeaderTimeout),
+		IdleTimeout:       int(opts.IdleTimeout),
+	}
+}
 
-// InitializeApp creates a new App instance with all dependencies
-func InitializeApp() (*app.App, func(), error) {
-	wire.Build(Set)
+// InitializeApp initializes the application with all dependencies
+func InitializeApp() (app.Application, func(), error) {
+	wire.Build(
+		LoggingSet,
+		StorageSet,
+		HotkeySet,
+		GUISet,
+		AppSet,
+	)
 	return nil, nil, nil
+}
+
+// InitializeTestApp initializes the application with mock dependencies for testing
+func InitializeTestApp() (*app.TestApp, func(), error) {
+	wire.Build(
+		LoggingSet,
+		TestSet,
+		BaseSet,
+		wire.Struct(new(app.TestApp), "*"),
+	)
+	return nil, nil, nil
+}
+
+// Mock providers for testing
+func ProvideMockStore() storage.Store {
+	return storage.NewMockStore()
+}
+
+// ProvideMockMainWindow provides a mock main window for testing
+func ProvideMockMainWindow() *gui.MockMainWindow {
+	return &gui.MockMainWindow{}
+}
+
+// ProvideMockQuickNote provides a mock quick note window for testing
+func ProvideMockQuickNote() *gui.MockQuickNote {
+	return &gui.MockQuickNote{}
+}
+
+// ProvideMockHotkey provides a mock hotkey manager for testing
+func ProvideMockHotkey() *apphotkey.MockManager {
+	return apphotkey.NewMockManager()
+}
+
+// ProvideLogOutputPaths provides the default log output paths
+func ProvideLogOutputPaths() common.LogOutputPaths {
+	return common.LogOutputPaths{"stdout"}
+}
+
+// ProvideErrorOutputPaths provides the default error output paths
+func ProvideErrorOutputPaths() common.ErrorOutputPaths {
+	return common.ErrorOutputPaths{"stderr"}
+}
+
+// ProvideModifierKeys provides the default hotkey modifiers
+func ProvideModifierKeys() common.ModifierKeys {
+	return common.ModifierKeys{"Ctrl", "Shift"}
+}
+
+// ProvideKeyCode provides the default hotkey key code
+func ProvideKeyCode() common.KeyCode {
+	return common.KeyCode("N")
+}
+
+// Provider functions for HTTP configuration
+func ProvideHTTPPort() common.HTTPPort {
+	return common.HTTPPort(8080)
+}
+
+func ProvideReadTimeout() common.ReadTimeoutSeconds {
+	return common.ReadTimeoutSeconds(30)
+}
+
+func ProvideWriteTimeout() common.WriteTimeoutSeconds {
+	return common.WriteTimeoutSeconds(30)
+}
+
+func ProvideHeaderTimeout() common.HeaderTimeoutSeconds {
+	return common.HeaderTimeoutSeconds(10)
+}
+
+func ProvideIdleTimeout() common.IdleTimeoutSeconds {
+	return common.IdleTimeoutSeconds(120)
 }

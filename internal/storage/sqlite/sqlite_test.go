@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
@@ -24,10 +25,15 @@ func TestSQLiteStore(t *testing.T) {
 		os.Remove(dbPath)
 	}()
 
+	now := time.Now()
+
 	t.Run("Add and List", func(t *testing.T) {
 		task := storage.Task{
-			ID:    "1",
-			Title: "Test Task",
+			ID:        "1",
+			Content:   "Test Task",
+			Done:      false,
+			CreatedAt: now,
+			UpdatedAt: now,
 		}
 
 		err := store.Add(task)
@@ -36,13 +42,23 @@ func TestSQLiteStore(t *testing.T) {
 		tasks, err := store.List()
 		assert.NoError(t, err)
 		assert.Len(t, tasks, 1)
-		assert.Equal(t, task, tasks[0])
+
+		// Compare fields individually
+		assert.Equal(t, task.ID, tasks[0].ID)
+		assert.Equal(t, task.Content, tasks[0].Content)
+		assert.Equal(t, task.Done, tasks[0].Done)
+		// Compare times with some tolerance for database rounding
+		assert.WithinDuration(t, task.CreatedAt, tasks[0].CreatedAt, time.Second)
+		assert.WithinDuration(t, task.UpdatedAt, tasks[0].UpdatedAt, time.Second)
 	})
 
 	t.Run("Update", func(t *testing.T) {
 		task := storage.Task{
-			ID:    "1",
-			Title: "Updated Task",
+			ID:        "1",
+			Content:   "Updated Task",
+			Done:      true,
+			CreatedAt: now,
+			UpdatedAt: now,
 		}
 
 		err := store.Update(task)
@@ -50,7 +66,8 @@ func TestSQLiteStore(t *testing.T) {
 
 		tasks, err := store.List()
 		assert.NoError(t, err)
-		assert.Equal(t, "Updated Task", tasks[0].Title)
+		assert.Equal(t, "Updated Task", tasks[0].Content)
+		assert.True(t, tasks[0].Done)
 	})
 
 	t.Run("Delete", func(t *testing.T) {

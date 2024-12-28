@@ -97,7 +97,7 @@ func (l *zapLogger) WithFields(fields map[string]interface{}) Logger {
 	if len(fields) == 0 {
 		return l
 	}
-	args := make([]interface{}, 0, len(fields)*2)
+	args := make([]interface{}, 0, len(fields)*fieldMultiplier)
 	for k, v := range fields {
 		args = append(args, k, v)
 	}

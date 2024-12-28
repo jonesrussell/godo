@@ -113,3 +113,16 @@ func (m *platformManager) Unregister() error {
 	}
 	return nil
 }
+
+func (m *platformManager) Start() error {
+	fmt.Println("[DEBUG] Starting hotkey manager...")
+	if m.hk == nil {
+		return fmt.Errorf("hotkey not registered")
+	}
+	return nil // Registration already starts the listener
+}
+
+func (m *platformManager) Stop() error {
+	fmt.Println("[DEBUG] Stopping hotkey manager...")
+	return m.Unregister()
+}

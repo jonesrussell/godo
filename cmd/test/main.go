@@ -1,3 +1,4 @@
+// Package main provides test utilities for the application
 package main
 
 import (

@@ -167,3 +167,91 @@ func NewError(code, message string, err error) *Error {
 		Err:     err,
 	}
 }
+
+// Distinct types for common dependencies
+type (
+	// DatabasePath is a distinct type for database file path
+	DatabasePath string
+
+	// AppName is a distinct type for application name
+	AppName string
+
+	// AppVersion is a distinct type for application version
+	AppVersion string
+
+	// AppID is a distinct type for application ID
+	AppID string
+
+	// LogLevel is a distinct type for log level
+	LogLevel string
+
+	// HTTPPort is a distinct type for HTTP port
+	HTTPPort int
+
+	// LogOutputPaths is a distinct type for logger output paths
+	LogOutputPaths []string
+
+	// ErrorOutputPaths is a distinct type for logger error output paths
+	ErrorOutputPaths []string
+
+	// ReadTimeoutSeconds is a distinct type for read timeout values
+	ReadTimeoutSeconds int
+
+	// WriteTimeoutSeconds is a distinct type for write timeout values
+	WriteTimeoutSeconds int
+
+	// HeaderTimeoutSeconds is a distinct type for header timeout values
+	HeaderTimeoutSeconds int
+
+	// IdleTimeoutSeconds is a distinct type for idle timeout values
+	IdleTimeoutSeconds int
+
+	// ModifierKeys is a distinct type for hotkey modifiers
+	ModifierKeys []string
+
+	// KeyCode is a distinct type for keyboard key codes
+	KeyCode string
+)
+
+// String/conversion methods for the new types
+// String returns the string representation of the DatabasePath
+func (d DatabasePath) String() string { return string(d) }
+
+// String returns the string representation of the AppName
+func (a AppName) String() string { return string(a) }
+
+// String returns the string representation of the AppVersion
+func (v AppVersion) String() string { return string(v) }
+
+// String returns the string representation of the AppID
+func (i AppID) String() string { return string(i) }
+
+// String returns the string representation of the LogLevel
+func (l LogLevel) String() string { return string(l) }
+
+// Int returns the integer value of the HTTPPort
+func (p HTTPPort) Int() int { return int(p) }
+
+// Slice returns the string slice representation of LogOutputPaths
+func (o LogOutputPaths) Slice() []string { return []string(o) }
+
+// Slice returns the string slice representation of ErrorOutputPaths
+func (e ErrorOutputPaths) Slice() []string { return []string(e) }
+
+// Duration returns the time.Duration representation of ReadTimeoutSeconds
+func (t ReadTimeoutSeconds) Duration() time.Duration { return time.Duration(t) * time.Second }
+
+// Duration returns the time.Duration representation of WriteTimeoutSeconds
+func (t WriteTimeoutSeconds) Duration() time.Duration { return time.Duration(t) * time.Second }
+
+// Duration returns the time.Duration representation of HeaderTimeoutSeconds
+func (t HeaderTimeoutSeconds) Duration() time.Duration { return time.Duration(t) * time.Second }
+
+// Duration returns the time.Duration representation of IdleTimeoutSeconds
+func (t IdleTimeoutSeconds) Duration() time.Duration { return time.Duration(t) * time.Second }
+
+// Slice returns the string slice representation of ModifierKeys
+func (m ModifierKeys) Slice() []string { return []string(m) }
+
+// String returns the string representation of the KeyCode
+func (k KeyCode) String() string { return string(k) }

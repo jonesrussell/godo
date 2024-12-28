@@ -1,3 +1,4 @@
+// Package sqlite provides SQLite-based implementation of the storage interface
 package sqlite
 
 import (
@@ -16,11 +17,10 @@ func newMigrationSet() *migrationSet {
 			// Initial schema
 			`CREATE TABLE IF NOT EXISTS tasks (
 				id TEXT PRIMARY KEY,
-				title TEXT NOT NULL,
-				description TEXT,
-				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-				updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-				completed_at TIMESTAMP
+				content TEXT NOT NULL,
+				done BOOLEAN NOT NULL DEFAULT 0,
+				created_at TIMESTAMP NOT NULL,
+				updated_at TIMESTAMP NOT NULL
 			);`,
 			// Add new columns if they don't exist
 			`PRAGMA foreign_keys=off;
@@ -28,15 +28,14 @@ func newMigrationSet() *migrationSet {
 			
 			CREATE TABLE IF NOT EXISTS _tasks_new (
 				id TEXT PRIMARY KEY,
-				title TEXT NOT NULL,
-				description TEXT,
-				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-				updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-				completed_at TIMESTAMP
+				content TEXT NOT NULL,
+				done BOOLEAN NOT NULL DEFAULT 0,
+				created_at TIMESTAMP NOT NULL,
+				updated_at TIMESTAMP NOT NULL
 			);
 			
-			INSERT INTO _tasks_new (id, title)
-			SELECT id, title FROM tasks;
+			INSERT INTO _tasks_new (id, content, done, created_at, updated_at)
+			SELECT id, content, done, created_at, updated_at FROM tasks;
 			
 			DROP TABLE IF EXISTS tasks;
 			ALTER TABLE _tasks_new RENAME TO tasks;

@@ -16,6 +16,21 @@ code_style:
   - use_event_driven_ui_state_management: true
   - use_build_tags_for_platform_specific_code: true
   - follow_docker_windows_linux_build_tags: true
+
+  # Wire Best Practices
+  - use_distinct_types_for_common_values: "Create new types for common values like strings and ints to avoid provider conflicts"
+  - use_options_structs_for_complex_providers: "Group related provider dependencies in options structs"
+  - keep_provider_sets_small_and_focused: "Prefer small, focused provider sets over large ones"
+  - avoid_breaking_provider_set_changes: "Only make backward-compatible changes to provider sets"
+  - prefer_interface_bindings_in_sets: "Use wire.Bind to bind concrete types to interfaces"
+  - use_mock_provider_sets_for_testing: "Create separate provider sets for testing with mock implementations"
+  - document_provider_dependencies: "Clearly document provider inputs and outputs"
+  - validate_provider_options: "Add validation to options structs"
+  - handle_provider_cleanup: "Return cleanup functions when needed"
+  - use_platform_specific_provider_sets: "Use build tags to separate platform-specific providers"
+  - prefer_dependency_injection_over_globals: "Use Wire for dependency management instead of global variables"
+  - follow_wire_naming_conventions: "Use Provide prefix for provider functions, Set suffix for provider sets"
+
   - follow_restful_api_conventions: true
   - use_proper_http_status_codes: true
   - implement_request_validation: true

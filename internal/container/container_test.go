@@ -1,4 +1,4 @@
-//go:build !docker
+//go:build !docker && wireinject && windows
 
 package container
 
@@ -6,20 +6,18 @@ import (
 	"os"
 	"testing"
 
-	"github.com/jonesrussell/godo/internal/common"
-	"github.com/jonesrussell/godo/internal/gui/quicknote"
+	"github.com/jonesrussell/godo/internal/gui"
 	"github.com/stretchr/testify/assert"
 )
 
-// mockQuickNote is a mock implementation of quicknote.Interface for testing
+// mockQuickNote is a mock implementation of gui.QuickNote for testing
 type mockQuickNote struct{}
 
-// Ensure mockQuickNote implements quicknote.Interface
-var _ quicknote.Interface = (*mockQuickNote)(nil)
+// Ensure mockQuickNote implements gui.QuickNote
+var _ gui.QuickNote = (*mockQuickNote)(nil)
 
-func (m *mockQuickNote) Setup() error { return nil }
-func (m *mockQuickNote) Show()        {}
-func (m *mockQuickNote) Hide()        {}
+func (m *mockQuickNote) Show() {}
+func (m *mockQuickNote) Hide() {}
 
 func TestMain(m *testing.M) {
 	if os.Getenv("CI") == "true" {
@@ -29,7 +27,12 @@ func TestMain(m *testing.M) {
 }
 
 func TestProvideLogger(t *testing.T) {
-	logger, cleanup, err := ProvideLogger()
+	opts := &LoggerOptions{
+		Level:       ProvideLogLevel(),
+		Output:      ProvideLogOutputPaths(),
+		ErrorOutput: ProvideErrorOutputPaths(),
+	}
+	logger, cleanup, err := ProvideLogger(opts)
 	assert.NoError(t, err)
 	assert.NotNil(t, logger)
 	assert.NotNil(t, cleanup)
@@ -41,32 +44,29 @@ func TestProvideFyneApp(t *testing.T) {
 	assert.NotNil(t, app)
 }
 
-func TestProvideStorage(t *testing.T) {
-	store := ProvideStorage()
-	assert.NotNil(t, store)
-}
-
-func TestProvideHotkeyBinding(t *testing.T) {
-	binding := ProvideHotkeyBinding()
-	assert.NotNil(t, binding)
-	assert.Equal(t, []string{"Ctrl", "Shift"}, binding.Modifiers)
-	assert.Equal(t, "N", binding.Key)
-}
-
 func TestProvideHotkeyManager(t *testing.T) {
-	if os.Getenv("CI") == "true" {
-		t.Skip("Skipping hotkey test in CI environment")
+	opts := &HotkeyOptions{
+		Key:       ProvideKeyCode(),
+		Modifiers: ProvideModifierKeys(),
 	}
-
-	// Create a mock quick note service
-	mockNote := &mockQuickNote{}
-
-	// Create hotkey binding
-	binding := &common.HotkeyBinding{
-		Modifiers: []string{"Ctrl", "Shift"},
-		Key:       "N",
-	}
-
-	manager := ProvideHotkeyManager(mockNote, binding)
+	manager, err := ProvideHotkeyManager(opts)
+	assert.NoError(t, err)
 	assert.NotNil(t, manager)
+}
+
+func TestProvideHTTPConfig(t *testing.T) {
+	opts := &HTTPOptions{
+		Port:              ProvideHTTPPort(),
+		ReadTimeout:       ProvideReadTimeout(),
+		WriteTimeout:      ProvideWriteTimeout(),
+		ReadHeaderTimeout: ProvideHeaderTimeout(),
+		IdleTimeout:       ProvideIdleTimeout(),
+	}
+	config := ProvideHTTPConfig(opts)
+	assert.NotNil(t, config)
+	assert.Equal(t, 8080, config.Port)
+	assert.Equal(t, 30, config.ReadTimeout)
+	assert.Equal(t, 30, config.WriteTimeout)
+	assert.Equal(t, 10, config.ReadHeaderTimeout)
+	assert.Equal(t, 120, config.IdleTimeout)
 }

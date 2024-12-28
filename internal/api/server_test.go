@@ -81,11 +81,11 @@ func TestHealthCheck(t *testing.T) {
 func TestTaskOperations(t *testing.T) {
 	now := time.Now()
 	testTask := storage.Task{
-		ID:          "1",
-		Title:       "Test Task",
-		Description: "Test Description",
-		CreatedAt:   now,
-		UpdatedAt:   now,
+		ID:        "1",
+		Content:   "Test Task",
+		Done:      false,
+		CreatedAt: now,
+		UpdatedAt: now,
 	}
 
 	tests := []testCase{
@@ -113,7 +113,7 @@ func TestTaskOperations(t *testing.T) {
 			validateFn: func(t *testing.T, w *httptest.ResponseRecorder) {
 				var task storage.Task
 				require.NoError(t, json.NewDecoder(w.Body).Decode(&task))
-				assert.Equal(t, testTask.Title, task.Title)
+				assert.Equal(t, testTask.Content, task.Content)
 			},
 		},
 		{
@@ -124,16 +124,16 @@ func TestTaskOperations(t *testing.T) {
 				require.NoError(t, store.Add(testTask))
 			},
 			body: storage.Task{
-				ID:          testTask.ID,
-				Title:       "Updated Task",
-				Description: "Updated Description",
-				CompletedAt: now,
+				ID:        testTask.ID,
+				Content:   "Updated Task",
+				Done:      true,
+				UpdatedAt: now,
 			},
 			expectedStatus: http.StatusOK,
 			validateFn: func(t *testing.T, w *httptest.ResponseRecorder) {
 				var task storage.Task
 				require.NoError(t, json.NewDecoder(w.Body).Decode(&task))
-				assert.Equal(t, "Updated Task", task.Title)
+				assert.Equal(t, "Updated Task", task.Content)
 			},
 		},
 		{

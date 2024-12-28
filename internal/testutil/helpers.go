@@ -71,3 +71,8 @@ func (s *MockStore) Delete(id string) error {
 	}
 	return storage.ErrTaskNotFound
 }
+
+// Close is a no-op for the mock store
+func (s *MockStore) Close() error {
+	return nil
+}

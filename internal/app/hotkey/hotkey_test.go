@@ -30,6 +30,16 @@ func (h *TestManager) Unregister() error {
 	return nil
 }
 
+func (h *TestManager) Start() error {
+	h.isActive = true
+	return nil
+}
+
+func (h *TestManager) Stop() error {
+	h.isActive = false
+	return nil
+}
+
 // Trigger simulates a hotkey press
 func (h *TestManager) Trigger() {
 	if h.isActive && h.quickNote != nil {

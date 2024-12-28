@@ -171,7 +171,6 @@ func InitializeApp() (app.Application, func(), error) {
 // InitializeTestApp initializes the application with mock dependencies for testing
 func InitializeTestApp() (*app.TestApp, func(), error) {
 	wire.Build(
-		ConfigSet,
 		LoggingSet,
 		MockSet,
 		wire.Struct(new(app.TestApp), "*"),

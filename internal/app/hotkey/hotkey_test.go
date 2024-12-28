@@ -35,4 +35,4 @@ func (h *TestManager) Trigger() {
 // IsActive returns whether the hotkey is registered
 func (h *TestManager) IsActive() bool {
 	return h.isActive
-} 
+}

@@ -150,3 +150,21 @@ func (w *Window) Setup() error {
 func (w *Window) GetWindow() fyne.Window {
 	return w.win
 }
+
+// Show displays the window
+func (w *Window) Show() {
+	if w.win != nil {
+		w.win.Show()
+	} else {
+		w.logger.Error("Cannot show window: window not initialized")
+	}
+}
+
+// Hide hides the window
+func (w *Window) Hide() {
+	if w.win != nil {
+		w.win.Hide()
+	} else {
+		w.logger.Error("Cannot hide window: window not initialized")
+	}
+}

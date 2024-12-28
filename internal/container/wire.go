@@ -13,6 +13,8 @@ import (
 	"github.com/jonesrussell/godo/internal/app"
 	"github.com/jonesrussell/godo/internal/app/hotkey"
 	"github.com/jonesrussell/godo/internal/common"
+	"github.com/jonesrussell/godo/internal/gui"
+	"github.com/jonesrussell/godo/internal/gui/mainwindow"
 	"github.com/jonesrussell/godo/internal/gui/quicknote"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
@@ -69,6 +71,11 @@ func ProvideQuickNote(store storage.Store, logger logger.Logger) quicknote.Inter
 	return quicknote.New(store, logger)
 }
 
+// ProvideMainWindow provides the main window instance
+func ProvideMainWindow(store storage.Store, logger logger.Logger) *mainwindow.Window {
+	return mainwindow.New(store, logger)
+}
+
 // ProvideHotkeyManager provides the platform-specific hotkey manager
 func ProvideHotkeyManager(quickNote quicknote.Interface) hotkey.Manager {
 	return hotkey.New(quickNote)
@@ -79,8 +86,10 @@ var Set = wire.NewSet(
 	ProvideFyneApp,
 	ProvideStorage,
 	ProvideQuickNote,
+	ProvideMainWindow,
 	ProvideHotkeyManager,
 	wire.Bind(new(hotkey.QuickNoteService), new(quicknote.Interface)),
+	wire.Bind(new(gui.MainWindow), new(*mainwindow.Window)),
 	app.New,
 )
 

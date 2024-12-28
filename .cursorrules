@@ -1,5 +1,62 @@
 # Project: Godo - A Todo Application with Quick-Note Support
 
+## Snippets
+1. Fyne Keyboard Shortcuts:
+```go
+// Add keyboard shortcut (e.g., Ctrl+Enter)
+window.Canvas().AddShortcut(&desktop.CustomShortcut{
+    KeyName:  fyne.KeyReturn,  // Or other key like KeyEscape
+    Modifier: fyne.KeyModifierControl,  // Optional, remove for no modifier
+}, func(shortcut fyne.Shortcut) {
+    // Shortcut handler code here
+})
+```
+
+2. Fyne Window Setup:
+```go
+// Basic window setup
+win := fyne.CurrentApp().NewWindow("Window Title")
+win.Resize(fyne.NewSize(400, 300))
+win.CenterOnScreen()
+
+// Add close interceptor
+win.SetCloseIntercept(func() {
+    // Cleanup code here
+    win.Hide()
+})
+
+// Focus an input field
+if input != nil {
+    win.Canvas().Focus(input)
+}
+```
+
+3. Fyne Layout Containers:
+```go
+// Border layout with margins
+content := container.NewBorder(
+    top,    // top widget
+    bottom, // bottom widget
+    left,   // left widget
+    right,  // right widget
+    center  // center/main widget
+)
+
+// Vertical box layout
+content := container.NewVBox(
+    widget1,
+    widget2,
+    widget3,
+)
+
+// Horizontal box layout
+content := container.NewHBox(
+    widget1,
+    widget2,
+    widget3,
+)
+```
+
 ## Important Notes on GUI library
 - fyne.io/fyne/v2 v2.5.3
   1. Key Events and Shortcuts:
@@ -7,6 +64,8 @@
      - Use desktop.CustomShortcut instead of fyne.ShortcutKey
      - Shortcuts must be registered via Canvas().AddShortcut()
      - KeyName is used instead of Key in CustomShortcut
+     - Use fyne.KeyModifierControl instead of desktop.ControlModifier (deprecated)
+     - Other modifiers should also use fyne.KeyModifier* variants
   2. Focus and Window Management:
      - No RequestFocus() method
      - Use Canvas().Focus() instead

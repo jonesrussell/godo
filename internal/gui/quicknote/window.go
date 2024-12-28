@@ -51,8 +51,8 @@ func (w *Window) Setup() error {
 	w.input = widget.NewMultiLineEntry()
 	w.input.SetPlaceHolder("Enter your quick note here...")
 
-	// Create save button
-	saveBtn := widget.NewButton("Save", func() {
+	// Create save button with shared save logic
+	saveNote := func() {
 		text := w.input.Text
 		if text != "" {
 			// Create and save the task
@@ -72,7 +72,10 @@ func (w *Window) Setup() error {
 			w.input.SetText("")
 			w.Hide()
 		}
-	})
+	}
+
+	// Create save button
+	saveBtn := widget.NewButton("Save", saveNote)
 
 	// Create content container
 	content := container.NewBorder(nil, saveBtn, nil, nil, w.input)
@@ -91,6 +94,15 @@ func (w *Window) Setup() error {
 		w.logger.Debug("ESC key pressed, closing quick note window")
 		w.input.SetText("")
 		w.Hide()
+	})
+
+	// Add Ctrl+Enter shortcut for saving
+	w.win.Canvas().AddShortcut(&desktop.CustomShortcut{
+		KeyName:  fyne.KeyReturn,
+		Modifier: fyne.KeyModifierControl,
+	}, func(shortcut fyne.Shortcut) {
+		w.logger.Debug("Ctrl+Enter pressed, saving quick note")
+		saveNote()
 	})
 
 	w.logger.Debug("Quick note window setup complete")

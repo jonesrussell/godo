@@ -2,14 +2,19 @@
 
 package app
 
-import "golang.design/x/hotkey"
+import (
+	"golang.design/x/hotkey"
+)
 
 type linuxHotkeyManager struct {
-	hk *hotkey.Hotkey
+	hk        *hotkey.Hotkey
+	quickNote QuickNoteService
 }
 
-func NewHotkeyManager() HotkeyManager {
-	return &linuxHotkeyManager{}
+func NewHotkeyManager(quickNote QuickNoteService) HotkeyManager {
+	return &linuxHotkeyManager{
+		quickNote: quickNote,
+	}
 }
 
 func (m *linuxHotkeyManager) Register() error {
@@ -18,6 +23,16 @@ func (m *linuxHotkeyManager) Register() error {
 		return err
 	}
 	m.hk = hk
+
+	// Start listening for hotkey in a goroutine
+	go func() {
+		for range hk.Keydown() {
+			if m.quickNote != nil {
+				m.quickNote.Show()
+			}
+		}
+	}()
+
 	return nil
 }
 

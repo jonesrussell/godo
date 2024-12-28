@@ -1,6 +1,6 @@
 {
     "gopls": {
-        "buildFlags": ["-tags=windows"],
+        "buildFlags": ["-tags=windows,wireinject"],
         "staticcheck": true,
         "completeUnimported": true,
         "matcher": "fuzzy",

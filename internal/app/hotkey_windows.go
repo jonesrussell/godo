@@ -2,22 +2,43 @@
 
 package app
 
-import "golang.design/x/hotkey"
+import (
+	"golang.design/x/hotkey"
+)
 
 type windowsHotkeyManager struct {
-	hk *hotkey.Hotkey
+	hk        *hotkey.Hotkey
+	quickNote QuickNoteService
 }
 
-func NewHotkeyManager() HotkeyManager {
-	return &windowsHotkeyManager{}
+func NewHotkeyManager(quickNote QuickNoteService) HotkeyManager {
+	return &windowsHotkeyManager{
+		quickNote: quickNote,
+	}
 }
 
 func (m *windowsHotkeyManager) Register() error {
-	// Implementation
+	hk := hotkey.New([]hotkey.Modifier{hotkey.ModCtrl, hotkey.ModShift}, hotkey.KeyN)
+	if err := hk.Register(); err != nil {
+		return err
+	}
+	m.hk = hk
+
+	// Start listening for hotkey in a goroutine
+	go func() {
+		for range hk.Keydown() {
+			if m.quickNote != nil {
+				m.quickNote.Show()
+			}
+		}
+	}()
+
 	return nil
 }
 
 func (m *windowsHotkeyManager) Unregister() error {
-	// Implementation
+	if m.hk != nil {
+		return m.hk.Unregister()
+	}
 	return nil
 }

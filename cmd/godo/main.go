@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-	"github.com/jonesrussell/godo/internal/app"
 	"os"
 
 	"github.com/jonesrussell/godo/internal/container"
@@ -10,50 +8,29 @@ import (
 )
 
 func run() error {
-	logger, err := initializeLogger()
-	if err != nil {
-		return err
-	}
+	logger, _ := zap.NewProduction()
 	defer func() {
-		_ = logger.Sync() // Ensure logger resources are flushed and released
+		_ = logger.Sync() // Ignore sync errors
 	}()
 
-	appInstance, cleanupApp, err := initializeAppWithLogger(logger)
-	if err != nil {
-		logger.Error("App initialization failed", zap.Error(err))
-		return err
-	}
-	defer cleanupApp() // Ensure app resources are released on exit
-
-	return handleAppRun(appInstance)
-}
-
-func initializeLogger() (*zap.Logger, error) {
-	logger, err := zap.NewProduction()
-	if err != nil {
-		return nil, err
-	}
-	return logger, nil
-}
-
-func initializeAppWithLogger(logger *zap.Logger) (*app.App, func(), error) {
-	appInstance, cleanup, err := container.InitializeApp()
+	// Create app
+	app, cleanup, err := container.InitializeApp()
 	if err != nil {
 		logger.Error("Failed to initialize app", zap.Error(err))
-		return nil, nil, err
+		cleanup()
+		return err
 	}
-	appInstance.SetupUI()
-	return appInstance, cleanup, nil
-}
+	defer cleanup()
 
-func handleAppRun(app *app.App) error {
+	// Setup UI
+	app.SetupUI()
+
+	// Run app
 	if err := app.Run(); err != nil {
-		app.Logger.Error("Failed to run app", zap.Error(err))
-		if unregisterErr := app.Hotkeys.Unregister(); unregisterErr != nil {
-			app.Logger.Error("Failed to unregister hotkeys after app failure", zap.Error(unregisterErr))
-		}
-		return fmt.Errorf("app failed to run: %w", err)
+		logger.Error("Failed to run app", zap.Error(err))
+		return err
 	}
+
 	return nil
 }
 

@@ -7,20 +7,30 @@ import (
 	fyneapp "fyne.io/fyne/v2/app"
 	"github.com/google/wire"
 	"github.com/jonesrussell/godo/internal/app"
+	"github.com/jonesrussell/godo/internal/common"
+	"github.com/jonesrussell/godo/internal/gui/quicknote"
+	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
-	"go.uber.org/zap"
 )
 
 // ProvideLogger provides a zap logger instance
-func ProvideLogger() (*zap.Logger, func(), error) {
-	logger, err := zap.NewProduction()
+func ProvideLogger() (logger.Logger, func(), error) {
+	config := &common.LogConfig{
+		Level:       "info",
+		Output:      []string{"stdout"},
+		ErrorOutput: []string{"stderr"},
+	}
+
+	log, err := logger.New(config)
 	if err != nil {
 		return nil, nil, err
 	}
+
 	cleanup := func() {
-		_ = logger.Sync()
+		// No cleanup needed for this logger implementation
 	}
-	return logger, cleanup, nil
+
+	return log, cleanup, nil
 }
 
 // ProvideFyneApp provides a Fyne application instance
@@ -33,15 +43,21 @@ func ProvideStorage() storage.Store {
 	return storage.NewMemoryStore()
 }
 
+// ProvideQuickNote provides a quick note window instance
+func ProvideQuickNote(store storage.Store, logger logger.Logger) quicknote.Interface {
+	return quicknote.New(store, logger)
+}
+
 // ProvideHotkeyManager provides the platform-specific hotkey manager
-func ProvideHotkeyManager() app.HotkeyManager {
-	return app.NewHotkeyManager()
+func ProvideHotkeyManager(quickNote quicknote.Interface) app.HotkeyManager {
+	return app.NewHotkeyManager(quickNote)
 }
 
 var Set = wire.NewSet(
 	ProvideLogger,
 	ProvideFyneApp,
 	ProvideStorage,
+	ProvideQuickNote,
 	ProvideHotkeyManager,
 	app.New,
 )

@@ -2,8 +2,8 @@ package quicknote
 
 import (
 	"fyne.io/fyne/v2"
+	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
-	"go.uber.org/zap"
 )
 
 // Interface defines the behavior of a quick note window
@@ -16,16 +16,16 @@ type Interface interface {
 // Window implements the quick note window
 type Window struct {
 	store  storage.Store
-	logger *zap.Logger
+	logger logger.Logger
 	win    fyne.Window
 }
 
 // New creates a new quick note window
-func New(store storage.Store, logger *zap.Logger) Interface {
+func New(store storage.Store, logger logger.Logger) Interface {
 	return newWindow(store, logger)
 }
 
-func newWindow(store storage.Store, logger *zap.Logger) Interface {
+func newWindow(store storage.Store, logger logger.Logger) Interface {
 	return &Window{
 		store:  store,
 		logger: logger,

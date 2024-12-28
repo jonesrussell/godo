@@ -9,6 +9,9 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
+# Enable BuildKit for better caching
+$env:DOCKER_BUILDKIT = "1"
+
 # Configuration
 $SCRIPT_DIR = Split-Path -Parent $MyInvocation.MyCommand.Path
 $ROOT_DIR = Split-Path -Parent $SCRIPT_DIR
@@ -37,31 +40,36 @@ try {
     Handle-Error "Failed to create build directory: $_"
 }
 
-# Build the Docker image
-Write-Host "Building Docker image..." -ForegroundColor Green
+# Build and test in Docker
+Write-Host "Running tests and building..." -ForegroundColor Green
 try {
-    docker build -t godo-builder -f $DOCKERFILE $ROOT_DIR
-    if ($LASTEXITCODE -ne 0) { throw "Docker build failed" }
-} catch {
-    Handle-Error "Failed to build Docker image: $_"
-}
+    # Run linting
+    Write-Host "`nRunning linters..." -ForegroundColor Yellow
+    docker build --target lint -t godo-lint -f $DOCKERFILE $ROOT_DIR
+    docker run --rm godo-lint
+    if ($LASTEXITCODE -ne 0) { throw "Linting failed" }
 
-# Build Linux version
-Write-Host "`nBuilding Linux version..." -ForegroundColor Green
-try {
-    docker run --rm -v "${BUILD_DIR}:/go/src/app/dist" godo-builder go build -tags linux -ldflags "-s -w" -o dist/godo ./cmd/godo
+    # Run tests
+    Write-Host "`nRunning tests..." -ForegroundColor Yellow
+    docker build --target test -t godo-test -f $DOCKERFILE $ROOT_DIR
+    docker run --rm godo-test
+    if ($LASTEXITCODE -ne 0) { throw "Tests failed" }
+
+    # Build Linux version
+    Write-Host "`nBuilding Linux version..." -ForegroundColor Yellow
+    docker build --target builder -t godo-builder -f $DOCKERFILE $ROOT_DIR
+    docker create --name godo-temp godo-builder
+    docker cp godo-temp:/app/bin/godo-linux $BUILD_DIR/godo
+    docker rm godo-temp
     if ($LASTEXITCODE -ne 0) { throw "Linux build failed" }
-} catch {
-    Handle-Error "Failed to build Linux version: $_"
-}
 
-# Build Windows version
-Write-Host "`nBuilding Windows version..." -ForegroundColor Green
-try {
+    # Build Windows version (using the existing Windows build command)
+    Write-Host "`nBuilding Windows version..." -ForegroundColor Yellow
     docker run --rm -v "${BUILD_DIR}:/go/src/app/dist" -e GOOS=windows -e GOARCH=amd64 -e CGO_ENABLED=1 -e CC=x86_64-w64-mingw32-gcc godo-builder go build -tags windows -ldflags "-s -w" -o dist/godo.exe ./cmd/godo
     if ($LASTEXITCODE -ne 0) { throw "Windows build failed" }
+
 } catch {
-    Handle-Error "Failed to build Windows version: $_"
+    Handle-Error "Build process failed: $_"
 }
 
 Write-Host "`nBuild complete! Binaries are in the dist directory:" -ForegroundColor Green

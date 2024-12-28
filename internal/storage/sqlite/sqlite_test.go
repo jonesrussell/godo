@@ -42,7 +42,7 @@ func TestSQLiteStore(t *testing.T) {
 		tasks, err := store.List()
 		assert.NoError(t, err)
 		assert.Len(t, tasks, 1)
-		
+
 		// Compare fields individually
 		assert.Equal(t, task.ID, tasks[0].ID)
 		assert.Equal(t, task.Content, tasks[0].Content)
@@ -56,9 +56,9 @@ func TestSQLiteStore(t *testing.T) {
 		task := storage.Task{
 			ID:        "1",
 			Content:   "Updated Task",
-				Done:      true,
-				CreatedAt: now,
-				UpdatedAt: now,
+			Done:      true,
+			CreatedAt: now,
+			UpdatedAt: now,
 		}
 
 		err := store.Update(task)

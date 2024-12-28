@@ -184,11 +184,31 @@ type (
 
 	// LogLevel is a distinct type for log level
 	LogLevel string
+
+	// HTTPPort is a distinct type for HTTP port
+	HTTPPort int
+
+	// TimeoutSeconds is a distinct type for timeout values in seconds
+	TimeoutSeconds int
+
+	// OutputPaths is a distinct type for logger output paths
+	OutputPaths []string
+
+	// ModifierKeys is a distinct type for hotkey modifiers
+	ModifierKeys []string
+
+	// KeyCode is a distinct type for keyboard key codes
+	KeyCode string
 )
 
-// String implements the Stringer interface
-func (d DatabasePath) String() string { return string(d) }
-func (a AppName) String() string      { return string(a) }
-func (v AppVersion) String() string   { return string(v) }
-func (i AppID) String() string        { return string(i) }
-func (l LogLevel) String() string     { return string(l) }
+// String/conversion methods for the new types
+func (d DatabasePath) String() string            { return string(d) }
+func (a AppName) String() string                 { return string(a) }
+func (v AppVersion) String() string              { return string(v) }
+func (i AppID) String() string                   { return string(i) }
+func (l LogLevel) String() string                { return string(l) }
+func (p HTTPPort) Int() int                      { return int(p) }
+func (t TimeoutSeconds) Duration() time.Duration { return time.Duration(t) * time.Second }
+func (o OutputPaths) Slice() []string            { return []string(o) }
+func (m ModifierKeys) Slice() []string           { return []string(m) }
+func (k KeyCode) String() string                 { return string(k) }

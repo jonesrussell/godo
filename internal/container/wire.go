@@ -19,28 +19,60 @@ import (
 	"github.com/jonesrussell/godo/internal/storage"
 )
 
+// Options structs for complex providers
+type LoggerOptions struct {
+	Level       common.LogLevel
+	Output      common.OutputPaths
+	ErrorOutput common.OutputPaths
+}
+
+type HTTPOptions struct {
+	Port              common.HTTPPort
+	ReadTimeout       common.TimeoutSeconds
+	WriteTimeout      common.TimeoutSeconds
+	ReadHeaderTimeout common.TimeoutSeconds
+	IdleTimeout       common.TimeoutSeconds
+}
+
+type HotkeyOptions struct {
+	Modifiers common.ModifierKeys
+	Key       common.KeyCode
+}
+
 // Provider Sets
 var (
+	// BaseSet provides basic application metadata
+	BaseSet = wire.NewSet(
+		ProvideAppName,
+		ProvideAppVersion,
+		ProvideAppID,
+	)
+
 	// LoggingSet provides logging dependencies
 	LoggingSet = wire.NewSet(
+		wire.Struct(new(LoggerOptions), "*"),
 		ProvideLogger,
 		wire.Bind(new(logger.Logger), new(*logger.ZapLogger)),
 	)
 
-	// ConfigSet provides configuration dependencies
-	ConfigSet = wire.NewSet(
-		ProvideAppName,
-		ProvideAppVersion,
-		ProvideAppID,
-		ProvideDatabasePath,
-		ProvideLogLevel,
-		ProvideHotkeyBinding,
-	)
-
 	// StorageSet provides storage dependencies
 	StorageSet = wire.NewSet(
+		ProvideDatabasePath,
 		ProvideSQLiteStore,
 		wire.Bind(new(storage.Store), new(*storage.SQLiteStore)),
+	)
+
+	// HTTPSet provides HTTP server dependencies
+	HTTPSet = wire.NewSet(
+		wire.Struct(new(HTTPOptions), "*"),
+		ProvideHTTPConfig,
+	)
+
+	// HotkeySet provides hotkey dependencies
+	HotkeySet = wire.NewSet(
+		wire.Struct(new(HotkeyOptions), "*"),
+		ProvideHotkeyManager,
+		wire.Bind(new(hotkey.Manager), new(*hotkey.DefaultManager)),
 	)
 
 	// GUISet provides GUI dependencies
@@ -58,18 +90,13 @@ var (
 		wire.Bind(new(app.Application), new(*app.App)),
 	)
 
-	// HotkeySet provides hotkey dependencies
-	HotkeySet = wire.NewSet(
-		ProvideHotkeyManager,
-		wire.Bind(new(hotkey.Manager), new(*hotkey.DefaultManager)),
-	)
-
-	// MockSet provides mock dependencies for testing
-	MockSet = wire.NewSet(
+	// TestSet provides mock dependencies for testing
+	TestSet = wire.NewSet(
 		ProvideMockStore,
 		ProvideMockMainWindow,
 		ProvideMockQuickNote,
 		ProvideMockHotkey,
+		wire.Bind(new(storage.Store), new(*storage.MockStore)),
 		wire.Bind(new(gui.MainWindow), new(*gui.MockMainWindow)),
 		wire.Bind(new(gui.QuickNote), new(*gui.MockQuickNote)),
 		wire.Bind(new(hotkey.Manager), new(*hotkey.MockManager)),
@@ -105,12 +132,12 @@ func ProvideHotkeyBinding() *common.HotkeyBinding {
 	}
 }
 
-// ProvideLogger provides a zap logger instance
-func ProvideLogger() (*logger.ZapLogger, func(), error) {
+// ProvideLogger provides a zap logger instance using options
+func ProvideLogger(opts *LoggerOptions) (*logger.ZapLogger, func(), error) {
 	config := &common.LogConfig{
-		Level:       string(ProvideLogLevel()),
-		Output:      []string{"stdout"},
-		ErrorOutput: []string{"stderr"},
+		Level:       opts.Level.String(),
+		Output:      opts.Output.Slice(),
+		ErrorOutput: opts.ErrorOutput.Slice(),
 	}
 
 	log, err := logger.NewZapLogger(config)
@@ -130,11 +157,13 @@ func ProvideSQLiteStore(logger logger.Logger) (*storage.SQLiteStore, error) {
 	return storage.NewSQLiteStore(string(ProvideDatabasePath()))
 }
 
-// ProvideHotkeyManager provides a hotkey manager instance
-func ProvideHotkeyManager(binding *common.HotkeyBinding) (*hotkey.DefaultManager, error) {
-	// Convert binding to hotkey format
-	// Implementation needed
-	return hotkey.NewManager(nil, 0) // Placeholder
+// ProvideHotkeyManager provides a hotkey manager instance using options
+func ProvideHotkeyManager(opts *HotkeyOptions) (*hotkey.DefaultManager, error) {
+	binding := &common.HotkeyBinding{
+		Modifiers: opts.Modifiers.Slice(),
+		Key:       opts.Key.String(),
+	}
+	return hotkey.NewManager(binding, 0)
 }
 
 // ProvideFyneApp provides a Fyne application instance
@@ -155,14 +184,26 @@ func ProvideQuickNote(store storage.Store, logger logger.Logger) *quicknote.Wind
 	return quicknote.New(store, logger)
 }
 
+// ProvideHTTPConfig provides HTTP configuration using options
+func ProvideHTTPConfig(opts *HTTPOptions) *common.HTTPConfig {
+	return &common.HTTPConfig{
+		Port:              opts.Port.Int(),
+		ReadTimeout:       int(opts.ReadTimeout),
+		WriteTimeout:      int(opts.WriteTimeout),
+		ReadHeaderTimeout: int(opts.ReadHeaderTimeout),
+		IdleTimeout:       int(opts.IdleTimeout),
+	}
+}
+
 // InitializeApp initializes the application with all dependencies
 func InitializeApp() (app.Application, func(), error) {
 	wire.Build(
-		ConfigSet,
+		BaseSet,
 		LoggingSet,
 		StorageSet,
-		GUISet,
+		HTTPSet,
 		HotkeySet,
+		GUISet,
 		AppSet,
 	)
 	return nil, nil, nil
@@ -172,7 +213,7 @@ func InitializeApp() (app.Application, func(), error) {
 func InitializeTestApp() (*app.TestApp, func(), error) {
 	wire.Build(
 		LoggingSet,
-		MockSet,
+		TestSet,
 		wire.Struct(new(app.TestApp), "*"),
 	)
 	return nil, nil, nil

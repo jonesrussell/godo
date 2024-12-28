@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -9,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/jonesrussell/godo/internal/common"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
@@ -149,58 +151,58 @@ func TestTaskOperations(t *testing.T) {
 			},
 		},
 		{
-			name:   "Patch task - update title only",
+			name:   "Patch task - update content only",
 			method: "PATCH",
 			path:   fmt.Sprintf("/api/v1/tasks/%s", testTask.ID),
 			setupFn: func(store *testutil.MockStore) {
 				require.NoError(t, store.Add(testTask))
 			},
 			body: TaskPatch{
-				Title: testutil.StringPtr("Updated Title Only"),
+				Content: testutil.StringPtr("Updated Content"),
 			},
 			expectedStatus: http.StatusOK,
 			validateFn: func(t *testing.T, w *httptest.ResponseRecorder) {
 				var task storage.Task
 				require.NoError(t, json.NewDecoder(w.Body).Decode(&task))
-				assert.Equal(t, "Updated Title Only", task.Title)
-				assert.Equal(t, testTask.Description, task.Description)
+				assert.Equal(t, "Updated Content", task.Content)
+				assert.Equal(t, testTask.Done, task.Done)
 			},
 		},
 		{
-			name:   "Patch task - update description only",
+			name:   "Patch task - update done status only",
 			method: "PATCH",
 			path:   fmt.Sprintf("/api/v1/tasks/%s", testTask.ID),
 			setupFn: func(store *testutil.MockStore) {
 				require.NoError(t, store.Add(testTask))
 			},
 			body: TaskPatch{
-				Description: testutil.StringPtr("Updated Description Only"),
+				Done: testutil.BoolPtr(true),
 			},
 			expectedStatus: http.StatusOK,
 			validateFn: func(t *testing.T, w *httptest.ResponseRecorder) {
 				var task storage.Task
 				require.NoError(t, json.NewDecoder(w.Body).Decode(&task))
-				assert.Equal(t, testTask.Title, task.Title)
-				assert.Equal(t, "Updated Description Only", task.Description)
+				assert.Equal(t, testTask.Content, task.Content)
+				assert.True(t, task.Done)
 			},
 		},
 		{
-			name:   "Patch task - mark as completed",
+			name:   "Patch task - update both fields",
 			method: "PATCH",
 			path:   fmt.Sprintf("/api/v1/tasks/%s", testTask.ID),
 			setupFn: func(store *testutil.MockStore) {
 				require.NoError(t, store.Add(testTask))
 			},
 			body: TaskPatch{
-				CompletedAt: &now,
+				Content: testutil.StringPtr("Updated Content"),
+				Done:    testutil.BoolPtr(true),
 			},
 			expectedStatus: http.StatusOK,
 			validateFn: func(t *testing.T, w *httptest.ResponseRecorder) {
 				var task storage.Task
 				require.NoError(t, json.NewDecoder(w.Body).Decode(&task))
-				assert.Equal(t, testTask.Title, task.Title)
-				assert.Equal(t, testTask.Description, task.Description)
-				assert.True(t, task.CompletedAt.Equal(now), "CompletedAt time should match")
+				assert.Equal(t, "Updated Content", task.Content)
+				assert.True(t, task.Done)
 			},
 		},
 		{
@@ -208,7 +210,7 @@ func TestTaskOperations(t *testing.T) {
 			method: "PATCH",
 			path:   "/api/v1/tasks/nonexistent",
 			body: TaskPatch{
-				Title: testutil.StringPtr("Updated Title"),
+				Content: testutil.StringPtr("Updated Content"),
 			},
 			expectedStatus: http.StatusNotFound,
 		},
@@ -237,4 +239,80 @@ func TestTaskOperations(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestHandlePatchTask(t *testing.T) {
+	store := testutil.NewMockStore()
+	logger := logger.NewTestLogger(t)
+	config := &common.HTTPConfig{Port: 8080}
+	server := NewServer(store, logger, config)
+
+	// Add a test task
+	testTask := storage.Task{
+		ID:        "test-id",
+		Content:   "Original content",
+		Done:      false,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+	store.Add(testTask)
+
+	t.Run("successfully patches a task", func(t *testing.T) {
+		newContent := "Updated content"
+		newDone := true
+		patch := TaskPatch{
+			Content: &newContent,
+			Done:    &newDone,
+		}
+		body, _ := json.Marshal(patch)
+		req := httptest.NewRequest(http.MethodPatch, "/tasks/test-id", bytes.NewReader(body))
+		w := httptest.NewRecorder()
+
+		// Set up chi router context
+		rctx := chi.NewRouteContext()
+		rctx.URLParams.Add("id", "test-id")
+		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+		server.handlePatchTask(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+
+		var task storage.Task
+		json.NewDecoder(w.Body).Decode(&task)
+		assert.Equal(t, testTask.ID, task.ID)
+		assert.Equal(t, newContent, task.Content)
+		assert.Equal(t, newDone, task.Done)
+	})
+
+	t.Run("returns 404 for non-existent task", func(t *testing.T) {
+		patch := TaskPatch{
+			Content: testutil.StringPtr("Updated content"),
+		}
+		body, _ := json.Marshal(patch)
+		req := httptest.NewRequest(http.MethodPatch, "/tasks/non-existent", bytes.NewReader(body))
+		w := httptest.NewRecorder()
+
+		// Set up chi router context
+		rctx := chi.NewRouteContext()
+		rctx.URLParams.Add("id", "non-existent")
+		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+		server.handlePatchTask(w, req)
+
+		assert.Equal(t, http.StatusNotFound, w.Code)
+	})
+
+	t.Run("returns 400 for invalid JSON", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodPatch, "/tasks/test-id", bytes.NewReader([]byte("invalid json")))
+		w := httptest.NewRecorder()
+
+		// Set up chi router context
+		rctx := chi.NewRouteContext()
+		rctx.URLParams.Add("id", "test-id")
+		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+		server.handlePatchTask(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
 }

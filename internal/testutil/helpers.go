@@ -18,6 +18,11 @@ func TimePtr(t time.Time) *time.Time {
 	return &t
 }
 
+// BoolPtr returns a pointer to the given bool
+func BoolPtr(b bool) *bool {
+	return &b
+}
+
 // MockStore provides a mock implementation of storage.Store for testing
 type MockStore struct {
 	tasks []storage.Task

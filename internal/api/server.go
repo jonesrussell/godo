@@ -159,26 +159,25 @@ func (s *Server) handleDeleteTask(w http.ResponseWriter, r *http.Request) {
 
 // TaskPatch represents a partial update to a task
 type TaskPatch struct {
-	Title       *string    `json:"title,omitempty"`
-	Description *string    `json:"description,omitempty"`
-	CompletedAt *time.Time `json:"completed_at,omitempty"`
+	Content *string `json:"content,omitempty"`
+	Done    *bool   `json:"done,omitempty"`
 }
 
 func (s *Server) handlePatchTask(w http.ResponseWriter, r *http.Request) {
-	id := chi.URLParam(r, "id")
+	// Get task ID from URL
+	taskID := chi.URLParam(r, "id")
 
 	// Get existing task
 	tasks, err := s.store.List()
 	if err != nil {
-		s.logger.Error("Failed to get tasks", "error", err)
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		http.Error(w, "Failed to retrieve tasks", http.StatusInternalServerError)
 		return
 	}
 
 	var existingTask *storage.Task
-	for _, t := range tasks {
-		if t.ID == id {
-			existingTask = &t
+	for i := range tasks {
+		if tasks[i].ID == taskID {
+			existingTask = &tasks[i]
 			break
 		}
 	}
@@ -196,23 +195,21 @@ func (s *Server) handlePatchTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Apply patches
-	if patch.Title != nil {
-		existingTask.Title = *patch.Title
+	if patch.Content != nil {
+		existingTask.Content = *patch.Content
 	}
-	if patch.Description != nil {
-		existingTask.Description = *patch.Description
-	}
-	if patch.CompletedAt != nil {
-		existingTask.CompletedAt = *patch.CompletedAt
+	if patch.Done != nil {
+		existingTask.Done = *patch.Done
 	}
 	existingTask.UpdatedAt = time.Now()
 
 	// Update the task
 	if err := s.store.Update(*existingTask); err != nil {
-		s.logger.Error("Failed to update task", "error", err)
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		http.Error(w, "Failed to update task", http.StatusInternalServerError)
 		return
 	}
 
-	render.JSON(w, r, existingTask)
+	// Return updated task
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(existingTask)
 }

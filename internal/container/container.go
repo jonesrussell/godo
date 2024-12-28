@@ -4,14 +4,12 @@ import (
 	"fyne.io/fyne/v2/app"
 	godoapp "github.com/jonesrussell/godo/internal/app"
 	"github.com/jonesrussell/godo/internal/app/hotkey"
-	"github.com/jonesrussell/godo/internal/common"
 	"github.com/jonesrussell/godo/internal/gui"
 	"github.com/jonesrussell/godo/internal/gui/mainwindow"
 	"github.com/jonesrussell/godo/internal/gui/quicknote"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
 	"github.com/jonesrussell/godo/internal/storage/sqlite"
-	"go.uber.org/zap"
 )
 
 // Container holds all application dependencies
@@ -22,20 +20,9 @@ type Container struct {
 }
 
 // Initialize creates a new container with all dependencies
-func Initialize(zapLogger *zap.SugaredLogger) (*Container, error) {
-	// Create logger adapter
-	logConfig := &common.LogConfig{
-		Level:       "debug",
-		Output:      []string{"stdout"},
-		ErrorOutput: []string{"stderr"},
-	}
-	log, err := logger.New(logConfig)
-	if err != nil {
-		return nil, err
-	}
-
+func Initialize(log logger.Logger) (*Container, error) {
 	// Create SQLite store
-	store, err := sqlite.New("godo.db", zapLogger.Desugar())
+	store, err := sqlite.New("godo.db", log)
 	if err != nil {
 		return nil, err
 	}
@@ -49,11 +36,11 @@ func Initialize(zapLogger *zap.SugaredLogger) (*Container, error) {
 	// Create quick note
 	quickNote := quicknote.New(store, log)
 
-	// Create hotkey manager
-	hotkeys := hotkey.New(quickNote)
+	// Create hotkey manager with quick note service
+	hotkeyManager := hotkey.New(quickNote)
 
 	// Create app
-	godoApp := godoapp.New(log, fyneApp, store, mainWin, quickNote, hotkeys)
+	godoApp := godoapp.New(log, fyneApp, store, mainWin, quickNote, hotkeyManager)
 
 	return &Container{
 		App:    godoApp,

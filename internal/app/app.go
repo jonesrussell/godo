@@ -124,3 +124,9 @@ func (a *App) SetupUI() {
 func (a *App) GetVersion() string {
 	return a.version
 }
+
+// Quit signals the application to quit
+func (a *App) Quit() {
+	a.Logger.Info("Quitting application")
+	a.fyneApp.Quit()
+}

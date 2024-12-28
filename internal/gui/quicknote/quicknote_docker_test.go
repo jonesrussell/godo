@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"fyne.io/fyne/v2/test"
-	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

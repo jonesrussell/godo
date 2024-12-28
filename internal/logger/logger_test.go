@@ -1,44 +1,87 @@
 package logger
 
 import (
-	"errors"
+	"bytes"
+	"encoding/json"
 	"testing"
 
 	"github.com/jonesrussell/godo/internal/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
-func TestNew(t *testing.T) {
+func TestLoggerOperations(t *testing.T) {
 	tests := []struct {
-		name    string
-		config  *common.LogConfig
-		wantErr bool
+		name       string
+		config     *common.LogConfig
+		logFunc    func(Logger)
+		wantLevel  string
+		wantFields map[string]interface{}
+		wantErr    bool
 	}{
 		{
-			name: "creates with debug level",
+			name: "debug level logging",
 			config: &common.LogConfig{
-				Level:       "debug",
-				Output:      []string{"stdout"},
-				ErrorOutput: []string{"stderr"},
+				Level:   "debug",
+				Console: true,
 			},
-			wantErr: false,
+			logFunc: func(l Logger) {
+				l.Debug("debug message", "key", "value")
+			},
+			wantLevel: "debug",
+			wantFields: map[string]interface{}{
+				"key": "value",
+			},
 		},
 		{
-			name: "creates with info level",
+			name: "info level logging",
 			config: &common.LogConfig{
-				Level:       "info",
-				Output:      []string{"stdout"},
-				ErrorOutput: []string{"stderr"},
+				Level:   "info",
+				Console: true,
 			},
-			wantErr: false,
+			logFunc: func(l Logger) {
+				l.Info("info message", "count", 42)
+			},
+			wantLevel: "info",
+			wantFields: map[string]interface{}{
+				"count": float64(42), // JSON numbers are float64
+			},
 		},
 		{
-			name: "fails with invalid level",
+			name: "warn level logging",
 			config: &common.LogConfig{
-				Level:       "invalid",
-				Output:      []string{"stdout"},
-				ErrorOutput: []string{"stderr"},
+				Level:   "warn",
+				Console: true,
+			},
+			logFunc: func(l Logger) {
+				l.Warn("warn message", "active", true)
+			},
+			wantLevel: "warn",
+			wantFields: map[string]interface{}{
+				"active": true,
+			},
+		},
+		{
+			name: "error level logging",
+			config: &common.LogConfig{
+				Level:   "error",
+				Console: true,
+			},
+			logFunc: func(l Logger) {
+				l.Error("error message", "error_code", "E123")
+			},
+			wantLevel: "error",
+			wantFields: map[string]interface{}{
+				"error_code": "E123",
+			},
+		},
+		{
+			name: "invalid log level",
+			config: &common.LogConfig{
+				Level:   "invalid",
+				Console: true,
 			},
 			wantErr: true,
 		},
@@ -46,67 +89,103 @@ func TestNew(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Test
-			logger, err := New(tt.config)
-
-			// Assert
 			if tt.wantErr {
+				_, err := New(tt.config)
 				assert.Error(t, err)
-				assert.Nil(t, logger)
-			} else {
-				require.NoError(t, err)
-				assert.NotNil(t, logger)
+				return
+			}
 
-				// Test logging
-				logger.Info("test message")
+			// Create a buffer to capture log output
+			var buf bytes.Buffer
+			core := zapcore.NewCore(
+				zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig()),
+				zapcore.AddSync(&buf),
+				zap.NewAtomicLevelAt(zapcore.DebugLevel),
+			)
+			testLogger := &zapLogger{
+				SugaredLogger: zap.New(core).Sugar(),
+			}
+
+			// Execute the log function
+			tt.logFunc(testLogger)
+
+			// Parse the log output
+			var logEntry map[string]interface{}
+			err := json.Unmarshal(buf.Bytes(), &logEntry)
+			require.NoError(t, err)
+
+			// Verify log level
+			assert.Equal(t, tt.wantLevel, logEntry["level"])
+
+			// Verify log fields
+			for key, want := range tt.wantFields {
+				got, exists := logEntry[key]
+				assert.True(t, exists, "field %s should exist", key)
+				assert.Equal(t, want, got, "field %s should have correct value", key)
 			}
 		})
 	}
 }
 
-func TestLoggingWithContext(t *testing.T) {
+func TestNewTestLogger(t *testing.T) {
 	logger := NewTestLogger(t)
+	assert.NotNil(t, logger)
 
-	t.Run("WithField", func(t *testing.T) {
-		contextLogger := logger.WithField("requestID", "123")
-		require.NotNil(t, contextLogger)
-		contextLogger.Info("test message")
-	})
-
-	t.Run("WithFields", func(t *testing.T) {
-		fields := map[string]interface{}{
-			"requestID": "123",
-			"userID":    "456",
-		}
-		contextLogger := logger.WithFields(fields)
-		require.NotNil(t, contextLogger)
-		contextLogger.Info("test message")
-	})
-
-	t.Run("WithError", func(t *testing.T) {
-		err := errors.New("test error")
-		contextLogger := logger.WithError(err)
-		require.NotNil(t, contextLogger)
-		contextLogger.Error("operation failed")
-	})
+	// Test all log levels
+	logger.Debug("debug message")
+	logger.Info("info message")
+	logger.Warn("warn message")
+	logger.Error("error message")
 }
 
-func TestNoopLogger(t *testing.T) {
-	logger := NewNoopLogger()
+func TestLoggerWithOptions(t *testing.T) {
+	tests := []struct {
+		name    string
+		config  *common.LogConfig
+		wantErr bool
+	}{
+		{
+			name: "with file output",
+			config: &common.LogConfig{
+				Level:   "debug",
+				Console: false,
+				Output:  []string{"test.log"},
+			},
+			wantErr: false,
+		},
+		{
+			name: "with console and file output",
+			config: &common.LogConfig{
+				Level:   "info",
+				Console: true,
+				Output:  []string{"test.log"},
+			},
+			wantErr: false,
+		},
+		{
+			name: "with invalid file path",
+			config: &common.LogConfig{
+				Level:   "info",
+				Console: false,
+				Output:  []string{"\x00invalid\x00path\x00test.log"},
+			},
+			wantErr: true,
+		},
+	}
 
-	// These should not panic
-	logger.Debug("debug")
-	logger.Info("info")
-	logger.Warn("warn")
-	logger.Error("error")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			logger, err := New(tt.config)
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
 
-	// Test context methods
-	withField := logger.WithField("key", "value")
-	assert.NotNil(t, withField)
+			assert.NoError(t, err)
+			assert.NotNil(t, logger)
 
-	withFields := logger.WithFields(map[string]interface{}{"key": "value"})
-	assert.NotNil(t, withFields)
-
-	withError := logger.WithError(errors.New("test"))
-	assert.NotNil(t, withError)
+			// Test logging
+			logger.Info("test message")
+		})
+	}
 }

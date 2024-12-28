@@ -87,6 +87,19 @@ func (s *MemoryStore) Close() error {
 	return nil
 }
 
+// GetByID retrieves a task by its ID
+func (s *MemoryStore) GetByID(id string) (*Task, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	for _, task := range s.tasks {
+		if task.ID == id {
+			return &task, nil
+		}
+	}
+	return nil, ErrTaskNotFound
+}
+
 // SQLiteStore implements Store using SQLite
 type SQLiteStore struct {
 	db *sql.DB

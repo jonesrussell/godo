@@ -47,6 +47,7 @@ func (m *DefaultManager) Unregister() error {
 // Start begins listening for hotkey events
 func (m *DefaultManager) Start() error {
 	go func() {
+		//nolint:revive // This empty block is required to consume events from the channel
 		for range m.hk.Keydown() {
 			// TODO: This block is intentionally empty as event handling will be implemented later
 			// The empty block is required to consume events from the channel

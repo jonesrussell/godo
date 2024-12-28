@@ -5,19 +5,19 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 	_ "modernc.org/sqlite" // SQLite driver
 )
 
 func TestSQLiteStore(t *testing.T) {
-	logger, _ := zap.NewDevelopment()
+	log := logger.NewTestLogger(t)
 	tempDir := t.TempDir()
 	dbPath := filepath.Join(tempDir, "test.db")
 
-	store, err := New(dbPath, logger)
+	store, err := New(dbPath, log)
 	require.NoError(t, err)
 	defer func() {
 		store.Close()

@@ -32,7 +32,16 @@ func setupTestServer(t *testing.T) (*Server, *testutil.MockStore) {
 	log, err := logger.New(&common.LogConfig{Level: "debug", Output: []string{"stdout"}, ErrorOutput: []string{"stderr"}})
 	require.NoError(t, err)
 	store := testutil.NewMockStore()
-	server := NewServer(store, log)
+
+	config := &common.HTTPConfig{
+		Port:              8080,
+		ReadTimeout:       30,
+		WriteTimeout:      30,
+		ReadHeaderTimeout: 10,
+		IdleTimeout:       120,
+	}
+
+	server := NewServer(store, log, config)
 	require.NotNil(t, server)
 	return server, store
 }

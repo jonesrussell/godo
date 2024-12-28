@@ -9,10 +9,10 @@ import (
 
 func TestHotkeyBinding_String(t *testing.T) {
 	hk := HotkeyBinding{
-		Modifiers: []string{"ctrl", "shift"},
-		Key:       "n",
+		Modifiers: []string{"Ctrl", "Shift"},
+		Key:       "N",
 	}
-	assert.Equal(t, "n", hk.String())
+	assert.Equal(t, "Ctrl+Shift+N", hk.String())
 }
 
 func TestError_Error(t *testing.T) {

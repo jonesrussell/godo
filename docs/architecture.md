@@ -30,9 +30,15 @@ Godo is a Windows-focused Todo application with quick-note capabilities, built i
 - Runtime configuration management
 
 ### Logging (`internal/logger`)
-- Structured logging with Zap
+- Clean logger abstraction
+- Multiple implementations:
+  - Production logger (Zap-based)
+  - Test logger for better test output
+  - No-op logger for benchmarks
+- Structured logging support
 - Log level management
 - Operation tracking
+- Easy extensibility for new implementations
 
 ### Common (`internal/common`)
 - Shared types and utilities

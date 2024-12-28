@@ -9,69 +9,81 @@ import (
 	"syscall"
 
 	"github.com/jonesrussell/godo/internal/api"
+	"github.com/jonesrussell/godo/internal/common"
 	godocontainer "github.com/jonesrussell/godo/internal/container"
-	"go.uber.org/zap"
+	"github.com/jonesrussell/godo/internal/logger"
 )
 
 const (
 	// Default HTTP server port
 	defaultHTTPPort = 8080
+
+	// HTTP server timeouts in seconds
+	defaultReadTimeout   = 30
+	defaultWriteTimeout  = 30
+	defaultHeaderTimeout = 10
+	defaultIdleTimeout   = 120
 )
 
 func run() error {
 	fmt.Println("=== Starting Godo... ===")
 
 	// Initialize logger first
-	logger, err := zap.NewDevelopment()
+	logConfig := &common.LogConfig{
+		Level:       "debug",
+		Output:      []string{"stdout"},
+		ErrorOutput: []string{"stderr"},
+	}
+	log, err := logger.New(logConfig)
 	if err != nil {
 		fmt.Printf("Failed to create logger: %v\n", err)
 		return err
 	}
-	defer func() {
-		if err := logger.Sync(); err != nil {
-			fmt.Printf("Failed to sync logger: %v\n", err)
-		}
-	}()
 
 	// Create application container
-	container, err := godocontainer.Initialize(logger.Sugar())
+	container, err := godocontainer.Initialize(log)
 	if err != nil {
 		fmt.Printf("Failed to initialize container: %v\n", err)
-		logger.Error("Failed to initialize container", zap.Error(err))
+		log.Error("Failed to initialize container", "error", err)
 		return err
 	}
 
+	// Create HTTP config
+	httpConfig := &common.HTTPConfig{
+		Port:              defaultHTTPPort,
+		ReadTimeout:       defaultReadTimeout,
+		WriteTimeout:      defaultWriteTimeout,
+		ReadHeaderTimeout: defaultHeaderTimeout,
+		IdleTimeout:       defaultIdleTimeout,
+	}
+
 	// Create HTTP server runner
-	httpRunner := api.NewRunner(container.Store, container.Logger)
-	httpRunner.Start(defaultHTTPPort)
+	httpRunner := api.NewRunner(container.Store, container.Logger, httpConfig)
 
 	// Setup signal handling
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
-	// Run app in a goroutine
-	errChan := make(chan error, 1)
+	// Start HTTP server in a goroutine
 	go func() {
-		if err := container.App.Run(); err != nil {
-			errChan <- err
-		}
+		httpRunner.Start(defaultHTTPPort)
 	}()
 
-	// Wait for signal or error
-	select {
-	case sig := <-sigChan:
-		logger.Info("Received signal", zap.String("signal", sig.String()))
+	// Handle shutdown in a separate goroutine
+	go func() {
+		sig := <-sigChan
+		log.Info("Received signal", "signal", sig.String())
 		// Shutdown HTTP server
 		ctx := context.Background()
 		if err := httpRunner.Shutdown(ctx); err != nil {
-			logger.Error("Failed to shutdown HTTP server", zap.Error(err))
+			log.Error("Failed to shutdown HTTP server", "error", err)
 		}
-	case err := <-errChan:
-		logger.Error("Application error", zap.Error(err))
-		return err
-	}
+		// Signal the app to quit
+		container.App.Quit()
+	}()
 
-	return nil
+	// Run the Fyne app in the main goroutine
+	return container.App.Run()
 }
 
 func main() {

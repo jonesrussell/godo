@@ -25,8 +25,8 @@ func New(config *common.LogConfig) (Logger, error) {
 	zapConfig := zap.Config{
 		Level:            zap.NewAtomicLevelAt(level),
 		Development:      false,
-		Encoding:         "json",
-		EncoderConfig:    zap.NewProductionEncoderConfig(),
+		Encoding:         "console",
+		EncoderConfig:    getEncoderConfig(),
 		OutputPaths:      config.Output,
 		ErrorOutputPaths: config.ErrorOutput,
 	}
@@ -53,6 +53,15 @@ func parseLogLevel(level string) (zapcore.Level, error) {
 	default:
 		return zapcore.InfoLevel, fmt.Errorf("unsupported log level: %s", level)
 	}
+}
+
+func getEncoderConfig() zapcore.EncoderConfig {
+	encoderConfig := zap.NewProductionEncoderConfig()
+	encoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
+	encoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
+	encoderConfig.EncodeDuration = zapcore.StringDurationEncoder
+	encoderConfig.EncodeCaller = zapcore.ShortCallerEncoder
+	return encoderConfig
 }
 
 // Implement the interface methods

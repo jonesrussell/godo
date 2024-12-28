@@ -4,19 +4,19 @@ import (
 	"database/sql"
 	"time"
 
+	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
-	"go.uber.org/zap"
 	_ "modernc.org/sqlite" // SQLite driver
 )
 
 // Store implements storage.Store using SQLite
 type Store struct {
 	db     *sql.DB
-	logger *zap.Logger
+	logger logger.Logger
 }
 
 // New creates a new SQLite store
-func New(path string, logger *zap.Logger) (*Store, error) {
+func New(path string, logger logger.Logger) (*Store, error) {
 	db, err := sql.Open("sqlite", path)
 	if err != nil {
 		return nil, err

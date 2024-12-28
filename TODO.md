@@ -11,7 +11,10 @@ Current Status: Adding HTTP API to Windows-only Todo App
   - In-memory implementation for testing
   - Comprehensive test suite
 - [x] Logging System
-  - Zap logger configuration
+  - Logger abstraction with multiple implementations
+  - Zap-based production logger
+  - Test-specific logger for better test output
+  - Structured logging support
   - Lifecycle tracking
   - Operation logging
 - [x] HTTP API
@@ -62,6 +65,12 @@ Current Status: Adding HTTP API to Windows-only Todo App
     - [x] Mock implementations
 
 ### Phase 2: API Improvements (Next)
+- [ ] 🔥 API Design Improvements (High Priority)
+  - [ ] Add PATCH endpoint for partial updates
+  - [ ] Support updating completion status only
+  - [ ] Support updating individual fields
+  - [ ] Preserve unmodified fields
+  - [ ] Add API versioning for breaking changes
 - [ ] Request Validation
   - [ ] Add go-playground/validator
   - [ ] Validate task creation/updates
@@ -70,6 +79,12 @@ Current Status: Adding HTTP API to Windows-only Todo App
   - [ ] Standardize error responses
   - [ ] Add error codes
   - [ ] Improve error messages
+- [ ] Data Integrity
+  - [ ] Prevent empty IDs in database
+  - [ ] Add database migrations tool
+  - [ ] Add data validation before storage
+  - [ ] Add database consistency checks
+  - [ ] Add data cleanup utilities
 - [ ] Middleware
   - [ ] Add request tracing
   - [ ] Add metrics collection

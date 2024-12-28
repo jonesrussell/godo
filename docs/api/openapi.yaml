@@ -139,6 +139,7 @@ components:
           type: string
           format: date-time
           nullable: true
+          description: "When the task was completed. Null/zero time for incomplete tasks."
       required:
       - id
       - title
@@ -157,6 +158,11 @@ components:
           type: string
           maxLength: 1000
           example: "Milk, bread, eggs"
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: "Set to mark task as completed, null/omit for incomplete tasks"
       required:
       - title
 

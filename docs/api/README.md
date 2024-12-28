@@ -50,7 +50,7 @@ Response:
         "description": "Task description",
         "created_at": "2024-12-28T09:26:00Z",
         "updated_at": "2024-12-28T09:26:00Z",
-        "completed_at": "0001-01-01T00:00:00Z"
+        "completed_at": "2024-12-28T10:00:00Z"
     }
 ]
 ```
@@ -67,7 +67,8 @@ Request Body:
 ```json
 {
     "title": "Buy groceries",
-    "description": "Milk, bread, eggs"
+    "description": "Milk, bread, eggs",
+    "completed_at": "2024-12-28T10:00:00Z"
 }
 ```
 
@@ -79,13 +80,14 @@ Response:
     "description": "Milk, bread, eggs",
     "created_at": "2024-12-28T09:26:00Z",
     "updated_at": "2024-12-28T09:26:00Z",
-    "completed_at": "0001-01-01T00:00:00Z"
+    "completed_at": "2024-12-28T10:00:00Z"
 }
 ```
 
-#### Update Task
+#### Update Task (Full Update)
 
-Update an existing task.
+Update an existing task. Note: This endpoint requires all task fields to be provided.
+A PATCH endpoint for partial updates is coming soon.
 
 ```
 PUT /api/v1/tasks/{id}
@@ -95,7 +97,8 @@ Request Body:
 ```json
 {
     "title": "Updated title",
-    "description": "Updated description"
+    "description": "Updated description",
+    "completed_at": "2024-12-28T10:00:00Z"
 }
 ```
 
@@ -107,7 +110,7 @@ Response:
     "description": "Updated description",
     "created_at": "2024-12-28T09:26:00Z",
     "updated_at": "2024-12-28T09:26:15Z",
-    "completed_at": "0001-01-01T00:00:00Z"
+    "completed_at": "2024-12-28T10:00:00Z"
 }
 ```
 

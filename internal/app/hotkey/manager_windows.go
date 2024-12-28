@@ -6,32 +6,60 @@ package hotkey
 import (
 	"fmt"
 	"runtime"
+	"strings"
 	"time"
 
+	"github.com/jonesrussell/godo/internal/common"
 	"golang.design/x/hotkey"
 )
 
 type platformManager struct {
 	hk        *hotkey.Hotkey
 	quickNote QuickNoteService
+	binding   *common.HotkeyBinding
 }
 
-func newPlatformManager(quickNote QuickNoteService) Manager {
+func newPlatformManager(quickNote QuickNoteService, binding *common.HotkeyBinding) Manager {
 	fmt.Printf("[DEBUG] Creating hotkey manager (OS: %s)\n", runtime.GOOS)
 	if quickNote == nil {
 		panic("quickNote service cannot be nil")
 	}
 	return &platformManager{
 		quickNote: quickNote,
+		binding:   binding,
 	}
 }
 
 func (m *platformManager) Register() error {
-	fmt.Printf("[DEBUG] Registering hotkey (Ctrl+Shift+N) on %s\n", runtime.GOOS)
+	modStr := strings.Join(m.binding.Modifiers, "+")
+	fmt.Printf("[DEBUG] Registering hotkey (%s+%s) on %s\n", modStr, m.binding.Key, runtime.GOOS)
+
+	// Convert string modifiers to hotkey.Modifier
+	var mods []hotkey.Modifier
+	for _, mod := range m.binding.Modifiers {
+		switch strings.ToLower(mod) {
+		case "ctrl":
+			mods = append(mods, hotkey.ModCtrl)
+		case "shift":
+			mods = append(mods, hotkey.ModShift)
+		case "alt":
+			mods = append(mods, hotkey.ModAlt)
+		}
+	}
+
+	// Convert key string to hotkey.Key
+	var key hotkey.Key
+	switch strings.ToUpper(m.binding.Key) {
+	case "N":
+		key = hotkey.KeyN
+	// Add more key mappings as needed
+	default:
+		return fmt.Errorf("unsupported key: %s", m.binding.Key)
+	}
 
 	// Create the hotkey
 	fmt.Println("[DEBUG] Creating hotkey instance...")
-	hk := hotkey.New([]hotkey.Modifier{hotkey.ModCtrl, hotkey.ModShift}, hotkey.KeyN)
+	hk := hotkey.New(mods, key)
 
 	// Try to register with retries
 	var err error

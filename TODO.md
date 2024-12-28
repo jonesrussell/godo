@@ -57,6 +57,12 @@ Current Status: Adding HTTP API to Windows-only Todo App
   - [ ] Server startup/shutdown test
   - [ ] Basic endpoint test using httptest
   - [ ] JSON response validation
+  - [ ] Test Utilities
+    - [ ] HTTP test helpers (request execution, response validation)
+    - [ ] Common test fixtures and factories
+    - [ ] Mock implementations for external dependencies
+    - [ ] Test assertion helpers
+    - [ ] Test data generators
 
 ### Phase 2: Complete REST API (Next Week)
 - [ ] Core Endpoints

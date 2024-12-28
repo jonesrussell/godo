@@ -13,6 +13,7 @@ type migrationSet struct {
 func newMigrationSet() *migrationSet {
 	return &migrationSet{
 		migrations: []string{
+			// Initial schema
 			`CREATE TABLE IF NOT EXISTS tasks (
 				id TEXT PRIMARY KEY,
 				title TEXT NOT NULL,
@@ -20,11 +21,28 @@ func newMigrationSet() *migrationSet {
 				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 				updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 				completed_at TIMESTAMP
-			)`,
-			`-- Migration to update existing tasks table
-			ALTER TABLE tasks ADD COLUMN IF NOT EXISTS description TEXT;
-			ALTER TABLE tasks ADD COLUMN IF NOT EXISTS completed_at TIMESTAMP;
-			ALTER TABLE tasks DROP COLUMN IF EXISTS completed;`,
+			);`,
+			// Add new columns if they don't exist
+			`PRAGMA foreign_keys=off;
+			BEGIN TRANSACTION;
+			
+			CREATE TABLE IF NOT EXISTS _tasks_new (
+				id TEXT PRIMARY KEY,
+				title TEXT NOT NULL,
+				description TEXT,
+				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+				updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+				completed_at TIMESTAMP
+			);
+			
+			INSERT INTO _tasks_new (id, title)
+			SELECT id, title FROM tasks;
+			
+			DROP TABLE IF EXISTS tasks;
+			ALTER TABLE _tasks_new RENAME TO tasks;
+			
+			COMMIT;
+			PRAGMA foreign_keys=on;`,
 		},
 	}
 }

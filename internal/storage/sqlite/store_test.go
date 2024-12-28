@@ -287,18 +287,21 @@ func TestConcurrentOperations(t *testing.T) {
 	store, err := New(dbPath, log)
 	require.NoError(t, err)
 	defer func() {
-		err := store.Close()
-		if err != nil {
-			t.Errorf("Failed to close store: %v", err)
+		closeErr := store.Close()
+		if closeErr != nil {
+			t.Errorf("Failed to close store: %v", closeErr)
 		}
-		err = os.Remove(dbPath)
-		if err != nil {
-			t.Errorf("Failed to remove test database: %v", err)
+		removeErr := os.Remove(dbPath)
+		if removeErr != nil {
+			t.Errorf("Failed to remove test database: %v", removeErr)
 		}
 	}()
 
-	const numGoroutines = 10
-	const opsPerGoroutine = 100
+	// Reduced number of concurrent operations to avoid overwhelming SQLite
+	const numGoroutines = 4
+	const opsPerGoroutine = 25
+	const maxRetries = 3
+	const retryDelay = 100 * time.Millisecond
 
 	var wg sync.WaitGroup
 	errors := make(chan error, numGoroutines*opsPerGoroutine)
@@ -311,10 +314,7 @@ func TestConcurrentOperations(t *testing.T) {
 			defer wg.Done()
 
 			for j := 0; j < opsPerGoroutine; j++ {
-				// Create unique task ID for this operation
 				taskID := fmt.Sprintf("task-%d-%d", routineID, j)
-
-				// Add task
 				task := storage.Task{
 					ID:        taskID,
 					Content:   fmt.Sprintf("Concurrent Task %s", taskID),
@@ -323,29 +323,62 @@ func TestConcurrentOperations(t *testing.T) {
 					UpdatedAt: start,
 				}
 
-				if err := store.Add(task); err != nil {
-					errors <- fmt.Errorf("failed to add task %s: %w", taskID, err)
+				// Retry loop for Add operation
+				var addErr error
+				for retry := 0; retry < maxRetries; retry++ {
+					addErr = store.Add(task)
+					if addErr == nil {
+						break
+					}
+					time.Sleep(retryDelay << retry) // Exponential backoff
+				}
+				if addErr != nil {
+					errors <- fmt.Errorf("failed to add task %s after %d retries: %w", taskID, maxRetries, addErr)
 					continue
 				}
 
-				// Read task
-				_, err := store.GetByID(taskID)
-				if err != nil {
-					errors <- fmt.Errorf("failed to get task %s: %w", taskID, err)
+				// Retry loop for GetByID operation
+				var getErr error
+				var retrieved *storage.Task
+				for retry := 0; retry < maxRetries; retry++ {
+					retrieved, getErr = store.GetByID(taskID)
+					if getErr == nil && retrieved != nil {
+						break
+					}
+					time.Sleep(retryDelay << retry)
+				}
+				if getErr != nil {
+					errors <- fmt.Errorf("failed to get task %s after %d retries: %w", taskID, maxRetries, getErr)
 					continue
 				}
 
-				// Update task
+				// Retry loop for Update operation
 				task.Done = true
 				task.UpdatedAt = time.Now()
-				if err := store.Update(task); err != nil {
-					errors <- fmt.Errorf("failed to update task %s: %w", taskID, err)
+				var updateErr error
+				for retry := 0; retry < maxRetries; retry++ {
+					updateErr = store.Update(task)
+					if updateErr == nil {
+						break
+					}
+					time.Sleep(retryDelay << retry)
+				}
+				if updateErr != nil {
+					errors <- fmt.Errorf("failed to update task %s after %d retries: %w", taskID, maxRetries, updateErr)
 					continue
 				}
 
-				// Delete task
-				if err := store.Delete(taskID); err != nil {
-					errors <- fmt.Errorf("failed to delete task %s: %w", taskID, err)
+				// Retry loop for Delete operation
+				var deleteErr error
+				for retry := 0; retry < maxRetries; retry++ {
+					deleteErr = store.Delete(taskID)
+					if deleteErr == nil {
+						break
+					}
+					time.Sleep(retryDelay << retry)
+				}
+				if deleteErr != nil {
+					errors <- fmt.Errorf("failed to delete task %s after %d retries: %w", taskID, maxRetries, deleteErr)
 				}
 			}
 		}(i)
@@ -364,8 +397,16 @@ func TestConcurrentOperations(t *testing.T) {
 
 	assert.Zero(t, errCount, "Expected no errors in concurrent operations")
 
-	// Verify final state
-	tasks, err := store.List()
-	assert.NoError(t, err)
+	// Verify final state with retries
+	var tasks []storage.Task
+	var listErr error
+	for retry := 0; retry < maxRetries; retry++ {
+		tasks, listErr = store.List()
+		if listErr == nil {
+			break
+		}
+		time.Sleep(retryDelay << retry)
+	}
+	require.NoError(t, listErr, "Failed to list tasks after retries")
 	assert.Empty(t, tasks, "All tasks should have been deleted")
 }

@@ -1,4 +1,5 @@
-//go:build windows && !linux
+//go:build windows && !docker && !linux
+// +build windows,!docker,!linux
 
 package config
 

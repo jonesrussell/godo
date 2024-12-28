@@ -1,4 +1,5 @@
-//go:build docker && !ci && !android && !ios && !wasm && !test_web_driver
+//go:build docker && !windows && !ci && !android && !ios && !wasm && !test_web_driver
+// +build docker,!windows,!ci,!android,!ios,!wasm,!test_web_driver
 
 package config
 

@@ -78,6 +78,30 @@ paths:
         format: uuid
       description: Task ID
 
+    patch:
+      summary: Partially update a task
+      description: Update specific fields of an existing task by ID
+      operationId: patchTask
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskPatch'
+      responses:
+        '200':
+          description: Task updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
     put:
       summary: Update a task
       description: Update an existing task by ID
@@ -165,6 +189,28 @@ components:
           description: "Set to mark task as completed, null/omit for incomplete tasks"
       required:
       - title
+
+    TaskPatch:
+      type: object
+      description: Partial update for a task. Only specified fields will be updated.
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 255
+          example: "Buy groceries"
+          nullable: true
+        description:
+          type: string
+          maxLength: 1000
+          example: "Milk, bread, eggs"
+          nullable: true
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: "Set to mark task as completed, null to mark as incomplete"
+      minProperties: 1
 
     Error:
       type: object

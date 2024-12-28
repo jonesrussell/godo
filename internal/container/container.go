@@ -4,6 +4,7 @@ import (
 	"fyne.io/fyne/v2/app"
 	godoapp "github.com/jonesrussell/godo/internal/app"
 	"github.com/jonesrussell/godo/internal/app/hotkey"
+	"github.com/jonesrussell/godo/internal/common"
 	"github.com/jonesrussell/godo/internal/gui"
 	"github.com/jonesrussell/godo/internal/gui/mainwindow"
 	"github.com/jonesrussell/godo/internal/gui/quicknote"
@@ -36,8 +37,14 @@ func Initialize(log logger.Logger) (*Container, error) {
 	// Create quick note
 	quickNote := quicknote.New(store, log)
 
+	// Create hotkey binding
+	binding := &common.HotkeyBinding{
+		Modifiers: []string{"Ctrl", "Shift"},
+		Key:       "N",
+	}
+
 	// Create hotkey manager with quick note service
-	hotkeyManager := hotkey.New(quickNote)
+	hotkeyManager := hotkey.New(quickNote, binding)
 
 	// Create app
 	godoApp := godoapp.New(log, fyneApp, store, mainWin, quickNote, hotkeyManager)

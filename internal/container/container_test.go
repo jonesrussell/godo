@@ -6,6 +6,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/jonesrussell/godo/internal/common"
 	"github.com/jonesrussell/godo/internal/gui/quicknote"
 	"github.com/stretchr/testify/assert"
 )
@@ -45,6 +46,13 @@ func TestProvideStorage(t *testing.T) {
 	assert.NotNil(t, store)
 }
 
+func TestProvideHotkeyBinding(t *testing.T) {
+	binding := ProvideHotkeyBinding()
+	assert.NotNil(t, binding)
+	assert.Equal(t, []string{"Ctrl", "Shift"}, binding.Modifiers)
+	assert.Equal(t, "N", binding.Key)
+}
+
 func TestProvideHotkeyManager(t *testing.T) {
 	if os.Getenv("CI") == "true" {
 		t.Skip("Skipping hotkey test in CI environment")
@@ -53,6 +61,12 @@ func TestProvideHotkeyManager(t *testing.T) {
 	// Create a mock quick note service
 	mockNote := &mockQuickNote{}
 
-	manager := ProvideHotkeyManager(mockNote)
+	// Create hotkey binding
+	binding := &common.HotkeyBinding{
+		Modifiers: []string{"Ctrl", "Shift"},
+		Key:       "N",
+	}
+
+	manager := ProvideHotkeyManager(mockNote, binding)
 	assert.NotNil(t, manager)
 }

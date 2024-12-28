@@ -17,6 +17,12 @@ import (
 const (
 	// Default HTTP server port
 	defaultHTTPPort = 8080
+
+	// HTTP server timeouts in seconds
+	defaultReadTimeout   = 30
+	defaultWriteTimeout  = 30
+	defaultHeaderTimeout = 10
+	defaultIdleTimeout   = 120
 )
 
 func run() error {
@@ -42,8 +48,17 @@ func run() error {
 		return err
 	}
 
+	// Create HTTP config
+	httpConfig := &common.HTTPConfig{
+		Port:              defaultHTTPPort,
+		ReadTimeout:       defaultReadTimeout,
+		WriteTimeout:      defaultWriteTimeout,
+		ReadHeaderTimeout: defaultHeaderTimeout,
+		IdleTimeout:       defaultIdleTimeout,
+	}
+
 	// Create HTTP server runner
-	httpRunner := api.NewRunner(container.Store, container.Logger)
+	httpRunner := api.NewRunner(container.Store, container.Logger, httpConfig)
 
 	// Setup signal handling
 	sigChan := make(chan os.Signal, 1)

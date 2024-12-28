@@ -20,6 +20,14 @@ import (
 	"github.com/jonesrussell/godo/internal/storage"
 )
 
+// ProvideHotkeyBinding provides the default hotkey binding configuration
+func ProvideHotkeyBinding() *common.HotkeyBinding {
+	return &common.HotkeyBinding{
+		Modifiers: []string{"Ctrl", "Shift"},
+		Key:       "N",
+	}
+}
+
 // ProvideLogger provides a zap logger instance
 func ProvideLogger() (logger.Logger, func(), error) {
 	config := &common.LogConfig{
@@ -77,8 +85,8 @@ func ProvideMainWindow(store storage.Store, logger logger.Logger) *mainwindow.Wi
 }
 
 // ProvideHotkeyManager provides the platform-specific hotkey manager
-func ProvideHotkeyManager(quickNote quicknote.Interface) hotkey.Manager {
-	return hotkey.New(quickNote)
+func ProvideHotkeyManager(quickNote quicknote.Interface, binding *common.HotkeyBinding) hotkey.Manager {
+	return hotkey.New(quickNote, binding)
 }
 
 var Set = wire.NewSet(
@@ -88,6 +96,7 @@ var Set = wire.NewSet(
 	ProvideQuickNote,
 	ProvideMainWindow,
 	ProvideHotkeyManager,
+	ProvideHotkeyBinding,
 	wire.Bind(new(hotkey.QuickNoteService), new(quicknote.Interface)),
 	wire.Bind(new(gui.MainWindow), new(*mainwindow.Window)),
 	app.New,

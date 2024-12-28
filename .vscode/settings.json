@@ -14,9 +14,10 @@
         "buildFlags": ["-tags=wireinject,windows"]
     },
     "[go]": {
-        "editor.formatOnSave": false,
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "golang.go",
         "editor.codeActionsOnSave": {
-            "source.organizeImports": "explicit"
+            "source.organizeImports": "never"
         }
     },
     "editor.codeActionsOnSave": {

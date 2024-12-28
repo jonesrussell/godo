@@ -41,15 +41,15 @@ tasks:
 
   lint:
     desc: Run linters
-    deps: [ wire ]
+    deps: [ wire:windows ]
     cmds:
     - golangci-lint run ./...
 
   test:
     desc: Run basic tests
-    deps: [ wire ]
+    deps: [ wire:windows ]
     cmds:
-    - go test ./...
+    - go test ./... -tags=wireinject,windows
 
   test:race:
     desc: Run tests with race detection
@@ -116,7 +116,7 @@ tasks:
     desc: Build both Windows and Linux binaries using Docker
     deps: [ wire ]
     cmds:
-    - powershell .\build\build.ps1
+    - powershell ./build/build.ps1
 
   docker:build-linux:
     desc: Build Linux binary using Docker

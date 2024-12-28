@@ -12,10 +12,11 @@ import (
 
 // Window represents the main application window
 type Window struct {
-	store  storage.Store
-	logger logger.Logger
-	win    fyne.Window
-	tasks  []storage.Task
+	store    storage.Store
+	logger   logger.Logger
+	win      fyne.Window
+	tasks    []storage.Task
+	taskList *widget.List
 }
 
 // New creates a new main window
@@ -67,7 +68,7 @@ func (w *Window) Setup() error {
 	w.tasks = tasks
 
 	// Create task list
-	taskList := widget.NewList(
+	w.taskList = widget.NewList(
 		func() int {
 			return len(w.tasks)
 		},
@@ -110,7 +111,7 @@ func (w *Window) Setup() error {
 				}
 				// Remove from local list and refresh
 				w.tasks = append(w.tasks[:id], w.tasks[id+1:]...)
-				taskList.Refresh()
+				w.taskList.Refresh()
 			}
 		},
 	)
@@ -123,7 +124,7 @@ func (w *Window) Setup() error {
 			return
 		}
 		w.tasks = tasks
-		taskList.Refresh()
+		w.taskList.Refresh()
 	})
 
 	content := container.NewBorder(
@@ -132,7 +133,7 @@ func (w *Window) Setup() error {
 			refreshBtn,
 		),
 		nil, nil, nil,
-		taskList,
+		w.taskList,
 	)
 	w.win.SetContent(content)
 

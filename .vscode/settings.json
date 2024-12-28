@@ -1,46 +1,5 @@
 {
     "gopls": {
-        "buildFlags": ["-tags=windows,wireinject"],
-        "staticcheck": true,
-        "completeUnimported": true,
-        "matcher": "fuzzy",
-        "usePlaceholders": true,
-        "env": {
-            "GOOS": "windows",
-            "GOARCH": "amd64",
-            "CGO_ENABLED": "1"
-        }
-    },
-    "go.formatTool": "goimports",
-    "go.lintTool": "golangci-lint",
-    "go.lintFlags": [
-        "--fast",
-        "--enable-all",
-        "--disable",
-        "lll,wsl"
-    ],
-    "go.useLanguageServer": true,
-    "go.languageServerFlags": [],
-    "go.toolsEnvVars": {
-        "GO111MODULE": "on"
-    },
-    "go.vetOnSave": "package",
-    "[go]": {
-        "editor.formatOnSave": true,
-        "editor.codeActionsOnSave": {
-            "source.organizeImports": "explicit"
-        }
-    },
-    "go.coverOnSingleTest": true,
-    "go.coverageDecorator": {
-        "type": "highlight",
-        "coveredHighlightColor": "rgba(64,128,128,0.5)",
-        "uncoveredHighlightColor": "rgba(128,64,64,0.25)",
-        "coveredGutterStyle": "blockblue",
-        "uncoveredGutterStyle": "blockred"
-    },
-    "go.testFlags": ["-v"],
-    "go.testOnSave": false,
-    "go.testTags": "windows",
-    "go.testTimeout": "5m"
-}
+        "buildFlags": ["-tags=wireinject,!wireinject"]
+    }
+} 

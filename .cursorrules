@@ -28,6 +28,11 @@ code_style:
   - plan_for_scalability: true
   - use_secure_headers: true
   - monitor_performance: true
+  - prefer_patch_for_partial_updates: "Use PATCH for partial updates instead of PUT"
+  - preserve_unmodified_fields: "Don't require all fields in updates"
+  - validate_timestamps: "Ensure valid timestamp formats and ranges"
+  - handle_null_values: "Properly handle null/zero values in updates"
+  - document_api_changes: "Keep API documentation up to date"
 
 snippets:
 - fyne_keyboard_shortcuts:

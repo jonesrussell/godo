@@ -111,10 +111,10 @@ type mockLogger struct {
 	errorCalled bool
 }
 
-func (m *mockLogger) Debug(msg string, keysAndValues ...interface{})         { m.debugCalled = true }
-func (m *mockLogger) Info(msg string, keysAndValues ...interface{})          { m.infoCalled = true }
-func (m *mockLogger) Warn(msg string, keysAndValues ...interface{})          { m.warnCalled = true }
-func (m *mockLogger) Error(msg string, keysAndValues ...interface{})         { m.errorCalled = true }
-func (m *mockLogger) WithError(err error) logger.Logger                      { return m }
-func (m *mockLogger) WithField(key string, value interface{}) logger.Logger  { return m }
-func (m *mockLogger) WithFields(fields map[string]interface{}) logger.Logger { return m }
+func (m *mockLogger) Debug(_ string, _ ...interface{})                  { m.debugCalled = true }
+func (m *mockLogger) Info(_ string, _ ...interface{})                   { m.infoCalled = true }
+func (m *mockLogger) Warn(_ string, _ ...interface{})                   { m.warnCalled = true }
+func (m *mockLogger) Error(_ string, _ ...interface{})                  { m.errorCalled = true }
+func (m *mockLogger) WithError(_ error) logger.Logger                   { return m }
+func (m *mockLogger) WithField(_ string, _ interface{}) logger.Logger   { return m }
+func (m *mockLogger) WithFields(_ map[string]interface{}) logger.Logger { return m }

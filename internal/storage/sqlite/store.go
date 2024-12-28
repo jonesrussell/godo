@@ -3,6 +3,8 @@ package sqlite
 
 import (
 	"database/sql"
+	"errors"
+	"strings"
 	"time"
 
 	"github.com/jonesrussell/godo/internal/logger"
@@ -10,16 +12,36 @@ import (
 	_ "modernc.org/sqlite" // SQLite driver
 )
 
+var (
+	// ErrEmptyID is returned when a task ID is empty
+	ErrEmptyID = errors.New("task ID cannot be empty")
+	// ErrInvalidPath is returned when the database path is invalid
+	ErrInvalidPath = errors.New("invalid database path")
+	// ErrStoreClosed is returned when attempting to use a closed store
+	ErrStoreClosed = errors.New("store is closed")
+)
+
 // Store implements storage.Store using SQLite
 type Store struct {
 	db     *sql.DB
 	logger logger.Logger
+	closed bool
 }
 
 // New creates a new SQLite store
 func New(path string, logger logger.Logger) (*Store, error) {
+	if strings.TrimSpace(path) == "" {
+		return nil, ErrInvalidPath
+	}
+
 	db, err := sql.Open("sqlite", path)
 	if err != nil {
+		return nil, err
+	}
+
+	// Test the connection
+	if err := db.Ping(); err != nil {
+		db.Close()
 		return nil, err
 	}
 
@@ -36,8 +58,31 @@ func New(path string, logger logger.Logger) (*Store, error) {
 	return store, nil
 }
 
+// validateID checks if a task ID is valid
+func (s *Store) validateID(id string) error {
+	if strings.TrimSpace(id) == "" {
+		return ErrEmptyID
+	}
+	return nil
+}
+
+// checkClosed returns an error if the store is closed
+func (s *Store) checkClosed() error {
+	if s.closed {
+		return ErrStoreClosed
+	}
+	return nil
+}
+
 // Add creates a new task in the store
 func (s *Store) Add(task storage.Task) error {
+	if err := s.checkClosed(); err != nil {
+		return err
+	}
+	if err := s.validateID(task.ID); err != nil {
+		return err
+	}
+
 	_, err := s.db.Exec(
 		"INSERT INTO tasks (id, content, done, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
 		task.ID, task.Content, task.Done, task.CreatedAt, task.UpdatedAt,
@@ -47,7 +92,11 @@ func (s *Store) Add(task storage.Task) error {
 
 // List returns all tasks in the store
 func (s *Store) List() ([]storage.Task, error) {
-	rows, err := s.db.Query("SELECT id, content, done, created_at, updated_at FROM tasks")
+	if err := s.checkClosed(); err != nil {
+		return nil, err
+	}
+
+	rows, err := s.db.Query("SELECT id, content, done, created_at, updated_at FROM tasks ORDER BY created_at DESC")
 	if err != nil {
 		return nil, err
 	}
@@ -72,6 +121,13 @@ func (s *Store) List() ([]storage.Task, error) {
 
 // Update modifies an existing task
 func (s *Store) Update(task storage.Task) error {
+	if err := s.checkClosed(); err != nil {
+		return err
+	}
+	if err := s.validateID(task.ID); err != nil {
+		return err
+	}
+
 	result, err := s.db.Exec(
 		"UPDATE tasks SET content = ?, done = ?, updated_at = ? WHERE id = ?",
 		task.Content, task.Done, time.Now(), task.ID,
@@ -93,6 +149,13 @@ func (s *Store) Update(task storage.Task) error {
 
 // Delete removes a task by ID
 func (s *Store) Delete(id string) error {
+	if err := s.checkClosed(); err != nil {
+		return err
+	}
+	if err := s.validateID(id); err != nil {
+		return err
+	}
+
 	result, err := s.db.Exec("DELETE FROM tasks WHERE id = ?", id)
 	if err != nil {
 		return err
@@ -111,5 +174,9 @@ func (s *Store) Delete(id string) error {
 
 // Close closes the database connection
 func (s *Store) Close() error {
+	if s.closed {
+		return nil
+	}
+	s.closed = true
 	return s.db.Close()
 }

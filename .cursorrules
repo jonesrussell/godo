@@ -49,6 +49,17 @@ code_style:
   - handle_null_values: "Properly handle null/zero values in updates"
   - document_api_changes: "Keep API documentation up to date"
 
+  # Storage Layer Best Practices
+  - validate_data_before_storage: "Validate all data before storage operations"
+  - handle_connection_state: "Track and validate connection state"
+  - use_custom_error_types: "Define and use custom error types for specific error cases"
+  - prevent_data_inconsistencies: "Validate IDs, prevent duplicates, check data integrity"
+  - implement_proper_cleanup: "Ensure proper resource cleanup in Close methods"
+  - use_transactions_when_needed: "Use transactions for multi-step operations"
+  - handle_database_errors: "Properly handle and wrap database errors"
+  - test_error_conditions: "Add tests for error conditions and edge cases"
+  - maintain_high_test_coverage: "Maintain >65% test coverage for critical packages"
+
 snippets:
 - fyne_keyboard_shortcuts:
     description: "Add keyboard shortcuts using Fyne."

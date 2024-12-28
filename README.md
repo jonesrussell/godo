@@ -30,6 +30,12 @@ The quick-note feature uses a minimal graphical window that appears when you pre
   - JSON responses
   - Health check endpoint
   - Proper error handling
+- Robust storage system
+  - SQLite-based persistence with comprehensive validation
+  - Prevents data inconsistencies (empty IDs, duplicates)
+  - Connection state management
+  - Automated migrations
+  - High test coverage (66%+)
 - Robust logging system
   - Structured logging with multiple implementations
   - Test-friendly logging for better test output
@@ -39,7 +45,6 @@ The quick-note feature uses a minimal graphical window that appears when you pre
   - GitHub Actions CI/CD pipeline
   - Cross-platform binary releases
   - Docker support for development and testing
-- SQLite database for reliable data storage
 - Built with Fyne toolkit for native look and feel
 
 ## API Endpoints

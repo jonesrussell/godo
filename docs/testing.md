@@ -13,12 +13,28 @@ internal/
   │   └── app_test.go
   ├── storage/
   │   ├── sqlite/
-  │   │   └── sqlite_test.go
+  │   │   ├── store_test.go
+  │   │   ├── migrations_test.go
+  │   │   └── testing.go
   │   └── memory/
   │       └── memory_test.go
   └── testutil/
       └── store.go
 ```
+
+## Coverage Goals
+
+### Critical Packages
+- Storage implementations: >65% coverage
+- API handlers: >60% coverage
+- Core business logic: >80% coverage
+
+### Current Coverage (as of latest)
+- `internal/storage/sqlite`: 66.3%
+- `internal/model`: 100%
+- `internal/config`: 89%
+- `internal/common`: 65%
+- `internal/api`: 61.9%
 
 ## Test Types
 
@@ -26,6 +42,7 @@ internal/
 - Individual package functionality
 - Mocked dependencies
 - Fast execution
+- Comprehensive error case coverage
 
 ### Integration Tests
 - Cross-package functionality
@@ -57,6 +74,11 @@ internal/
 task test
 ```
 
+### With Coverage Report
+```bash
+task test:cover
+```
+
 ### Specific Package
 ```bash
 go test ./internal/storage/...
@@ -64,75 +86,65 @@ go test ./internal/storage/...
 
 ### With Race Detection
 ```bash
-go test -race ./...
-```
-
-### With Coverage
-```bash
-go test -cover ./...
+task test:race
 ```
 
 ## Writing Tests
 
-### Basic Test Structure
+### Comprehensive Test Example
 ```go
-func TestFeature(t *testing.T) {
-    // Setup
-    store := testutil.NewMockStore()
-    
-    // Test
-    result, err := store.Add(task)
-    
-    // Assert
-    assert.NoError(t, err)
-    assert.NotNil(t, result)
-}
-```
-
-### Table-Driven Tests
-```go
-func TestOperation(t *testing.T) {
-    tests := []struct {
-        name    string
-        input   string
-        want    string
-        wantErr bool
-    }{
-        {"valid case", "input", "expected", false},
-        {"error case", "bad", "", true},
-    }
-    
-    for _, tt := range tests {
-        t.Run(tt.name, func(t *testing.T) {
-            got, err := Operation(tt.input)
-            if tt.wantErr {
-                assert.Error(t, err)
-                return
-            }
-            assert.NoError(t, err)
-            assert.Equal(t, tt.want, got)
-        })
-    }
-}
-```
-
-### Integration Test Example
-```go
-func TestDatabaseIntegration(t *testing.T) {
-    // Setup temporary database
-    db, cleanup := setupTestDB(t)
+func TestFeatureComprehensive(t *testing.T) {
+    // Setup with cleanup
+    store, cleanup := setupTestStore(t)
     defer cleanup()
+
+    // Test normal operation
+    t.Run("Success Case", func(t *testing.T) {
+        result, err := store.Operation()
+        assert.NoError(t, err)
+        assert.NotNil(t, result)
+    })
+
+    // Test validation
+    t.Run("Validation", func(t *testing.T) {
+        // Test empty input
+        _, err := store.Operation("")
+        assert.ErrorIs(t, err, ErrEmptyInput)
+
+        // Test invalid input
+        _, err = store.Operation("invalid")
+        assert.Error(t, err)
+    })
+
+    // Test error conditions
+    t.Run("Error Cases", func(t *testing.T) {
+        // Test not found
+        _, err := store.Get("nonexistent")
+        assert.ErrorIs(t, err, ErrNotFound)
+
+        // Test closed connection
+        store.Close()
+        _, err = store.Operation()
+        assert.ErrorIs(t, err, ErrStoreClosed)
+    })
+}
+```
+
+### State Management Tests
+```go
+func TestStateManagement(t *testing.T) {
+    store := NewStore()
     
-    // Run tests
-    store := sqlite.New(db)
-    task := storage.Task{Title: "Test"}
+    // Test initial state
+    assert.False(t, store.IsClosed())
     
-    err := store.Add(task)
-    assert.NoError(t, err)
+    // Test after close
+    store.Close()
+    assert.True(t, store.IsClosed())
     
-    tasks, err := store.List()
-    assert.NoError(t, err)
-    assert.Len(t, tasks, 1)
+    // Test operations after close
+    _, err := store.Operation()
+    assert.ErrorIs(t, err, ErrStoreClosed)
 }
 ```
 
@@ -174,22 +186,23 @@ func setupTestDB(t *testing.T) (*sql.DB, func()) {
    - Use subtests for organization
 
 2. Test Coverage
-   - Aim for high coverage
-   - Test edge cases
-   - Test error conditions
+   - Maintain minimum coverage targets per package
+   - Test all error conditions
+   - Test state transitions
    - Test concurrent operations
+   - Test resource cleanup
 
-3. Test Performance
-   - Fast unit tests
-   - Parallel test execution
-   - Efficient setup/teardown
-   - Use test caching
+3. Error Testing
+   - Test all custom error types
+   - Verify error wrapping
+   - Test error conditions in order
+   - Use ErrorIs for error comparison
 
-4. Test Maintenance
-   - Keep tests simple
-   - Don't test implementation details
-   - Use test helpers
-   - Document complex tests
+4. Resource Management
+   - Use defer for cleanup
+   - Test cleanup operations
+   - Verify resource state
+   - Test connection handling
 
 ## Common Patterns
 

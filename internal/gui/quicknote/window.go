@@ -102,13 +102,19 @@ func (w *Window) Setup() error {
 			Completed: false,
 		}
 
+		w.logger.Debug("Attempting to save task to SQLite", "task_id", task.ID)
 		if err := w.store.Add(task); err != nil {
-			w.logger.Error("Failed to save note", "error", err, "task", task)
+			w.logger.Error("Failed to save note to SQLite",
+				"error", err,
+				"task_id", task.ID,
+				"text", text)
 			// TODO: Show error to user
 			return
 		}
 
-		w.logger.Debug("Successfully saved note as task", "id", task.ID, "text", text)
+		w.logger.Debug("Successfully saved note as task in SQLite",
+			"task_id", task.ID,
+			"text", text)
 		w.input.SetText("")
 		w.logger.Debug("Cleared input field")
 		w.Hide()
@@ -116,7 +122,10 @@ func (w *Window) Setup() error {
 	}
 
 	// Create save button
-	saveBtn := widget.NewButton("Save", saveNote)
+	saveBtn := widget.NewButton("Save", func() {
+		w.logger.Debug("Save button clicked")
+		saveNote()
+	})
 
 	// Create content container
 	content := container.NewBorder(nil, saveBtn, nil, nil, w.input)

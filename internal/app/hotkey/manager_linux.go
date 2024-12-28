@@ -34,7 +34,9 @@ func (m *platformManager) Register() error {
 		case "shift":
 			mods = append(mods, hotkey.ModShift)
 		case "alt":
-			mods = append(mods, hotkey.ModAlt)
+			// On Linux, Alt can be either Mod1 or Mod4 depending on the system
+			mods = append(mods, hotkey.Mod1)
+			mods = append(mods, hotkey.Mod4)
 		}
 	}
 

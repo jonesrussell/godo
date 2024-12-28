@@ -11,3 +11,6 @@ vendor/
 coverage
 coverage.html
 internal/container/wire_*.go
+
+# Build output
+dist/

@@ -1,0 +1,190 @@
+openapi: 3.0.3
+info:
+  title: Godo API
+  description: API for Godo Todo Application with Quick-Note Support
+  version: 1.0.0
+  contact:
+    name: Russell Jones
+    url: https://github.com/jonesrussell/godo
+
+servers:
+- url: http://localhost:8080
+  description: Local development server
+
+paths:
+  /health:
+    get:
+      summary: Health check endpoint
+      description: Check if the API server is running
+      operationId: getHealth
+      responses:
+        '200':
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ok"
+
+  /api/v1/tasks:
+    get:
+      summary: List all tasks
+      description: Retrieve a list of all tasks
+      operationId: listTasks
+      responses:
+        '200':
+          description: List of tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Task'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+    post:
+      summary: Create a new task
+      description: Create a new task with the provided details
+      operationId: createTask
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskInput'
+      responses:
+        '201':
+          description: Task created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/tasks/{id}:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Task ID
+
+    put:
+      summary: Update a task
+      description: Update an existing task by ID
+      operationId: updateTask
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskInput'
+      responses:
+        '200':
+          description: Task updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+    delete:
+      summary: Delete a task
+      description: Delete an existing task by ID
+      operationId: deleteTask
+      responses:
+        '204':
+          description: Task deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+components:
+  schemas:
+    Task:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "3d649c5a-ec49-45ab-8868-c07e63c8432c"
+        title:
+          type: string
+          example: "Buy groceries"
+        description:
+          type: string
+          example: "Milk, bread, eggs"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - id
+      - title
+      - created_at
+      - updated_at
+
+    TaskInput:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 255
+          example: "Buy groceries"
+        description:
+          type: string
+          maxLength: 1000
+          example: "Milk, bread, eggs"
+      required:
+      - title
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "Invalid request body"
+
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'

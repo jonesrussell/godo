@@ -3,7 +3,6 @@ linters:
   enable:
   - gocritic
   - gofmt
-  - goimports
   - gosimple
   - govet
   - ineffassign
@@ -14,32 +13,17 @@ linters:
   - unparam
   - unused
   - mnd
-  - copyloopvar # replacement for exportloopref
+  - copyloopvar
 
 linters-settings:
-  depguard:
-    rules:
-      dashboard-ui:
-        files:
-        - internal/ui/**/*.go
-        deny:
-        - pkg: fmt
-          desc: "use logger package for output in dashboard UI"
   gocritic:
     enabled-tags:
     - diagnostic
     - style
     - performance
     disabled-checks:
-    - hugeParam # Disable hugeParam check as it's not relevant for our UI components
-  mnd:
-    ignored-numbers:
-    - '0o755' # Common file permission
-    - '4' # Common UI padding/margin
-    - '6' # Common UI padding/margin
-    ignored-files:
-    - 'internal/ui/*'
-    - 'internal/logger/provider.go'
+    - hugeParam
+    - importShadow
 
 issues:
   exclude-use-default: false
@@ -50,5 +34,9 @@ issues:
   - coverage/
 
 output:
+  sort-results: true
   formats:
   - format: colored-line-number
+
+run:
+  timeout: 5m

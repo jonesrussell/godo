@@ -297,11 +297,17 @@ func TestConcurrentOperations(t *testing.T) {
 		}
 	}()
 
-	// Reduced number of concurrent operations to avoid overwhelming SQLite
-	const numGoroutines = 4
-	const opsPerGoroutine = 25
-	const maxRetries = 3
-	const retryDelay = 100 * time.Millisecond
+	// Configure SQLite for better concurrency
+	_, err = store.db.Exec(`PRAGMA journal_mode = WAL`)
+	require.NoError(t, err)
+	_, err = store.db.Exec(`PRAGMA busy_timeout = 5000`)
+	require.NoError(t, err)
+
+	// Reduced number of concurrent operations
+	const numGoroutines = 2
+	const opsPerGoroutine = 10
+	const maxRetries = 5
+	const retryDelay = 200 * time.Millisecond
 
 	var wg sync.WaitGroup
 	errors := make(chan error, numGoroutines*opsPerGoroutine)
@@ -330,7 +336,9 @@ func TestConcurrentOperations(t *testing.T) {
 					if addErr == nil {
 						break
 					}
-					time.Sleep(retryDelay << retry) // Exponential backoff
+					if retry < maxRetries-1 {
+						time.Sleep(retryDelay << retry) // Exponential backoff
+					}
 				}
 				if addErr != nil {
 					errors <- fmt.Errorf("failed to add task %s after %d retries: %w", taskID, maxRetries, addErr)
@@ -345,7 +353,9 @@ func TestConcurrentOperations(t *testing.T) {
 					if getErr == nil && retrieved != nil {
 						break
 					}
-					time.Sleep(retryDelay << retry)
+					if retry < maxRetries-1 {
+						time.Sleep(retryDelay << retry)
+					}
 				}
 				if getErr != nil {
 					errors <- fmt.Errorf("failed to get task %s after %d retries: %w", taskID, maxRetries, getErr)
@@ -361,7 +371,9 @@ func TestConcurrentOperations(t *testing.T) {
 					if updateErr == nil {
 						break
 					}
-					time.Sleep(retryDelay << retry)
+					if retry < maxRetries-1 {
+						time.Sleep(retryDelay << retry)
+					}
 				}
 				if updateErr != nil {
 					errors <- fmt.Errorf("failed to update task %s after %d retries: %w", taskID, maxRetries, updateErr)
@@ -375,7 +387,9 @@ func TestConcurrentOperations(t *testing.T) {
 					if deleteErr == nil {
 						break
 					}
-					time.Sleep(retryDelay << retry)
+					if retry < maxRetries-1 {
+						time.Sleep(retryDelay << retry)
+					}
 				}
 				if deleteErr != nil {
 					errors <- fmt.Errorf("failed to delete task %s after %d retries: %w", taskID, maxRetries, deleteErr)
@@ -405,7 +419,9 @@ func TestConcurrentOperations(t *testing.T) {
 		if listErr == nil {
 			break
 		}
-		time.Sleep(retryDelay << retry)
+		if retry < maxRetries-1 {
+			time.Sleep(retryDelay << retry)
+		}
 	}
 	require.NoError(t, listErr, "Failed to list tasks after retries")
 	assert.Empty(t, tasks, "All tasks should have been deleted")

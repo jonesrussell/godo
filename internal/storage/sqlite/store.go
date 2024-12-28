@@ -4,6 +4,7 @@ package sqlite
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -37,6 +38,16 @@ func New(path string, logger logger.Logger) (*Store, error) {
 	db, err := sql.Open("sqlite", path)
 	if err != nil {
 		return nil, err
+	}
+
+	// Configure SQLite for better concurrency
+	if _, err := db.Exec(`PRAGMA journal_mode = WAL`); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("failed to set journal mode: %w", err)
+	}
+	if _, err := db.Exec(`PRAGMA busy_timeout = 5000`); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("failed to set busy timeout: %w", err)
 	}
 
 	// Test the connection

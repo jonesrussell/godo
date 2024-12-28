@@ -37,14 +37,14 @@ func New(path string, logger logger.Logger) (*Store, error) {
 
 func (s *Store) Add(task storage.Task) error {
 	_, err := s.db.Exec(
-		"INSERT INTO tasks (id, title, description, created_at, updated_at, completed_at) VALUES (?, ?, ?, ?, ?, ?)",
-		task.ID, task.Title, task.Description, task.CreatedAt, task.UpdatedAt, task.CompletedAt,
+		"INSERT INTO tasks (id, content, done, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
+		task.ID, task.Content, task.Done, task.CreatedAt, task.UpdatedAt,
 	)
 	return err
 }
 
 func (s *Store) List() ([]storage.Task, error) {
-	rows, err := s.db.Query("SELECT id, title, description, created_at, updated_at, completed_at FROM tasks")
+	rows, err := s.db.Query("SELECT id, content, done, created_at, updated_at FROM tasks")
 	if err != nil {
 		return nil, err
 	}
@@ -53,22 +53,14 @@ func (s *Store) List() ([]storage.Task, error) {
 	var tasks []storage.Task
 	for rows.Next() {
 		var task storage.Task
-		var description sql.NullString
-		var completedAt sql.NullTime
 		if err := rows.Scan(
 			&task.ID,
-			&task.Title,
-			&description,
+			&task.Content,
+			&task.Done,
 			&task.CreatedAt,
 			&task.UpdatedAt,
-			&completedAt,
 		); err != nil {
 			return nil, err
-		}
-
-		task.Description = description.String
-		if completedAt.Valid {
-			task.CompletedAt = completedAt.Time
 		}
 		tasks = append(tasks, task)
 	}
@@ -77,8 +69,8 @@ func (s *Store) List() ([]storage.Task, error) {
 
 func (s *Store) Update(task storage.Task) error {
 	result, err := s.db.Exec(
-		"UPDATE tasks SET title = ?, description = ?, updated_at = ?, completed_at = ? WHERE id = ?",
-		task.Title, task.Description, time.Now(), task.CompletedAt, task.ID,
+		"UPDATE tasks SET content = ?, done = ?, updated_at = ? WHERE id = ?",
+		task.Content, task.Done, time.Now(), task.ID,
 	)
 	if err != nil {
 		return err

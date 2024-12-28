@@ -1,46 +1,70 @@
 package storage
 
-// MockStore implements Store interface for testing
+import (
+	"sync"
+)
+
+// MockStore provides a mock implementation of Store for testing
 type MockStore struct {
-	SaveCalled   bool
-	LoadCalled   bool
-	CloseCalled  bool
-	DeleteCalled bool
-	AddCalled    bool
-	Data         map[string]interface{}
+	tasks map[string]Task
+	mu    sync.RWMutex
 }
 
 // NewMockStore creates a new mock store
 func NewMockStore() *MockStore {
 	return &MockStore{
-		Data: make(map[string]interface{}),
+		tasks: make(map[string]Task),
 	}
 }
 
-func (m *MockStore) Save(key string, value interface{}) error {
-	m.SaveCalled = true
-	m.Data[key] = value
+// List returns all tasks
+func (s *MockStore) List() ([]Task, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	tasks := make([]Task, 0, len(s.tasks))
+	for _, task := range s.tasks {
+		tasks = append(tasks, task)
+	}
+	return tasks, nil
+}
+
+// Add creates a new task
+func (s *MockStore) Add(task Task) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.tasks[task.ID] = task
 	return nil
 }
 
-func (m *MockStore) Load(key string) (interface{}, error) {
-	m.LoadCalled = true
-	return m.Data[key], nil
-}
+// Update modifies an existing task
+func (s *MockStore) Update(task Task) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
-func (m *MockStore) Delete(key string) error {
-	m.DeleteCalled = true
-	delete(m.Data, key)
+	if _, exists := s.tasks[task.ID]; !exists {
+		return ErrTaskNotFound
+	}
+
+	s.tasks[task.ID] = task
 	return nil
 }
 
-func (m *MockStore) Close() error {
-	m.CloseCalled = true
+// Delete removes a task
+func (s *MockStore) Delete(id string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if _, exists := s.tasks[id]; !exists {
+		return ErrTaskNotFound
+	}
+
+	delete(s.tasks, id)
 	return nil
 }
 
-func (m *MockStore) Add(key string, value interface{}) error {
-	m.AddCalled = true
-	m.Data[key] = value
+// Close is a no-op for the mock store
+func (s *MockStore) Close() error {
 	return nil
 }

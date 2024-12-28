@@ -1,4 +1,4 @@
-// Package testutil provides testing utilities
+// Package testutil provides testing utilities and mock implementations
 package testutil
 
 import (

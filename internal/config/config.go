@@ -268,7 +268,10 @@ func (e *ConfigError) Unwrap() error {
 
 // Error represents a configuration error
 type Error struct {
-	Code    string
+	Field   string
 	Message string
-	Err     error
+}
+
+func (e *Error) Error() string {
+	return fmt.Sprintf("%s: %s", e.Field, e.Message)
 }

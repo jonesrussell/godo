@@ -7,6 +7,9 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+// fieldMultiplier is used to calculate the capacity for key-value pairs
+const fieldMultiplier = 2
+
 // Logger defines the interface for logging
 type Logger interface {
 	Debug(msg string, keysAndValues ...interface{})
@@ -38,39 +41,46 @@ func NewZapLogger(config *common.LogConfig) (*ZapLogger, error) {
 	}, nil
 }
 
+// Debug logs a debug message with optional key-value pairs
 func (l *ZapLogger) Debug(msg string, keysAndValues ...interface{}) {
 	l.logger.Debugw(msg, keysAndValues...)
 }
 
+// Info logs an info message with optional key-value pairs
 func (l *ZapLogger) Info(msg string, keysAndValues ...interface{}) {
 	l.logger.Infow(msg, keysAndValues...)
 }
 
+// Warn logs a warning message with optional key-value pairs
 func (l *ZapLogger) Warn(msg string, keysAndValues ...interface{}) {
 	l.logger.Warnw(msg, keysAndValues...)
 }
 
+// Error logs an error message with optional key-value pairs
 func (l *ZapLogger) Error(msg string, keysAndValues ...interface{}) {
 	l.logger.Errorw(msg, keysAndValues...)
 }
 
+// WithError returns a new logger with the error field set
 func (l *ZapLogger) WithError(err error) Logger {
 	return &ZapLogger{
 		logger: l.logger.With("error", err),
 	}
 }
 
+// WithField returns a new logger with the given field set
 func (l *ZapLogger) WithField(key string, value interface{}) Logger {
 	return &ZapLogger{
 		logger: l.logger.With(key, value),
 	}
 }
 
+// WithFields returns a new logger with the given fields set
 func (l *ZapLogger) WithFields(fields map[string]interface{}) Logger {
 	if len(fields) == 0 {
 		return l
 	}
-	args := make([]interface{}, 0, len(fields)*2)
+	args := make([]interface{}, 0, len(fields)*fieldMultiplier)
 	for k, v := range fields {
 		args = append(args, k, v)
 	}

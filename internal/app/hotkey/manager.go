@@ -1,3 +1,4 @@
+// Package hotkey provides hotkey management functionality for the application
 package hotkey
 
 import (
@@ -6,9 +7,13 @@ import (
 
 // Manager defines the interface for hotkey management
 type Manager interface {
+	// Register registers the hotkey with the system
 	Register() error
+	// Unregister removes the hotkey registration from the system
 	Unregister() error
+	// Start begins listening for hotkey events
 	Start() error
+	// Stop ends the hotkey listening and unregisters the hotkey
 	Stop() error
 }
 
@@ -17,7 +22,7 @@ type DefaultManager struct {
 	hk *hotkey.Hotkey
 }
 
-// NewManager creates a new DefaultManager
+// NewManager creates a new DefaultManager with the specified modifiers and key
 func NewManager(modifiers []hotkey.Modifier, key hotkey.Key) (*DefaultManager, error) {
 	hk := hotkey.New(modifiers, key)
 	if err := hk.Register(); err != nil {
@@ -29,23 +34,27 @@ func NewManager(modifiers []hotkey.Modifier, key hotkey.Key) (*DefaultManager, e
 	}, nil
 }
 
+// Register registers the hotkey with the system
 func (m *DefaultManager) Register() error {
 	return m.hk.Register()
 }
 
+// Unregister removes the hotkey registration from the system
 func (m *DefaultManager) Unregister() error {
 	return m.hk.Unregister()
 }
 
+// Start begins listening for hotkey events
 func (m *DefaultManager) Start() error {
 	go func() {
 		for range m.hk.Keydown() {
-			// Handle keydown event
+			// TODO: Implement keydown event handling
 		}
 	}()
 	return nil
 }
 
+// Stop ends the hotkey listening and unregisters the hotkey
 func (m *DefaultManager) Stop() error {
 	return m.hk.Unregister()
 }

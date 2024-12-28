@@ -23,7 +23,7 @@ func (m *MockMainWindow) Hide() { m.HideCalled = true }
 func (m *MockMainWindow) SetContent(content fyne.CanvasObject) { m.ContentSet = content }
 
 // Resize simulates resizing the window and records that it was called
-func (m *MockMainWindow) Resize(size fyne.Size) { m.ResizeCalled = true }
+func (m *MockMainWindow) Resize(_ fyne.Size) { m.ResizeCalled = true }
 
 // CenterOnScreen simulates centering the window and records that it was called
 func (m *MockMainWindow) CenterOnScreen() { m.CenterCalled = true }

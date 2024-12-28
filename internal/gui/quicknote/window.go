@@ -22,10 +22,12 @@ func New(store storage.Store, logger logger.Logger) *Window {
 	}
 }
 
+// Show displays the quick note window
 func (w *Window) Show() {
 	w.window.Show()
 }
 
+// Hide hides the quick note window
 func (w *Window) Hide() {
 	w.window.Hide()
 }

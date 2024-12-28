@@ -48,7 +48,8 @@ func (m *DefaultManager) Unregister() error {
 func (m *DefaultManager) Start() error {
 	go func() {
 		for range m.hk.Keydown() {
-			// TODO: Implement keydown event handling
+			// TODO: This block is intentionally empty as event handling will be implemented later
+			// The empty block is required to consume events from the channel
 		}
 	}()
 	return nil

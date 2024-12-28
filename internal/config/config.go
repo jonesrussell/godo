@@ -168,7 +168,7 @@ func (p *Provider) Load() (*Config, error) {
 	}
 	p.log.Debug("validation passed")
 
-	if err := p.resolvePaths(cfg); err != nil {
+	if err := p.ResolvePaths(cfg); err != nil {
 		p.log.WithError(err).Error("path resolution error")
 		return nil, fmt.Errorf("failed to resolve paths: %w", err)
 	}
@@ -180,8 +180,8 @@ func (p *Provider) Load() (*Config, error) {
 	return cfg, nil
 }
 
-// resolvePaths resolves relative paths in the config to absolute paths
-func (p *Provider) resolvePaths(cfg *Config) error {
+// ResolvePaths resolves relative paths in the config to absolute paths
+func (p *Provider) ResolvePaths(cfg *Config) error {
 	// Skip path resolution for tests or when explicitly set to relative
 	if os.Getenv("GODO_TEST_MODE") == "true" {
 		return nil
@@ -210,7 +210,7 @@ func ValidateConfig(cfg *Config) error {
 	}
 
 	if len(validationErrors) > 0 {
-		return &ConfigError{
+		return &Error{
 			Op:  "validate",
 			Err: fmt.Errorf("validation failed: %s", strings.Join(validationErrors, "; ")),
 		}
@@ -252,26 +252,26 @@ func NewDefaultConfig() *Config {
 	}
 }
 
-// Custom error types for better error handling
-type ConfigError struct {
+// Error represents a configuration operation error
+type Error struct {
 	Op  string
 	Err error
 }
 
-func (e *ConfigError) Error() string {
+func (e *Error) Error() string {
 	return fmt.Sprintf("config %s: %v", e.Op, e.Err)
 }
 
-func (e *ConfigError) Unwrap() error {
+func (e *Error) Unwrap() error {
 	return e.Err
 }
 
-// Error represents a configuration error
-type Error struct {
+// ValidationError represents a configuration validation error
+type ValidationError struct {
 	Field   string
 	Message string
 }
 
-func (e *Error) Error() string {
+func (e *ValidationError) Error() string {
 	return fmt.Sprintf("%s: %s", e.Field, e.Message)
 }

@@ -1,5 +1,21 @@
 {
+    "go.lintTool": "golangci-lint",
+    "go.lintFlags": [
+        "--fast"
+    ],
+    "go.lintOnSave": "package",
+    "go.useLanguageServer": true,
     "gopls": {
-        "buildFlags": ["-tags=wireinject,!wireinject"]
+        "formatting.gofumpt": true,
+        "ui.diagnostic.analyses": {
+            "unusedparams": true,
+            "shadow": true
+        }
+    },
+    "[go]": {
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "explicit"
+        }
     }
 } 

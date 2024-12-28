@@ -3,3 +3,5 @@
 package container
 
 // Windows-specific initializations if needed
+
+// Package container provides dependency injection and container management for Windows

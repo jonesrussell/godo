@@ -46,12 +46,24 @@ tasks:
     - golangci-lint run ./...
 
   test:
+    desc: Run basic tests
+    deps: [ wire ]
+    cmds:
+    - go test ./...
+
+  test:race:
+    desc: Run tests with race detection
+    deps: [ wire ]
+    cmds:
+    - go test -race ./...
+
+  test:cover:
     desc: Run tests with coverage
     deps: [ wire ]
     platforms: [ windows ]
     cmds:
     - powershell New-Item -ItemType Directory -Force -Path {{.COVERAGE_DIR}}
-    - go test -race -coverprofile={{.COVERAGE_DIR}}/coverage.out -covermode=atomic ./...
+    - go test -coverprofile={{.COVERAGE_DIR}}/coverage.out -covermode=atomic ./...
     - go tool cover -html={{.COVERAGE_DIR}}/coverage.out -o {{.COVERAGE_DIR}}/coverage.html
 
   test:linux:

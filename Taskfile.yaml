@@ -2,7 +2,7 @@ version: '3'
 
 vars:
   BINARY_NAME: godo
-  BUILD_DIR: bin
+  BUILD_DIR: dist
   COVERAGE_DIR: coverage
   GO_VERSION: 1.23
   GOOS:
@@ -106,8 +106,35 @@ tasks:
     cmds:
     - task: wire:{{OS}}
 
+  # Docker-based builds
+  docker:build-image:
+    desc: Build the Docker builder image
+    cmds:
+    - docker build -t godo-builder -f build/docker/Dockerfile .
+
+  docker:build-all:
+    desc: Build both Windows and Linux binaries using Docker
+    deps: [ wire ]
+    cmds:
+    - powershell .\build\build.ps1
+
+  docker:build-linux:
+    desc: Build Linux binary using Docker
+    deps: [ wire ]
+    cmds:
+    - mkdir -p {{.BUILD_DIR}}
+    - docker run --rm -v "{{.BUILD_DIR}}:/go/src/app/dist" godo-builder go build -tags linux -ldflags "-s -w" -o dist/godo ./cmd/godo
+
+  docker:build-windows:
+    desc: Build Windows binary using Docker
+    deps: [ wire ]
+    cmds:
+    - mkdir -p {{.BUILD_DIR}}
+    - docker run --rm -v "{{.BUILD_DIR}}:/go/src/app/dist" -e GOOS=windows -e GOARCH=amd64 -e CGO_ENABLED=1 -e CC=x86_64-w64-mingw32-gcc godo-builder go build -tags windows -ldflags "-s -w" -o dist/godo.exe ./cmd/godo
+
+  # Native builds (for development)
   build:windows:
-    desc: Build for Windows
+    desc: Build for Windows (native)
     deps: [ wire:windows ]
     platforms: [ windows ]
     env:
@@ -119,7 +146,7 @@ tasks:
     - go build -tags "windows" -o {{.BUILD_DIR}}/{{.BINARY_NAME}}.exe cmd/godo/main.go
 
   build:linux:
-    desc: Build for Linux
+    desc: Build for Linux (native)
     deps: [ wire:linux ]
     platforms: [ linux ]
     env:
@@ -131,7 +158,7 @@ tasks:
     - go build -tags "linux" -o {{.BUILD_DIR}}/{{.BINARY_NAME}} cmd/godo/main.go
 
   build:
-    desc: Build for current platform
+    desc: Build for current platform (native)
     cmds:
     - task: build:{{OS}}
 
@@ -164,7 +191,7 @@ tasks:
     - task: fmt
     - task: lint
     - task: test
-    - task: build
+    - task: docker:build-all
 
   act:build:
     desc: Run GitHub Actions build job locally using act
@@ -184,4 +211,4 @@ tasks:
     - task: wire
     - task: lint
     - task: test
-    - task: build
+    - task: docker:build-all

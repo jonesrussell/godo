@@ -492,7 +492,16 @@ func TestLoad(t *testing.T) {
 		{
 			name: "invalid config",
 			setup: func() (*config.Provider, func()) {
-				return config.NewProvider([]string{"testdata"}, "invalid", "yaml"), func() {}
+				dir := t.TempDir()
+				invalidConfig := []byte(`
+app:
+  name: "" # Invalid: empty name
+logger:
+  level: "invalid" # Invalid: wrong log level
+`)
+				err := os.WriteFile(filepath.Join(dir, "invalid.yaml"), invalidConfig, 0o600)
+				require.NoError(t, err)
+				return config.NewProvider([]string{dir}, "invalid", "yaml"), func() {}
 			},
 			wantError: true,
 		},

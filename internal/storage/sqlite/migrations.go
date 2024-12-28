@@ -35,7 +35,7 @@ func newMigrationSet() *migrationSet {
 			);
 			
 			INSERT INTO _tasks_new (id, content, done, created_at, updated_at)
-			SELECT id, title, 0, created_at, updated_at FROM tasks;
+			SELECT id, content, done, created_at, updated_at FROM tasks;
 			
 			DROP TABLE IF EXISTS tasks;
 			ALTER TABLE _tasks_new RENAME TO tasks;

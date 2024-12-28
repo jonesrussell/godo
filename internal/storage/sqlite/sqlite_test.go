@@ -42,16 +42,23 @@ func TestSQLiteStore(t *testing.T) {
 		tasks, err := store.List()
 		assert.NoError(t, err)
 		assert.Len(t, tasks, 1)
-		assert.Equal(t, task, tasks[0])
+		
+		// Compare fields individually
+		assert.Equal(t, task.ID, tasks[0].ID)
+		assert.Equal(t, task.Content, tasks[0].Content)
+		assert.Equal(t, task.Done, tasks[0].Done)
+		// Compare times with some tolerance for database rounding
+		assert.WithinDuration(t, task.CreatedAt, tasks[0].CreatedAt, time.Second)
+		assert.WithinDuration(t, task.UpdatedAt, tasks[0].UpdatedAt, time.Second)
 	})
 
 	t.Run("Update", func(t *testing.T) {
 		task := storage.Task{
 			ID:        "1",
 			Content:   "Updated Task",
-			Done:      true,
-			CreatedAt: now,
-			UpdatedAt: now,
+				Done:      true,
+				CreatedAt: now,
+				UpdatedAt: now,
 		}
 
 		err := store.Update(task)

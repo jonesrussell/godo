@@ -54,19 +54,39 @@ jobs:
             const tag = context.ref.replace('refs/tags/', '');
             
             try {
-              const release = await github.rest.repos.getRelease({
+              // First get the release by tag
+              const releases = await github.rest.repos.listReleases({
                 owner: context.repo.owner,
-                repo: context.repo.repo,
-                tag_name: tag
+                repo: context.repo.repo
               });
+              
+              const release = releases.data.find(r => r.tag_name === tag);
+              if (!release) {
+                console.log('Release not found for tag:', tag);
+                return;
+              }
 
+              // Get discussion categories to find the Releases category
+              const categories = await github.rest.discussions.listDiscussionCategories({
+                owner: context.repo.owner,
+                repo: context.repo.repo
+              });
+              
+              const releasesCategory = categories.data.find(c => c.name === 'Releases');
+              if (!releasesCategory) {
+                console.log('Releases discussion category not found');
+                return;
+              }
+
+              // Create the discussion
               await github.rest.discussions.create({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                category_id: "DIC_kwDOLKQXXc4CcDVS",
+                category_id: releasesCategory.id,
                 title: `Release ${tag}`,
-                body: release.data.body
+                body: release.body
               });
             } catch (error) {
               console.log('Error creating discussion:', error);
+              // Don't fail the workflow if discussion creation fails
             } 

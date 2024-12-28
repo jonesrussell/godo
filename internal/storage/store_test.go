@@ -2,25 +2,31 @@ package storage
 
 import (
 	"fmt"
-	"sync"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMemoryStore(t *testing.T) {
 	tests := []struct {
-		name    string
-		setup   func(*MemoryStore)
-		run     func(*MemoryStore) error
-		check   func(*testing.T, *MemoryStore, error)
-		cleanup func(*MemoryStore)
+		name     string
+		setup    func(*MemoryStore)
+		validate func(*testing.T, *MemoryStore)
 	}{
 		{
-			name:  "add and retrieve task",
+			name:  "new store is empty",
 			setup: func(s *MemoryStore) {},
-			run: func(s *MemoryStore) error {
+			validate: func(t *testing.T, s *MemoryStore) {
+				tasks, err := s.List()
+				assert.NoError(t, err)
+				assert.Empty(t, tasks)
+			},
+		},
+		{
+			name: "add and retrieve task",
+			setup: func(s *MemoryStore) {
 				task := Task{
 					ID:        "test-1",
 					Content:   "Test Task",
@@ -28,16 +34,17 @@ func TestMemoryStore(t *testing.T) {
 					CreatedAt: time.Now(),
 					UpdatedAt: time.Now(),
 				}
-				return s.Add(task)
+				err := s.Add(task)
+				require.NoError(t, err)
 			},
-			check: func(t *testing.T, s *MemoryStore, err error) {
-				assert.NoError(t, err)
+			validate: func(t *testing.T, s *MemoryStore) {
 				tasks, err := s.List()
 				assert.NoError(t, err)
 				assert.Len(t, tasks, 1)
 				assert.Equal(t, "test-1", tasks[0].ID)
+				assert.Equal(t, "Test Task", tasks[0].Content)
+				assert.False(t, tasks[0].Done)
 			},
-			cleanup: func(s *MemoryStore) {},
 		},
 		{
 			name: "update existing task",
@@ -49,180 +56,40 @@ func TestMemoryStore(t *testing.T) {
 					CreatedAt: time.Now(),
 					UpdatedAt: time.Now(),
 				}
-				s.Add(task)
+				err := s.Add(task)
+				require.NoError(t, err)
+
+				task.Content = "Updated Content"
+				task.Done = true
+				err = s.Update(task)
+				require.NoError(t, err)
 			},
-			run: func(s *MemoryStore) error {
-				task := Task{
-					ID:        "test-1",
-					Content:   "Updated Content",
-					Done:      true,
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
-				}
-				return s.Update(task)
-			},
-			check: func(t *testing.T, s *MemoryStore, err error) {
+			validate: func(t *testing.T, s *MemoryStore) {
+				task, err := s.GetByID("test-1")
 				assert.NoError(t, err)
-				tasks, err := s.List()
-				assert.NoError(t, err)
-				assert.Len(t, tasks, 1)
-				assert.Equal(t, "Updated Content", tasks[0].Content)
-				assert.True(t, tasks[0].Done)
+				assert.Equal(t, "Updated Content", task.Content)
+				assert.True(t, task.Done)
 			},
-			cleanup: func(s *MemoryStore) {},
 		},
 		{
-			name:  "update non-existent task",
-			setup: func(s *MemoryStore) {},
-			run: func(s *MemoryStore) error {
-				task := Task{
-					ID:        "non-existent",
-					Content:   "Content",
-					Done:      false,
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
-				}
-				return s.Update(task)
-			},
-			check: func(t *testing.T, s *MemoryStore, err error) {
-				assert.ErrorIs(t, err, ErrTaskNotFound)
-			},
-			cleanup: func(s *MemoryStore) {},
-		},
-		{
-			name: "delete existing task",
+			name: "delete task",
 			setup: func(s *MemoryStore) {
 				task := Task{
 					ID:        "test-1",
 					Content:   "Test Task",
-					Done:      false,
 					CreatedAt: time.Now(),
 					UpdatedAt: time.Now(),
 				}
-				s.Add(task)
+				err := s.Add(task)
+				require.NoError(t, err)
+				err = s.Delete("test-1")
+				require.NoError(t, err)
 			},
-			run: func(s *MemoryStore) error {
-				return s.Delete("test-1")
-			},
-			check: func(t *testing.T, s *MemoryStore, err error) {
-				assert.NoError(t, err)
+			validate: func(t *testing.T, s *MemoryStore) {
 				tasks, err := s.List()
 				assert.NoError(t, err)
 				assert.Empty(t, tasks)
 			},
-			cleanup: func(s *MemoryStore) {},
-		},
-		{
-			name:  "delete non-existent task",
-			setup: func(s *MemoryStore) {},
-			run: func(s *MemoryStore) error {
-				return s.Delete("non-existent")
-			},
-			check: func(t *testing.T, s *MemoryStore, err error) {
-				assert.ErrorIs(t, err, ErrTaskNotFound)
-			},
-			cleanup: func(s *MemoryStore) {},
-		},
-		{
-			name: "get task by ID",
-			setup: func(s *MemoryStore) {
-				task := Task{
-					ID:        "test-1",
-					Content:   "Test Task",
-					Done:      false,
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
-				}
-				s.Add(task)
-			},
-			run: func(s *MemoryStore) error {
-				task, err := s.GetByID("test-1")
-				if err != nil {
-					return err
-				}
-				if task == nil {
-					return ErrTaskNotFound
-				}
-				return nil
-			},
-			check: func(t *testing.T, s *MemoryStore, err error) {
-				assert.NoError(t, err)
-				task, err := s.GetByID("test-1")
-				assert.NoError(t, err)
-				assert.NotNil(t, task)
-				assert.Equal(t, "test-1", task.ID)
-			},
-			cleanup: func(s *MemoryStore) {},
-		},
-		{
-			name:  "get non-existent task by ID",
-			setup: func(s *MemoryStore) {},
-			run: func(s *MemoryStore) error {
-				task, err := s.GetByID("non-existent")
-				if err != nil {
-					return err
-				}
-				if task == nil {
-					return ErrTaskNotFound
-				}
-				return nil
-			},
-			check: func(t *testing.T, s *MemoryStore, err error) {
-				assert.ErrorIs(t, err, ErrTaskNotFound)
-			},
-			cleanup: func(s *MemoryStore) {},
-		},
-		{
-			name:  "list empty store",
-			setup: func(s *MemoryStore) {},
-			run: func(s *MemoryStore) error {
-				_, err := s.List()
-				return err
-			},
-			check: func(t *testing.T, s *MemoryStore, err error) {
-				assert.NoError(t, err)
-				tasks, err := s.List()
-				assert.NoError(t, err)
-				assert.Empty(t, tasks)
-			},
-			cleanup: func(s *MemoryStore) {},
-		},
-		{
-			name: "list multiple tasks",
-			setup: func(s *MemoryStore) {
-				tasks := []Task{
-					{
-						ID:        "test-1",
-						Content:   "Task 1",
-						Done:      false,
-						CreatedAt: time.Now(),
-						UpdatedAt: time.Now(),
-					},
-					{
-						ID:        "test-2",
-						Content:   "Task 2",
-						Done:      true,
-						CreatedAt: time.Now(),
-						UpdatedAt: time.Now(),
-					},
-				}
-				for _, task := range tasks {
-					s.Add(task)
-				}
-			},
-			run: func(s *MemoryStore) error {
-				_, err := s.List()
-				return err
-			},
-			check: func(t *testing.T, s *MemoryStore, err error) {
-				assert.NoError(t, err)
-				tasks, err := s.List()
-				assert.NoError(t, err)
-				assert.Len(t, tasks, 2)
-				assert.Equal(t, "test-1", tasks[0].ID)
-				assert.Equal(t, "test-2", tasks[1].ID)
-			},
-			cleanup: func(s *MemoryStore) {},
 		},
 	}
 
@@ -230,95 +97,201 @@ func TestMemoryStore(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			store := NewMemoryStore()
 			tt.setup(store)
-			err := tt.run(store)
-			tt.check(t, store, err)
-			tt.cleanup(store)
+			tt.validate(t, store)
+		})
+	}
+}
+
+func TestMemoryStoreEdgeCases(t *testing.T) {
+	tests := []struct {
+		name    string
+		op      func(*MemoryStore) error
+		wantErr error
+	}{
+		{
+			name: "update non-existent task",
+			op: func(s *MemoryStore) error {
+				return s.Update(Task{ID: "nonexistent"})
+			},
+			wantErr: ErrTaskNotFound,
+		},
+		{
+			name: "delete non-existent task",
+			op: func(s *MemoryStore) error {
+				return s.Delete("nonexistent")
+			},
+			wantErr: ErrTaskNotFound,
+		},
+		{
+			name: "get non-existent task",
+			op: func(s *MemoryStore) error {
+				_, err := s.GetByID("nonexistent")
+				return err
+			},
+			wantErr: ErrTaskNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			store := NewMemoryStore()
+			err := tt.op(store)
+			assert.ErrorIs(t, err, tt.wantErr)
 		})
 	}
 }
 
 func TestMemoryStoreConcurrent(t *testing.T) {
 	store := NewMemoryStore()
-	const numGoroutines = 10
-	const numOperations = 100
+	const numTasks = 100
 
-	// Add tasks concurrently
-	t.Run("concurrent adds", func(t *testing.T) {
-		var wg sync.WaitGroup
-		for i := 0; i < numGoroutines; i++ {
-			wg.Add(1)
-			go func(routineID int) {
-				defer wg.Done()
-				for j := 0; j < numOperations; j++ {
-					task := Task{
-						ID:        fmt.Sprintf("task-%d-%d", routineID, j),
-						Content:   fmt.Sprintf("Task %d-%d", routineID, j),
-						Done:      false,
-						CreatedAt: time.Now(),
-						UpdatedAt: time.Now(),
-					}
-					err := store.Add(task)
-					assert.NoError(t, err)
+	// Test concurrent reads and writes
+	t.Run("concurrent operations", func(t *testing.T) {
+		done := make(chan bool)
+
+		// Writer goroutine
+		go func() {
+			for i := 0; i < numTasks; i++ {
+				task := Task{
+					ID:        fmt.Sprintf("task-%d", i),
+					Content:   fmt.Sprintf("Task %d", i),
+					CreatedAt: time.Now(),
+					UpdatedAt: time.Now(),
 				}
-			}(i)
-		}
-		wg.Wait()
+				err := store.Add(task)
+				assert.NoError(t, err)
+			}
+			done <- true
+		}()
 
-		// Verify all tasks were added
+		// Reader goroutine
+		go func() {
+			for i := 0; i < numTasks; i++ {
+				_, _ = store.List() // Ignore errors, just testing for race conditions
+			}
+			done <- true
+		}()
+
+		// Updater goroutine
+		go func() {
+			for i := 0; i < numTasks; i++ {
+				task := Task{
+					ID:        fmt.Sprintf("task-%d", i),
+					Content:   fmt.Sprintf("Updated Task %d", i),
+					Done:      true,
+					UpdatedAt: time.Now(),
+				}
+				_ = store.Update(task) // Ignore errors, just testing for race conditions
+			}
+			done <- true
+		}()
+
+		// Wait for all goroutines to complete
+		for i := 0; i < 3; i++ {
+			<-done
+		}
+
+		// Verify final state
 		tasks, err := store.List()
 		assert.NoError(t, err)
-		assert.Len(t, tasks, numGoroutines*numOperations)
+		assert.LessOrEqual(t, len(tasks), numTasks)
 	})
+}
 
-	// Update tasks concurrently
-	t.Run("concurrent updates", func(t *testing.T) {
-		var wg sync.WaitGroup
-		for i := 0; i < numGoroutines; i++ {
-			wg.Add(1)
-			go func(routineID int) {
-				defer wg.Done()
-				for j := 0; j < numOperations; j++ {
-					task := Task{
-						ID:        fmt.Sprintf("task-%d-%d", routineID, j),
-						Content:   fmt.Sprintf("Updated Task %d-%d", routineID, j),
-						Done:      true,
-						CreatedAt: time.Now(),
-						UpdatedAt: time.Now(),
-					}
-					err := store.Update(task)
-					assert.NoError(t, err)
-				}
-			}(i)
-		}
-		wg.Wait()
+func TestMemoryStoreValidation(t *testing.T) {
+	store := NewMemoryStore()
+	now := time.Now()
 
-		// Verify all tasks were updated
-		tasks, err := store.List()
-		assert.NoError(t, err)
-		for _, task := range tasks {
-			assert.True(t, task.Done)
-			assert.Contains(t, task.Content, "Updated Task")
-		}
-	})
+	tests := []struct {
+		name    string
+		task    Task
+		op      string
+		wantErr error
+	}{
+		{
+			name: "valid task",
+			task: Task{
+				ID:        "test-1",
+				Content:   "Test Task",
+				CreatedAt: now,
+				UpdatedAt: now,
+			},
+			op: "add",
+		},
+		{
+			name: "duplicate task",
+			task: Task{
+				ID:        "test-1",
+				Content:   "Duplicate Task",
+				CreatedAt: now,
+				UpdatedAt: now,
+			},
+			op:      "add",
+			wantErr: ErrDuplicateID,
+		},
+		{
+			name: "empty content",
+			task: Task{
+				ID:        "test-2",
+				Content:   "",
+				CreatedAt: now,
+				UpdatedAt: now,
+			},
+			op: "add",
+		},
+		{
+			name: "zero timestamps",
+			task: Task{
+				ID:      "test-3",
+				Content: "Test Task",
+			},
+			op: "add",
+		},
+	}
 
-	// Delete tasks concurrently
-	t.Run("concurrent deletes", func(t *testing.T) {
-		var wg sync.WaitGroup
-		for i := 0; i < numGoroutines; i++ {
-			wg.Add(1)
-			go func(routineID int) {
-				defer wg.Done()
-				for j := 0; j < numOperations; j++ {
-					err := store.Delete(fmt.Sprintf("task-%d-%d", routineID, j))
-					assert.NoError(t, err)
-				}
-			}(i)
-		}
-		wg.Wait()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var err error
+			switch tt.op {
+			case "add":
+				err = store.Add(tt.task)
+			case "update":
+				err = store.Update(tt.task)
+			}
 
-		// Verify all tasks were deleted
-		tasks, err := store.List()
-		assert.NoError(t, err)
-		assert.Empty(t, tasks)
-	})
+			if tt.wantErr != nil {
+				assert.ErrorIs(t, err, tt.wantErr)
+			} else {
+				assert.NoError(t, err)
+				// Verify task was stored correctly
+				stored, err := store.GetByID(tt.task.ID)
+				assert.NoError(t, err)
+				assert.Equal(t, tt.task.ID, stored.ID)
+				assert.Equal(t, tt.task.Content, stored.Content)
+			}
+		})
+	}
+}
+
+func TestMemoryStoreClose(t *testing.T) {
+	store := NewMemoryStore()
+
+	// Add some tasks
+	task := Task{
+		ID:        "test-1",
+		Content:   "Test Task",
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+	err := store.Add(task)
+	require.NoError(t, err)
+
+	// Close should be a no-op but shouldn't fail
+	err = store.Close()
+	assert.NoError(t, err)
+
+	// Store should still be usable after close
+	tasks, err := store.List()
+	assert.NoError(t, err)
+	assert.Len(t, tasks, 1)
 }

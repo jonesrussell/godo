@@ -19,6 +19,20 @@ $BUILD_DIR = Join-Path -Path $ROOT_DIR -ChildPath "dist"
 $DOCKER_DIR = Join-Path -Path $SCRIPT_DIR -ChildPath "docker"
 $DOCKERFILE = Join-Path -Path $DOCKER_DIR -ChildPath "Dockerfile"
 
+# Get version information
+$VERSION = git describe --tags --always 2>$null
+if (-not $VERSION) { $VERSION = "dev" }
+$COMMIT = git rev-parse --short HEAD 2>$null
+if (-not $COMMIT) { $COMMIT = "unknown" }
+$BUILD_TIME = [DateTime]::UtcNow.ToString("o")
+
+# Build args for versioning
+$BUILD_ARGS = @(
+    "--build-arg", "VERSION=$VERSION",
+    "--build-arg", "COMMIT=$COMMIT",
+    "--build-arg", "BUILD_TIME=$BUILD_TIME"
+)
+
 # Function to handle errors
 function Handle-Error {
     param($ErrorMessage)
@@ -45,33 +59,49 @@ Write-Host "Running tests and building..." -ForegroundColor Green
 try {
     # Run linting
     Write-Host "`nRunning linters..." -ForegroundColor Yellow
-    docker build --target lint -t godo-lint -f $DOCKERFILE $ROOT_DIR
+    docker build $BUILD_ARGS --target lint -t godo-lint -f $DOCKERFILE $ROOT_DIR
     docker run --rm godo-lint
     if ($LASTEXITCODE -ne 0) { throw "Linting failed" }
 
     # Run tests
     Write-Host "`nRunning tests..." -ForegroundColor Yellow
-    docker build --target test -t godo-test -f $DOCKERFILE $ROOT_DIR
+    docker build $BUILD_ARGS --target test -t godo-test -f $DOCKERFILE $ROOT_DIR
     docker run --rm godo-test
     if ($LASTEXITCODE -ne 0) { throw "Tests failed" }
 
-    # Build Linux version
-    Write-Host "`nBuilding Linux version..." -ForegroundColor Yellow
-    docker build --target builder -t godo-builder -f $DOCKERFILE $ROOT_DIR
-    docker create --name godo-temp godo-builder
-    docker cp godo-temp:/app/bin/godo-linux $BUILD_DIR/godo
-    docker rm godo-temp
-    if ($LASTEXITCODE -ne 0) { throw "Linux build failed" }
+    # Build both versions in parallel
+    Write-Host "`nBuilding Linux and Windows versions..." -ForegroundColor Yellow
+    $linuxJob = Start-Job -ScriptBlock {
+        docker build $using:BUILD_ARGS --target linux-runtime -t godo-linux -f $using:DOCKERFILE $using:ROOT_DIR
+        if ($LASTEXITCODE -ne 0) { throw "Linux build failed" }
+        docker create --name godo-linux-temp godo-linux
+        docker cp godo-linux-temp:/app/godo $using:BUILD_DIR/godo
+        docker rm godo-linux-temp
+    }
 
-    # Build Windows version (using the existing Windows build command)
-    Write-Host "`nBuilding Windows version..." -ForegroundColor Yellow
-    docker run --rm -v "${BUILD_DIR}:/go/src/app/dist" -e GOOS=windows -e GOARCH=amd64 -e CGO_ENABLED=1 -e CC=x86_64-w64-mingw32-gcc godo-builder go build -tags windows -ldflags "-s -w" -o dist/godo.exe ./cmd/godo
-    if ($LASTEXITCODE -ne 0) { throw "Windows build failed" }
+    $windowsJob = Start-Job -ScriptBlock {
+        docker build $using:BUILD_ARGS --target windows-runtime -t godo-windows -f $using:DOCKERFILE $using:ROOT_DIR
+        if ($LASTEXITCODE -ne 0) { throw "Windows build failed" }
+        docker create --name godo-windows-temp godo-windows
+        docker cp godo-windows-temp:/godo.exe $using:BUILD_DIR/godo.exe
+        docker rm godo-windows-temp
+    }
+
+    # Wait for builds to complete
+    $null = Wait-Job $linuxJob, $windowsJob
+    Receive-Job $linuxJob, $windowsJob
+
+    # Check for errors
+    if ($linuxJob.State -eq "Failed" -or $windowsJob.State -eq "Failed") {
+        throw "One or more builds failed"
+    }
 
 } catch {
     Handle-Error "Build process failed: $_"
+} finally {
+    Remove-Job $linuxJob, $windowsJob -Force -ErrorAction SilentlyContinue
 }
 
 Write-Host "`nBuild complete! Binaries are in the dist directory:" -ForegroundColor Green
-Write-Host "  - Windows: dist/godo.exe"
-Write-Host "  - Linux:   dist/godo" 
+Write-Host "  - Windows: dist/godo.exe (version: $VERSION, commit: $COMMIT)"
+Write-Host "  - Linux:   dist/godo (version: $VERSION, commit: $COMMIT)" 

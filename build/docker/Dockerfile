@@ -1,5 +1,20 @@
+# Build arguments for versioning
+ARG VERSION=dev
+ARG COMMIT=unknown
+ARG BUILD_TIME=unknown
+
 # Base stage with common dependencies
 FROM golang:1.23-bullseye AS base
+ARG VERSION
+ARG COMMIT
+ARG BUILD_TIME
+
+# Build flags for versioning
+ENV VERSION=${VERSION}
+ENV COMMIT=${COMMIT}
+ENV BUILD_TIME=${BUILD_TIME}
+ENV BUILD_FLAGS="-ldflags '-X main.version=${VERSION} -X main.commit=${COMMIT} -X main.buildTime=${BUILD_TIME} -s -w'"
+
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update && apt-get install -y \
@@ -9,7 +24,9 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     libxrandr-dev \
     libxinerama-dev \
     libxi-dev \
-    libxxf86vm-dev
+    libxxf86vm-dev \
+    mingw-w64 \
+    && rm -rf /var/lib/apt/lists/*
 
 # Dependencies stage
 FROM base AS deps
@@ -43,19 +60,29 @@ FROM wire AS test
 ENV CGO_ENABLED=1
 CMD ["go", "test", "-v", "-tags=docker", "./..."]
 
-# Build stage
-FROM wire AS builder
+# Linux build stage
+FROM wire AS linux-builder
 RUN --mount=type=cache,target=/go/pkg/mod,sharing=locked \
     --mount=type=cache,target=/root/.cache/go-build,sharing=locked \
-    CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -tags linux -o bin/godo-linux cmd/godo/main.go
+    CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build ${BUILD_FLAGS} -tags linux -o bin/godo-linux cmd/godo/main.go
 
-# Runtime stage
-FROM debian:bullseye-slim
+# Windows build stage
+FROM wire AS windows-builder
+RUN --mount=type=cache,target=/go/pkg/mod,sharing=locked \
+    --mount=type=cache,target=/root/.cache/go-build,sharing=locked \
+    CGO_ENABLED=1 GOOS=windows GOARCH=amd64 CC=x86_64-w64-mingw32-gcc go build ${BUILD_FLAGS} -tags windows -o bin/godo.exe cmd/godo/main.go
+
+# Runtime stage for Linux
+FROM debian:bullseye-slim AS linux-runtime
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update && apt-get install -y gcc && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-COPY --from=builder /app/bin/godo-linux /app/godo
-ENTRYPOINT ["/app/godo"] 
+COPY --from=linux-builder /app/bin/godo-linux /app/godo
+ENTRYPOINT ["/app/godo"]
+
+# Runtime stage for Windows (artifact only)
+FROM scratch AS windows-runtime
+COPY --from=windows-builder /app/bin/godo.exe /godo.exe 

@@ -114,3 +114,33 @@ func TestQuickNote(t *testing.T) {
 		assert.Empty(t, addedTask.Content)
 	})
 }
+
+type mockStore struct {
+	storage.TaskStore
+}
+
+func TestQuickNote_Show(t *testing.T) {
+	// Create test dependencies
+	testApp := test.NewApp()
+	store := &mockStore{}
+	log := logger.NewTestLogger(t)
+	cfg := config.WindowConfig{
+		Width:  200,
+		Height: 100,
+	}
+
+	// Create quick note window
+	quickNote := NewQuickNote(testApp, store, log, cfg)
+
+	// Test initial state
+	assert.NotNil(t, quickNote.input, "Input field should be initialized")
+	assert.Equal(t, "", quickNote.input.Text, "Input field should be empty")
+
+	// Show the window
+	quickNote.Show()
+
+	// Test that input has focus
+	canvas := quickNote.window.Canvas()
+	assert.Equal(t, quickNote.input, canvas.Focused(), "Input field should have focus")
+	assert.Equal(t, "", quickNote.input.Text, "Input field should be cleared")
+}

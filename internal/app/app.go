@@ -20,7 +20,7 @@ type App struct {
 	quickNote  gui.QuickNote
 	hotkey     hotkey.Manager
 	logger     logger.Logger
-	store      storage.Store
+	store      storage.TaskStore
 	fyneApp    fyne.App
 	config     *common.HTTPConfig
 }
@@ -34,7 +34,7 @@ func New(
 	quickNote gui.QuickNote,
 	hotkey hotkey.Manager,
 	logger logger.Logger,
-	store storage.Store,
+	store storage.TaskStore,
 	fyneApp fyne.App,
 	config *common.HTTPConfig,
 ) *App {
@@ -97,6 +97,6 @@ func (a *App) Logger() logger.Logger {
 }
 
 // Store returns the application store
-func (a *App) Store() storage.Store {
+func (a *App) Store() storage.TaskStore {
 	return a.store
 }

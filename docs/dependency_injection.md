@@ -1,85 +1,43 @@
-# Dependency Injection Architecture
+# Dependency Injection in Godo
 
 ## Overview
-Godo uses Google's Wire framework for dependency injection. The architecture is designed to be modular, testable, and free of circular dependencies.
+
+Godo uses Google's Wire framework for dependency injection. This document outlines our DI architecture, best practices, and common patterns.
 
 ## Provider Sets
 
-### Core Services
-- **BaseSet**: Application metadata (name, version, ID)
-- **LoggingSet**: Logging infrastructure
-- **StorageSet**: Data persistence layer
-- **ConfigSet**: Application configuration
+We organize providers into focused sets based on functionality:
 
-### UI Layer
-- **UISet**: User interface components
-  - Fyne application instance
-  - Main window
-  - Quick note window
-  - System tray
+### CoreSet
+- Essential services that don't depend on UI or platform features
+- Includes logging, storage, and configuration
+- Base application metadata (name, version, ID)
 
-### Platform Features
-- **HotkeySet**: Global hotkey management
-  - Configuration (modifiers, key bindings)
-  - Platform-specific manager implementation
-- **HTTPSet**: HTTP server configuration
+### UISet
+- UI components that depend on core services
+- Fyne application and windows
+- Interface bindings for GUI components
 
-### Testing
-- **TestSet**: Mock implementations for testing
-  - Mock store
-  - Mock windows
-  - Mock hotkey manager
-  - Mock Fyne app
-  - Test configuration
+### HotkeySet
+- Platform-specific hotkey functionality
+- Modifier and key bindings
+- Hotkey manager implementation
 
-## Dependency Flow
-1. Core services are initialized first (logging, storage, config)
-2. UI components are created using core services
-3. Platform-specific features are initialized
-4. Options are created and validated
-5. Main application is assembled
+### HTTPSet
+- HTTP server configuration
+- Timeout settings
+- Port configuration
+
+### AppSet
+- Main application wiring
+- Combines all other sets
+- Final application assembly
 
 ## Options Pattern
-We use a layered options pattern to prevent circular dependencies:
 
-### Configuration Options
-Pure configuration without dependencies:
+We use an options-based approach to prevent circular dependencies and improve configuration:
+
 ```go
-type LoggerOptions struct {
-    Level       common.LogLevel
-    Output      common.LogOutputPaths
-    ErrorOutput common.ErrorOutputPaths
-}
-
-type HotkeyOptions struct {
-    Modifiers common.ModifierKeys
-    Key       common.KeyCode
-}
-
-type HTTPOptions struct {
-    Config *common.HTTPConfig
-}
-```
-
-### Component Options
-Group related dependencies:
-```go
-type CoreOptions struct {
-    Logger logger.Logger
-    Store  storage.TaskStore
-    Config *config.Config
-}
-
-type GUIOptions struct {
-    App        fyne.App
-    MainWindow gui.MainWindow
-    QuickNote  gui.QuickNote
-}
-```
-
-### Application Assembly
-```go
-// All application options
 type AppOptions struct {
     Core    *CoreOptions
     GUI     *GUIOptions
@@ -89,64 +47,152 @@ type AppOptions struct {
     Version common.AppVersion
     ID      common.AppID
 }
+```
 
-// Final application parameters
-type Params struct {
-    Options *AppOptions
-    Hotkey  hotkey.Manager
+### Benefits
+- Breaks circular dependencies
+- Groups related configuration
+- Makes dependencies explicit
+- Simplifies testing
+- Improves maintainability
+
+## Best Practices
+
+### Provider Functions
+1. Use clear naming with `Provide` prefix
+2. Return cleanup functions when needed
+3. Validate inputs and handle errors
+4. Document dependencies clearly
+
+Example:
+```go
+// ProvideSQLiteStore provides a SQLite store instance
+func ProvideSQLiteStore(log logger.Logger) (*sqlite.Store, func(), error) {
+    store, err := sqlite.New(dbPath, log)
+    if err != nil {
+        return nil, nil, fmt.Errorf("failed to create store: %w", err)
+    }
+
+    cleanup := func() {
+        store.Close()
+    }
+
+    return store, cleanup, nil
 }
 ```
 
-## Testing Strategy
+### Interface Bindings
+1. Use `wire.Bind` in provider sets
+2. Bind concrete types to interfaces
+3. Keep interface bindings close to implementations
 
-### Mock Providers
-Each component has a corresponding mock provider:
+Example:
 ```go
-func ProvideMockStore() storage.TaskStore
-func ProvideMockMainWindow() *gui.MockMainWindow
-func ProvideMockQuickNote() *gui.MockQuickNote
-func ProvideMockHotkey() *apphotkey.MockManager
-func ProvideMockFyneApp() fyne.App
+var StorageSet = wire.NewSet(
+    ProvideSQLiteStore,
+    wire.Bind(new(storage.TaskStore), new(*sqlite.Store)),
+)
 ```
 
-### Test App Assembly
-The test app is assembled using the TestSet:
+### Testing
+1. Create separate provider sets for testing
+2. Use mock implementations
+3. Validate dependency initialization
+4. Test cleanup functions
+
+### Error Handling
+1. Return meaningful errors from providers
+2. Clean up resources on error
+3. Use error wrapping
+4. Validate dependencies at runtime
+
+### Platform-Specific Code
+1. Use build tags to separate implementations
+2. Create platform-specific provider sets
+3. Use consistent build tags across project
+4. Document platform requirements
+
+## Common Patterns
+
+### Two-Step Initialization
+For complex dependencies that require configuration:
+
 ```go
-func ProvideTestAppParams(
-    logger logger.Logger,
-    store storage.TaskStore,
-    mainWindow gui.MainWindow,
-    quickNote gui.QuickNote,
-    hotkey apphotkey.Manager,
-    httpConfig *common.HTTPConfig,
-    name common.AppName,
-    version common.AppVersion,
-    id common.AppID,
-) *app.TestApp
+// Step 1: Configure options
+func ProvideLoggerOptions(level, output, errorOutput string) *LoggerOptions {
+    return &LoggerOptions{
+        Level:       level,
+        Output:      output,
+        ErrorOutput: errorOutput,
+    }
+}
+
+// Step 2: Create instance
+func ProvideLogger(opts *LoggerOptions) (Logger, func(), error) {
+    // Create logger using options
+}
 ```
 
-## Best Practices
+### Resource Cleanup
+Always provide cleanup functions for resources:
+
+```go
+func ProvideResource() (*Resource, func(), error) {
+    r, err := NewResource()
+    if err != nil {
+        return nil, nil, err
+    }
+
+    cleanup := func() {
+        r.Close()
+    }
+
+    return r, cleanup, nil
+}
+```
+
+### Validation
+Validate dependencies and configuration:
+
+```go
+func ProvideService(dep Dependency, config Config) (*Service, error) {
+    if dep == nil {
+        return nil, errors.New("dependency cannot be nil")
+    }
+    if err := config.Validate(); err != nil {
+        return nil, fmt.Errorf("invalid config: %w", err)
+    }
+    // Create service
+}
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. Circular Dependencies
+   - Use options pattern to break cycles
+   - Split large dependencies into smaller ones
+   - Use interfaces to decouple components
+
+2. Provider Conflicts
+   - Use distinct types for common values
+   - Keep provider sets focused
+   - Document provider dependencies
+
+3. Testing Issues
+   - Create separate test provider sets
+   - Use mock implementations
+   - Test cleanup functions
+   - Validate initialization
+
+### Best Practices for Maintainability
+
 1. Keep provider sets small and focused
-2. Use interfaces over concrete types
-3. Separate configuration from instances
-4. Use layered options pattern to prevent cycles
-5. Document dependencies explicitly
-6. Follow Wire naming conventions:
-   - Provider functions: `Provide` prefix
-   - Provider sets: `Set` suffix
-7. Test with mock implementations
-8. Use cleanup functions for resource management
-
-## Resource Cleanup
-Providers that allocate resources must provide cleanup functions:
-```go
-func ProvideLogger(opts *LoggerOptions) (*logger.ZapLogger, func(), error)
-func ProvideSQLiteStore(log logger.Logger) (*sqlite.Store, func(), error)
-```
-
-## Breaking Circular Dependencies
-1. Separate configuration from instances
-2. Use layered options pattern
-3. Group related dependencies
-4. Use interfaces to decouple components
-5. Consider dependency direction (core → ui → platform) 
+2. Document provider dependencies
+3. Use consistent naming conventions
+4. Implement proper cleanup
+5. Validate at runtime
+6. Use build tags appropriately
+7. Keep injector functions clean (wire.Build only)
+8. Follow options pattern for complex dependencies 

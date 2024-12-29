@@ -1,71 +1,137 @@
-# Testing Guide
+# Testing Guidelines
 
 ## Overview
-
-This guide covers testing practices for the Godo application, including unit tests, integration tests, and testing utilities.
-
-## Test Structure
-
-### Directory Organization
-```
-internal/
-  ├── app/
-  │   └── app_test.go
-  ├── storage/
-  │   ├── sqlite/
-  │   │   ├── store_test.go
-  │   │   ├── migrations_test.go
-  │   │   └── testing.go
-  │   └── memory/
-  │       └── memory_test.go
-  └── testutil/
-      └── store.go
-```
-
-## Coverage Goals
-
-### Critical Packages
-- Storage implementations: >65% coverage
-- API handlers: >60% coverage
-- Core business logic: >80% coverage
-
-### Current Coverage (as of latest)
-- `internal/storage/sqlite`: 66.3%
-- `internal/model`: 100%
-- `internal/config`: 89%
-- `internal/common`: 65%
-- `internal/api`: 61.9%
+This document outlines the testing practices and patterns used in the Godo application.
 
 ## Test Types
 
 ### Unit Tests
-- Individual package functionality
-- Mocked dependencies
-- Fast execution
-- Comprehensive error case coverage
+- Test individual components in isolation
+- Use mock implementations for dependencies
+- Focus on single piece of functionality
+- Use table-driven tests for multiple cases
+- Example:
+```go
+func TestQuickNote_Show(t *testing.T) {
+    // Create test dependencies
+    testApp := test.NewApp()
+    store := &mockStore{}
+    log := logger.NewTestLogger(t)
+    cfg := config.WindowConfig{
+        Width:  200,
+        Height: 100,
+    }
+
+    // Create quick note window
+    quickNote := NewQuickNote(testApp, store, log, cfg)
+
+    // Test initial state
+    assert.NotNil(t, quickNote.input)
+    assert.Equal(t, "", quickNote.input.Text)
+
+    // Test behavior
+    quickNote.Show()
+    assert.Equal(t, quickNote.input, quickNote.window.Canvas().Focused())
+}
+```
 
 ### Integration Tests
-- Cross-package functionality
-- Real dependencies
-- Database operations
-- GUI interactions
+- Test component interactions
+- Use real implementations where practical
+- Test complete workflows
+- Example:
+```go
+func TestTaskWorkflow(t *testing.T) {
+    store := sqlite.NewStore()
+    defer store.Close()
 
-### End-to-End Tests
-- Complete workflows
-- System integration
-- User scenarios
+    // Add task
+    task := storage.Task{ID: "test-1", Content: "Test Task"}
+    err := store.Add(context.Background(), task)
+    require.NoError(t, err)
 
-## Testing Tools
+    // Verify task
+    tasks, err := store.List(context.Background())
+    require.NoError(t, err)
+    assert.Contains(t, tasks, task)
+}
+```
 
-### Standard Library
-- `testing` package
-- `httptest` package
-- `iotest` package
+### UI Tests
+- Test window creation and visibility
+- Test input focus behavior
+- Test window state management
+- Use Fyne's test package
+- Example:
+```go
+func TestWindowVisibility(t *testing.T) {
+    app := test.NewApp()
+    win := app.NewWindow("Test")
+    
+    assert.False(t, win.Visible())
+    win.Show()
+    assert.True(t, win.Visible())
+}
+```
 
-### Third-Party
-- `testify` for assertions
-- `go-sqlmock` for database tests
-- `gomock` for interface mocking
+## Test Helpers
+
+### Mock Store
+```go
+type mockStore struct {
+    storage.TaskStore
+}
+
+func (m *mockStore) List(ctx context.Context) ([]storage.Task, error) {
+    return []storage.Task{}, nil
+}
+```
+
+### Test Logger
+```go
+func NewTestLogger(t *testing.T) Logger {
+    cfg := &Config{
+        Level:       "debug",
+        Development: true,
+        Encoding:    "console",
+    }
+    logger, _, err := NewLogger(cfg)
+    if err != nil {
+        t.Fatalf("Failed to create test logger: %v", err)
+    }
+    return logger
+}
+```
+
+## Best Practices
+
+### Test Organization
+- Use descriptive test names
+- Group related tests using subtests
+- Use setup and teardown helpers
+- Clean up resources properly
+
+### Assertions
+- Use testify/assert for most checks
+- Use testify/require for critical checks
+- Include meaningful error messages
+- Example:
+```go
+assert.NotNil(t, obj, "Object should be initialized")
+require.NoError(t, err, "Operation should succeed")
+```
+
+### Mocking
+- Create minimal mock implementations
+- Mock only what's necessary
+- Use interfaces for dependencies
+- Document mock behavior
+
+### Test Coverage
+- Aim for high coverage of critical paths
+- Test both success and error cases
+- Test edge cases and boundaries
+- Test concurrent operations where relevant
 
 ## Running Tests
 
@@ -74,189 +140,39 @@ internal/
 task test
 ```
 
-### With Coverage Report
-```bash
-task test:cover
-```
-
 ### Specific Package
 ```bash
-go test ./internal/storage/...
+go test ./internal/gui/quicknote
 ```
 
-### With Race Detection
+### With Coverage
 ```bash
-task test:race
+go test -cover ./...
 ```
 
-## Writing Tests
+## Test Tags
+- Use build tags to control test execution
+- Example: `//go:build !docker`
+- Common tags:
+  - `windows`
+  - `linux`
+  - `docker`
+  - `integration`
 
-### Comprehensive Test Example
-```go
-func TestFeatureComprehensive(t *testing.T) {
-    // Setup with cleanup
-    store, cleanup := setupTestStore(t)
-    defer cleanup()
+## Debugging Tests
+- Use `t.Log` for debug output
+- Use `t.Logf` for formatted output
+- Run specific test: `go test -run TestName`
+- Run with verbose output: `go test -v`
 
-    // Test normal operation
-    t.Run("Success Case", func(t *testing.T) {
-        result, err := store.Operation()
-        assert.NoError(t, err)
-        assert.NotNil(t, result)
-    })
+## Test Documentation
+- Document test purpose
+- Document test prerequisites
+- Document test data requirements
+- Document expected outcomes
 
-    // Test validation
-    t.Run("Validation", func(t *testing.T) {
-        // Test empty input
-        _, err := store.Operation("")
-        assert.ErrorIs(t, err, ErrEmptyInput)
-
-        // Test invalid input
-        _, err = store.Operation("invalid")
-        assert.Error(t, err)
-    })
-
-    // Test error conditions
-    t.Run("Error Cases", func(t *testing.T) {
-        // Test not found
-        _, err := store.Get("nonexistent")
-        assert.ErrorIs(t, err, ErrNotFound)
-
-        // Test closed connection
-        store.Close()
-        _, err = store.Operation()
-        assert.ErrorIs(t, err, ErrStoreClosed)
-    })
-}
-```
-
-### State Management Tests
-```go
-func TestStateManagement(t *testing.T) {
-    store := NewStore()
-    
-    // Test initial state
-    assert.False(t, store.IsClosed())
-    
-    // Test after close
-    store.Close()
-    assert.True(t, store.IsClosed())
-    
-    // Test operations after close
-    _, err := store.Operation()
-    assert.ErrorIs(t, err, ErrStoreClosed)
-}
-```
-
-## Test Utilities
-
-### Mock Store
-```go
-type MockStore struct {
-    tasks []storage.Task
-}
-
-func NewMockStore() *MockStore {
-    return &MockStore{
-        tasks: make([]storage.Task, 0),
-    }
-}
-```
-
-### Test Helpers
-```go
-func setupTestDB(t *testing.T) (*sql.DB, func()) {
-    t.Helper()
-    
-    db, err := sql.Open("sqlite", ":memory:")
-    require.NoError(t, err)
-    
-    return db, func() {
-        db.Close()
-    }
-}
-```
-
-## Best Practices
-
-1. Test Organization
-   - One test file per source file
-   - Clear test names
-   - Proper setup and cleanup
-   - Use subtests for organization
-
-2. Test Coverage
-   - Maintain minimum coverage targets per package
-   - Test all error conditions
-   - Test state transitions
-   - Test concurrent operations
-   - Test resource cleanup
-
-3. Error Testing
-   - Test all custom error types
-   - Verify error wrapping
-   - Test error conditions in order
-   - Use ErrorIs for error comparison
-
-4. Resource Management
-   - Use defer for cleanup
-   - Test cleanup operations
-   - Verify resource state
-   - Test connection handling
-
-## Common Patterns
-
-### Setup and Teardown
-```go
-func TestMain(m *testing.M) {
-    // Setup
-    setup()
-    
-    // Run tests
-    code := m.Run()
-    
-    // Cleanup
-    teardown()
-    
-    os.Exit(code)
-}
-```
-
-### Context Testing
-```go
-func TestWithContext(t *testing.T) {
-    ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-    defer cancel()
-    
-    result, err := operationWithContext(ctx)
-    assert.NoError(t, err)
-    assert.NotNil(t, result)
-}
-```
-
-### Concurrent Testing
-```go
-func TestConcurrent(t *testing.T) {
-    t.Parallel()
-    
-    store := testutil.NewMockStore()
-    var wg sync.WaitGroup
-    
-    for i := 0; i < 10; i++ {
-        wg.Add(1)
-        go func() {
-            defer wg.Done()
-            // Test concurrent operations
-        }()
-    }
-    
-    wg.Wait()
-}
-```
-
-## Resources
-
-- [Go Testing Package](https://pkg.go.dev/testing)
-- [Testify](https://pkg.go.dev/github.com/stretchr/testify)
-- [Go Testing Blog](https://blog.golang.org/cover)
-- [Advanced Testing Tips](https://dave.cheney.net/2019/05/07/prefer-table-driven-tests) 
+## Continuous Integration
+- Tests run on every PR
+- Coverage reports generated
+- Test results published
+- Performance tracked 

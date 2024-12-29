@@ -39,25 +39,41 @@ code_style:
   - use_build_tags_for_platform_specific_code: "Separate platform-specific code with build tags"
   - follow_docker_windows_linux_build_tags: "Use consistent build tags across platforms"
 
-  - follow_restful_api_conventions: true
-  - use_proper_http_status_codes: true
-  - implement_request_validation: true
-  - use_middleware_for_common_http_concerns: true
-  - follow_jwt_best_practices: true
-  - implement_rate_limiting: true
-  - use_proper_websocket_connection_management: true
-  - ensure_api_versioning: true
-  - implement_health_checks: true
-  - plan_for_scalability: true
-  - use_secure_headers: true
-  - monitor_performance: true
-  - prefer_patch_for_partial_updates: "Use PATCH for partial updates instead of PUT"
-  - preserve_unmodified_fields: "Don't require all fields in updates"
-  - validate_timestamps: "Ensure valid timestamp formats and ranges"
-  - handle_null_values: "Properly handle null/zero values in updates"
-  - document_api_changes: "Keep API documentation up to date"
+  # Testing Best Practices
+  - write_focused_unit_tests: "Each test should verify one specific behavior"
+  - use_table_driven_tests: "Use table-driven tests for multiple test cases"
+  - mock_external_dependencies: "Use mock implementations for external services"
+  - test_error_conditions: "Test error handling and edge cases"
+  - use_test_helpers: "Create helper functions for common test setup"
+  - clean_up_test_resources: "Use defer for cleanup in tests"
+  - use_meaningful_test_names: "Test names should describe the scenario being tested"
+  - follow_test_naming_convention: "TestPackage_Function_Scenario"
+  - use_subtests_for_clarity: "Use t.Run for organizing related tests"
+  - avoid_test_interdependence: "Tests should not depend on each other"
+  - use_test_fixtures: "Keep test data in separate fixture files"
+  - test_concurrent_behavior: "Test concurrent operations when applicable"
+  - use_test_timeouts: "Add timeouts to prevent hanging tests"
+  - test_platform_specific_code: "Test platform-specific implementations"
+  - maintain_test_coverage: "Maintain high test coverage for critical paths"
 
-  # Storage Layer Best Practices
+  # UI Best Practices
+  - follow_fyne_widget_patterns: "Follow Fyne widget implementation patterns"
+  - handle_window_focus: "Properly handle window focus and blur events"
+  - manage_window_state: "Track and manage window visibility state"
+  - implement_proper_cleanup: "Clean up resources when windows are closed"
+  - use_proper_layouts: "Use appropriate layout containers"
+  - handle_keyboard_events: "Implement keyboard event handling"
+  - follow_platform_conventions: "Follow platform-specific UI conventions"
+  - implement_accessibility: "Add accessibility support to custom widgets"
+  - use_theme_variables: "Use theme variables for styling"
+  - handle_window_resize: "Handle window resize events properly"
+  - manage_input_focus: "Properly manage input focus"
+  - use_proper_padding: "Use consistent padding and spacing"
+  - implement_proper_validation: "Validate user input"
+  - show_meaningful_errors: "Display user-friendly error messages"
+  - use_proper_dialogs: "Use appropriate dialog types"
+
+  # Storage Best Practices
   - validate_data_before_storage: "Validate all data before storage operations"
   - handle_connection_state: "Track and validate connection state"
   - use_custom_error_types: "Define and use custom error types for specific error cases"
@@ -77,6 +93,42 @@ code_style:
   - implement_audit_logging: "Log all write operations for auditing"
   - use_structured_errors: "Return structured errors with context"
   - validate_migrations: "Test and validate all database migrations"
+
+  # API Best Practices
+  - follow_restful_api_conventions: true
+  - use_proper_http_status_codes: true
+  - implement_request_validation: true
+  - use_middleware_for_common_http_concerns: true
+  - follow_jwt_best_practices: true
+  - implement_rate_limiting: true
+  - use_proper_websocket_connection_management: true
+  - ensure_api_versioning: true
+  - implement_health_checks: true
+  - plan_for_scalability: true
+  - use_secure_headers: true
+  - monitor_performance: true
+  - prefer_patch_for_partial_updates: "Use PATCH for partial updates instead of PUT"
+  - preserve_unmodified_fields: "Don't require all fields in updates"
+  - validate_timestamps: "Ensure valid timestamp formats and ranges"
+  - handle_null_values: "Properly handle null/zero values in updates"
+  - document_api_changes: "Keep API documentation up to date"
+
+  # Logging Best Practices
+  - use_structured_logging: "Use structured logging with fields"
+  - log_appropriate_levels: "Use appropriate log levels (debug, info, warn, error)"
+  - include_context_in_logs: "Include relevant context in log entries"
+  - use_correlation_ids: "Add correlation IDs for request tracking"
+  - log_meaningful_errors: "Log errors with stack traces and context"
+  - avoid_sensitive_data: "Don't log sensitive information"
+  - use_sampling_for_high_volume: "Use sampling for high-volume log entries"
+  - implement_log_rotation: "Implement log rotation and cleanup"
+  - use_human_readable_format: "Use human-readable format in development"
+  - configure_log_destinations: "Configure appropriate log destinations"
+  - handle_log_failures: "Handle logging failures gracefully"
+  - use_consistent_field_names: "Use consistent field names across logs"
+  - implement_log_filtering: "Support log filtering and searching"
+  - maintain_log_performance: "Optimize logging performance"
+  - follow_log_format_standards: "Follow standard log format conventions"
 
 snippets:
 - fyne_keyboard_shortcuts:

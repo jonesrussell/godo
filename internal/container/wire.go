@@ -61,7 +61,7 @@ var (
 		ProvideMockQuickNote,
 		ProvideMockHotkey,
 		ProvideMockFyneApp,
-		ProvideHTTPConfig,
+		HTTPSet,
 		wire.Bind(new(gui.MainWindow), new(*gui.MockMainWindow)),
 		wire.Bind(new(gui.QuickNote), new(*gui.MockQuickNote)),
 		wire.Bind(new(apphotkey.Manager), new(*apphotkey.MockManager)),
@@ -273,6 +273,11 @@ func InitializeTestApp() (*app.TestApp, func(), error) {
 // Mock providers for testing
 func ProvideMockStore() storage.TaskStore {
 	return storage.NewMockStore()
+}
+
+// ProvideMockConfig provides a mock configuration for testing
+func ProvideMockConfig() (*config.Config, error) {
+	return config.NewDefaultConfig(), nil
 }
 
 // ProvideMockMainWindow provides a mock main window for testing

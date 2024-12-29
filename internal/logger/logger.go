@@ -2,7 +2,8 @@
 package logger
 
 import (
-	"github.com/jonesrussell/godo/internal/common"
+	"fmt"
+
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -10,96 +11,75 @@ import (
 // fieldMultiplier is used to calculate the capacity for key-value pairs
 const fieldMultiplier = 2
 
-// Logger defines the interface for logging
+// Logger defines the logging interface
 type Logger interface {
 	Debug(msg string, keysAndValues ...interface{})
 	Info(msg string, keysAndValues ...interface{})
 	Warn(msg string, keysAndValues ...interface{})
 	Error(msg string, keysAndValues ...interface{})
 	WithError(err error) Logger
-	WithField(key string, value interface{}) Logger
-	WithFields(fields map[string]interface{}) Logger
 }
 
-// ZapLogger implements Logger using zap
+// ZapLogger implements the Logger interface using zap
 type ZapLogger struct {
-	logger *zap.SugaredLogger
+	*zap.SugaredLogger
 }
 
-// NewZapLogger creates a new ZapLogger
-func NewZapLogger(config *common.LogConfig) (*ZapLogger, error) {
-	zapConfig := zap.NewProductionConfig()
-	zapConfig.Level = zap.NewAtomicLevelAt(getZapLevel(config.Level))
+// Config holds logger configuration
+type Config struct {
+	Level       string
+	Development bool
+	Encoding    string
+}
 
-	logger, err := zapConfig.Build()
-	if err != nil {
-		return nil, err
+// NewLogger creates a new logger instance
+func NewLogger(cfg *Config) (*ZapLogger, func(), error) {
+	var zapCfg zap.Config
+
+	if cfg.Development {
+		zapCfg = zap.NewDevelopmentConfig()
+		zapCfg.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
+		zapCfg.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
+		zapCfg.Encoding = cfg.Encoding
+	} else {
+		zapCfg = zap.NewProductionConfig()
 	}
 
-	return &ZapLogger{
-		logger: logger.Sugar(),
+	if err := zapCfg.Level.UnmarshalText([]byte(cfg.Level)); err != nil {
+		return nil, nil, fmt.Errorf("could not parse log level: %v", err)
+	}
+
+	logger, err := zapCfg.Build()
+	if err != nil {
+		return nil, nil, fmt.Errorf("could not build logger: %v", err)
+	}
+
+	return &ZapLogger{logger.Sugar()}, func() {
+		_ = logger.Sync()
 	}, nil
 }
 
-// Debug logs a debug message with optional key-value pairs
+// Debug logs a debug message
 func (l *ZapLogger) Debug(msg string, keysAndValues ...interface{}) {
-	l.logger.Debugw(msg, keysAndValues...)
+	l.Debugw(msg, keysAndValues...)
 }
 
-// Info logs an info message with optional key-value pairs
+// Info logs an info message
 func (l *ZapLogger) Info(msg string, keysAndValues ...interface{}) {
-	l.logger.Infow(msg, keysAndValues...)
+	l.Infow(msg, keysAndValues...)
 }
 
-// Warn logs a warning message with optional key-value pairs
+// Warn logs a warning message
 func (l *ZapLogger) Warn(msg string, keysAndValues ...interface{}) {
-	l.logger.Warnw(msg, keysAndValues...)
+	l.Warnw(msg, keysAndValues...)
 }
 
-// Error logs an error message with optional key-value pairs
+// Error logs an error message
 func (l *ZapLogger) Error(msg string, keysAndValues ...interface{}) {
-	l.logger.Errorw(msg, keysAndValues...)
+	l.Errorw(msg, keysAndValues...)
 }
 
-// WithError returns a new logger with the error field set
+// WithError returns a logger with an error field
 func (l *ZapLogger) WithError(err error) Logger {
-	return &ZapLogger{
-		logger: l.logger.With("error", err),
-	}
-}
-
-// WithField returns a new logger with the given field set
-func (l *ZapLogger) WithField(key string, value interface{}) Logger {
-	return &ZapLogger{
-		logger: l.logger.With(key, value),
-	}
-}
-
-// WithFields returns a new logger with the given fields set
-func (l *ZapLogger) WithFields(fields map[string]interface{}) Logger {
-	if len(fields) == 0 {
-		return l
-	}
-	args := make([]interface{}, 0, len(fields)*fieldMultiplier)
-	for k, v := range fields {
-		args = append(args, k, v)
-	}
-	return &ZapLogger{
-		logger: l.logger.With(args...),
-	}
-}
-
-func getZapLevel(level string) zapcore.Level {
-	switch level {
-	case "debug":
-		return zap.DebugLevel
-	case "info":
-		return zap.InfoLevel
-	case "warn":
-		return zap.WarnLevel
-	case "error":
-		return zap.ErrorLevel
-	default:
-		return zap.InfoLevel
-	}
+	return &ZapLogger{l.With("error", err)}
 }

@@ -10,7 +10,7 @@ import (
 // SetupSystray configures the system tray icon and menu
 func SetupSystray(app fyne.App, mainWindow fyne.Window) {
 	if desk, ok := app.(desktop.App); ok {
-		desk.SetSystemTrayIcon(theme.resourceIconPng)
+		desk.SetSystemTrayIcon(theme.AppIcon())
 
 		menu := fyne.NewMenu("Godo",
 			fyne.NewMenuItem("Show", func() {

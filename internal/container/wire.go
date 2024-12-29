@@ -230,22 +230,12 @@ func ProvideHotkeyBinding() *common.HotkeyBinding {
 
 // ProvideLogger provides a zap logger instance using options
 func ProvideLogger(opts *options.LoggerOptions) (*logger.ZapLogger, func(), error) {
-	config := &common.LogConfig{
-		Level:       opts.Level.String(),
-		Output:      opts.Output.Slice(),
-		ErrorOutput: opts.ErrorOutput.Slice(),
+	cfg := &logger.Config{
+		Level:       string(opts.Level),
+		Development: true,
+		Encoding:    "console",
 	}
-
-	log, err := logger.NewZapLogger(config)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	cleanup := func() {
-		// No cleanup needed for this logger implementation
-	}
-
-	return log, cleanup, nil
+	return logger.NewLogger(cfg)
 }
 
 // ProvideSQLiteStore provides a SQLite store instance

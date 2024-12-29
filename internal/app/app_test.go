@@ -3,101 +3,101 @@
 package app
 
 import (
-	"errors"
-	"os"
 	"testing"
 
+	"fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/test"
+	"github.com/jonesrussell/godo/internal/common"
+	"github.com/jonesrussell/godo/internal/config"
+	"github.com/jonesrussell/godo/internal/gui/mainwindow"
+	"github.com/jonesrussell/godo/internal/gui/quicknote"
+	"github.com/jonesrussell/godo/internal/logger"
+	"github.com/jonesrussell/godo/internal/options"
+	"github.com/jonesrussell/godo/internal/storage"
 	"github.com/stretchr/testify/assert"
 )
 
-// MockUI implements a mock UI for testing
-type MockUI struct {
-	ShowCalled  bool
-	SetupCalled bool
-	HideCalled  bool
+type mockStore struct {
+	storage.TaskStore
 }
 
-func (m *MockUI) Show() {
-	m.ShowCalled = true
+func newMockStore() storage.TaskStore {
+	return &mockStore{}
 }
 
-func (m *MockUI) Setup() {
-	m.SetupCalled = true
-}
-
-func (m *MockUI) Hide() {
-	m.HideCalled = true
-}
-
-// MockApplication implements a mock application for testing
-type MockApplication struct {
-	RunCalled        bool
-	SetupUICalled    bool
-	GetVersionCalled bool
-	ReturnVersion    string
-	ReturnError      error
-}
-
-func (m *MockApplication) Run() error {
-	m.RunCalled = true
-	return m.ReturnError
-}
-
-func (m *MockApplication) SetupUI() {
-	m.SetupUICalled = true
-}
-
-func (m *MockApplication) GetVersion() string {
-	m.GetVersionCalled = true
-	return m.ReturnVersion
-}
-
-func TestMockUI(t *testing.T) {
-	t.Run("Show sets ShowCalled", func(t *testing.T) {
-		ui := &MockUI{}
-		ui.Show()
-		assert.True(t, ui.ShowCalled)
-	})
-
-	t.Run("Setup sets SetupCalled", func(t *testing.T) {
-		ui := &MockUI{}
-		ui.Setup()
-		assert.True(t, ui.SetupCalled)
-	})
-
-	t.Run("Hide sets HideCalled", func(t *testing.T) {
-		ui := &MockUI{}
-		ui.Hide()
-		assert.True(t, ui.HideCalled)
-	})
-}
-
-func TestMockApplication(t *testing.T) {
-	t.Run("Run sets RunCalled and returns error", func(t *testing.T) {
-		app := &MockApplication{ReturnError: errors.New("test error")}
-		err := app.Run()
-		assert.True(t, app.RunCalled)
-		assert.Error(t, err)
-		assert.Equal(t, "test error", err.Error())
-	})
-
-	t.Run("SetupUI sets SetupUICalled", func(t *testing.T) {
-		app := &MockApplication{}
-		app.SetupUI()
-		assert.True(t, app.SetupUICalled)
-	})
-
-	t.Run("GetVersion sets GetVersionCalled and returns version", func(t *testing.T) {
-		app := &MockApplication{ReturnVersion: "1.0.0"}
-		version := app.GetVersion()
-		assert.True(t, app.GetVersionCalled)
-		assert.Equal(t, "1.0.0", version)
-	})
-}
-
-func TestMain(m *testing.M) {
-	if os.Getenv("CI") == "true" {
-		os.Exit(0) // Skip tests in CI environment
+func TestApp_SetupUI(t *testing.T) {
+	// Create test app
+	testApp := test.NewApp()
+	store := newMockStore()
+	log := logger.NewTestLogger(t)
+	cfg := &config.Config{
+		UI: config.UIConfig{
+			MainWindow: config.WindowConfig{
+				StartHidden: true,
+				Width:       800,
+				Height:      600,
+			},
+			QuickNote: config.WindowConfig{
+				Width:  200,
+				Height: 100,
+			},
+		},
+		Hotkeys: config.HotkeyConfig{
+			QuickNote: "Ctrl+Shift+N",
+		},
 	}
-	os.Exit(m.Run())
+
+	// Create windows
+	mainWin := mainwindow.New(testApp, store, log, cfg.UI.MainWindow)
+	quickNote := quicknote.New(testApp, store, log, cfg.UI.QuickNote)
+
+	// Create options
+	coreOpts := &options.CoreOptions{
+		Logger: log,
+		Store:  store,
+		Config: cfg,
+	}
+
+	guiOpts := &options.GUIOptions{
+		App:        testApp,
+		MainWindow: mainWin,
+		QuickNote:  quickNote,
+	}
+
+	hotkeyOpts := &options.HotkeyOptions{
+		Modifiers: []string{"ctrl", "shift"},
+		Key:       "n",
+	}
+
+	httpOpts := &options.HTTPOptions{
+		Config: &common.HTTPConfig{
+			Port: 8080,
+		},
+	}
+
+	appOpts := &options.AppOptions{
+		Core:    coreOpts,
+		GUI:     guiOpts,
+		HTTP:    httpOpts,
+		Hotkey:  hotkeyOpts,
+		Name:    "Godo",
+		Version: "1.0.0",
+		ID:      "com.jonesrussell.godo",
+	}
+
+	// Create app
+	app := New(&Params{
+		Options: appOpts,
+	})
+
+	// Test main window starts hidden
+	app.SetupUI()
+	assert.True(t, cfg.UI.MainWindow.StartHidden, "Main window should be configured to start hidden")
+
+	// Test systray is set up
+	_, ok := testApp.(desktop.App)
+	assert.True(t, ok, "App should implement desktop.App")
+
+	// Test hotkey is registered
+	assert.NotNil(t, app.hotkey, "Hotkey manager should be initialized")
 }

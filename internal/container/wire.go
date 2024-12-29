@@ -119,6 +119,9 @@ var (
 		wire.Bind(new(gui.MainWindow), new(*gui.MockMainWindow)),
 		wire.Bind(new(gui.QuickNote), new(*gui.MockQuickNote)),
 		wire.Bind(new(apphotkey.Manager), new(*apphotkey.MockManager)),
+		LoggingSet,
+		BaseSet,
+		HTTPSet,
 	)
 )
 
@@ -259,10 +262,7 @@ func InitializeApp() (app.Application, func(), error) {
 // InitializeTestApp initializes the application with mock dependencies for testing
 func InitializeTestApp() (*app.TestApp, func(), error) {
 	wire.Build(
-		LoggingSet,
 		TestSet,
-		BaseSet,
-		HTTPSet,
 		wire.Struct(new(app.TestApp), "*"),
 	)
 	return nil, nil, nil

@@ -12,6 +12,7 @@ import (
 	"github.com/jonesrussell/godo/internal/app"
 	apphotkey "github.com/jonesrussell/godo/internal/app/hotkey"
 	"github.com/jonesrussell/godo/internal/common"
+	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/gui"
 	"github.com/jonesrussell/godo/internal/gui/mainwindow"
 	"github.com/jonesrussell/godo/internal/gui/quicknote"
@@ -224,8 +225,8 @@ func ProvideFyneApp() fyne.App {
 }
 
 // ProvideMainWindow provides a main window instance
-func ProvideMainWindow(app fyne.App, store storage.TaskStore, logger logger.Logger) *mainwindow.Window {
-	return mainwindow.New(app, store, logger)
+func ProvideMainWindow(app fyne.App, store storage.TaskStore, logger logger.Logger, cfg *config.Config) *mainwindow.Window {
+	return mainwindow.New(app, store, logger, cfg.UI.MainWindow)
 }
 
 // ProvideQuickNote provides a quick note window instance

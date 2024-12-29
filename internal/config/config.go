@@ -44,6 +44,7 @@ type Config struct {
 	Logger   common.LogConfig `mapstructure:"logger"`
 	Hotkeys  HotkeyConfig     `mapstructure:"hotkeys"`
 	Database DatabaseConfig   `mapstructure:"database"`
+	UI       UIConfig         `mapstructure:"ui"`
 }
 
 // AppConfig holds application-specific configuration
@@ -56,6 +57,19 @@ type AppConfig struct {
 // DatabaseConfig holds database configuration
 type DatabaseConfig struct {
 	Path string `mapstructure:"path"`
+}
+
+// UIConfig holds UI-related configuration
+type UIConfig struct {
+	MainWindow WindowConfig `mapstructure:"main_window"`
+	QuickNote  WindowConfig `mapstructure:"quick_note"`
+}
+
+// WindowConfig holds window-specific configuration
+type WindowConfig struct {
+	Width       int  `mapstructure:"width"`
+	Height      int  `mapstructure:"height"`
+	StartHidden bool `mapstructure:"start_hidden"`
 }
 
 // Provider handles configuration loading and validation
@@ -248,6 +262,18 @@ func NewDefaultConfig() *Config {
 		},
 		Hotkeys: HotkeyConfig{
 			QuickNote: "Ctrl+Alt+G",
+		},
+		UI: UIConfig{
+			MainWindow: WindowConfig{
+				Width:       800,
+				Height:      600,
+				StartHidden: false,
+			},
+			QuickNote: WindowConfig{
+				Width:       200,
+				Height:      100,
+				StartHidden: false,
+			},
 		},
 	}
 }

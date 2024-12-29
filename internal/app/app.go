@@ -2,78 +2,85 @@
 package app
 
 import (
+	"context"
+	"fmt"
+
 	"fyne.io/fyne/v2"
 	"github.com/jonesrussell/godo/internal/app/hotkey"
-	"github.com/jonesrussell/godo/internal/common"
 	"github.com/jonesrussell/godo/internal/gui"
+	"github.com/jonesrussell/godo/internal/gui/systray"
 	"github.com/jonesrussell/godo/internal/logger"
-	"github.com/jonesrussell/godo/internal/storage"
 )
 
-// App implements the Application interface
+// App implements the main application
 type App struct {
-	logger     logger.Logger
-	fyneApp    fyne.App
-	store      storage.TaskStore
+	name       string
+	version    string
 	mainWindow gui.MainWindow
 	quickNote  gui.QuickNote
 	hotkey     hotkey.Manager
-	httpConfig *common.HTTPConfig
-	name       common.AppName
-	version    common.AppVersion
-	id         common.AppID
+	logger     logger.Logger
+	fyneApp    fyne.App
 }
 
-// New creates a new App instance
+// New creates a new application instance
 func New(
-	logger logger.Logger,
-	fyneApp fyne.App,
-	store storage.TaskStore,
+	name string,
+	version string,
 	mainWindow gui.MainWindow,
 	quickNote gui.QuickNote,
 	hotkey hotkey.Manager,
-	httpConfig *common.HTTPConfig,
-	name common.AppName,
-	version common.AppVersion,
-	id common.AppID,
+	logger logger.Logger,
+	fyneApp fyne.App,
 ) *App {
 	return &App{
-		logger:     logger,
-		fyneApp:    fyneApp,
-		store:      store,
+		name:       name,
+		version:    version,
 		mainWindow: mainWindow,
 		quickNote:  quickNote,
 		hotkey:     hotkey,
-		httpConfig: httpConfig,
-		name:       name,
-		version:    version,
-		id:         id,
+		logger:     logger,
+		fyneApp:    fyneApp,
 	}
 }
 
-// SetupUI initializes the UI components
-func (a *App) SetupUI() {
-	a.mainWindow.Show()
-}
+// Start starts the application
+func (a *App) Start() error {
+	a.logger.Info("starting application",
+		"name", a.name,
+		"version", a.version,
+	)
 
-// Run starts the application
-func (a *App) Run() {
+	// Set up hotkey
+	if err := a.hotkey.Register(); err != nil {
+		return fmt.Errorf("failed to register hotkey: %w", err)
+	}
+
+	// Set up UI
+	a.SetupUI()
+
+	// Run the application
 	a.fyneApp.Run()
+	return nil
 }
 
-// Cleanup performs cleanup before application exit
-func (a *App) Cleanup() {
-	if err := a.store.Close(); err != nil {
-		a.logger.Error("Failed to close store", "error", err)
+// SetupUI initializes the user interface
+func (a *App) SetupUI() {
+	// Set up main window
+	a.mainWindow.Show()
+
+	// Set up systray
+	systray.SetupSystray(a.fyneApp, a.mainWindow.GetWindow())
+}
+
+// Stop stops the application
+func (a *App) Stop(ctx context.Context) error {
+	a.logger.Info("stopping application")
+
+	if err := a.hotkey.Unregister(); err != nil {
+		return fmt.Errorf("failed to unregister hotkey: %w", err)
 	}
-}
 
-// Logger returns the application's logger
-func (a *App) Logger() logger.Logger {
-	return a.logger
-}
-
-// Store returns the application's store
-func (a *App) Store() storage.TaskStore {
-	return a.store
+	a.fyneApp.Quit()
+	return nil
 }

@@ -124,6 +124,7 @@ var (
 		LoggingSet,
 		BaseSet,
 		HTTPSet,
+		ConfigSet,
 	)
 )
 

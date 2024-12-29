@@ -93,8 +93,7 @@ func TestStore(t *testing.T) {
 		// Verify task was updated
 		updated, err := store.GetByID(ctx, "test-1")
 		require.NoError(t, err)
-		assert.Equal(t, task.Content, updated.Content)
-		assert.Equal(t, task.Done, updated.Done)
+		assertTaskEqual(t, task, updated)
 
 		// Try to update nonexistent task
 		task.ID = "nonexistent"
@@ -153,7 +152,7 @@ func TestTransaction(t *testing.T) {
 		tasks, err := store.List(ctx)
 		require.NoError(t, err)
 		assert.Len(t, tasks, 1)
-		assert.Equal(t, "Test Task 1", tasks[0].Content)
+		assertTaskEqual(t, task1, tasks[0])
 
 		// Commit transaction
 		require.NoError(t, tx.Commit())

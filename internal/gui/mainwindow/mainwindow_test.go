@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"fyne.io/fyne/v2/test"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
 	"github.com/stretchr/testify/assert"
@@ -23,7 +24,8 @@ func (m *mockLogger) Error(_ string, _ ...interface{}) {}
 func setupTestWindow() (*Window, *storage.MockStore) {
 	store := storage.NewMockStore()
 	log := &mockLogger{}
-	mainWindow := New(store, log)
+	app := test.NewApp()
+	mainWindow := New(app, store, log)
 	return mainWindow, store
 }
 

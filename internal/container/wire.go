@@ -7,7 +7,6 @@ import (
 
 	"fyne.io/fyne/v2"
 	fyneapp "fyne.io/fyne/v2/app"
-	"fyne.io/fyne/v2/test"
 	"fyne.io/fyne/v2/theme"
 	"github.com/google/wire"
 	"github.com/jonesrussell/godo/internal/app"
@@ -101,22 +100,19 @@ var (
 		app.New,
 		wire.Bind(new(app.Application), new(*app.App)),
 	)
-
-	// TestSet provides mock dependencies for testing
-	TestSet = wire.NewSet(
-		BaseSet,
-		LoggingSet,
-		ProvideMockStore,
-		ProvideMockMainWindow,
-		ProvideMockQuickNote,
-		ProvideMockHotkey,
-		ProvideMockFyneApp,
-		HTTPSet,
-		wire.Bind(new(gui.MainWindow), new(*gui.MockMainWindow)),
-		wire.Bind(new(gui.QuickNote), new(*gui.MockQuickNote)),
-		wire.Bind(new(apphotkey.Manager), new(*apphotkey.MockManager)),
-	)
 )
+
+// InitializeApp initializes the application with all dependencies
+func InitializeApp() (app.Application, func(), error) {
+	wire.Build(
+		CoreSet,   // First initialize core services
+		UISet,     // Then UI components
+		HotkeySet, // Then platform-specific features
+		HTTPSet,   // Then HTTP server config
+		AppSet,    // Finally the main app
+	)
+	return nil, nil, nil
+}
 
 // Provider functions for options structs
 func ProvideCoreOptions(
@@ -201,27 +197,6 @@ func ProvideAppOptions(
 		Version: version,
 		ID:      id,
 	}
-}
-
-// InitializeApp initializes the application with all dependencies
-func InitializeApp() (app.Application, func(), error) {
-	wire.Build(
-		CoreSet,   // First initialize core services
-		UISet,     // Then UI components
-		HotkeySet, // Then platform-specific features
-		HTTPSet,   // Then HTTP server config
-		AppSet,    // Finally the main app
-	)
-	return nil, nil, nil
-}
-
-// InitializeTestApp initializes the application with mock dependencies for testing
-func InitializeTestApp() (*app.TestApp, func(), error) {
-	wire.Build(
-		TestSet,
-		wire.Struct(new(app.TestApp), "*"),
-	)
-	return nil, nil, nil
 }
 
 // Provider functions for common types
@@ -345,46 +320,6 @@ func ProvideHTTPConfig(opts *options.HTTPOptions) *common.HTTPConfig {
 	}
 }
 
-// Mock providers for testing
-func ProvideMockStore() storage.TaskStore {
-	return storage.NewMockStore()
-}
-
-// ProvideMockConfig provides a mock configuration for testing
-func ProvideMockConfig() (*config.Config, error) {
-	return config.NewDefaultConfig(), nil
-}
-
-// ProvideMockMainWindow provides a mock main window for testing
-func ProvideMockMainWindow() *gui.MockMainWindow {
-	return &gui.MockMainWindow{}
-}
-
-// ProvideMockQuickNote provides a mock quick note window for testing
-func ProvideMockQuickNote() *gui.MockQuickNote {
-	return &gui.MockQuickNote{}
-}
-
-// ProvideMockHotkey provides a mock hotkey manager for testing
-func ProvideMockHotkey() *apphotkey.MockManager {
-	return apphotkey.NewMockManager()
-}
-
-// ProvideMockFyneApp provides a mock Fyne app for testing
-func ProvideMockFyneApp() fyne.App {
-	return test.NewApp()
-}
-
-// ProvideLogOutputPaths provides the default log output paths
-func ProvideLogOutputPaths() common.LogOutputPaths {
-	return common.LogOutputPaths{"stdout"}
-}
-
-// ProvideErrorOutputPaths provides the default error output paths
-func ProvideErrorOutputPaths() common.ErrorOutputPaths {
-	return common.ErrorOutputPaths{"stderr"}
-}
-
 // ProvideModifierKeys provides the default hotkey modifiers
 func ProvideModifierKeys() common.ModifierKeys {
 	return common.ModifierKeys{"Ctrl", "Shift"}
@@ -429,4 +364,14 @@ func ProvideConfig() (*config.Config, error) {
 		"yaml",
 	)
 	return provider.Load()
+}
+
+// ProvideLogOutputPaths provides the default log output paths
+func ProvideLogOutputPaths() common.LogOutputPaths {
+	return common.LogOutputPaths{"stdout"}
+}
+
+// ProvideErrorOutputPaths provides the default error output paths
+func ProvideErrorOutputPaths() common.ErrorOutputPaths {
+	return common.ErrorOutputPaths{"stderr"}
 }

@@ -8,6 +8,7 @@ import (
 
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
+	"github.com/jonesrussell/godo/internal/storage/errors"
 	_ "modernc.org/sqlite" // SQLite driver
 )
 
@@ -46,51 +47,18 @@ func (s *Store) Add(ctx context.Context, task storage.Task) error {
 	return err
 }
 
-// List returns all tasks in the store
-func (s *Store) List(ctx context.Context) ([]storage.Task, error) {
-	rows, err := s.db.QueryContext(ctx, "SELECT id, content, done, created_at, updated_at FROM tasks")
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var tasks []storage.Task
-	for rows.Next() {
-		var task storage.Task
-		if err := rows.Scan(
-			&task.ID,
-			&task.Content,
-			&task.Done,
-			&task.CreatedAt,
-			&task.UpdatedAt,
-		); err != nil {
-			return nil, err
-		}
-		tasks = append(tasks, task)
-	}
-	return tasks, rows.Err()
-}
-
-// GetByID returns a task by its ID
-func (s *Store) GetByID(ctx context.Context, id string) (*storage.Task, error) {
+// GetByID retrieves a task by its ID
+func (s *Store) GetByID(ctx context.Context, id string) (storage.Task, error) {
 	var task storage.Task
 	err := s.db.QueryRowContext(ctx,
 		"SELECT id, content, done, created_at, updated_at FROM tasks WHERE id = ?",
 		id,
-	).Scan(
-		&task.ID,
-		&task.Content,
-		&task.Done,
-		&task.CreatedAt,
-		&task.UpdatedAt,
-	)
+	).Scan(&task.ID, &task.Content, &task.Done, &task.CreatedAt, &task.UpdatedAt)
+
 	if err == sql.ErrNoRows {
-		return nil, &storage.NotFoundError{ID: id}
+		return storage.Task{}, &errors.NotFoundError{ID: id}
 	}
-	if err != nil {
-		return nil, err
-	}
-	return &task, nil
+	return task, err
 }
 
 // Update modifies an existing task
@@ -109,7 +77,7 @@ func (s *Store) Update(ctx context.Context, task storage.Task) error {
 	}
 
 	if rows == 0 {
-		return &storage.NotFoundError{ID: task.ID}
+		return &errors.NotFoundError{ID: task.ID}
 	}
 	return nil
 }
@@ -127,9 +95,31 @@ func (s *Store) Delete(ctx context.Context, id string) error {
 	}
 
 	if rows == 0 {
-		return &storage.NotFoundError{ID: id}
+		return &errors.NotFoundError{ID: id}
 	}
 	return nil
+}
+
+// List returns all tasks
+func (s *Store) List(ctx context.Context) ([]storage.Task, error) {
+	rows, err := s.db.QueryContext(ctx,
+		"SELECT id, content, done, created_at, updated_at FROM tasks ORDER BY created_at DESC",
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var tasks []storage.Task
+	for rows.Next() {
+		var task storage.Task
+		err := rows.Scan(&task.ID, &task.Content, &task.Done, &task.CreatedAt, &task.UpdatedAt)
+		if err != nil {
+			return nil, err
+		}
+		tasks = append(tasks, task)
+	}
+	return tasks, rows.Err()
 }
 
 // Close closes the database connection

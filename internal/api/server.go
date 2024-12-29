@@ -151,7 +151,7 @@ func (s *Server) handleGetTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, NewTaskResponse(*task))
+	writeJSON(w, http.StatusOK, NewTaskResponse(task))
 }
 
 func (s *Server) handleUpdateTask(w http.ResponseWriter, r *http.Request) {
@@ -205,13 +205,13 @@ func (s *Server) handlePatchTask(w http.ResponseWriter, r *http.Request) {
 	}
 	task.UpdatedAt = time.Now()
 
-	if err := s.store.Update(r.Context(), *task); err != nil {
+	if err := s.store.Update(r.Context(), task); err != nil {
 		status, code, msg := mapError(err)
 		writeError(w, status, code, msg)
 		return
 	}
 
-	writeJSON(w, http.StatusOK, NewTaskResponse(*task))
+	writeJSON(w, http.StatusOK, NewTaskResponse(task))
 }
 
 func (s *Server) handleDeleteTask(w http.ResponseWriter, r *http.Request) {

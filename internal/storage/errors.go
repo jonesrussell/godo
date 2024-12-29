@@ -23,3 +23,17 @@ var (
 	// ErrInvalidID is returned when a task ID is invalid
 	ErrInvalidID = errors.New("invalid task ID")
 )
+
+// NotFoundError is returned when a task cannot be found
+type NotFoundError struct {
+	ID string
+}
+
+func (e *NotFoundError) Error() string {
+	return "task not found: " + e.ID
+}
+
+// Is implements errors.Is interface to match against ErrTaskNotFound
+func (e *NotFoundError) Is(target error) bool {
+	return target == ErrTaskNotFound
+}

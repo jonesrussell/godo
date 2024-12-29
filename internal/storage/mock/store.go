@@ -54,20 +54,20 @@ func (s *Store) List(_ context.Context) ([]storage.Task, error) {
 }
 
 // GetByID retrieves a task by its ID
-func (s *Store) GetByID(_ context.Context, id string) (*storage.Task, error) {
+func (s *Store) GetByID(_ context.Context, id string) (storage.Task, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
 	if s.Error != nil {
-		return nil, s.Error
+		return storage.Task{}, s.Error
 	}
 
 	task, exists := s.tasks[id]
 	if !exists {
-		return nil, storage.ErrTaskNotFound
+		return storage.Task{}, storage.ErrTaskNotFound
 	}
 
-	return &task, nil
+	return task, nil
 }
 
 // Add creates a new task
@@ -166,13 +166,13 @@ func (t *Tx) List(_ context.Context) ([]storage.Task, error) {
 	return tasks, nil
 }
 
-// GetByID retrieves a task by its ID
-func (t *Tx) GetByID(_ context.Context, id string) (*storage.Task, error) {
+// GetByID retrieves a task by its ID in the transaction
+func (t *Tx) GetByID(_ context.Context, id string) (storage.Task, error) {
 	task, exists := t.tasks[id]
 	if !exists {
-		return nil, storage.ErrTaskNotFound
+		return storage.Task{}, storage.ErrTaskNotFound
 	}
-	return &task, nil
+	return task, nil
 }
 
 // Add creates a new task in the transaction

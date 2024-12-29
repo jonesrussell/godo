@@ -331,7 +331,7 @@ func ProvideIdleTimeout() common.IdleTimeoutSeconds {
 
 // ProvideStoreAdapter provides a store adapter instance
 func ProvideStoreAdapter(store storage.TaskStore) *storage.StoreAdapter {
-	return storage.NewStoreAdapter(store).(*storage.StoreAdapter)
+	return storage.NewStoreAdapter(store)
 }
 
 // ProvideConfig provides the application configuration

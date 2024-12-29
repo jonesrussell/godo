@@ -227,16 +227,18 @@ func (s *Server) handleDeleteTask(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// Start starts the HTTP server on the specified port
+// Start starts the server
 func (s *Server) Start(port int) error {
 	s.srv = &http.Server{
 		Addr:              fmt.Sprintf(":%d", port),
 		Handler:           s,
-		ReadTimeout:       30 * time.Second,
-		WriteTimeout:      30 * time.Second,
-		ReadHeaderTimeout: 10 * time.Second,
-		IdleTimeout:       120 * time.Second,
+		ReadTimeout:       DefaultReadTimeout,
+		WriteTimeout:      DefaultWriteTimeout,
+		ReadHeaderTimeout: DefaultReadHeaderTimeout,
+		IdleTimeout:       DefaultIdleTimeout,
 	}
+
+	s.log.Info("starting server", "port", port)
 	return s.srv.ListenAndServe()
 }
 

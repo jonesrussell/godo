@@ -58,8 +58,8 @@ func (v *TaskValidator) ValidateID(id string) error {
 		return fmt.Errorf("task ID cannot be empty")
 	}
 
-	if len(id) > 100 {
-		return fmt.Errorf("task ID too long (max 100 characters)")
+	if len(id) > MaxIDLength {
+		return fmt.Errorf("task ID too long (max %d characters)", MaxIDLength)
 	}
 
 	return nil
@@ -71,8 +71,8 @@ func (v *TaskValidator) validateContent(content string) error {
 		return fmt.Errorf("task content cannot be empty")
 	}
 
-	if len(content) > 1000 {
-		return fmt.Errorf("task content too long (max 1000 characters)")
+	if len(content) > MaxContentLength {
+		return fmt.Errorf("task content too long (max %d characters)", MaxContentLength)
 	}
 
 	return nil

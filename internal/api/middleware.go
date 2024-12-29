@@ -115,7 +115,7 @@ func writeValidationError(w http.ResponseWriter, fields map[string]string) {
 }
 
 // mapError maps an error to an HTTP status code and error message
-func mapError(err error) (code int, msg string, details string) {
+func mapError(err error) (code int, msg, details string) {
 	switch {
 	case errors.Is(err, storage.ErrTaskNotFound):
 		return http.StatusNotFound, "Task not found", err.Error()

@@ -36,11 +36,12 @@ func setupTestQuickNote() (*Window, *storage.MockStore) {
 }
 
 func TestQuickNote(t *testing.T) {
-	quickNote, store := setupTestQuickNote()
-	require.NotNil(t, quickNote)
 	ctx := context.Background()
 
 	t.Run("AddTask", func(t *testing.T) {
+		quickNote, store := setupTestQuickNote()
+		require.NotNil(t, quickNote)
+
 		// Add a task
 		task := storage.Task{
 			ID:        "test-1",
@@ -60,6 +61,9 @@ func TestQuickNote(t *testing.T) {
 	})
 
 	t.Run("WindowClose", func(t *testing.T) {
+		quickNote, store := setupTestQuickNote()
+		require.NotNil(t, quickNote)
+
 		// Close the window
 		quickNote.Hide()
 
@@ -69,6 +73,9 @@ func TestQuickNote(t *testing.T) {
 	})
 
 	t.Run("StoreError", func(t *testing.T) {
+		quickNote, store := setupTestQuickNote()
+		require.NotNil(t, quickNote)
+
 		// Set store error
 		store.Error = assert.AnError
 
@@ -86,8 +93,8 @@ func TestQuickNote(t *testing.T) {
 	})
 
 	t.Run("EmptyContent", func(t *testing.T) {
-		// Reset store error
-		store.Error = nil
+		quickNote, store := setupTestQuickNote()
+		require.NotNil(t, quickNote)
 
 		// Try to add a task with empty content
 		task := storage.Task{

@@ -2,10 +2,13 @@
 package mainwindow
 
 import (
+	"context"
+	"time"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"github.com/google/uuid"
 	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
@@ -16,74 +19,98 @@ type Window struct {
 	store  storage.TaskStore
 	logger logger.Logger
 	window fyne.Window
+	app    fyne.App
 	config config.WindowConfig
 }
 
 // New creates a new main window
-func New(app fyne.App, store storage.TaskStore, logger logger.Logger, cfg config.WindowConfig) *Window {
-	window := app.NewWindow("Godo")
+func New(app fyne.App, store storage.TaskStore, logger logger.Logger, config config.WindowConfig) *Window {
 	w := &Window{
 		store:  store,
 		logger: logger,
-		window: window,
-		config: cfg,
+		app:    app,
+		config: config,
+		window: app.NewWindow("Godo"),
 	}
 
-	// Set up window properties
-	window.Resize(fyne.NewSize(float32(cfg.Width), float32(cfg.Height)))
-	window.CenterOnScreen()
-	window.SetIcon(theme.HomeIcon())
-
-	// Create main content
-	content := w.createContent()
-	window.SetContent(content)
-
-	// Set up window callbacks
-	window.SetCloseIntercept(func() {
-		w.Hide()
-	})
-
+	w.setupUI()
 	return w
 }
 
-// createContent creates the main window content
-func (w *Window) createContent() fyne.CanvasObject {
+// setupUI initializes the window's UI components
+func (w *Window) setupUI() {
 	// Create task list
+	tasks, err := w.store.List(context.Background())
+	if err != nil {
+		w.logger.Error("Failed to load tasks", "error", err)
+	}
+
 	taskList := widget.NewList(
-		func() int { return 0 }, // TODO: Return actual task count
+		func() int { return len(tasks) },
 		func() fyne.CanvasObject {
 			return container.NewHBox(
 				widget.NewCheck("", nil),
-				widget.NewLabel("Task content"),
+				widget.NewLabel(""),
 			)
 		},
 		func(id widget.ListItemID, item fyne.CanvasObject) {
-			// TODO: Update item with actual task data
+			box := item.(*fyne.Container)
+			check := box.Objects[0].(*widget.Check)
+			label := box.Objects[1].(*widget.Label)
+
+			check.Checked = tasks[id].Done
+			check.OnChanged = func(done bool) {
+				tasks[id].Done = done
+				tasks[id].UpdatedAt = time.Now()
+				if err := w.store.Update(context.Background(), tasks[id]); err != nil {
+					w.logger.Error("Failed to update task", "error", err)
+				}
+			}
+			label.SetText(tasks[id].Content)
 		},
 	)
 
-	// Create add task button
-	addButton := widget.NewButtonWithIcon("Add Task", theme.ContentAddIcon(), func() {
-		// TODO: Implement add task functionality
+	// Create add task input
+	input := widget.NewEntry()
+	input.SetPlaceHolder("Enter a new task...")
+
+	addButton := widget.NewButton("Add", func() {
+		if input.Text != "" {
+			now := time.Now()
+			task := storage.Task{
+				ID:        uuid.New().String(),
+				Content:   input.Text,
+				Done:      false,
+				CreatedAt: now,
+				UpdatedAt: now,
+			}
+			if err := w.store.Add(context.Background(), task); err != nil {
+				w.logger.Error("Failed to add task", "error", err)
+				return
+			}
+			tasks = append(tasks, task)
+			taskList.Refresh()
+			input.SetText("")
+		}
 	})
 
-	// Create toolbar
-	toolbar := container.NewHBox(
-		addButton,
+	// Layout
+	content := container.NewBorder(
+		container.NewBorder(nil, nil, nil, addButton, input), // top
+		nil, // bottom
+		nil, // left
+		nil, // right
+		taskList,
 	)
 
-	// Create main layout
-	return container.NewBorder(
-		toolbar, nil, nil, nil, // top, bottom, left, right
-		taskList, // center content
-	)
+	w.window.SetContent(content)
+	w.window.Resize(fyne.NewSize(float32(w.config.Width), float32(w.config.Height)))
+	w.window.CenterOnScreen()
 }
 
 // Show displays the window
 func (w *Window) Show() {
-	if !w.config.StartHidden {
-		w.window.Show()
-	}
+	w.window.Show()
 }
 
 // Hide hides the window

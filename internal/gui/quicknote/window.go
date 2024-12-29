@@ -2,7 +2,14 @@
 package quicknote
 
 import (
+	"context"
+	"time"
+
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/widget"
+	"github.com/google/uuid"
+	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
 )
@@ -12,14 +19,59 @@ type Window struct {
 	store  storage.TaskStore
 	logger logger.Logger
 	window fyne.Window
+	app    fyne.App
+	config config.WindowConfig
 }
 
 // New creates a new quick note window
-func New(store storage.TaskStore, logger logger.Logger) *Window {
-	return &Window{
+func New(app fyne.App, store storage.TaskStore, logger logger.Logger, config config.WindowConfig) *Window {
+	w := &Window{
 		store:  store,
 		logger: logger,
+		app:    app,
+		config: config,
+		window: app.NewWindow("Quick Note"),
 	}
+
+	w.setupUI()
+	return w
+}
+
+// setupUI initializes the window's UI components
+func (w *Window) setupUI() {
+	input := widget.NewMultiLineEntry()
+	input.SetPlaceHolder("Enter your quick note...")
+
+	saveButton := widget.NewButton("Save", func() {
+		if input.Text != "" {
+			now := time.Now()
+			task := storage.Task{
+				ID:        uuid.New().String(),
+				Content:   input.Text,
+				Done:      false,
+				CreatedAt: now,
+				UpdatedAt: now,
+			}
+			if err := w.store.Add(context.Background(), task); err != nil {
+				w.logger.Error("Failed to add quick note", "error", err)
+				return
+			}
+			input.SetText("")
+			w.Hide()
+		}
+	})
+
+	content := container.NewBorder(
+		nil,        // top
+		saveButton, // bottom
+		nil,        // left
+		nil,        // right
+		input,      // center
+	)
+
+	w.window.SetContent(content)
+	w.window.Resize(fyne.NewSize(float32(w.config.Width), float32(w.config.Height)))
+	w.window.CenterOnScreen()
 }
 
 // Show displays the quick note window

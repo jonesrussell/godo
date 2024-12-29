@@ -230,8 +230,8 @@ func ProvideMainWindow(app fyne.App, store storage.TaskStore, logger logger.Logg
 }
 
 // ProvideQuickNote provides a quick note window instance
-func ProvideQuickNote(store storage.TaskStore, logger logger.Logger) *quicknote.Window {
-	return quicknote.New(store, logger)
+func ProvideQuickNote(app fyne.App, store storage.TaskStore, logger logger.Logger, cfg *config.Config) *quicknote.Window {
+	return quicknote.New(app, store, logger, cfg.UI.QuickNote)
 }
 
 // ProvideHTTPConfig provides HTTP configuration using options

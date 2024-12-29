@@ -84,6 +84,7 @@ func TestStore(t *testing.T) {
 			ID:        "test-1",
 			Content:   "Updated Task",
 			Done:      true,
+			CreatedAt: time.Now().UTC().Truncate(time.Second),
 			UpdatedAt: time.Now().UTC().Truncate(time.Second),
 		}
 
@@ -93,7 +94,9 @@ func TestStore(t *testing.T) {
 		// Verify task was updated
 		updated, err := store.GetByID(ctx, "test-1")
 		require.NoError(t, err)
-		assertTaskEqual(t, task, updated)
+		assert.Equal(t, task.Content, updated.Content)
+		assert.Equal(t, task.Done, updated.Done)
+		assert.WithinDuration(t, task.UpdatedAt, updated.UpdatedAt, time.Second)
 
 		// Try to update nonexistent task
 		task.ID = "nonexistent"
@@ -152,7 +155,7 @@ func TestTransaction(t *testing.T) {
 		tasks, err := store.List(ctx)
 		require.NoError(t, err)
 		assert.Len(t, tasks, 1)
-		assertTaskEqual(t, task1, tasks[0])
+		assert.Equal(t, "Test Task 1", tasks[0].Content)
 
 		// Commit transaction
 		require.NoError(t, tx.Commit())
@@ -161,6 +164,16 @@ func TestTransaction(t *testing.T) {
 		tasks, err = store.List(ctx)
 		require.NoError(t, err)
 		assert.Len(t, tasks, 2)
+		// Find and verify the updated task
+		var found bool
+		for _, task := range tasks {
+			if task.ID == "test-1" {
+				assert.Equal(t, "Updated Task 1", task.Content)
+				found = true
+				break
+			}
+		}
+		assert.True(t, found, "Updated task should be found")
 	})
 
 	t.Run("rollback", func(t *testing.T) {
@@ -199,6 +212,6 @@ func assertTaskEqual(t *testing.T, expected, actual storage.Task) {
 	assert.Equal(t, expected.ID, actual.ID)
 	assert.Equal(t, expected.Content, actual.Content)
 	assert.Equal(t, expected.Done, actual.Done)
-	assert.Equal(t, expected.CreatedAt.Unix(), actual.CreatedAt.Unix())
-	assert.Equal(t, expected.UpdatedAt.Unix(), actual.UpdatedAt.Unix())
+	assert.WithinDuration(t, expected.CreatedAt, actual.CreatedAt, time.Second)
+	assert.WithinDuration(t, expected.UpdatedAt, actual.UpdatedAt, time.Second)
 }

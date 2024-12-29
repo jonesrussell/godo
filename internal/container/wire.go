@@ -52,6 +52,21 @@ var (
 		ProvideAppID,
 	)
 
+	// TestSet provides mock dependencies for testing
+	TestSet = wire.NewSet(
+		BaseSet,
+		LoggingSet,
+		ProvideMockStore,
+		ProvideMockMainWindow,
+		ProvideMockQuickNote,
+		ProvideMockHotkey,
+		ProvideMockFyneApp,
+		ProvideHTTPConfig,
+		wire.Bind(new(gui.MainWindow), new(*gui.MockMainWindow)),
+		wire.Bind(new(gui.QuickNote), new(*gui.MockQuickNote)),
+		wire.Bind(new(apphotkey.Manager), new(*apphotkey.MockManager)),
+	)
+
 	// LoggingSet provides logging dependencies
 	LoggingSet = wire.NewSet(
 		ProvideLogLevel,
@@ -109,22 +124,6 @@ var (
 		wire.Bind(new(app.Application), new(*app.App)),
 		BaseSet,
 		HTTPSet,
-	)
-
-	// TestSet provides mock dependencies for testing
-	TestSet = wire.NewSet(
-		ProvideMockStore,
-		ProvideMockMainWindow,
-		ProvideMockQuickNote,
-		ProvideMockHotkey,
-		ProvideMockFyneApp,
-		wire.Bind(new(gui.MainWindow), new(*gui.MockMainWindow)),
-		wire.Bind(new(gui.QuickNote), new(*gui.MockQuickNote)),
-		wire.Bind(new(apphotkey.Manager), new(*apphotkey.MockManager)),
-		LoggingSet,
-		BaseSet,
-		HTTPSet,
-		ConfigSet,
 	)
 )
 

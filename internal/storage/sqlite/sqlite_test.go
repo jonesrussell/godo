@@ -9,6 +9,7 @@ import (
 
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
+	"github.com/jonesrussell/godo/internal/storage/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	_ "modernc.org/sqlite" // SQLite driver
@@ -81,6 +82,6 @@ func TestSQLiteStore(t *testing.T) {
 		assert.Empty(t, tasks)
 
 		err = store.Delete(ctx, "1")
-		assert.ErrorIs(t, err, storage.ErrTaskNotFound)
+		assert.ErrorIs(t, err, errors.ErrTaskNotFound)
 	})
 }

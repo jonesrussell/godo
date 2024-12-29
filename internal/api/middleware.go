@@ -114,17 +114,15 @@ func writeValidationError(w http.ResponseWriter, fields map[string]string) {
 	writeJSON(w, http.StatusBadRequest, resp)
 }
 
-// mapError maps storage errors to HTTP status codes and error responses
-func mapError(err error) (int, string, string) {
+// mapError maps an error to an HTTP status code and error message
+func mapError(err error) (code int, msg string, details string) {
 	switch {
 	case errors.Is(err, storage.ErrTaskNotFound):
-		return http.StatusNotFound, "not_found", "Task not found"
+		return http.StatusNotFound, "Task not found", err.Error()
 	case errors.Is(err, storage.ErrDuplicateID):
-		return http.StatusConflict, "duplicate_id", "Task ID already exists"
-	case errors.Is(err, storage.ErrInvalidID):
-		return http.StatusBadRequest, "invalid_id", "Invalid task ID"
+		return http.StatusConflict, "Task ID already exists", err.Error()
 	default:
-		return http.StatusInternalServerError, "internal_error", "Internal server error"
+		return http.StatusInternalServerError, "Internal server error", err.Error()
 	}
 }
 

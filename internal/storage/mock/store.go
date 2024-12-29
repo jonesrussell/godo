@@ -8,11 +8,11 @@ import (
 	"github.com/jonesrussell/godo/internal/storage"
 )
 
-// Store implements storage.TaskStore for testing
+// Store provides a mock implementation of storage.TaskStore
 type Store struct {
-	tasks map[string]storage.Task
 	mu    sync.RWMutex
-	err   error
+	tasks map[string]storage.Task
+	Error error
 }
 
 // New creates a new mock store
@@ -26,24 +26,24 @@ func New() *Store {
 func (s *Store) SetError(err error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.err = err
+	s.Error = err
 }
 
-// Reset clears all tasks and errors
+// Reset clears all tasks and resets error state
 func (s *Store) Reset() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.tasks = make(map[string]storage.Task)
-	s.err = nil
+	s.Error = nil
 }
 
 // List returns all tasks
-func (s *Store) List(ctx context.Context) ([]storage.Task, error) {
+func (s *Store) List(_ context.Context) ([]storage.Task, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	if s.err != nil {
-		return nil, s.err
+	if s.Error != nil {
+		return nil, s.Error
 	}
 
 	tasks := make([]storage.Task, 0, len(s.tasks))
@@ -53,29 +53,30 @@ func (s *Store) List(ctx context.Context) ([]storage.Task, error) {
 	return tasks, nil
 }
 
-// GetByID returns a task by its ID
-func (s *Store) GetByID(ctx context.Context, id string) (*storage.Task, error) {
+// GetByID retrieves a task by its ID
+func (s *Store) GetByID(_ context.Context, id string) (*storage.Task, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	if s.err != nil {
-		return nil, s.err
+	if s.Error != nil {
+		return nil, s.Error
 	}
 
-	task, ok := s.tasks[id]
-	if !ok {
+	task, exists := s.tasks[id]
+	if !exists {
 		return nil, storage.ErrTaskNotFound
 	}
+
 	return &task, nil
 }
 
 // Add creates a new task
-func (s *Store) Add(ctx context.Context, task storage.Task) error {
+func (s *Store) Add(_ context.Context, task storage.Task) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if s.err != nil {
-		return s.err
+	if s.Error != nil {
+		return s.Error
 	}
 
 	if _, exists := s.tasks[task.ID]; exists {
@@ -86,13 +87,13 @@ func (s *Store) Add(ctx context.Context, task storage.Task) error {
 	return nil
 }
 
-// Update replaces an existing task
-func (s *Store) Update(ctx context.Context, task storage.Task) error {
+// Update modifies an existing task
+func (s *Store) Update(_ context.Context, task storage.Task) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if s.err != nil {
-		return s.err
+	if s.Error != nil {
+		return s.Error
 	}
 
 	if _, exists := s.tasks[task.ID]; !exists {
@@ -104,12 +105,12 @@ func (s *Store) Update(ctx context.Context, task storage.Task) error {
 }
 
 // Delete removes a task
-func (s *Store) Delete(ctx context.Context, id string) error {
+func (s *Store) Delete(_ context.Context, id string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if s.err != nil {
-		return s.err
+	if s.Error != nil {
+		return s.Error
 	}
 
 	if _, exists := s.tasks[id]; !exists {
@@ -120,54 +121,44 @@ func (s *Store) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
-// Close implements io.Closer
+// Close is a no-op for the mock store
 func (s *Store) Close() error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if s.err != nil {
-		return s.err
+	if s.Error != nil {
+		return s.Error
 	}
-
-	s.tasks = nil
 	return nil
 }
 
 // BeginTx starts a new transaction
-func (s *Store) BeginTx(ctx context.Context) (storage.TaskTx, error) {
+func (s *Store) BeginTx(_ context.Context) (storage.TaskTx, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if s.err != nil {
-		return nil, s.err
+	if s.Error != nil {
+		return nil, s.Error
 	}
 
-	// Create a snapshot of current tasks
-	tasks := make(map[string]storage.Task)
+	tx := &Tx{
+		store: s,
+		tasks: make(map[string]storage.Task),
+	}
+
+	// Copy current tasks
 	for k, v := range s.tasks {
-		tasks[k] = v
+		tx.tasks[k] = v
 	}
 
-	return &Tx{
-		store:    s,
-		tasks:    tasks,
-		original: s.tasks,
-	}, nil
+	return tx, nil
 }
 
-// Tx implements storage.TaskTx for testing
+// Tx represents a mock transaction
 type Tx struct {
-	store    *Store
-	tasks    map[string]storage.Task
-	original map[string]storage.Task
-	mu       sync.RWMutex
+	store *Store
+	tasks map[string]storage.Task
 }
 
-// List returns all tasks within the transaction
-func (t *Tx) List(ctx context.Context) ([]storage.Task, error) {
-	t.mu.RLock()
-	defer t.mu.RUnlock()
-
+// List returns all tasks in the transaction
+func (t *Tx) List(_ context.Context) ([]storage.Task, error) {
 	tasks := make([]storage.Task, 0, len(t.tasks))
 	for _, task := range t.tasks {
 		tasks = append(tasks, task)
@@ -175,84 +166,62 @@ func (t *Tx) List(ctx context.Context) ([]storage.Task, error) {
 	return tasks, nil
 }
 
-// GetByID returns a task by its ID within the transaction
-func (t *Tx) GetByID(ctx context.Context, id string) (*storage.Task, error) {
-	t.mu.RLock()
-	defer t.mu.RUnlock()
-
-	task, ok := t.tasks[id]
-	if !ok {
+// GetByID retrieves a task by its ID
+func (t *Tx) GetByID(_ context.Context, id string) (*storage.Task, error) {
+	task, exists := t.tasks[id]
+	if !exists {
 		return nil, storage.ErrTaskNotFound
 	}
 	return &task, nil
 }
 
-// Add creates a new task within the transaction
-func (t *Tx) Add(ctx context.Context, task storage.Task) error {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-
+// Add creates a new task in the transaction
+func (t *Tx) Add(_ context.Context, task storage.Task) error {
 	if _, exists := t.tasks[task.ID]; exists {
 		return storage.ErrDuplicateID
 	}
-
 	t.tasks[task.ID] = task
 	return nil
 }
 
-// Update replaces an existing task within the transaction
-func (t *Tx) Update(ctx context.Context, task storage.Task) error {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-
+// Update modifies an existing task in the transaction
+func (t *Tx) Update(_ context.Context, task storage.Task) error {
 	if _, exists := t.tasks[task.ID]; !exists {
 		return storage.ErrTaskNotFound
 	}
-
 	t.tasks[task.ID] = task
 	return nil
 }
 
-// Delete removes a task within the transaction
-func (t *Tx) Delete(ctx context.Context, id string) error {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-
+// Delete removes a task in the transaction
+func (t *Tx) Delete(_ context.Context, id string) error {
 	if _, exists := t.tasks[id]; !exists {
 		return storage.ErrTaskNotFound
 	}
-
 	delete(t.tasks, id)
 	return nil
 }
 
-// Commit commits the transaction
+// Commit applies transaction changes
 func (t *Tx) Commit() error {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-
 	t.store.mu.Lock()
 	defer t.store.mu.Unlock()
 
-	// Update store's tasks with transaction's tasks
+	if t.store.Error != nil {
+		return t.store.Error
+	}
+
 	t.store.tasks = make(map[string]storage.Task)
 	for k, v := range t.tasks {
 		t.store.tasks[k] = v
 	}
-
 	return nil
 }
 
-// Rollback rolls back the transaction
+// Rollback discards transaction changes
 func (t *Tx) Rollback() error {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-
-	// Restore original tasks
-	t.tasks = make(map[string]storage.Task)
-	for k, v := range t.original {
-		t.tasks[k] = v
+	if t.store.Error != nil {
+		return t.store.Error
 	}
-
 	return nil
 }

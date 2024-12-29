@@ -5,11 +5,11 @@ import (
 	"sync"
 )
 
-// MockStore provides a mock implementation of TaskStore for testing
+// MockStore is a mock implementation of TaskStore for testing
 type MockStore struct {
-	tasks map[string]Task
 	mu    sync.RWMutex
-	Error error // Error to return on next operation
+	tasks map[string]Task
+	Error error
 }
 
 // NewMockStore creates a new mock store
@@ -19,7 +19,7 @@ func NewMockStore() *MockStore {
 	}
 }
 
-// Reset clears all tasks and resets error
+// Reset clears all tasks and resets error state
 func (s *MockStore) Reset() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -27,8 +27,8 @@ func (s *MockStore) Reset() {
 	s.Error = nil
 }
 
-// List returns all tasks
-func (s *MockStore) List(ctx context.Context) ([]Task, error) {
+// List returns all tasks in the store
+func (s *MockStore) List(_ context.Context) ([]Task, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -43,8 +43,8 @@ func (s *MockStore) List(ctx context.Context) ([]Task, error) {
 	return tasks, nil
 }
 
-// Add creates a new task
-func (s *MockStore) Add(ctx context.Context, task Task) error {
+// Add adds a new task to the store
+func (s *MockStore) Add(_ context.Context, task Task) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -60,8 +60,8 @@ func (s *MockStore) Add(ctx context.Context, task Task) error {
 	return nil
 }
 
-// Update modifies an existing task
-func (s *MockStore) Update(ctx context.Context, task Task) error {
+// Update updates an existing task
+func (s *MockStore) Update(_ context.Context, task Task) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -77,8 +77,8 @@ func (s *MockStore) Update(ctx context.Context, task Task) error {
 	return nil
 }
 
-// Delete removes a task
-func (s *MockStore) Delete(ctx context.Context, id string) error {
+// Delete removes a task from the store
+func (s *MockStore) Delete(_ context.Context, id string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -94,13 +94,8 @@ func (s *MockStore) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
-// Close is a no-op for the mock store
-func (s *MockStore) Close() error {
-	return nil
-}
-
 // GetByID retrieves a task by its ID
-func (s *MockStore) GetByID(ctx context.Context, id string) (*Task, error) {
+func (s *MockStore) GetByID(_ context.Context, id string) (*Task, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -112,5 +107,19 @@ func (s *MockStore) GetByID(ctx context.Context, id string) (*Task, error) {
 	if !exists {
 		return nil, ErrTaskNotFound
 	}
+
 	return &task, nil
+}
+
+// Close implements TaskStore interface
+func (s *MockStore) Close() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.Error != nil {
+		return s.Error
+	}
+
+	s.tasks = make(map[string]Task)
+	return nil
 }

@@ -3,7 +3,6 @@ package sqlite
 import (
 	"context"
 	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -13,22 +12,25 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func setupTestStore(t *testing.T) (storage.TaskTxStore, func()) {
+func setupTestStore(t *testing.T) (store storage.TaskTxStore, cleanup func()) {
 	t.Helper()
 
-	// Create temporary directory for test database
-	dir := t.TempDir()
-	dbPath := filepath.Join(dir, "test.db")
+	// Create a temporary database file
+	dbFile, err := os.CreateTemp("", "test-*.db")
+	require.NoError(t, err)
+	dbPath := dbFile.Name()
+	require.NoError(t, dbFile.Close())
 
-	// Create test store
+	// Create test logger
 	log := logger.NewTestLogger(t)
-	store, err := New(dbPath, log)
+
+	// Create the store
+	store, err = New(dbPath, log)
 	require.NoError(t, err)
 
-	// Return cleanup function
-	cleanup := func() {
-		store.Close()
-		os.Remove(dbPath)
+	cleanup = func() {
+		require.NoError(t, store.Close())
+		require.NoError(t, os.Remove(dbPath))
 	}
 
 	return store, cleanup

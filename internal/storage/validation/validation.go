@@ -2,10 +2,18 @@
 package validation
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/jonesrussell/godo/internal/storage"
+)
+
+var (
+	// ErrInvalidID indicates that the task ID is invalid
+	ErrInvalidID = errors.New("invalid task ID")
+	// ErrInvalidContent indicates that the task content is invalid
+	ErrInvalidContent = errors.New("invalid task content")
 )
 
 // TaskValidator provides validation for task operations
@@ -105,6 +113,29 @@ func ValidateTransaction(err error) error {
 			Operation: "validate transaction",
 			Err:       err,
 		}
+	}
+	return nil
+}
+
+const (
+	// MaxIDLength is the maximum allowed length for task IDs
+	MaxIDLength = 100
+	// MaxContentLength is the maximum allowed length for task content
+	MaxContentLength = 1000
+)
+
+// ValidateID checks if a task ID is valid
+func ValidateID(id string) error {
+	if len(id) > MaxIDLength {
+		return ErrInvalidID
+	}
+	return nil
+}
+
+// ValidateContent checks if task content is valid
+func ValidateContent(content string) error {
+	if len(content) > MaxContentLength {
+		return ErrInvalidContent
 	}
 	return nil
 }

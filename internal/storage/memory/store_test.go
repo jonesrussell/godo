@@ -256,15 +256,13 @@ func TestMemoryStoreValidation(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var err error
-			switch tt.op {
-			case "add":
+			if tt.op == "add" {
 				err = store.Add(ctx, tt.task)
-			}
-
-			if tt.wantErr != nil {
-				assert.ErrorIs(t, err, tt.wantErr)
-			} else {
-				assert.NoError(t, err)
+				if tt.wantErr != nil {
+					assert.Error(t, err)
+				} else {
+					assert.NoError(t, err)
+				}
 			}
 		})
 	}

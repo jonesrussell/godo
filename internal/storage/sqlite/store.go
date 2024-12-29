@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 
+	// Import sqlite3 driver for database/sql
 	_ "github.com/mattn/go-sqlite3"
 
 	"github.com/jonesrussell/godo/internal/logger"

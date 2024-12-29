@@ -13,6 +13,35 @@ import (
 	"github.com/jonesrussell/godo/internal/storage"
 )
 
+const (
+	// DefaultReadTimeout is the default timeout for reading the entire request
+	DefaultReadTimeout = 30 * time.Second
+	// DefaultWriteTimeout is the default timeout for writing the response
+	DefaultWriteTimeout = 30 * time.Second
+	// DefaultReadHeaderTimeout is the default timeout for reading request headers
+	DefaultReadHeaderTimeout = 10 * time.Second
+	// DefaultIdleTimeout is the default timeout for idle connections
+	DefaultIdleTimeout = 120 * time.Second
+)
+
+// ServerConfig holds the server configuration
+type ServerConfig struct {
+	ReadTimeout       time.Duration
+	WriteTimeout      time.Duration
+	ReadHeaderTimeout time.Duration
+	IdleTimeout       time.Duration
+}
+
+// NewServerConfig creates a new server configuration with default values
+func NewServerConfig() *ServerConfig {
+	return &ServerConfig{
+		ReadTimeout:       DefaultReadTimeout,
+		WriteTimeout:      DefaultWriteTimeout,
+		ReadHeaderTimeout: DefaultReadHeaderTimeout,
+		IdleTimeout:       DefaultIdleTimeout,
+	}
+}
+
 // Server represents the HTTP server
 type Server struct {
 	store  storage.TaskStore

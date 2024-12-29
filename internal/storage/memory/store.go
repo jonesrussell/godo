@@ -22,7 +22,7 @@ func New() *Store {
 }
 
 // Add adds a new task to the store
-func (s *Store) Add(ctx context.Context, task storage.Task) error {
+func (s *Store) Add(_ context.Context, task storage.Task) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -35,7 +35,7 @@ func (s *Store) Add(ctx context.Context, task storage.Task) error {
 }
 
 // GetByID retrieves a task by its ID
-func (s *Store) GetByID(ctx context.Context, id string) (*storage.Task, error) {
+func (s *Store) GetByID(_ context.Context, id string) (*storage.Task, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -48,7 +48,7 @@ func (s *Store) GetByID(ctx context.Context, id string) (*storage.Task, error) {
 }
 
 // List returns all tasks in the store
-func (s *Store) List(ctx context.Context) ([]storage.Task, error) {
+func (s *Store) List(_ context.Context) ([]storage.Task, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -61,7 +61,7 @@ func (s *Store) List(ctx context.Context) ([]storage.Task, error) {
 }
 
 // Update updates an existing task
-func (s *Store) Update(ctx context.Context, task storage.Task) error {
+func (s *Store) Update(_ context.Context, task storage.Task) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -74,7 +74,7 @@ func (s *Store) Update(ctx context.Context, task storage.Task) error {
 }
 
 // Delete removes a task from the store
-func (s *Store) Delete(ctx context.Context, id string) error {
+func (s *Store) Delete(_ context.Context, id string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 

@@ -157,7 +157,7 @@ func TestHandleGetTask(t *testing.T) {
 			store.Reset()
 			tt.setupStore()
 
-			req := httptest.NewRequest(http.MethodGet, "/api/v1/tasks/"+tt.taskID, nil)
+			req := httptest.NewRequest(http.MethodGet, "/api/v1/tasks/"+tt.taskID, http.NoBody)
 			w := httptest.NewRecorder()
 
 			server.handleGetTask(w, req)
@@ -315,7 +315,7 @@ func TestHandleDeleteTask(t *testing.T) {
 			store.Reset()
 			tt.setupStore()
 
-			req := httptest.NewRequest(http.MethodDelete, "/api/v1/tasks/"+tt.taskID, nil)
+			req := httptest.NewRequest(http.MethodDelete, "/api/v1/tasks/"+tt.taskID, http.NoBody)
 			w := httptest.NewRecorder()
 
 			server.handleDeleteTask(w, req)
@@ -378,7 +378,7 @@ func TestHandleListTasks(t *testing.T) {
 			store.Reset()
 			tt.setupStore()
 
-			req := httptest.NewRequest(http.MethodGet, "/api/v1/tasks", nil)
+			req := httptest.NewRequest(http.MethodGet, "/api/v1/tasks", http.NoBody)
 			w := httptest.NewRecorder()
 
 			server.handleListTasks(w, req)

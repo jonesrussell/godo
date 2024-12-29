@@ -97,12 +97,18 @@ var (
 		wire.Bind(new(gui.QuickNote), new(*quicknote.Window)),
 	)
 
+	// ConfigSet provides configuration dependencies
+	ConfigSet = wire.NewSet(
+		ProvideConfig,
+	)
+
 	// AppSet provides application dependencies
 	AppSet = wire.NewSet(
 		app.New,
 		wire.Bind(new(app.Application), new(*app.App)),
 		BaseSet,
 		HTTPSet,
+		ConfigSet,
 	)
 
 	// TestSet provides mock dependencies for testing
@@ -253,6 +259,7 @@ func InitializeApp() (app.Application, func(), error) {
 		HotkeySet,
 		GUISet,
 		AppSet,
+		ConfigSet,
 	)
 	return nil, nil, nil
 }
@@ -263,6 +270,7 @@ func InitializeTestApp() (*app.TestApp, func(), error) {
 		LoggingSet,
 		TestSet,
 		BaseSet,
+		ConfigSet,
 		wire.Struct(new(app.TestApp), "*"),
 	)
 	return nil, nil, nil
@@ -332,4 +340,14 @@ func ProvideIdleTimeout() common.IdleTimeoutSeconds {
 // ProvideStoreAdapter provides a store adapter instance
 func ProvideStoreAdapter(store storage.TaskStore) *storage.StoreAdapter {
 	return storage.NewStoreAdapter(store).(*storage.StoreAdapter)
+}
+
+// ProvideConfig provides the application configuration
+func ProvideConfig() (*config.Config, error) {
+	provider := config.NewProvider(
+		[]string{".", "./configs"},
+		"default",
+		"yaml",
+	)
+	return provider.Load()
 }

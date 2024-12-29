@@ -15,10 +15,13 @@ type Window struct {
 }
 
 // New creates a new main window
-func New(store storage.TaskStore, logger logger.Logger) *Window {
+func New(app fyne.App, store storage.TaskStore, logger logger.Logger) *Window {
+	window := app.NewWindow("Godo")
+
 	return &Window{
 		store:  store,
 		logger: logger,
+		window: window,
 	}
 }
 

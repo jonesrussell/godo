@@ -224,8 +224,8 @@ func ProvideFyneApp() fyne.App {
 }
 
 // ProvideMainWindow provides a main window instance
-func ProvideMainWindow(store storage.TaskStore, logger logger.Logger) *mainwindow.Window {
-	return mainwindow.New(store, logger)
+func ProvideMainWindow(app fyne.App, store storage.TaskStore, logger logger.Logger) *mainwindow.Window {
+	return mainwindow.New(app, store, logger)
 }
 
 // ProvideQuickNote provides a quick note window instance

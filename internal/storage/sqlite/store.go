@@ -213,7 +213,7 @@ func (t *Transaction) Update(ctx context.Context, task storage.Task) error {
 	}
 
 	if rows == 0 {
-		return &storage.NotFoundError{ID: task.ID}
+		return &errors.NotFoundError{ID: task.ID}
 	}
 	return nil
 }
@@ -231,7 +231,7 @@ func (t *Transaction) Delete(ctx context.Context, id string) error {
 	}
 
 	if rows == 0 {
-		return &storage.NotFoundError{ID: id}
+		return &errors.NotFoundError{ID: id}
 	}
 	return nil
 }

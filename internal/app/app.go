@@ -8,6 +8,7 @@ import (
 	"github.com/jonesrussell/godo/internal/gui"
 	"github.com/jonesrussell/godo/internal/gui/systray"
 	"github.com/jonesrussell/godo/internal/logger"
+	"github.com/jonesrussell/godo/internal/options"
 	"github.com/jonesrussell/godo/internal/storage"
 )
 
@@ -25,30 +26,25 @@ type App struct {
 	config     *common.HTTPConfig
 }
 
-// New creates a new application instance
-func New(
-	name common.AppName,
-	version common.AppVersion,
-	id common.AppID,
-	mainWindow gui.MainWindow,
-	quickNote gui.QuickNote,
-	hotkey hotkey.Manager,
-	logger logger.Logger,
-	store storage.TaskStore,
-	fyneApp fyne.App,
-	config *common.HTTPConfig,
-) *App {
+// AppParams holds the parameters for creating a new App instance
+type AppParams struct {
+	Options *options.AppOptions
+	Hotkey  hotkey.Manager
+}
+
+// New creates a new application instance using the options pattern
+func New(params *AppParams) *App {
 	return &App{
-		name:       name,
-		version:    version,
-		id:         id,
-		mainWindow: mainWindow,
-		quickNote:  quickNote,
-		hotkey:     hotkey,
-		logger:     logger,
-		store:      store,
-		fyneApp:    fyneApp,
-		config:     config,
+		name:       params.Options.Name,
+		version:    params.Options.Version,
+		id:         params.Options.ID,
+		mainWindow: params.Options.GUI.MainWindow,
+		quickNote:  params.Options.GUI.QuickNote,
+		hotkey:     params.Hotkey,
+		logger:     params.Options.Core.Logger,
+		store:      params.Options.Core.Store,
+		fyneApp:    params.Options.GUI.App,
+		config:     params.Options.HTTP.Config,
 	}
 }
 

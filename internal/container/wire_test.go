@@ -6,12 +6,14 @@ import (
 	"testing"
 
 	"github.com/jonesrussell/godo/internal/app"
+	"github.com/jonesrussell/godo/internal/common"
+	"github.com/jonesrussell/godo/internal/options"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestInitializeTestApp(t *testing.T) {
 	// First verify we can create all the individual dependencies
-	log, cleanup, err := ProvideLogger(&LoggerOptions{
+	log, cleanup, err := ProvideLogger(&options.LoggerOptions{
 		Level:       ProvideLogLevel(),
 		Output:      ProvideLogOutputPaths(),
 		ErrorOutput: ProvideErrorOutputPaths(),
@@ -32,12 +34,14 @@ func TestInitializeTestApp(t *testing.T) {
 	hotkey := ProvideMockHotkey()
 	assert.NotNil(t, hotkey)
 
-	httpConfig := ProvideHTTPConfig(&HTTPOptions{
-		Port:              ProvideHTTPPort(),
-		ReadTimeout:       ProvideReadTimeout(),
-		WriteTimeout:      ProvideWriteTimeout(),
-		ReadHeaderTimeout: ProvideHeaderTimeout(),
-		IdleTimeout:       ProvideIdleTimeout(),
+	httpConfig := ProvideHTTPConfig(&options.HTTPOptions{
+		Config: &common.HTTPConfig{
+			Port:              ProvideHTTPPort().Int(),
+			ReadTimeout:       int(ProvideReadTimeout()),
+			WriteTimeout:      int(ProvideWriteTimeout()),
+			ReadHeaderTimeout: int(ProvideHeaderTimeout()),
+			IdleTimeout:       int(ProvideIdleTimeout()),
+		},
 	})
 	assert.NotNil(t, httpConfig)
 

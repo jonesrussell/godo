@@ -3,6 +3,7 @@
 package app
 
 import (
+	"context"
 	"testing"
 
 	"fyne.io/fyne/v2/driver/desktop"
@@ -21,14 +22,14 @@ type mockStore struct {
 	storage.TaskStore
 }
 
-func newMockStore() storage.TaskStore {
-	return &mockStore{}
+func (m *mockStore) List(ctx context.Context) ([]storage.Task, error) {
+	return []storage.Task{}, nil
 }
 
 func TestApp_SetupUI(t *testing.T) {
 	// Create test app
 	testApp := test.NewApp()
-	store := newMockStore()
+	store := &mockStore{}
 	log := logger.NewTestLogger(t)
 	cfg := &config.Config{
 		UI: config.UIConfig{

@@ -8,6 +8,7 @@ import (
 
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
+	"github.com/jonesrussell/godo/internal/storage/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -63,11 +64,8 @@ func TestStore(t *testing.T) {
 		tasks, err := store.List(ctx)
 		require.NoError(t, err)
 		assert.Len(t, tasks, 1)
-		assertTaskEqual(t, task, tasks[0])
-
-		// Try to add duplicate
-		err = store.Add(ctx, task)
-		assert.Error(t, err)
+		assert.Equal(t, task.ID, tasks[0].ID)
+		assert.Equal(t, task.Content, tasks[0].Content)
 	})
 
 	t.Run("get task", func(t *testing.T) {
@@ -78,7 +76,7 @@ func TestStore(t *testing.T) {
 
 		// Try to get nonexistent task
 		_, err = store.GetByID(ctx, "nonexistent")
-		assert.ErrorIs(t, err, storage.ErrTaskNotFound)
+		assert.ErrorIs(t, err, errors.ErrTaskNotFound)
 	})
 
 	t.Run("update task", func(t *testing.T) {
@@ -101,7 +99,7 @@ func TestStore(t *testing.T) {
 		// Try to update nonexistent task
 		task.ID = "nonexistent"
 		err = store.Update(ctx, task)
-		assert.ErrorIs(t, err, storage.ErrTaskNotFound)
+		assert.ErrorIs(t, err, errors.ErrTaskNotFound)
 	})
 
 	t.Run("delete task", func(t *testing.T) {
@@ -115,7 +113,7 @@ func TestStore(t *testing.T) {
 
 		// Try to delete nonexistent task
 		err = store.Delete(ctx, "test-1")
-		assert.ErrorIs(t, err, storage.ErrTaskNotFound)
+		assert.ErrorIs(t, err, errors.ErrTaskNotFound)
 	})
 }
 

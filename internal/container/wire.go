@@ -7,6 +7,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	fyneapp "fyne.io/fyne/v2/app"
+	"fyne.io/fyne/v2/test"
 	"fyne.io/fyne/v2/theme"
 	"github.com/google/wire"
 	"github.com/jonesrussell/godo/internal/app"
@@ -116,6 +117,7 @@ var (
 		ProvideMockMainWindow,
 		ProvideMockQuickNote,
 		ProvideMockHotkey,
+		ProvideMockFyneApp,
 		wire.Bind(new(gui.MainWindow), new(*gui.MockMainWindow)),
 		wire.Bind(new(gui.QuickNote), new(*gui.MockQuickNote)),
 		wire.Bind(new(apphotkey.Manager), new(*apphotkey.MockManager)),
@@ -286,6 +288,11 @@ func ProvideMockQuickNote() *gui.MockQuickNote {
 // ProvideMockHotkey provides a mock hotkey manager for testing
 func ProvideMockHotkey() *apphotkey.MockManager {
 	return apphotkey.NewMockManager()
+}
+
+// ProvideMockFyneApp provides a mock Fyne app for testing
+func ProvideMockFyneApp() fyne.App {
+	return test.NewApp()
 }
 
 // ProvideLogOutputPaths provides the default log output paths

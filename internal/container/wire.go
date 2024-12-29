@@ -108,7 +108,6 @@ var (
 		wire.Bind(new(app.Application), new(*app.App)),
 		BaseSet,
 		HTTPSet,
-		ConfigSet,
 	)
 
 	// TestSet provides mock dependencies for testing

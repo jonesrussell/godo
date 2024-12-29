@@ -14,7 +14,7 @@ import (
 type App struct {
 	logger     logger.Logger
 	fyneApp    fyne.App
-	store      storage.Store
+	store      storage.TaskStore
 	mainWindow gui.MainWindow
 	quickNote  gui.QuickNote
 	hotkey     hotkey.Manager
@@ -28,7 +28,7 @@ type App struct {
 func New(
 	logger logger.Logger,
 	fyneApp fyne.App,
-	store storage.Store,
+	store storage.TaskStore,
 	mainWindow gui.MainWindow,
 	quickNote gui.QuickNote,
 	hotkey hotkey.Manager,
@@ -74,6 +74,6 @@ func (a *App) Logger() logger.Logger {
 }
 
 // Store returns the application's store
-func (a *App) Store() storage.Store {
+func (a *App) Store() storage.TaskStore {
 	return a.store
 }

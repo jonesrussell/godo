@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"context"
 	"testing"
 
 	"fyne.io/fyne/v2"
@@ -67,8 +68,9 @@ func TestMockWindow(t *testing.T) {
 
 func TestMockWindowWithTasks(t *testing.T) {
 	// Create test dependencies
-	store := storage.NewMemoryStore()
+	store := storage.NewMockStore()
 	testWindow := test.NewWindow(nil)
+	ctx := context.Background()
 
 	// Create mock window
 	win := &MockMainWindow{
@@ -81,7 +83,7 @@ func TestMockWindowWithTasks(t *testing.T) {
 		Content: "Test Task",
 		Done:    false,
 	}
-	err := store.Add(task)
+	err := store.Add(ctx, task)
 	require.NoError(t, err)
 
 	// Test task operations
@@ -91,10 +93,10 @@ func TestMockWindowWithTasks(t *testing.T) {
 
 	// Test task completion
 	task.Done = true
-	err = store.Update(task)
+	err = store.Update(ctx, task)
 	require.NoError(t, err)
 
 	// Test task deletion
-	err = store.Delete(task.ID)
+	err = store.Delete(ctx, task.ID)
 	require.NoError(t, err)
 }

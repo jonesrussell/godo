@@ -3,21 +3,22 @@
 package quicknote
 
 import (
+	"context"
 	"testing"
 	"time"
 
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
-	"github.com/jonesrussell/godo/internal/storage/mock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestWindowsQuickNote(t *testing.T) {
-	store := mock.New()
+	store := storage.NewMockStore()
 	log := logger.NewTestLogger(t)
 	quickNote := New(store, log)
 	require.NotNil(t, quickNote)
+	ctx := context.Background()
 
 	t.Run("AddTask", func(t *testing.T) {
 		// Add a task
@@ -28,11 +29,14 @@ func TestWindowsQuickNote(t *testing.T) {
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
 		}
-		err := store.Add(task)
+		err := store.Add(ctx, task)
 		require.NoError(t, err)
 
-		// Verify the task is added
-		assert.True(t, store.AddCalled)
+		// Verify the task was added
+		addedTask, err := store.GetByID(ctx, task.ID)
+		require.NoError(t, err)
+		assert.Equal(t, task.ID, addedTask.ID)
+		assert.Equal(t, task.Content, addedTask.Content)
 	})
 
 	t.Run("StoreError", func(t *testing.T) {
@@ -47,7 +51,7 @@ func TestWindowsQuickNote(t *testing.T) {
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
 		}
-		err := store.Add(task)
+		err := store.Add(ctx, task)
 		assert.Error(t, err)
 		assert.Equal(t, assert.AnError, err)
 	})
@@ -64,10 +68,13 @@ func TestWindowsQuickNote(t *testing.T) {
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
 		}
-		err := store.Add(task)
+		err := store.Add(ctx, task)
 		require.NoError(t, err)
 
-		// Verify the task is added
-		assert.True(t, store.AddCalled)
+		// Verify the task was added
+		addedTask, err := store.GetByID(ctx, task.ID)
+		require.NoError(t, err)
+		assert.Equal(t, task.ID, addedTask.ID)
+		assert.Empty(t, addedTask.Content)
 	})
 }

@@ -1,12 +1,12 @@
 package quicknote
 
 import (
+	"context"
 	"testing"
 	"time"
 
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
-	"github.com/jonesrussell/godo/internal/storage/mock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -20,16 +20,17 @@ func (m *testLogger) Info(_ string, _ ...interface{})  {}
 func (m *testLogger) Warn(_ string, _ ...interface{})  {}
 func (m *testLogger) Error(_ string, _ ...interface{}) {}
 
-func setupTestQuickNote(t *testing.T) (*Window, *mock.Store) {
-	store := mock.New()
+func setupTestQuickNote() (*Window, *storage.MockStore) {
+	store := storage.NewMockStore()
 	log := &testLogger{}
 	quickNote := New(store, log)
 	return quickNote, store
 }
 
 func TestQuickNote(t *testing.T) {
-	quickNote, store := setupTestQuickNote(t)
+	quickNote, store := setupTestQuickNote()
 	require.NotNil(t, quickNote)
+	ctx := context.Background()
 
 	t.Run("AddTask", func(t *testing.T) {
 		// Add a task
@@ -40,11 +41,14 @@ func TestQuickNote(t *testing.T) {
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
 		}
-		err := store.Add(task)
+		err := store.Add(ctx, task)
 		require.NoError(t, err)
 
-		// Verify the task is added
-		assert.True(t, store.AddCalled)
+		// Verify the task was added
+		addedTask, err := store.GetByID(ctx, task.ID)
+		require.NoError(t, err)
+		assert.Equal(t, task.ID, addedTask.ID)
+		assert.Equal(t, task.Content, addedTask.Content)
 	})
 
 	t.Run("WindowClose", func(t *testing.T) {
@@ -68,7 +72,7 @@ func TestQuickNote(t *testing.T) {
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
 		}
-		err := store.Add(task)
+		err := store.Add(ctx, task)
 		assert.Error(t, err)
 		assert.Equal(t, assert.AnError, err)
 	})
@@ -85,10 +89,13 @@ func TestQuickNote(t *testing.T) {
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
 		}
-		err := store.Add(task)
+		err := store.Add(ctx, task)
 		require.NoError(t, err)
 
-		// Verify the task is added
-		assert.True(t, store.AddCalled)
+		// Verify the task was added
+		addedTask, err := store.GetByID(ctx, task.ID)
+		require.NoError(t, err)
+		assert.Equal(t, task.ID, addedTask.ID)
+		assert.Empty(t, addedTask.Content)
 	})
 }

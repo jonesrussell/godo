@@ -52,8 +52,8 @@ func TestRunMigrations(t *testing.T) {
 		var cid int
 		var name, typ string
 		var notnull, pk int
-		var dflt_value interface{}
-		err := rows.Scan(&cid, &name, &typ, &notnull, &dflt_value, &pk)
+		var defaultValue interface{}
+		err := rows.Scan(&cid, &name, &typ, &notnull, &defaultValue, &pk)
 		require.NoError(t, err)
 
 		expectedType, ok := expectedColumns[name]

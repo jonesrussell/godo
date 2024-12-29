@@ -36,6 +36,12 @@ const (
 	KeyLogLevel   = "logger.level"
 	KeyLogConsole = "logger.console"
 	KeyQuickNote  = "hotkeys.quick_note"
+
+	// Default window dimensions
+	DefaultMainWindowWidth  = 800
+	DefaultMainWindowHeight = 600
+	DefaultQuickNoteWidth   = 200
+	DefaultQuickNoteHeight  = 100
 )
 
 // Config holds all application configuration
@@ -265,13 +271,13 @@ func NewDefaultConfig() *Config {
 		},
 		UI: UIConfig{
 			MainWindow: WindowConfig{
-				Width:       800,
-				Height:      600,
+				Width:       DefaultMainWindowWidth,
+				Height:      DefaultMainWindowHeight,
 				StartHidden: false,
 			},
 			QuickNote: WindowConfig{
-				Width:       200,
-				Height:      100,
+				Width:       DefaultQuickNoteWidth,
+				Height:      DefaultQuickNoteHeight,
 				StartHidden: false,
 			},
 		},

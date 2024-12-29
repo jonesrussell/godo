@@ -3,6 +3,7 @@ package storage
 
 import (
 	"context"
+	"fmt"
 	"time"
 )
 
@@ -62,4 +63,48 @@ type Store interface {
 
 	// Close releases any resources held by the store
 	Close() error
+}
+
+// TaskReader defines the read-only interface for task storage operations
+type TaskReader interface {
+	GetByID(ctx context.Context, id string) (Task, error)
+	List(ctx context.Context) ([]Task, error)
+}
+
+// ValidationError represents a validation error
+type ValidationError struct {
+	Field   string
+	Message string
+}
+
+func (e *ValidationError) Error() string {
+	return fmt.Sprintf("validation error: %s: %s", e.Field, e.Message)
+}
+
+// ConnectionError represents a database connection error
+type ConnectionError struct {
+	Operation string
+	Message   string
+	Err       error
+}
+
+func (e *ConnectionError) Error() string {
+	if e.Err != nil {
+		return fmt.Sprintf("connection error: %s: %s: %v", e.Operation, e.Message, e.Err)
+	}
+	return fmt.Sprintf("connection error: %s: %s", e.Operation, e.Message)
+}
+
+// TransactionError represents a transaction error
+type TransactionError struct {
+	Operation string
+	Message   string
+	Err       error
+}
+
+func (e *TransactionError) Error() string {
+	if e.Err != nil {
+		return fmt.Sprintf("transaction error: %s: %s: %v", e.Operation, e.Message, e.Err)
+	}
+	return fmt.Sprintf("transaction error: %s: %s", e.Operation, e.Message)
 }

@@ -176,7 +176,7 @@ func (t *Transaction) List(ctx context.Context) ([]storage.Task, error) {
 }
 
 // GetByID returns a task by its ID in the transaction
-func (t *Transaction) GetByID(ctx context.Context, id string) (*storage.Task, error) {
+func (t *Transaction) GetByID(ctx context.Context, id string) (storage.Task, error) {
 	var task storage.Task
 	err := t.tx.QueryRowContext(ctx,
 		"SELECT id, content, done, created_at, updated_at FROM tasks WHERE id = ?",
@@ -189,12 +189,12 @@ func (t *Transaction) GetByID(ctx context.Context, id string) (*storage.Task, er
 		&task.UpdatedAt,
 	)
 	if err == sql.ErrNoRows {
-		return nil, &storage.NotFoundError{ID: id}
+		return storage.Task{}, &errors.NotFoundError{ID: id}
 	}
 	if err != nil {
-		return nil, err
+		return storage.Task{}, err
 	}
-	return &task, nil
+	return task, nil
 }
 
 // Update modifies an existing task in the transaction

@@ -24,7 +24,7 @@ func NewMockStore() *MockStore {
 }
 
 // Add stores a new task
-func (s *MockStore) Add(ctx context.Context, task Task) error {
+func (s *MockStore) Add(_ context.Context, task Task) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -49,7 +49,7 @@ func (s *MockStore) Add(ctx context.Context, task Task) error {
 }
 
 // GetByID retrieves a task by its ID
-func (s *MockStore) GetByID(ctx context.Context, id string) (Task, error) {
+func (s *MockStore) GetByID(_ context.Context, id string) (Task, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -70,7 +70,7 @@ func (s *MockStore) GetByID(ctx context.Context, id string) (Task, error) {
 }
 
 // Update modifies an existing task
-func (s *MockStore) Update(ctx context.Context, task Task) error {
+func (s *MockStore) Update(_ context.Context, task Task) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -92,7 +92,7 @@ func (s *MockStore) Update(ctx context.Context, task Task) error {
 }
 
 // Delete removes a task by ID
-func (s *MockStore) Delete(ctx context.Context, id string) error {
+func (s *MockStore) Delete(_ context.Context, id string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -113,7 +113,7 @@ func (s *MockStore) Delete(ctx context.Context, id string) error {
 }
 
 // List returns all tasks
-func (s *MockStore) List(ctx context.Context) ([]Task, error) {
+func (s *MockStore) List(_ context.Context) ([]Task, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 

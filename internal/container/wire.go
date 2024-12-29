@@ -269,7 +269,7 @@ func InitializeTestApp() (*app.TestApp, func(), error) {
 		LoggingSet,
 		TestSet,
 		BaseSet,
-		ConfigSet,
+		HTTPSet,
 		wire.Struct(new(app.TestApp), "*"),
 	)
 	return nil, nil, nil

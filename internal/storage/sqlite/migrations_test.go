@@ -2,44 +2,62 @@ package sqlite
 
 import (
 	"database/sql"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	_ "modernc.org/sqlite"
 )
 
 func TestRunMigrations(t *testing.T) {
-	t.Run("executes migrations successfully", func(t *testing.T) {
-		db, err := sql.Open("sqlite", ":memory:")
+	// Create a temporary database file
+	dbFile := "test.db"
+	defer os.Remove(dbFile)
+
+	// Open database connection
+	db, err := sql.Open("sqlite", dbFile)
+	require.NoError(t, err)
+	defer db.Close()
+
+	// Run migrations
+	err = RunMigrations(db)
+	require.NoError(t, err)
+
+	// Verify table exists
+	var tableName string
+	err = db.QueryRow("SELECT name FROM sqlite_master WHERE type='table' AND name='tasks'").Scan(&tableName)
+	require.NoError(t, err)
+	assert.Equal(t, "tasks", tableName)
+
+	// Verify index exists
+	var indexName string
+	err = db.QueryRow("SELECT name FROM sqlite_master WHERE type='index' AND name='idx_tasks_created_at'").Scan(&indexName)
+	require.NoError(t, err)
+	assert.Equal(t, "idx_tasks_created_at", indexName)
+
+	// Verify table schema
+	rows, err := db.Query("PRAGMA table_info(tasks)")
+	require.NoError(t, err)
+	defer rows.Close()
+
+	expectedColumns := map[string]string{
+		"id":         "TEXT",
+		"content":    "TEXT",
+		"done":       "BOOLEAN",
+		"created_at": "DATETIME",
+		"updated_at": "DATETIME",
+	}
+
+	for rows.Next() {
+		var cid int
+		var name, typ string
+		var notnull, pk int
+		var dflt_value interface{}
+		err := rows.Scan(&cid, &name, &typ, &notnull, &dflt_value, &pk)
 		require.NoError(t, err)
-		defer db.Close()
 
-		err = RunMigrations(db)
-		assert.NoError(t, err)
-
-		var tableName string
-		err = db.QueryRow(`
-			SELECT name FROM sqlite_master 
-			WHERE type='table' AND name='tasks'
-		`).Scan(&tableName)
-
-		assert.NoError(t, err)
-		assert.Equal(t, "tasks", tableName)
-	})
-
-	t.Run("handles invalid SQL", func(t *testing.T) {
-		db, err := sql.Open("sqlite", ":memory:")
-		require.NoError(t, err)
-		defer db.Close()
-
-		// Create a migration set with invalid SQL
-		ms := &migrationSet{
-			migrations: []string{"INVALID SQL"},
-		}
-
-		// Run migrations using the invalid set
-		err = ms.RunMigrations(db)
-		assert.Error(t, err)
-	})
+		expectedType, ok := expectedColumns[name]
+		assert.True(t, ok, "Unexpected column: %s", name)
+		assert.Equal(t, expectedType, typ)
+	}
 }

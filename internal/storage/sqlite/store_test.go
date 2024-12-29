@@ -206,12 +206,3 @@ func TestTransaction(t *testing.T) {
 		assert.Len(t, tasks, 2)
 	})
 }
-
-func assertTaskEqual(t *testing.T, expected, actual storage.Task) {
-	t.Helper()
-	assert.Equal(t, expected.ID, actual.ID)
-	assert.Equal(t, expected.Content, actual.Content)
-	assert.Equal(t, expected.Done, actual.Done)
-	assert.WithinDuration(t, expected.CreatedAt, actual.CreatedAt, time.Second)
-	assert.WithinDuration(t, expected.UpdatedAt, actual.UpdatedAt, time.Second)
-}

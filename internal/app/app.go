@@ -26,14 +26,14 @@ type App struct {
 	config     *common.HTTPConfig
 }
 
-// AppParams holds the parameters for creating a new App instance
-type AppParams struct {
+// Params holds the parameters for creating a new App instance
+type Params struct {
 	Options *options.AppOptions
 	Hotkey  hotkey.Manager
 }
 
 // New creates a new application instance using the options pattern
-func New(params *AppParams) *App {
+func New(params *Params) *App {
 	return &App{
 		name:       params.Options.Name,
 		version:    params.Options.Version,

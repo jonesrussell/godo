@@ -97,7 +97,7 @@ var (
 	// AppSet provides application dependencies
 	AppSet = wire.NewSet(
 		ProvideAppOptions,
-		wire.Struct(new(app.AppParams), "*"),
+		wire.Struct(new(app.Params), "*"),
 		app.New,
 		wire.Bind(new(app.Application), new(*app.App)),
 	)

@@ -5,6 +5,7 @@ import (
 	"fyne.io/fyne/v2"
 	"github.com/jonesrussell/godo/internal/app/hotkey"
 	"github.com/jonesrussell/godo/internal/common"
+	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/gui"
 	"github.com/jonesrussell/godo/internal/gui/systray"
 	"github.com/jonesrussell/godo/internal/logger"
@@ -23,7 +24,7 @@ type App struct {
 	logger     logger.Logger
 	store      storage.TaskStore
 	fyneApp    fyne.App
-	config     *common.HTTPConfig
+	config     *config.Config
 }
 
 // Params holds the parameters for creating a new App instance
@@ -44,21 +45,37 @@ func New(params *Params) *App {
 		logger:     params.Options.Core.Logger,
 		store:      params.Options.Core.Store,
 		fyneApp:    params.Options.GUI.App,
-		config:     params.Options.HTTP.Config,
+		config:     params.Options.Core.Config,
 	}
 }
 
 // SetupUI initializes the user interface
 func (a *App) SetupUI() {
-	// Set up main window
-	a.mainWindow.Show()
-
-	// Set up systray
+	// Set up systray first
 	systray.SetupSystray(a.fyneApp, a.mainWindow.GetWindow())
+
+	// Only show main window if not configured to start hidden
+	if !a.config.UI.MainWindow.StartHidden {
+		a.mainWindow.Show()
+	}
 
 	// Register hotkey
 	if err := a.hotkey.Register(); err != nil {
 		a.logger.Error("failed to register hotkey", "error", err)
+	}
+
+	// Start hotkey listener
+	if err := a.hotkey.Start(); err != nil {
+		a.logger.Error("failed to start hotkey listener", "error", err)
+	}
+
+	// Set up quick note handler
+	if manager, ok := a.hotkey.(*hotkey.DefaultManager); ok {
+		go func() {
+			for range manager.GetHotkey().Keydown() {
+				a.quickNote.Show()
+			}
+		}()
 	}
 }
 

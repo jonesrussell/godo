@@ -16,9 +16,7 @@ logger:
   error_output: [ "stderr" ]
 
 hotkeys:
-  quick_note:
-    modifiers: [ "Ctrl", "Shift" ]
-    key: "N"
+  quick_note: "Ctrl+Shift+N"
 
 ui:
   main_window:

@@ -21,6 +21,47 @@
 - [ ] Recurring tasks
 - [ ] Task search and filtering
 
+## Code Cleanup
+
+### High Priority
+- [ ] Task Creation Consolidation:
+  - [ ] Create TaskService interface
+  - [ ] Move task creation logic to service layer
+  - [ ] Update GUI and API to use TaskService
+  - [ ] Add validation at service layer
+- [ ] Storage Interface Cleanup:
+  - [ ] Remove deprecated Store interface
+  - [ ] Consolidate TaskReader into TaskStore
+  - [ ] Update all implementations
+  - [ ] Add migration guide
+- [ ] Error Handling Standardization:
+  - [ ] Create common ErrorHandler interface
+  - [ ] Implement consistent error types
+  - [ ] Add error mapping layer
+  - [ ] Update error documentation
+- [ ] Documentation Alignment:
+  - [ ] Update storage documentation
+  - [ ] Standardize task model documentation
+  - [ ] Add service layer documentation
+  - [ ] Update API documentation
+
+### Technical Debt
+- [ ] Code Duplication Removal:
+  - [ ] Consolidate window management code
+  - [ ] Extract common UI patterns
+  - [ ] Standardize test setup code
+  - [ ] Create shared test utilities
+- [ ] Interface Optimization:
+  - [ ] Review and simplify interfaces
+  - [ ] Remove unused methods
+  - [ ] Add interface documentation
+  - [ ] Update interface tests
+- [ ] Test Coverage:
+  - [ ] Add service layer tests
+  - [ ] Update storage tests
+  - [ ] Add integration tests
+  - [ ] Improve error case coverage
+
 ## Testing
 
 ### Completed ✓
@@ -89,6 +130,9 @@
 - [ ] Data export/import
 - [ ] Cloud sync support
 - [ ] Encryption support
+- [ ] Storage interface cleanup
+- [ ] Error handling improvements
+- [ ] Transaction management enhancements
 
 ## Configuration
 
@@ -119,6 +163,10 @@
 - [ ] Developer guide
 - [ ] Architecture overview
 - [ ] Contributing guidelines
+- [ ] Interface documentation
+- [ ] Error handling guide
+- [ ] Testing guide
+- [ ] Service layer documentation
 
 ## Infrastructure
 

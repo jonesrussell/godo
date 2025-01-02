@@ -5,212 +5,216 @@ package hotkey
 
 import (
 	"fmt"
+	"os"
 	"runtime"
 	"strings"
 	"time"
 
 	"github.com/jonesrussell/godo/internal/common"
+	"github.com/jonesrussell/godo/internal/logger"
 	"golang.design/x/hotkey"
 )
 
 const (
 	// cleanupDelay is the delay to wait for hotkey cleanup
-	cleanupDelay = 500 * time.Millisecond
+	cleanupDelay = 100 * time.Millisecond
+
+	// retryDelay is the delay between hotkey registration attempts
+	retryDelay = 100 * time.Millisecond
+
+	// maxRetries is the maximum number of registration attempts
+	maxRetries = 3
 )
 
-type platformManager struct {
+// WindowsManager implements the Manager interface for Windows systems.
+// It handles global hotkey registration and event handling using the
+// golang.design/x/hotkey package.
+type WindowsManager struct {
+	log       logger.Logger
 	hk        *hotkey.Hotkey
 	quickNote QuickNoteService
 	binding   *common.HotkeyBinding
+	quit      chan struct{}
 }
 
-func newPlatformManager(quickNote QuickNoteService, binding *common.HotkeyBinding) Manager {
-	fmt.Printf("[DEBUG] Creating hotkey manager (OS: %s)\n", runtime.GOOS)
-	if quickNote == nil {
-		panic("quickNote service cannot be nil")
-	}
-	return &platformManager{
-		quickNote: quickNote,
-		binding:   binding,
-	}
+// NewWindowsManager creates a new WindowsManager instance with the provided logger.
+// It initializes the manager but does not register any hotkeys until Register is called.
+func NewWindowsManager(log logger.Logger) (*WindowsManager, error) {
+	log.Info("Creating Windows hotkey manager",
+		"os", runtime.GOOS,
+		"arch", runtime.GOARCH,
+		"pid", os.Getpid())
+	return &WindowsManager{
+		log:  log,
+		quit: make(chan struct{}),
+	}, nil
 }
 
-func (m *platformManager) Register() error {
-	modStr := strings.Join(m.binding.Modifiers, "+")
-	fmt.Printf("[DEBUG] Registering hotkey (%s+%s) on %s\n", modStr, m.binding.Key, runtime.GOOS)
+// SetQuickNote sets the quick note service and hotkey binding for this manager.
+// Both the service and binding are required for the hotkey to function.
+func (m *WindowsManager) SetQuickNote(quickNote QuickNoteService, binding *common.HotkeyBinding) {
+	m.log.Info("Setting quick note service and binding",
+		"binding", fmt.Sprintf("%+v", binding),
+		"quicknote_nil", quickNote == nil)
+	m.quickNote = quickNote
+	m.binding = binding
+}
+
+// Register registers the configured hotkey with the Windows system.
+// It will attempt to register the hotkey multiple times in case of failure.
+// Returns an error if registration fails after all attempts.
+func (m *WindowsManager) Register() error {
+	m.log.Info("Starting hotkey registration",
+		"modifiers", strings.Join(m.binding.Modifiers, "+"),
+		"key", m.binding.Key,
+		"os", runtime.GOOS,
+		"pid", os.Getpid())
+
+	if m.binding == nil {
+		m.log.Error("Hotkey binding not set")
+		return fmt.Errorf("hotkey binding not set")
+	}
 
 	// Convert string modifiers to hotkey.Modifier
 	var mods []hotkey.Modifier
+	m.log.Info("Converting modifiers", "raw_modifiers", m.binding.Modifiers)
 	for _, mod := range m.binding.Modifiers {
-		switch strings.ToLower(mod) {
-		case "ctrl":
+		switch mod {
+		case "Ctrl":
+			m.log.Debug("Adding Ctrl modifier")
 			mods = append(mods, hotkey.ModCtrl)
-		case "shift":
+		case "Shift":
+			m.log.Debug("Adding Shift modifier")
 			mods = append(mods, hotkey.ModShift)
-		case "alt":
+		case "Alt":
+			m.log.Debug("Adding Alt modifier")
 			mods = append(mods, hotkey.ModAlt)
+		default:
+			m.log.Error("Unknown modifier", "modifier", mod)
+			return fmt.Errorf("unknown modifier: %s", mod)
 		}
 	}
+	m.log.Info("Converted modifiers", "count", len(mods))
 
 	// Convert key string to hotkey.Key
 	var key hotkey.Key
-	switch strings.ToUpper(m.binding.Key) {
-	case "N":
-		key = hotkey.KeyN
+	m.log.Info("Converting key", "raw_key", m.binding.Key)
+	switch m.binding.Key {
 	case "G":
 		key = hotkey.KeyG
-	// Add more key mappings as needed
+		m.log.Info("Using key G", "key_code", hotkey.KeyG)
+	case "N":
+		key = hotkey.KeyN
+		m.log.Info("Using key N", "key_code", hotkey.KeyN)
 	default:
+		m.log.Error("Unsupported key", "key", m.binding.Key,
+			"supported_keys", []string{"G", "N"})
 		return fmt.Errorf("unsupported key: %s", m.binding.Key)
 	}
 
-	// Create the hotkey
-	fmt.Println("[DEBUG] Creating hotkey instance...")
-	hk := hotkey.New(mods, key)
-
 	// Try to unregister any existing hotkey first
 	if m.hk != nil {
-		fmt.Println("[DEBUG] Attempting to unregister existing hotkey...")
+		m.log.Info("Unregistering existing hotkey before new registration")
 		if err := m.hk.Unregister(); err != nil {
-			fmt.Printf("[WARN] Failed to unregister existing hotkey: %v\n", err)
+			m.log.Warn("Failed to unregister existing hotkey", "error", err)
 		}
 		m.hk = nil
-		time.Sleep(cleanupDelay) // Increased delay for cleanup
+		time.Sleep(cleanupDelay) // Give system time to cleanup
 	}
 
-	// Try to register with retries and increasing delays
+	// Create and register the hotkey
+	m.log.Info("Creating hotkey instance",
+		"modifiers_count", len(mods),
+		"key", key)
+	hk := hotkey.New(mods, key)
+
+	// Try registration with retries
 	var err error
-	delays := []time.Duration{100 * time.Millisecond, 500 * time.Millisecond, 1 * time.Second}
-	for i := 0; i < len(delays); i++ {
-		fmt.Printf("[DEBUG] Attempting to register hotkey (attempt %d/%d)...\n", i+1, len(delays))
-
-		// Try to unregister before each attempt
-		if unregErr := hk.Unregister(); unregErr != nil {
-			fmt.Printf("[DEBUG] Unregister before attempt returned: %v\n", unregErr)
-		}
-
-		err = hk.Register()
-		if err == nil {
-			fmt.Printf("[DEBUG] Successfully registered hotkey on attempt %d\n", i+1)
+	for i := 0; i < maxRetries; i++ {
+		m.log.Info("Attempting to register hotkey with system", "attempt", i+1)
+		if err = hk.Register(); err == nil {
 			break
 		}
-
-		fmt.Printf("[WARN] Failed to register hotkey (attempt %d/%d): %v\n", i+1, len(delays), err)
-		if i < len(delays)-1 { // Don't sleep after the last attempt
-			delay := delays[i]
-			fmt.Printf("[DEBUG] Waiting %v before next attempt...\n", delay)
-			time.Sleep(delay)
-		}
+		m.log.Error("Failed to register hotkey",
+			"error", err,
+			"attempt", i+1,
+			"modifiers", mods,
+			"key", key)
+		time.Sleep(retryDelay)
 	}
 
 	if err != nil {
-		fmt.Printf("[ERROR] All attempts to register hotkey failed: %v\n", err)
-		return fmt.Errorf("failed to register hotkey after %d attempts: %w", len(delays), err)
+		return fmt.Errorf("failed to register hotkey after %d attempts: %w", maxRetries, err)
 	}
+
+	m.log.Info("Successfully registered hotkey",
+		"modifiers", strings.Join(m.binding.Modifiers, "+"),
+		"key", m.binding.Key,
+		"os", runtime.GOOS,
+		"pid", os.Getpid())
 
 	m.hk = hk
-	fmt.Println("[DEBUG] Hotkey registered successfully, starting listener...")
-
-	// Start listening for hotkey in a goroutine
-	go func() {
-		fmt.Println("[DEBUG] Hotkey listener started")
-		for range hk.Keydown() {
-			fmt.Println("[DEBUG] Hotkey triggered!")
-			if m.quickNote != nil {
-				fmt.Println("[DEBUG] Showing quick note window...")
-				m.quickNote.Show()
-			} else {
-				fmt.Println("[ERROR] QuickNote service is nil!")
-			}
-		}
-		fmt.Println("[DEBUG] Hotkey listener stopped")
-	}()
-
-	fmt.Println("[DEBUG] Register function completed successfully")
 	return nil
 }
 
-func (m *platformManager) Unregister() error {
-	fmt.Println("[DEBUG] Unregistering hotkey...")
+// Unregister removes the hotkey registration from the Windows system.
+// It's safe to call this method multiple times, even if no hotkey is registered.
+func (m *WindowsManager) Unregister() error {
+	m.log.Info("Unregistering hotkey")
+
 	if m.hk != nil {
+		m.log.Info("Hotkey instance exists, attempting to unregister")
 		if err := m.hk.Unregister(); err != nil {
-			fmt.Printf("[ERROR] Failed to unregister hotkey: %v\n", err)
+			m.log.Error("Failed to unregister hotkey", "error", err)
 			return fmt.Errorf("failed to unregister hotkey: %w", err)
 		}
-		fmt.Println("[DEBUG] Hotkey unregistered successfully")
+		m.log.Info("Successfully unregistered hotkey")
+		m.hk = nil
 	} else {
-		fmt.Println("[DEBUG] No hotkey to unregister")
+		m.log.Info("No hotkey instance to unregister")
 	}
 	return nil
 }
 
-// cleanupExistingHotkeys attempts to clean up any stale hotkey registrations
-func (m *platformManager) cleanupExistingHotkeys() {
-	fmt.Println("[DEBUG] Cleaning up existing hotkeys...")
-
-	// Create a temporary hotkey with our configuration
-	var mods []hotkey.Modifier
-	for _, mod := range m.binding.Modifiers {
-		switch strings.ToLower(mod) {
-		case "ctrl":
-			mods = append(mods, hotkey.ModCtrl)
-		case "shift":
-			mods = append(mods, hotkey.ModShift)
-		case "alt":
-			mods = append(mods, hotkey.ModAlt)
-		}
-	}
-
-	var key hotkey.Key
-	switch strings.ToUpper(m.binding.Key) {
-	case "N":
-		key = hotkey.KeyN
-	case "G":
-		key = hotkey.KeyG
-	default:
-		fmt.Printf("[WARN] Unsupported key for cleanup: %s\n", m.binding.Key)
-		return
-	}
-
-	// Try to unregister the hotkey
-	hk := hotkey.New(mods, key)
-	if err := hk.Unregister(); err != nil {
-		fmt.Printf("[DEBUG] Cleanup unregister returned: %v\n", err)
-	}
-
-	// Wait for cleanup
-	time.Sleep(cleanupDelay)
-}
-
-func (m *platformManager) Start() error {
-	fmt.Println("[DEBUG] Starting hotkey manager...")
-
-	// Clean up any existing hotkeys first
-	m.cleanupExistingHotkeys()
+// Start begins listening for hotkey events and shows the quick note window when triggered.
+// Returns an error if the hotkey is not registered or the quick note service is not set.
+func (m *WindowsManager) Start() error {
+	m.log.Info("Starting hotkey manager",
+		"hotkey_nil", m.hk == nil,
+		"quicknote_nil", m.quickNote == nil)
 
 	if m.hk == nil {
+		m.log.Error("Cannot start - hotkey not registered")
 		return fmt.Errorf("hotkey not registered")
 	}
 
-	// Start listening for hotkey in a goroutine
+	if m.quickNote == nil {
+		m.log.Error("Cannot start - quick note service not set")
+		return fmt.Errorf("quick note service not set")
+	}
+
 	go func() {
-		fmt.Println("[DEBUG] Hotkey listener started")
-		for range m.hk.Keydown() {
-			fmt.Println("[DEBUG] Hotkey triggered!")
-			if m.quickNote != nil {
-				fmt.Println("[DEBUG] Showing quick note window...")
+		m.log.Info("Starting hotkey listener goroutine")
+		for {
+			select {
+			case <-m.quit:
+				m.log.Info("Hotkey manager received quit signal")
+				return
+			case <-m.hk.Keydown():
+				m.log.Info("Hotkey triggered - showing quick note window")
 				m.quickNote.Show()
-			} else {
-				fmt.Println("[ERROR] QuickNote service is nil!")
 			}
 		}
-		fmt.Println("[DEBUG] Hotkey listener stopped")
 	}()
 
+	m.log.Info("Hotkey manager started successfully")
 	return nil
 }
 
-func (m *platformManager) Stop() error {
-	fmt.Println("[DEBUG] Stopping hotkey manager...")
+// Stop ends the hotkey listener and unregisters the hotkey.
+// It's safe to call this method multiple times.
+func (m *WindowsManager) Stop() error {
+	m.log.Info("Stopping hotkey manager")
+	close(m.quit)
 	return m.Unregister()
 }

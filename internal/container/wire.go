@@ -20,7 +20,6 @@ import (
 	"github.com/jonesrussell/godo/internal/options"
 	"github.com/jonesrussell/godo/internal/storage"
 	"github.com/jonesrussell/godo/internal/storage/sqlite"
-	"golang.design/x/hotkey"
 )
 
 // Provider Sets
@@ -90,7 +89,7 @@ var (
 		ProvideKeyCode,
 		ProvideHotkeyOptions,
 		ProvideHotkeyManager,
-		wire.Bind(new(apphotkey.Manager), new(*apphotkey.DefaultManager)),
+		wire.Bind(new(apphotkey.Manager), new(*apphotkey.WindowsManager)),
 	)
 
 	// AppSet provides application dependencies
@@ -254,31 +253,16 @@ func ProvideSQLiteStore(log logger.Logger) (*sqlite.Store, func(), error) {
 }
 
 // ProvideHotkeyManager provides a hotkey manager instance using options
-func ProvideHotkeyManager(opts *options.HotkeyOptions) (*apphotkey.DefaultManager, error) {
-	// Convert string modifiers to hotkey.Modifier
-	modifiers := make([]hotkey.Modifier, 0, len(opts.Modifiers.Slice()))
-	for _, mod := range opts.Modifiers.Slice() {
-		switch mod {
-		case "Ctrl":
-			modifiers = append(modifiers, hotkey.ModCtrl)
-		case "Alt":
-			modifiers = append(modifiers, hotkey.ModAlt)
-		case "Shift":
-			modifiers = append(modifiers, hotkey.ModShift)
-		}
+func ProvideHotkeyManager(log logger.Logger, cfg *config.Config) (*apphotkey.WindowsManager, error) {
+	manager, err := apphotkey.NewWindowsManager(log)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create hotkey manager: %w", err)
 	}
 
-	// Convert key string to hotkey.Key
-	var key hotkey.Key
-	switch opts.Key.String() {
-	case "N":
-		key = hotkey.KeyN
-	// Add other key mappings as needed
-	default:
-		return nil, fmt.Errorf("unsupported key: %s", opts.Key)
-	}
+	// Use the binding from config
+	manager.SetQuickNote(nil, &cfg.Hotkeys.QuickNote)
 
-	return apphotkey.NewManager(modifiers, key)
+	return manager, nil
 }
 
 // ProvideFyneApp provides a Fyne application instance
@@ -310,14 +294,14 @@ func ProvideHTTPConfig(opts *options.HTTPOptions) *common.HTTPConfig {
 	}
 }
 
-// ProvideModifierKeys provides the default hotkey modifiers
-func ProvideModifierKeys() common.ModifierKeys {
-	return common.ModifierKeys{"Ctrl", "Shift"}
+// ProvideModifierKeys provides the hotkey modifiers from config
+func ProvideModifierKeys(cfg *config.Config) common.ModifierKeys {
+	return common.ModifierKeys(cfg.Hotkeys.QuickNote.Modifiers)
 }
 
-// ProvideKeyCode provides the default hotkey key code
-func ProvideKeyCode() common.KeyCode {
-	return common.KeyCode("N")
+// ProvideKeyCode provides the hotkey key code from config
+func ProvideKeyCode(cfg *config.Config) common.KeyCode {
+	return common.KeyCode(cfg.Hotkeys.QuickNote.Key)
 }
 
 // Provider functions for HTTP configuration

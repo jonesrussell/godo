@@ -51,31 +51,14 @@ func New(params *Params) *App {
 
 // SetupUI initializes the user interface
 func (a *App) SetupUI() {
+	a.logger.Debug("Setting up UI components")
+
 	// Set up systray first
 	systray.SetupSystray(a.fyneApp, a.mainWindow.GetWindow(), a.quickNote)
 
 	// Only show main window if not configured to start hidden
 	if !a.config.UI.MainWindow.StartHidden {
 		a.mainWindow.Show()
-	}
-
-	// Register hotkey
-	if err := a.hotkey.Register(); err != nil {
-		a.logger.Error("failed to register hotkey", "error", err)
-	}
-
-	// Start hotkey listener
-	if err := a.hotkey.Start(); err != nil {
-		a.logger.Error("failed to start hotkey listener", "error", err)
-	}
-
-	// Set up quick note handler
-	if manager, ok := a.hotkey.(*hotkey.DefaultManager); ok {
-		go func() {
-			for range manager.GetHotkey().Keydown() {
-				a.quickNote.Show()
-			}
-		}()
 	}
 }
 
@@ -87,7 +70,28 @@ func (a *App) Run() {
 		"id", a.id,
 	)
 
-	// Run the application
+	// Set up UI components first
+	a.SetupUI()
+
+	// Register and start hotkey after UI setup but before main loop
+	a.logger.Debug("Registering global hotkey",
+		"config", a.config.Hotkeys.QuickNote)
+	if err := a.hotkey.Register(); err != nil {
+		a.logger.Error("Failed to register hotkey",
+			"error", err,
+			"config", a.config.Hotkeys.QuickNote)
+	} else {
+		// Start hotkey listener
+		a.logger.Debug("Starting hotkey listener")
+		if err := a.hotkey.Start(); err != nil {
+			a.logger.Error("Failed to start hotkey listener",
+				"error", err)
+		} else {
+			a.logger.Info("Hotkey system initialized successfully")
+		}
+	}
+
+	// Run the application main loop
 	a.fyneApp.Run()
 }
 

@@ -1,9 +1,11 @@
 package config
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/jonesrussell/godo/internal/common"
+	"github.com/jonesrussell/godo/internal/logger"
 )
 
 // Modifier represents a hotkey modifier (Ctrl, Alt, etc.)
@@ -27,9 +29,64 @@ type HotkeyFactory interface {
 	NewHotkey([]Modifier, Key) HotkeyHandler
 }
 
-// HotkeyConfig holds hotkey configuration
+// HotkeyConfig holds hotkey-related configuration
 type HotkeyConfig struct {
 	QuickNote common.HotkeyBinding `mapstructure:"quick_note"`
+	log       logger.Logger
+}
+
+// NewHotkeyConfig creates a new HotkeyConfig with validation
+func NewHotkeyConfig(log logger.Logger) *HotkeyConfig {
+	return &HotkeyConfig{
+		log: log,
+	}
+}
+
+// Validate checks if the hotkey configuration is valid
+func (c *HotkeyConfig) Validate() error {
+	c.log.Debug("Validating hotkey configuration",
+		"modifiers", c.QuickNote.Modifiers,
+		"key", c.QuickNote.Key)
+
+	if len(c.QuickNote.Modifiers) == 0 {
+		return fmt.Errorf("at least one modifier is required")
+	}
+
+	// Validate modifiers
+	validModifiers := map[string]bool{
+		"ctrl":  true,
+		"shift": true,
+		"alt":   true,
+	}
+
+	for _, mod := range c.QuickNote.Modifiers {
+		mod = strings.ToLower(mod)
+		if !validModifiers[mod] {
+			c.log.Error("Invalid modifier",
+				"modifier", mod,
+				"valid_modifiers", []string{"ctrl", "shift", "alt"})
+			return fmt.Errorf("invalid modifier: %s", mod)
+		}
+	}
+
+	// Validate key
+	if c.QuickNote.Key == "" {
+		return fmt.Errorf("key is required")
+	}
+
+	// Convert key to uppercase for consistency
+	c.QuickNote.Key = strings.ToUpper(c.QuickNote.Key)
+
+	c.log.Info("Hotkey configuration validated successfully",
+		"modifiers", c.QuickNote.Modifiers,
+		"key", c.QuickNote.Key)
+
+	return nil
+}
+
+// String returns a string representation of the hotkey
+func (c *HotkeyConfig) String() string {
+	return fmt.Sprintf("%s+%s", strings.Join(c.QuickNote.Modifiers, "+"), c.QuickNote.Key)
 }
 
 // HotkeyCombo represents a hotkey combination as a string

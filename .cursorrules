@@ -34,6 +34,31 @@ code_style:
   - test_resource_leaks: "Test for memory and resource leaks"
   - test_error_recovery: "Test system recovery from errors"
   - test_invalid_states: "Test handling of invalid state transitions"
+  - test_utilities:
+    - use_test_fixtures: "Use TestFixture for common test dependencies"
+    - implement_mock_interfaces: "Provide mock implementations for interfaces"
+    - provide_helper_functions: "Create reusable test helper functions"
+    - handle_async_operations: "Use timeouts and wait functions for async tests"
+    - thread_safe_mocks: "Ensure mock implementations are thread-safe"
+    - cleanup_resources: "Use t.Cleanup for automatic resource cleanup"
+    - context_management: "Provide test context with appropriate timeouts"
+  - test_patterns:
+    - window_state_tracking: "Track and verify window visibility states"
+    - task_assertions: "Verify task existence and properties"
+    - log_assertions: "Verify log messages and levels"
+    - config_management: "Provide test configurations"
+    - store_operations: "Test CRUD operations with mock store"
+    - mock_expectations: "Set up and verify mock expectations"
+  - test_data:
+    - use_test_factories: "Provide functions to create test data"
+    - realistic_test_data: "Use realistic data in tests"
+    - data_cleanup: "Clean up test data after tests"
+    - data_isolation: "Ensure test data doesn't interfere between tests"
+  - test_organization:
+    - package_level_utilities: "Keep test utilities in testutil package"
+    - reusable_components: "Create reusable test components"
+    - consistent_patterns: "Follow consistent testing patterns"
+    - clear_test_names: "Use descriptive test names"
 
   # UI Rules
   - follow_fyne_patterns:
@@ -58,6 +83,20 @@ code_style:
   - validate_requests: "Validate all incoming requests"
   - use_middleware: "Use middleware for cross-cutting concerns"
   - handle_websocket_properly: "Proper WebSocket connection management"
+  - api_server_lifecycle:
+    - start_in_background: "Start API server in a goroutine"
+    - graceful_shutdown: "Implement graceful shutdown with context"
+    - handle_startup_errors: "Log and handle server startup errors"
+    - cleanup_resources: "Clean up resources in correct order"
+  - api_server_configuration:
+    - configurable_port: "Port should be configurable via config"
+    - timeout_settings: "Configure appropriate timeout settings"
+    - cors_settings: "Configure CORS for cross-origin requests"
+    - rate_limiting: "Configure rate limiting per endpoint"
+  - api_server_integration:
+    - wire_dependency_injection: "Use wire for API server DI"
+    - app_lifecycle_management: "Proper integration with app lifecycle"
+    - error_propagation: "Proper error handling and propagation"
 
   # Logging Rules
   - use_structured_logging: "Use zap for structured logging"
@@ -71,6 +110,16 @@ code_style:
   - validate_config: "Validate configuration at startup"
   - support_env_override: "Allow environment variable overrides"
   - handle_defaults: "Provide sensible defaults"
+  - http_configuration:
+    - port_configuration: "Configure HTTP server port"
+    - timeout_configuration: "Configure server timeouts"
+    - cors_configuration: "Configure CORS settings"
+    - rate_limit_configuration: "Configure rate limiting"
+  - api_configuration:
+    - version_configuration: "Configure API version"
+    - endpoint_configuration: "Configure API endpoints"
+    - auth_configuration: "Configure authentication settings"
+    - middleware_configuration: "Configure middleware chain"
 
   # Build and Distribution Rules
   - use_proper_build_tags: "Use build tags for platform-specific code"
@@ -302,6 +351,14 @@ api_features:
     - openapi_documentation: true
     - rate_limiting: true
     - cors_support: true
+    - graceful_shutdown: true
+    - background_operation: true
+    - lifecycle_management: true
+    - dependency_injection: true
+    - configurable_timeouts: true
+    - error_logging: true
+    - request_logging: true
+    - metrics_support: true
 - websocket:
     description: "WebSocket features"
     features:
@@ -309,24 +366,55 @@ api_features:
     - connection_management: true
     - heartbeat_mechanism: true
     - task_notifications: true
+    - error_handling: true
+    - reconnection_support: true
+    - message_validation: true
+    - connection_pooling: true
 
 endpoints:
 - get_tasks: "/api/v1/tasks"
 - get_task_by_id: "/api/v1/tasks/:id"
 - create_task: "/api/v1/tasks"
 - update_task: "/api/v1/tasks/:id"
+- patch_task: "/api/v1/tasks/:id"
 - delete_task: "/api/v1/tasks/:id"
 - list_tags: "/api/v1/tags"
+- health_check: "/api/v1/health"
+- metrics: "/api/v1/metrics"
 
 configuration:
-- http_port: "Set the port for the HTTP server"
-- websocket_settings: "Configure WebSocket connection settings"
-- authentication_settings: "JWT secret, token expiration, etc."
-- cors_configuration: "Allowed origins, methods, headers"
-- rate_limiting: "Requests per second, burst limit"
+- http_server:
+    port: 8080
+    read_timeout: 30s
+    write_timeout: 30s
+    read_header_timeout: 10s
+    idle_timeout: 120s
+- websocket_settings:
+    ping_interval: 30s
+    pong_wait: 60s
+    write_wait: 10s
+    max_message_size: 512
+- authentication_settings:
+    jwt_secret: "env:JWT_SECRET"
+    token_expiration: 24h
+    refresh_token_expiration: 7d
+- cors_configuration:
+    allowed_origins: [ "*" ]
+    allowed_methods: [ "GET", "POST", "PUT", "PATCH", "DELETE" ]
+    allowed_headers: [ "Content-Type", "Authorization" ]
+    max_age: 86400
+- rate_limiting:
+    requests_per_second: 10
+    burst: 20
 
 error_handling:
 - use_standard_http_status_codes: true
 - provide_meaningful_error_messages: true
 - log_errors_with_context: true
 - return_consistent_error_responses: true
+- include_request_id: true
+- sanitize_error_messages: true
+- handle_validation_errors: true
+- handle_database_errors: true
+- handle_timeout_errors: true
+- handle_auth_errors: true

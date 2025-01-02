@@ -11,17 +11,17 @@ import (
 
 func TestLinuxGetDefaultQuickNoteKey(t *testing.T) {
 	key := GetDefaultQuickNoteKey()
-	assert.Equal(t, "N", key, "Default quick note key should be 'N'")
+	assert.Equal(t, "G", key, "Default quick note key should be 'G'")
 }
 
 func TestLinuxGetDefaultQuickNoteKeyString(t *testing.T) {
 	keyStr := GetDefaultQuickNoteKeyString()
-	assert.Equal(t, "N", keyStr, "Default quick note key should be 'N'")
+	assert.Equal(t, "G", keyStr, "Default quick note key should be 'G'")
 }
 
 func TestLinuxGetDefaultQuickNoteHotkey(t *testing.T) {
 	hotkey := GetDefaultQuickNoteHotkey()
-	assert.Equal(t, "N", hotkey.Key, "Default hotkey key should be 'N'")
+	assert.Equal(t, "G", hotkey.Key, "Default hotkey key should be 'G'")
 	assert.Equal(t, []string{"ctrl", "shift"}, hotkey.Modifiers, "Default hotkey modifiers should be ctrl+shift")
 }
 
@@ -32,5 +32,5 @@ func TestLinuxGetDefaultQuickNoteModifiersString(t *testing.T) {
 
 func TestLinuxGetDefaultQuickNoteCombo(t *testing.T) {
 	combo := GetDefaultQuickNoteCombo()
-	assert.Equal(t, "Ctrl+Shift+N", combo.String(), "Default quick note combo should be 'Ctrl+Shift+N'")
+	assert.Equal(t, "Ctrl+Shift+G", combo.String(), "Default quick note combo should be 'Ctrl+Shift+G'")
 }

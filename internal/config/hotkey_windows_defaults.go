@@ -17,7 +17,7 @@ const (
 
 // GetDefaultQuickNoteKey returns the default key for quick note hotkey
 func GetDefaultQuickNoteKey() string {
-	return "N"
+	return "G"
 }
 
 // GetDefaultQuickNoteKeyString returns the default key as a string

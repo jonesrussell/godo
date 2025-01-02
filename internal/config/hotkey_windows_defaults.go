@@ -17,7 +17,7 @@ const (
 
 // GetDefaultQuickNoteKey returns the default key for quick note hotkey
 func GetDefaultQuickNoteKey() string {
-	return "G"
+	return "" // Let config handle this
 }
 
 // GetDefaultQuickNoteKeyString returns the default key as a string
@@ -27,18 +27,18 @@ func GetDefaultQuickNoteKeyString() string {
 
 // GetDefaultQuickNoteModifiersString returns the default modifiers as a string
 func GetDefaultQuickNoteModifiersString() string {
-	return "Ctrl+Shift"
+	return "" // Let config handle this
 }
 
 // GetDefaultQuickNoteHotkey returns the default hotkey configuration
 func GetDefaultQuickNoteHotkey() HotkeyString {
 	return HotkeyString{
 		Key:       GetDefaultQuickNoteKeyString(),
-		Modifiers: []string{"ctrl", "shift"},
+		Modifiers: []string{}, // Let config handle this
 	}
 }
 
 // GetDefaultQuickNoteCombo returns the default hotkey combination
 func GetDefaultQuickNoteCombo() HotkeyCombo {
-	return NewHotkeyCombo([]string{"Ctrl", "Shift"}, GetDefaultQuickNoteKey())
+	return NewHotkeyCombo([]string{}, GetDefaultQuickNoteKey())
 }

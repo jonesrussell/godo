@@ -10,11 +10,12 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/google/uuid"
 	"github.com/jonesrussell/godo/internal/config"
+	"github.com/jonesrussell/godo/internal/gui"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
 )
 
-// Window implements the main window functionality
+// Window implements the MainWindowManager interface
 type Window struct {
 	store  storage.TaskStore
 	logger logger.Logger
@@ -22,6 +23,9 @@ type Window struct {
 	app    fyne.App
 	config config.WindowConfig
 }
+
+// Ensure Window implements MainWindowManager
+var _ gui.MainWindowManager = (*Window)(nil)
 
 // New creates a new main window
 func New(app fyne.App, store storage.TaskStore, logger logger.Logger, config config.WindowConfig) *Window {

@@ -10,11 +10,12 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/google/uuid"
 	"github.com/jonesrussell/godo/internal/config"
+	"github.com/jonesrussell/godo/internal/gui"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
 )
 
-// Window implements the quick note window
+// Window implements the QuickNoteManager interface
 type Window struct {
 	store   storage.TaskStore
 	logger  logger.Logger
@@ -24,6 +25,9 @@ type Window struct {
 	input   *widget.Entry
 	saveBtn *widget.Button
 }
+
+// Ensure Window implements QuickNoteManager
+var _ gui.QuickNoteManager = (*Window)(nil)
 
 // New creates a new quick note window
 func New(app fyne.App, store storage.TaskStore, logger logger.Logger, config config.WindowConfig) *Window {
@@ -76,14 +80,20 @@ func (w *Window) setupUI() {
 	w.window.CenterOnScreen()
 }
 
-// Show displays the quick note window
+// Show displays the window
 func (w *Window) Show() {
-	w.input.SetText("")
 	w.window.Show()
-	w.window.Canvas().Focus(w.input)
+	if w.input != nil {
+		w.window.Canvas().Focus(w.input)
+	}
 }
 
-// Hide hides the quick note window
+// Hide hides the window
 func (w *Window) Hide() {
 	w.window.Hide()
+}
+
+// CenterOnScreen centers the window on the screen
+func (w *Window) CenterOnScreen() {
+	w.window.CenterOnScreen()
 }

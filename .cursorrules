@@ -1,134 +1,86 @@
 # .cursorrules file for Godo - A Todo Application with Quick-Note Support
 
 code_style:
-- description: "Follow standard Go formatting guidelines."
+- description: "Follow standard Go formatting guidelines and project-specific patterns"
 - formatter: gofmt
 - rules:
-  - use_meaningful_variable_and_function_names: true
-  - implement_dependency_injection: true
-  - use_logger_abstraction: true
-  - use_structured_logging_with_zap: "Only in logger package implementation"
-  - keep_functions_small_and_focused: true
-  - use_modern_octal_literal_style: "0o600 instead of 0600"
-  - avoid_time_sleep_for_synchronization: true
-  - prefer_synchronization_primitives: true
-  - implement_ready_state_callbacks: true
-  - use_event_driven_ui_state_management: true
-  - use_build_tags_for_platform_specific_code: true
-  - follow_docker_windows_linux_build_tags: true
+  # Core Code Organization
+  - use_platform_specific_build_tags: "Use //go:build for platform-specific code"
+  - follow_dependency_injection_pattern: "Use wire for DI, avoid global state"
+  - implement_interface_segregation: "Keep interfaces small and focused"
+  - use_options_pattern: "Use functional options for configurable components"
+  - follow_error_handling_conventions: "Use custom error types, wrap errors with context"
 
-  # Wire Best Practices
-  - use_distinct_types_for_common_values: "Create new types for common values like strings and ints to avoid provider conflicts"
-  - use_options_structs_for_complex_providers: "Group related provider dependencies in options structs"
-  - keep_provider_sets_small_and_focused: "Prefer small, focused provider sets over large ones"
-  - avoid_breaking_provider_set_changes: "Only make backward-compatible changes to provider sets"
-  - prefer_interface_bindings_in_sets: "Use wire.Bind to bind concrete types to interfaces"
-  - use_mock_provider_sets_for_testing: "Create separate provider sets for testing with mock implementations"
-  - document_provider_dependencies: "Clearly document provider inputs and outputs"
-  - validate_provider_options: "Add validation to options structs"
-  - handle_provider_cleanup: "Return cleanup functions when needed"
-  - use_platform_specific_provider_sets: "Use build tags to separate platform-specific providers"
-  - prefer_dependency_injection_over_globals: "Use Wire for dependency management instead of global variables"
-  - follow_wire_naming_conventions: "Use Provide prefix for provider functions, Set suffix for provider sets"
-  - keep_injector_functions_clean: "Injector functions must only contain wire.Build call"
-  - avoid_circular_dependencies: "Use options pattern to break dependency cycles"
-  - use_proper_cleanup_ordering: "Clean up resources in reverse order of creation"
-  - validate_dependencies_at_runtime: "Add nil checks and validation in provider functions"
-  - prefer_functional_options: "Use functional options pattern for optional dependencies"
-  - document_provider_sets: "Document the purpose and dependencies of each provider set"
-  - use_build_tags_for_platform_specific_code: "Separate platform-specific code with build tags"
-  - follow_docker_windows_linux_build_tags: "Use consistent build tags across platforms"
+  # Architecture Rules
+  - follow_clean_architecture:
+    - keep_business_logic_in_internal: "Core business logic belongs in internal/"
+    - use_interface_abstractions: "Define interfaces in consumer packages"
+    - separate_platform_specific_code: "Use separate files with build tags"
+    - follow_dependency_rule: "Dependencies point inward"
 
-  # Testing Best Practices
-  - write_focused_unit_tests: "Each test should verify one specific behavior"
-  - use_table_driven_tests: "Use table-driven tests for multiple test cases"
-  - mock_external_dependencies: "Use mock implementations for external services"
-  - test_error_conditions: "Test error handling and edge cases"
-  - use_test_helpers: "Create helper functions for common test setup"
-  - clean_up_test_resources: "Use defer for cleanup in tests"
-  - use_meaningful_test_names: "Test names should describe the scenario being tested"
-  - follow_test_naming_convention: "TestPackage_Function_Scenario"
-  - use_subtests_for_clarity: "Use t.Run for organizing related tests"
-  - avoid_test_interdependence: "Tests should not depend on each other"
-  - use_test_fixtures: "Keep test data in separate fixture files"
-  - test_concurrent_behavior: "Test concurrent operations when applicable"
-  - use_test_timeouts: "Add timeouts to prevent hanging tests"
-  - test_platform_specific_code: "Test platform-specific implementations"
-  - maintain_test_coverage: "Maintain high test coverage for critical paths"
+  # Testing Rules
+  - write_focused_unit_tests: "Each test verifies one specific behavior"
+  - use_table_driven_tests: "Use table-driven tests for multiple cases"
+  - mock_external_dependencies: "Use interfaces and mocks for external services"
+  - test_error_paths: "Test error conditions and edge cases"
+  - maintain_test_coverage: "Keep >70% coverage for critical paths"
+  - use_testify_suite: "Use testify/suite for organized tests"
+  - use_gomock: "Use gomock for interface mocking"
 
-  # UI Best Practices
-  - follow_fyne_widget_patterns: "Follow Fyne widget implementation patterns"
-  - handle_window_focus: "Properly handle window focus and blur events"
-  - manage_window_state: "Track and manage window visibility state"
-  - implement_proper_cleanup: "Clean up resources when windows are closed"
-  - use_proper_layouts: "Use appropriate layout containers"
-  - handle_keyboard_events: "Implement keyboard event handling"
-  - follow_platform_conventions: "Follow platform-specific UI conventions"
-  - implement_accessibility: "Add accessibility support to custom widgets"
-  - use_theme_variables: "Use theme variables for styling"
-  - handle_window_resize: "Handle window resize events properly"
-  - manage_input_focus: "Properly manage input focus"
-  - use_proper_padding: "Use consistent padding and spacing"
-  - implement_proper_validation: "Validate user input"
-  - show_meaningful_errors: "Display user-friendly error messages"
-  - use_proper_dialogs: "Use appropriate dialog types"
+  # UI Rules
+  - follow_fyne_patterns:
+    - use_theme_variables: "Use theme variables for consistent styling"
+    - handle_window_lifecycle: "Proper window creation and cleanup"
+    - manage_input_focus: "Handle focus properly in UI components"
+    - implement_proper_layouts: "Use appropriate Fyne layouts"
+  - implement_platform_specific_ui:
+    - handle_windows_specifics: "Support Windows-specific UI features"
+    - handle_linux_specifics: "Support Linux-specific UI features"
 
-  # Storage Best Practices
-  - validate_data_before_storage: "Validate all data before storage operations"
-  - handle_connection_state: "Track and validate connection state"
-  - use_custom_error_types: "Define and use custom error types for specific error cases"
-  - prevent_data_inconsistencies: "Validate IDs, prevent duplicates, check data integrity"
-  - implement_proper_cleanup: "Ensure proper resource cleanup in Close methods"
-  - use_transactions_when_needed: "Use transactions for multi-step operations"
-  - handle_database_errors: "Properly handle and wrap database errors"
-  - test_error_conditions: "Add tests for error conditions and edge cases"
-  - maintain_high_test_coverage: "Maintain >65% test coverage for critical packages"
-  - use_interface_segregation: "Split interfaces by responsibility (read/write operations)"
-  - implement_transaction_support: "Support atomic operations with proper rollback"
-  - validate_connection_lifecycle: "Track and validate database connection state"
-  - use_prepared_statements: "Use prepared statements for SQL operations"
-  - implement_connection_pooling: "Use connection pooling for better performance"
-  - handle_concurrent_access: "Implement proper concurrency controls"
-  - provide_snapshot_support: "Support data snapshots for testing"
-  - implement_audit_logging: "Log all write operations for auditing"
-  - use_structured_errors: "Return structured errors with context"
-  - validate_migrations: "Test and validate all database migrations"
+  # Storage Rules
+  - follow_repository_pattern: "Use repository pattern for data access"
+  - use_transactions: "Use transactions for multi-step operations"
+  - validate_data: "Validate data before storage operations"
+  - handle_migrations: "Support proper database migrations"
+  - implement_proper_cleanup: "Clean up resources in Close methods"
 
-  # API Best Practices
-  - follow_restful_api_conventions: true
-  - use_proper_http_status_codes: true
-  - implement_request_validation: true
-  - use_middleware_for_common_http_concerns: true
-  - follow_jwt_best_practices: true
-  - implement_rate_limiting: true
-  - use_proper_websocket_connection_management: true
-  - ensure_api_versioning: true
-  - implement_health_checks: true
-  - plan_for_scalability: true
-  - use_secure_headers: true
-  - monitor_performance: true
-  - prefer_patch_for_partial_updates: "Use PATCH for partial updates instead of PUT"
-  - preserve_unmodified_fields: "Don't require all fields in updates"
-  - validate_timestamps: "Ensure valid timestamp formats and ranges"
-  - handle_null_values: "Properly handle null/zero values in updates"
-  - document_api_changes: "Keep API documentation up to date"
+  # API Rules
+  - follow_rest_conventions: "Use proper HTTP methods and status codes"
+  - implement_versioning: "Version API endpoints properly"
+  - validate_requests: "Validate all incoming requests"
+  - use_middleware: "Use middleware for cross-cutting concerns"
+  - handle_websocket_properly: "Proper WebSocket connection management"
 
-  # Logging Best Practices
-  - use_structured_logging: "Use structured logging with fields"
-  - log_appropriate_levels: "Use appropriate log levels (debug, info, warn, error)"
-  - include_context_in_logs: "Include relevant context in log entries"
-  - use_correlation_ids: "Add correlation IDs for request tracking"
-  - log_meaningful_errors: "Log errors with stack traces and context"
-  - avoid_sensitive_data: "Don't log sensitive information"
-  - use_sampling_for_high_volume: "Use sampling for high-volume log entries"
-  - implement_log_rotation: "Implement log rotation and cleanup"
-  - use_human_readable_format: "Use human-readable format in development"
-  - configure_log_destinations: "Configure appropriate log destinations"
-  - handle_log_failures: "Handle logging failures gracefully"
-  - use_consistent_field_names: "Use consistent field names across logs"
-  - implement_log_filtering: "Support log filtering and searching"
-  - maintain_log_performance: "Optimize logging performance"
-  - follow_log_format_standards: "Follow standard log format conventions"
+  # Logging Rules
+  - use_structured_logging: "Use zap for structured logging"
+  - log_appropriate_levels: "Use correct log levels"
+  - include_context: "Include relevant context in logs"
+  - avoid_sensitive_data: "Never log sensitive information"
+  - implement_log_rotation: "Support log rotation"
+
+  # Configuration Rules
+  - use_yaml_config: "Use YAML for configuration files"
+  - validate_config: "Validate configuration at startup"
+  - support_env_override: "Allow environment variable overrides"
+  - handle_defaults: "Provide sensible defaults"
+
+  # Build and Distribution Rules
+  - use_proper_build_tags: "Use build tags for platform-specific code"
+  - support_cross_compilation: "Support building for multiple platforms"
+  - manage_dependencies: "Use go modules properly"
+  - optimize_binary_size: "Optimize final binary size"
+
+  # Security Rules
+  - secure_sensitive_data: "Properly handle sensitive information"
+  - use_proper_permissions: "Set correct file permissions"
+  - validate_user_input: "Validate all user input"
+  - implement_rate_limiting: "Rate limit API endpoints"
+
+  # Performance Rules
+  - optimize_hot_paths: "Optimize frequently executed code"
+  - use_connection_pooling: "Pool database connections"
+  - implement_caching: "Cache expensive operations"
+  - profile_performance: "Profile and optimize critical paths"
 
 snippets:
 - fyne_keyboard_shortcuts:

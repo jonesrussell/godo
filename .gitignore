@@ -14,3 +14,5 @@ internal/container/wire_gen.go
 
 # Build output
 dist/
+godo.db-shm
+godo.db-wal

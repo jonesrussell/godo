@@ -1,32 +1,76 @@
-# IDE and editor files
+# Development environments and editors
 .vscode/
 .idea/
 .devcontainer/
+*.swp
+*.swo
+*~
 
 # Build artifacts and binaries
 bin/
+dist/
 vendor/
 coverage/
 *.exe
+*.exe~
+*.dll
+*.so
+*.dylib
 *.db
+*.db-*
 *.log
 *.out
 *_gen.go
+*.test
+*.prof
+*.trace
+*.cov
 
 # CI/CD and quality tools
 .github/
-qodana.yml
-qodana.sarif.json
+.gitlab/
+.circleci/
+qodana.*
+.golangci.yml
+.codecov.yml
+coverage.txt
+coverage.html
 
-# Task runners
+# Task runners and build tools
 Taskfile.yaml
 taskfile.yml
+.task/
+.air.toml
 
 # Docker
 build/docker/
+.docker/
+*.dockerfile
+Dockerfile.*
 
-# Generated documentation
+# Generated documentation and specs
 docs/generated/
+api/generated/
+swagger.*
+openapi.*
 
-# Test data
-testdata/ 
+# Test data and mocks
+testdata/
+mock_*.go
+*_mock.go
+*.test.db
+
+# Platform-specific
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Project-specific
+*.sqlite
+*.sqlite3
+godo.db*
+.env
+.env.*
+config.local.yaml
+debug/
+tmp/ 

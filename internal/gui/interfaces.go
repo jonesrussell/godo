@@ -37,3 +37,15 @@ type MainWindowManager interface {
 	SizeManager
 	WindowAccessor
 }
+
+// MainWindow is an alias for MainWindowManager for backward compatibility
+type MainWindow = MainWindowManager
+
+// QuickNote is an alias for QuickNoteManager for backward compatibility
+type QuickNote = QuickNoteManager
+
+// QuickNoteService defines the service interface for quick notes
+type QuickNoteService interface {
+	Show()
+	Hide()
+}

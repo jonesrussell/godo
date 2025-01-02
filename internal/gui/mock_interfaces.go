@@ -33,8 +33,9 @@ func (m *MockMainWindow) GetWindow() fyne.Window { return m.Window }
 
 // MockQuickNote implements QuickNote for testing purposes
 type MockQuickNote struct {
-	ShowCalled bool
-	HideCalled bool
+	ShowCalled   bool
+	HideCalled   bool
+	CenterCalled bool
 }
 
 // Show simulates showing the quick note window and records that it was called
@@ -42,3 +43,6 @@ func (m *MockQuickNote) Show() { m.ShowCalled = true }
 
 // Hide simulates hiding the quick note window and records that it was called
 func (m *MockQuickNote) Hide() { m.HideCalled = true }
+
+// CenterOnScreen simulates centering the quick note window and records that it was called
+func (m *MockQuickNote) CenterOnScreen() { m.CenterCalled = true }

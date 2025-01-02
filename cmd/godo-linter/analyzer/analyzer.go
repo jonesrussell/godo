@@ -1,17 +1,18 @@
-package main
+package analyzer
 
 import (
 	"go/ast"
 
 	"golang.org/x/tools/go/analysis"
-	"golang.org/x/tools/go/analysis/singlechecker"
 )
 
-// Analyzer is the main entry point for the linter
-var Analyzer = &analysis.Analyzer{
-	Name: "godolinter",
-	Doc:  "enforces Godo project-specific conventions",
-	Run:  run,
+// New creates a new instance of the godolinter analyzer
+func New() *analysis.Analyzer {
+	return &analysis.Analyzer{
+		Name: "godolinter",
+		Doc:  "enforces Godo project-specific conventions",
+		Run:  run,
+	}
 }
 
 func run(pass *analysis.Pass) (interface{}, error) {
@@ -94,8 +95,4 @@ func isWrappedError(expr ast.Expr) bool {
 		}
 	}
 	return false
-}
-
-func main() {
-	singlechecker.Main(Analyzer)
 }

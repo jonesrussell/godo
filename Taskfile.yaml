@@ -46,10 +46,20 @@ tasks:
     - goimports -w .
 
   lint:
-    desc: Run linters
-    deps: [ wire:windows ]
+    desc: Run all linters
     cmds:
-    - golangci-lint run ./...
+    - golangci-lint run
+    - go run ./cmd/godo-linter ./...
+
+  lint:golangci:
+    desc: Run golangci-lint
+    cmds:
+    - golangci-lint run
+
+  lint:custom:
+    desc: Run custom linter
+    cmds:
+    - go run ./cmd/godo-linter ./...
 
   test:
     desc: Run basic tests

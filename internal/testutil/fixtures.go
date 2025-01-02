@@ -14,6 +14,17 @@ import (
 	"github.com/jonesrussell/godo/internal/storage"
 )
 
+const (
+	// DefaultMainWindowWidth is the default width for the main window
+	DefaultMainWindowWidth = 800
+	// DefaultMainWindowHeight is the default height for the main window
+	DefaultMainWindowHeight = 600
+	// DefaultQuickNoteWidth is the default width for the quick note window
+	DefaultQuickNoteWidth = 400
+	// DefaultQuickNoteHeight is the default height for the quick note window
+	DefaultQuickNoteHeight = 300
+)
+
 // TestFixture holds common test dependencies
 type TestFixture struct {
 	T          *testing.T
@@ -62,7 +73,7 @@ func (f *TestFixture) Cleanup() {
 }
 
 // CreateTestTask creates a task for testing
-func CreateTestTask(id string, content string, done bool) storage.Task {
+func CreateTestTask(id, content string, done bool) storage.Task {
 	now := time.Now()
 	return storage.Task{
 		ID:        id,

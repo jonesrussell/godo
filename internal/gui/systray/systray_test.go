@@ -38,6 +38,10 @@ func (m *mockQuickNote) Hide() {
 	m.Called()
 }
 
+type mockSystrayMenu struct {
+	shown bool
+}
+
 func TestSetupSystray_QuickNoteMenuItem(t *testing.T) {
 	// Create mocks
 	app := &mockDesktopApp{

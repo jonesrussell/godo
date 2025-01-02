@@ -71,7 +71,7 @@ func TestWithValidation(t *testing.T) {
 			req.Header.Set("Content-Type", "application/json")
 			w := httptest.NewRecorder()
 
-			handler := WithValidation[testRequest](log)(func(w http.ResponseWriter, r *http.Request) {
+			handler := WithValidation[testRequest](log)(func(w http.ResponseWriter, _ *http.Request) {
 				w.WriteHeader(http.StatusOK)
 			})
 			handler(w, req)
@@ -84,11 +84,11 @@ func TestWithValidation(t *testing.T) {
 func TestWithLogging(t *testing.T) {
 	log := logger.NewTestLogger(t)
 
-	req := httptest.NewRequest(http.MethodGet, "/test", nil)
+	req := httptest.NewRequest(http.MethodGet, "/test", http.NoBody)
 	w := httptest.NewRecorder()
 
 	called := false
-	handler := WithLogging(log)(func(w http.ResponseWriter, r *http.Request) {
+	handler := WithLogging(log)(func(w http.ResponseWriter, _ *http.Request) {
 		called = true
 		w.WriteHeader(http.StatusOK)
 	})
@@ -108,21 +108,21 @@ func TestWithErrorHandling(t *testing.T) {
 	}{
 		{
 			name: "no error",
-			handler: func(w http.ResponseWriter, r *http.Request) {
+			handler: func(w http.ResponseWriter, _ *http.Request) {
 				w.WriteHeader(http.StatusOK)
 			},
 			wantStatus: http.StatusOK,
 		},
 		{
 			name: "task not found error",
-			handler: func(w http.ResponseWriter, r *http.Request) {
+			handler: func(_ http.ResponseWriter, _ *http.Request) {
 				panic(storage.ErrTaskNotFound)
 			},
 			wantStatus: http.StatusNotFound,
 		},
 		{
 			name: "internal server error",
-			handler: func(w http.ResponseWriter, r *http.Request) {
+			handler: func(_ http.ResponseWriter, _ *http.Request) {
 				panic("unexpected error")
 			},
 			wantStatus: http.StatusInternalServerError,
@@ -131,7 +131,7 @@ func TestWithErrorHandling(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req := httptest.NewRequest(http.MethodGet, "/test", nil)
+			req := httptest.NewRequest(http.MethodGet, "/test", http.NoBody)
 			w := httptest.NewRecorder()
 
 			handler := WithErrorHandling(log)(tt.handler)
@@ -161,12 +161,12 @@ func TestChain(t *testing.T) {
 		}
 	}
 
-	handler := func(w http.ResponseWriter, r *http.Request) {
+	handler := func(w http.ResponseWriter, _ *http.Request) {
 		order = append(order, "handler")
 		w.WriteHeader(http.StatusOK)
 	}
 
-	req := httptest.NewRequest(http.MethodGet, "/test", nil)
+	req := httptest.NewRequest(http.MethodGet, "/test", http.NoBody)
 	w := httptest.NewRecorder()
 
 	Chain(handler, middleware1, middleware2)(w, req)

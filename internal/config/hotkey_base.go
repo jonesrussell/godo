@@ -102,10 +102,15 @@ func (h HotkeyCombo) String() string {
 	return string(h)
 }
 
-// ParseHotkeyCombo parses a string like "Ctrl+Shift+G" into a HotkeyBinding
+const (
+	// MinHotkeyParts is the minimum number of parts required in a hotkey combo
+	MinHotkeyParts = 2
+)
+
+// ParseHotkeyCombo parses a hotkey combo string into a HotkeyBinding
 func ParseHotkeyCombo(combo string) common.HotkeyBinding {
 	parts := strings.Split(combo, "+")
-	if len(parts) < 2 {
+	if len(parts) < MinHotkeyParts {
 		return common.HotkeyBinding{}
 	}
 	return common.HotkeyBinding{
@@ -114,9 +119,9 @@ func ParseHotkeyCombo(combo string) common.HotkeyBinding {
 	}
 }
 
-// UnmarshalText implements the encoding.TextUnmarshaler interface
-func (h *HotkeyConfig) UnmarshalText(text []byte) error {
+// UnmarshalText implements encoding.TextUnmarshaler
+func (c *HotkeyConfig) UnmarshalText(text []byte) error {
 	str := string(text)
-	h.QuickNote = ParseHotkeyCombo(str)
+	c.QuickNote = ParseHotkeyCombo(str)
 	return nil
 }

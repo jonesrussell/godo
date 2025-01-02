@@ -18,10 +18,11 @@ import (
 
 type mockStore struct {
 	storage.TaskStore
+	tasks []storage.Task
 }
 
-func (m *mockStore) List(ctx context.Context) ([]storage.Task, error) {
-	return []storage.Task{}, nil
+func (m *mockStore) List(_ context.Context) ([]storage.Task, error) {
+	return m.tasks, nil
 }
 
 func TestApp_SetupUI(t *testing.T) {
@@ -213,9 +214,9 @@ type mockLogger struct {
 	logger.Logger
 }
 
-func (m *mockLogger) Debug(msg string, args ...interface{}) {}
-func (m *mockLogger) Info(msg string, args ...interface{})  {}
-func (m *mockLogger) Error(msg string, args ...interface{}) {}
+func (m *mockLogger) Debug(_ string, _ ...interface{}) {}
+func (m *mockLogger) Info(_ string, _ ...interface{})  {}
+func (m *mockLogger) Error(_ string, _ ...interface{}) {}
 
 type mockHotkey struct {
 	hotkey.Manager

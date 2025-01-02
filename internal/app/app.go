@@ -17,6 +17,11 @@ import (
 	"github.com/jonesrussell/godo/internal/storage"
 )
 
+const (
+	// DefaultAPIPort is the default port for the API server
+	DefaultAPIPort = 8080
+)
+
 // App implements the Application interface
 type App struct {
 	name       common.AppName
@@ -113,7 +118,7 @@ func (a *App) Run() {
 
 	// Start API server
 	if a.apiRunner != nil {
-		a.apiRunner.Start(8080) // TODO: Get port from config
+		a.apiRunner.Start(DefaultAPIPort) // Using constant instead of magic number
 	}
 
 	// Run the application main loop

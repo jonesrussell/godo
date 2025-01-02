@@ -11,4 +11,5 @@ type hotkeyInterface interface {
 	Register() error
 	Unregister() error
 	Keydown() <-chan hotkey.Event
+	IsRegistered() bool
 }

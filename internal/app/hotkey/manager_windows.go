@@ -73,7 +73,7 @@ func (m *WindowsManager) Register() error {
 	}
 
 	// Check if already registered
-	if m.hk != nil {
+	if m.hk != nil && m.hk.IsRegistered() {
 		m.log.Error("Hotkey already registered")
 		return fmt.Errorf("hotkey already registered")
 	}
@@ -125,13 +125,17 @@ func (m *WindowsManager) Register() error {
 	m.log.Info("Creating hotkey instance",
 		"modifiers_count", len(mods),
 		"key", key)
-	hk := hotkey.New(mods, key)
+
+	// If we don't have a hotkey instance yet, create one
+	if m.hk == nil {
+		m.hk = newHotkeyWrapper(mods, key)
+	}
 
 	// Try registration with retries
 	var err error
 	for i := 0; i < maxRetries; i++ {
 		m.log.Info("Attempting to register hotkey with system", "attempt", i+1)
-		if err = hk.Register(); err == nil {
+		if err = m.hk.Register(); err == nil {
 			break
 		}
 		m.log.Error("Failed to register hotkey",
@@ -152,7 +156,6 @@ func (m *WindowsManager) Register() error {
 		"os", runtime.GOOS,
 		"pid", os.Getpid())
 
-	m.hk = hk
 	return nil
 }
 

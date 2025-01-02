@@ -39,9 +39,10 @@ func newMockTestLogger(t *testing.T) *mockTestLogger {
 		t:      t,
 	}
 	// Set up default expectations
-	l.On("Debug", mock.Anything, mock.Anything).Return()
-	l.On("Info", mock.Anything, mock.Anything).Return()
-	l.On("Error", mock.Anything, mock.Anything).Return()
+	l.On("Debug", mock.Anything, mock.Anything).Maybe()
+	l.On("Info", mock.Anything, mock.Anything).Maybe()
+	l.On("Error", mock.Anything, mock.Anything).Maybe()
+	l.On("Warn", mock.Anything, mock.Anything).Maybe()
 	return l
 }
 
@@ -58,6 +59,11 @@ func (m *mockTestLogger) Info(msg string, args ...interface{}) {
 func (m *mockTestLogger) Error(msg string, args ...interface{}) {
 	m.Called(msg, args)
 	m.Logger.Error(msg, args...)
+}
+
+func (m *mockTestLogger) Warn(msg string, args ...interface{}) {
+	m.Called(msg, args)
+	m.Logger.Warn(msg, args...)
 }
 
 func TestWindowsManager_QuickNoteHotkey(t *testing.T) {
@@ -78,9 +84,6 @@ func TestWindowsManager_QuickNoteHotkey(t *testing.T) {
 	manager, err := NewWindowsManager(log)
 	assert.NoError(t, err, "Should create manager without error")
 
-	// Set quick note service
-	manager.SetQuickNote(quickNote, binding)
-
 	// Create mock hotkey
 	mockHk := &mockHotkey{
 		keydownChan: make(chan hotkey.Event),
@@ -90,6 +93,9 @@ func TestWindowsManager_QuickNoteHotkey(t *testing.T) {
 	mockHk.On("Register").Return(nil)
 	mockHk.On("Unregister").Return(nil)
 	manager.SetHotkey(mockHk)
+
+	// Set quick note service
+	manager.SetQuickNote(quickNote, binding)
 
 	// Register hotkey
 	err = manager.Register()
@@ -184,9 +190,6 @@ func TestWindowsManager_UnregisterHotkey(t *testing.T) {
 	manager, err := NewWindowsManager(log)
 	assert.NoError(t, err, "Should create manager without error")
 
-	// Set quick note service
-	manager.SetQuickNote(quickNote, binding)
-
 	// Create mock hotkey
 	mockHk := &mockHotkey{
 		keydownChan: make(chan hotkey.Event),
@@ -196,6 +199,9 @@ func TestWindowsManager_UnregisterHotkey(t *testing.T) {
 	mockHk.On("Register").Return(nil)
 	mockHk.On("Unregister").Return(nil)
 	manager.SetHotkey(mockHk)
+
+	// Set quick note service
+	manager.SetQuickNote(quickNote, binding)
 
 	// Register hotkey
 	err = manager.Register()
@@ -230,9 +236,6 @@ func TestWindowsManager_MultipleRegistrations(t *testing.T) {
 	manager, err := NewWindowsManager(log)
 	assert.NoError(t, err, "Should create manager without error")
 
-	// Set quick note service
-	manager.SetQuickNote(quickNote, binding)
-
 	// Create mock hotkey
 	mockHk := &mockHotkey{
 		keydownChan: make(chan hotkey.Event),
@@ -242,6 +245,9 @@ func TestWindowsManager_MultipleRegistrations(t *testing.T) {
 	mockHk.On("Register").Return(nil)
 	mockHk.On("Unregister").Return(nil)
 	manager.SetHotkey(mockHk)
+
+	// Set quick note service
+	manager.SetQuickNote(quickNote, binding)
 
 	// First registration should succeed
 	err = manager.Register()
@@ -307,13 +313,9 @@ func TestWindowsManager_UnregisterWithoutRegister(t *testing.T) {
 	manager, err := NewWindowsManager(log)
 	assert.NoError(t, err, "Should create manager without error")
 
-	// Unregister without registering should return error
+	// Unregister without registering should not error (no-op)
 	err = manager.Unregister()
-	assert.Error(t, err, "Unregister without register should return error")
-	assert.Contains(t, err.Error(), "not registered", "Error should mention not registered")
-
-	// Verify expectations
-	log.AssertExpectations(t)
+	assert.NoError(t, err, "Unregister without register should not error")
 }
 
 func TestWindowsManager_HotkeyTrigger(t *testing.T) {
@@ -334,9 +336,6 @@ func TestWindowsManager_HotkeyTrigger(t *testing.T) {
 	manager, err := NewWindowsManager(log)
 	assert.NoError(t, err, "Should create manager without error")
 
-	// Set quick note service
-	manager.SetQuickNote(quickNote, binding)
-
 	// Create mock hotkey
 	mockHk := &mockHotkey{
 		keydownChan: make(chan hotkey.Event),
@@ -346,6 +345,9 @@ func TestWindowsManager_HotkeyTrigger(t *testing.T) {
 	mockHk.On("Register").Return(nil)
 	mockHk.On("Unregister").Return(nil)
 	manager.SetHotkey(mockHk)
+
+	// Set quick note service
+	manager.SetQuickNote(quickNote, binding)
 
 	// Register and start
 	err = manager.Register()

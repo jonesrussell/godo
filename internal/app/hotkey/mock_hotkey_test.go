@@ -32,10 +32,11 @@ func (m *mockHotkey) Register() error {
 		return fmt.Errorf("already registered")
 	}
 	args := m.Called()
-	if args.Error(0) == nil {
+	err := args.Error(0)
+	if err == nil {
 		m.registered = true
 	}
-	return args.Error(0)
+	return err
 }
 
 func (m *mockHotkey) Unregister() error {
@@ -43,10 +44,11 @@ func (m *mockHotkey) Unregister() error {
 		return fmt.Errorf("not registered")
 	}
 	args := m.Called()
-	if args.Error(0) == nil {
+	err := args.Error(0)
+	if err == nil {
 		m.registered = false
 	}
-	return args.Error(0)
+	return err
 }
 
 func (m *mockHotkey) Keydown() <-chan hotkey.Event {

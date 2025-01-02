@@ -14,15 +14,20 @@ import (
 	"golang.design/x/hotkey"
 )
 
-type mockQuickNoteService struct {
+// mockQuickNoteManager implements QuickNoteManager for testing
+type mockQuickNoteManager struct {
 	mock.Mock
 }
 
-func (m *mockQuickNoteService) Show() {
+func (m *mockQuickNoteManager) Show() {
 	m.Called()
 }
 
-func (m *mockQuickNoteService) Hide() {
+func (m *mockQuickNoteManager) Hide() {
+	m.Called()
+}
+
+func (m *mockQuickNoteManager) CenterOnScreen() {
 	m.Called()
 }
 
@@ -71,8 +76,9 @@ func TestWindowsManager_QuickNoteHotkey(t *testing.T) {
 	log := newMockTestLogger(t)
 
 	// Create mock quick note service
-	quickNote := &mockQuickNoteService{}
-	quickNote.On("Show").Return()
+	mockQuickNote := &mockQuickNoteManager{}
+	mockQuickNote.On("Show").Return()
+	mockQuickNote.On("CenterOnScreen").Return()
 
 	// Create hotkey binding
 	binding := &common.HotkeyBinding{
@@ -95,7 +101,7 @@ func TestWindowsManager_QuickNoteHotkey(t *testing.T) {
 	manager.SetHotkey(mockHk)
 
 	// Set quick note service
-	manager.SetQuickNote(quickNote, binding)
+	manager.SetQuickNote(mockQuickNote, binding)
 
 	// Register hotkey
 	err = manager.Register()
@@ -117,7 +123,7 @@ func TestWindowsManager_QuickNoteHotkey(t *testing.T) {
 
 	// Verify final state
 	assert.False(t, mockHk.IsRegistered(), "Hotkey should be unregistered")
-	quickNote.AssertExpectations(t)
+	mockQuickNote.AssertExpectations(t)
 	mockHk.AssertExpectations(t)
 }
 
@@ -126,7 +132,8 @@ func TestWindowsManager_InvalidKey(t *testing.T) {
 	log := newMockTestLogger(t)
 
 	// Create mock quick note service
-	quickNote := &mockQuickNoteService{}
+	mockQuickNote := &mockQuickNoteManager{}
+	mockQuickNote.On("CenterOnScreen").Return()
 
 	// Create hotkey binding with invalid key
 	binding := &common.HotkeyBinding{
@@ -139,7 +146,7 @@ func TestWindowsManager_InvalidKey(t *testing.T) {
 	assert.NoError(t, err, "Should create manager without error")
 
 	// Set quick note service
-	manager.SetQuickNote(quickNote, binding)
+	manager.SetQuickNote(mockQuickNote, binding)
 
 	// Register hotkey should fail
 	err = manager.Register()
@@ -155,14 +162,15 @@ func TestWindowsManager_NilBinding(t *testing.T) {
 	log := newMockTestLogger(t)
 
 	// Create mock quick note service
-	quickNote := &mockQuickNoteService{}
+	mockQuickNote := &mockQuickNoteManager{}
+	mockQuickNote.On("CenterOnScreen").Return()
 
 	// Create manager
 	manager, err := NewWindowsManager(log)
 	assert.NoError(t, err, "Should create manager without error")
 
 	// Set quick note service without binding
-	manager.SetQuickNote(quickNote, nil)
+	manager.SetQuickNote(mockQuickNote, nil)
 
 	// Register should fail due to nil binding
 	err = manager.Register()
@@ -178,7 +186,8 @@ func TestWindowsManager_UnregisterHotkey(t *testing.T) {
 	log := newMockTestLogger(t)
 
 	// Create mock quick note service
-	quickNote := &mockQuickNoteService{}
+	mockQuickNote := &mockQuickNoteManager{}
+	mockQuickNote.On("CenterOnScreen").Return()
 
 	// Create hotkey binding
 	binding := &common.HotkeyBinding{
@@ -201,7 +210,7 @@ func TestWindowsManager_UnregisterHotkey(t *testing.T) {
 	manager.SetHotkey(mockHk)
 
 	// Set quick note service
-	manager.SetQuickNote(quickNote, binding)
+	manager.SetQuickNote(mockQuickNote, binding)
 
 	// Register hotkey
 	err = manager.Register()
@@ -224,7 +233,8 @@ func TestWindowsManager_MultipleRegistrations(t *testing.T) {
 	log := newMockTestLogger(t)
 
 	// Create mock quick note service
-	quickNote := &mockQuickNoteService{}
+	mockQuickNote := &mockQuickNoteManager{}
+	mockQuickNote.On("CenterOnScreen").Return()
 
 	// Create hotkey binding
 	binding := &common.HotkeyBinding{
@@ -247,7 +257,7 @@ func TestWindowsManager_MultipleRegistrations(t *testing.T) {
 	manager.SetHotkey(mockHk)
 
 	// Set quick note service
-	manager.SetQuickNote(quickNote, binding)
+	manager.SetQuickNote(mockQuickNote, binding)
 
 	// First registration should succeed
 	err = manager.Register()
@@ -284,7 +294,7 @@ func TestWindowsManager_StartWithoutRegister(t *testing.T) {
 	log := newMockTestLogger(t)
 
 	// Create mock quick note service
-	quickNote := &mockQuickNoteService{}
+	quickNote := &mockQuickNoteManager{}
 
 	// Create hotkey binding
 	binding := &common.HotkeyBinding{
@@ -323,7 +333,7 @@ func TestWindowsManager_HotkeyTrigger(t *testing.T) {
 	log := newMockTestLogger(t)
 
 	// Create mock quick note service
-	quickNote := &mockQuickNoteService{}
+	quickNote := &mockQuickNoteManager{}
 	quickNote.On("Show").Return()
 
 	// Create hotkey binding
@@ -376,7 +386,7 @@ func TestWindowsManager_StateTransitions(t *testing.T) {
 	log := newMockTestLogger(t)
 
 	// Create mock quick note service
-	quickNote := &mockQuickNoteService{}
+	quickNote := &mockQuickNoteManager{}
 	quickNote.On("Show").Return()
 
 	// Create hotkey binding
@@ -424,7 +434,7 @@ func TestWindowsManager_SystemErrors(t *testing.T) {
 	log := newMockTestLogger(t)
 
 	// Create mock quick note service
-	quickNote := &mockQuickNoteService{}
+	quickNote := &mockQuickNoteManager{}
 
 	// Create hotkey binding
 	binding := &common.HotkeyBinding{

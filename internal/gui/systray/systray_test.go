@@ -25,6 +25,36 @@ func (m *mockDesktopApp) SetSystemTrayIcon(icon fyne.Resource) {
 	m.Called(icon)
 }
 
+type mockMainWindow struct {
+	fyne.Window
+	mock.Mock
+}
+
+func (m *mockMainWindow) Show() {
+	m.Called()
+}
+
+func (m *mockMainWindow) Hide() {
+	m.Called()
+}
+
+func (m *mockMainWindow) CenterOnScreen() {
+	m.Called()
+}
+
+func (m *mockMainWindow) SetContent(content fyne.CanvasObject) {
+	m.Called(content)
+}
+
+func (m *mockMainWindow) Resize(size fyne.Size) {
+	m.Called(size)
+}
+
+func (m *mockMainWindow) GetWindow() fyne.Window {
+	args := m.Called()
+	return args.Get(0).(fyne.Window)
+}
+
 type mockQuickNote struct {
 	mock.Mock
 }
@@ -37,18 +67,28 @@ func (m *mockQuickNote) Hide() {
 	m.Called()
 }
 
+func (m *mockQuickNote) CenterOnScreen() {
+	m.Called()
+}
+
 func TestSetupSystray_QuickNoteMenuItem(t *testing.T) {
 	// Create mocks
 	app := &mockDesktopApp{
 		App: test.NewApp(),
 	}
-	mainWindow := test.NewWindow(nil)
+	mainWindow := &mockMainWindow{
+		Window: test.NewWindow(nil),
+	}
 	quickNote := &mockQuickNote{}
 
 	// Set expectations
 	app.On("SetSystemTrayIcon", mock.Anything).Return()
 	app.On("SetSystemTrayMenu", mock.Anything).Return()
+	mainWindow.On("Show").Return()
+	mainWindow.On("GetWindow").Return(test.NewWindow(nil))
+	mainWindow.On("CenterOnScreen").Return()
 	quickNote.On("Show").Return()
+	quickNote.On("CenterOnScreen").Return()
 
 	// Setup systray
 	SetupSystray(app, mainWindow, quickNote)
@@ -80,8 +120,13 @@ func TestSetupSystray_QuickNoteMenuItem(t *testing.T) {
 func TestSetupSystray_NonDesktopApp(t *testing.T) {
 	// Test with non-desktop app
 	app := test.NewApp()
-	mainWindow := test.NewWindow(nil)
+	mainWindow := &mockMainWindow{
+		Window: test.NewWindow(nil),
+	}
 	quickNote := &mockQuickNote{}
+
+	// Set expectations
+	mainWindow.On("GetWindow").Return(test.NewWindow(nil))
 
 	// This should not panic
 	SetupSystray(app, mainWindow, quickNote)

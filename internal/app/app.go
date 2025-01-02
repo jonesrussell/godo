@@ -27,8 +27,8 @@ type App struct {
 	name       common.AppName
 	version    common.AppVersion
 	id         common.AppID
-	mainWindow gui.MainWindow
-	quickNote  gui.QuickNote
+	mainWindow gui.MainWindowManager
+	quickNote  gui.QuickNoteManager
 	hotkey     hotkey.Manager
 	logger     logger.Logger
 	store      storage.TaskStore
@@ -86,7 +86,7 @@ func (a *App) SetupUI() error {
 	a.logger.Debug("Setting up UI components")
 
 	// 1. Set up systray first as it's the most visible component
-	systray.SetupSystray(a.fyneApp, a.mainWindow.GetWindow(), a.quickNote)
+	systray.SetupSystray(a.fyneApp, a.mainWindow, a.quickNote)
 
 	// 2. Show main window if not configured to start hidden
 	if !a.config.UI.MainWindow.StartHidden {

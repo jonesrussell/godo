@@ -3,17 +3,12 @@ package hotkey
 
 import (
 	"github.com/jonesrussell/godo/internal/common"
+	"github.com/jonesrussell/godo/internal/gui"
 	"github.com/jonesrussell/godo/internal/logger"
 )
 
-// QuickNoteService defines quick note operations that can be triggered by hotkeys
-type QuickNoteService interface {
-	Show()
-	Hide()
-}
-
 // New creates a new platform-specific hotkey manager
-func New(quickNote QuickNoteService, binding *common.HotkeyBinding, log logger.Logger) (Manager, error) {
+func New(quickNote gui.QuickNoteManager, binding *common.HotkeyBinding, log logger.Logger) (Manager, error) {
 	// Create Windows-specific manager
 	manager, err := NewWindowsManager(log)
 	if err != nil {

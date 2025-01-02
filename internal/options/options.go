@@ -27,8 +27,8 @@ type CoreOptions struct {
 // GUIOptions groups GUI dependencies
 type GUIOptions struct {
 	App        fyne.App
-	MainWindow gui.MainWindow
-	QuickNote  gui.QuickNote
+	MainWindow gui.MainWindowManager
+	QuickNote  gui.QuickNoteManager
 }
 
 // HotkeyOptions groups hotkey configuration

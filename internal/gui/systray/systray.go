@@ -9,14 +9,14 @@ import (
 )
 
 // SetupSystray configures the system tray icon and menu
-func SetupSystray(app fyne.App, mainWindow fyne.Window, quickNote gui.QuickNote) {
+func SetupSystray(app fyne.App, mainWindow gui.MainWindowManager, quickNote gui.QuickNoteManager) {
 	if desk, ok := app.(desktop.App); ok {
 		desk.SetSystemTrayIcon(theme.AppIcon())
 
 		menu := fyne.NewMenu("Godo",
 			fyne.NewMenuItem("Show", func() {
 				mainWindow.Show()
-				mainWindow.RequestFocus()
+				mainWindow.GetWindow().RequestFocus()
 			}),
 			fyne.NewMenuItem("Quick Note", func() {
 				quickNote.Show()

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/jonesrussell/godo/internal/common"
+	"github.com/jonesrussell/godo/internal/gui"
 	"github.com/jonesrussell/godo/internal/logger"
 	"golang.design/x/hotkey"
 )
@@ -25,7 +26,7 @@ const (
 // WindowsManager manages hotkeys for Windows
 type WindowsManager struct {
 	log       logger.Logger
-	quickNote QuickNoteService
+	quickNote gui.QuickNoteManager
 	binding   *common.HotkeyBinding
 	hk        hotkeyInterface
 	stopChan  chan struct{}
@@ -46,7 +47,7 @@ func NewWindowsManager(log logger.Logger) (*WindowsManager, error) {
 
 // SetQuickNote sets the quick note service and hotkey binding for this manager.
 // Both the service and binding are required for the hotkey to function.
-func (m *WindowsManager) SetQuickNote(quickNote QuickNoteService, binding *common.HotkeyBinding) {
+func (m *WindowsManager) SetQuickNote(quickNote gui.QuickNoteManager, binding *common.HotkeyBinding) {
 	m.log.Info("Setting quick note service and binding",
 		"binding", fmt.Sprintf("%+v", binding),
 		"quicknote_nil", quickNote == nil)

@@ -5,6 +5,7 @@ package analyzer
 
 import (
 	"go/ast"
+	"strings"
 
 	"golang.org/x/tools/go/analysis"
 )
@@ -33,6 +34,9 @@ func run(pass *analysis.Pass) (interface{}, error) {
 			if decl, ok := n.(*ast.GenDecl); ok {
 				if decl.Tok.String() == "type" {
 					checkInterfaceSegregation(pass, decl)
+					checkInterfaceNaming(pass, decl)
+					checkInterfaceLocation(pass, decl, file)
+					checkInterfaceDocumentation(pass, decl)
 				}
 			}
 
@@ -41,6 +45,8 @@ func run(pass *analysis.Pass) (interface{}, error) {
 				if isTestFunction(fn) {
 					checkTestPatterns(pass, fn)
 				}
+				// Check error handling in functions
+				checkFunctionErrorHandling(pass, fn)
 			}
 
 			return true
@@ -69,6 +75,92 @@ func checkInterfaceSegregation(pass *analysis.Pass, decl *ast.GenDecl) {
 			}
 		}
 	}
+}
+
+func checkInterfaceNaming(pass *analysis.Pass, decl *ast.GenDecl) {
+	for _, spec := range decl.Specs {
+		if typeSpec, ok := spec.(*ast.TypeSpec); ok {
+			if _, ok := typeSpec.Type.(*ast.InterfaceType); ok {
+				name := typeSpec.Name.Name
+				if !strings.HasSuffix(name, "er") && !strings.HasSuffix(name, "Service") {
+					pass.Reportf(typeSpec.Pos(), "interface %s should follow naming convention (end with 'er' or 'Service')", name)
+				}
+			}
+		}
+	}
+}
+
+func checkInterfaceLocation(pass *analysis.Pass, decl *ast.GenDecl, file *ast.File) {
+	// Check if interface is defined in a central interfaces package
+	if strings.Contains(pass.Fset.Position(file.Pos()).String(), "internal/interfaces") {
+		pass.Reportf(decl.Pos(), "interfaces should be defined in consumer packages, not in a central interfaces package")
+	}
+}
+
+func checkInterfaceDocumentation(pass *analysis.Pass, decl *ast.GenDecl) {
+	for _, spec := range decl.Specs {
+		if typeSpec, ok := spec.(*ast.TypeSpec); ok {
+			if _, ok := typeSpec.Type.(*ast.InterfaceType); ok {
+				if decl.Doc == nil || len(decl.Doc.List) == 0 {
+					pass.Reportf(typeSpec.Pos(), "interface %s should have documentation", typeSpec.Name.Name)
+				}
+			}
+		}
+	}
+}
+
+func checkFunctionErrorHandling(pass *analysis.Pass, fn *ast.FuncDecl) {
+	ast.Inspect(fn.Body, func(n ast.Node) bool {
+		if ifStmt, ok := n.(*ast.IfStmt); ok {
+			if isErrorCheck(ifStmt.Cond) {
+				checkErrorHandlingBlock(pass, ifStmt.Body)
+			}
+		}
+		return true
+	})
+}
+
+func isErrorCheck(expr ast.Expr) bool {
+	if binExpr, ok := expr.(*ast.BinaryExpr); ok {
+		if ident, ok := binExpr.X.(*ast.Ident); ok {
+			return ident.Name == "err"
+		}
+	}
+	return false
+}
+
+func checkErrorHandlingBlock(pass *analysis.Pass, block *ast.BlockStmt) {
+	// Check if error is being logged before being returned
+	hasLogging := false
+	hasReturn := false
+
+	for _, stmt := range block.List {
+		if exprStmt, ok := stmt.(*ast.ExprStmt); ok {
+			if callExpr, ok := exprStmt.X.(*ast.CallExpr); ok {
+				if isLoggingCall(callExpr) {
+					hasLogging = true
+				}
+			}
+		}
+		if _, ok := stmt.(*ast.ReturnStmt); ok {
+			hasReturn = true
+		}
+	}
+
+	if hasReturn && !hasLogging {
+		pass.Reportf(block.Pos(), "errors should be logged before being returned")
+	}
+}
+
+func isLoggingCall(call *ast.CallExpr) bool {
+	if sel, ok := call.Fun.(*ast.SelectorExpr); ok {
+		return strings.HasPrefix(sel.Sel.Name, "Log") ||
+			strings.HasPrefix(sel.Sel.Name, "Error") ||
+			strings.HasPrefix(sel.Sel.Name, "Warn") ||
+			strings.HasPrefix(sel.Sel.Name, "Info") ||
+			strings.HasPrefix(sel.Sel.Name, "Debug")
+	}
+	return false
 }
 
 func checkTestPatterns(pass *analysis.Pass, fn *ast.FuncDecl) {

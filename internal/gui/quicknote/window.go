@@ -3,97 +3,113 @@ package quicknote
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
-	"github.com/google/uuid"
 	"github.com/jonesrussell/godo/internal/config"
-	"github.com/jonesrussell/godo/internal/gui"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
 )
 
-// Window implements the QuickNoteManager interface
+// Window represents the quick note window
 type Window struct {
-	store   storage.TaskStore
-	logger  logger.Logger
-	window  fyne.Window
-	app     fyne.App
-	config  config.WindowConfig
-	input   *widget.Entry
-	saveBtn *widget.Button
+	fyneWindow fyne.Window
+	store      storage.Store
+	logger     logger.Logger
+	config     config.WindowConfig
+	input      *widget.Entry
 }
 
-// Ensure Window implements QuickNoteManager
-var _ gui.QuickNoteManager = (*Window)(nil)
-
-// New creates a new quick note window
-func New(app fyne.App, store storage.TaskStore, logger logger.Logger, config config.WindowConfig) *Window {
+// New creates a new quick note window instance
+func New(app fyne.App, store storage.Store, logger logger.Logger, cfg config.WindowConfig) *Window {
 	w := &Window{
-		store:  store,
-		logger: logger,
-		app:    app,
-		config: config,
-		window: app.NewWindow("Quick Note"),
+		fyneWindow: app.NewWindow("Quick Note"),
+		store:      store,
+		logger:     logger,
+		config:     cfg,
 	}
 
 	w.setupUI()
 	return w
 }
 
-// setupUI initializes the window's UI components
+// setupUI initializes the window UI components
 func (w *Window) setupUI() {
 	w.input = widget.NewMultiLineEntry()
 	w.input.SetPlaceHolder("Enter your quick note...")
 
-	w.saveBtn = widget.NewButton("Save", func() {
-		if w.input.Text != "" {
-			now := time.Now()
-			task := storage.Task{
-				ID:        uuid.New().String(),
-				Content:   w.input.Text,
-				Done:      false,
-				CreatedAt: now,
-				UpdatedAt: now,
-			}
-			if err := w.store.Add(context.Background(), task); err != nil {
-				w.logger.Error("Failed to add quick note", "error", err)
-				return
-			}
-			w.input.SetText("")
-			w.Hide()
+	saveBtn := widget.NewButton("Save", func() {
+		if w.input.Text == "" {
+			return
 		}
+
+		now := time.Now().Unix()
+		task := storage.Task{
+			ID:        fmt.Sprintf("%d", now), // Simple ID generation
+			Title:     w.input.Text,
+			Completed: false,
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
+
+		if err := w.store.Add(context.Background(), task); err != nil {
+			w.logger.Error("Failed to save quick note", "error", err)
+			return
+		}
+
+		w.input.SetText("")
+		w.Hide()
 	})
 
-	content := container.NewBorder(
-		nil,       // top
-		w.saveBtn, // bottom
-		nil,       // left
-		nil,       // right
-		w.input,   // center
-	)
+	cancelBtn := widget.NewButton("Cancel", func() {
+		w.input.SetText("")
+		w.Hide()
+	})
 
-	w.window.SetContent(content)
-	w.window.Resize(fyne.NewSize(float32(w.config.Width), float32(w.config.Height)))
-	w.window.CenterOnScreen()
+	buttons := container.NewHBox(saveBtn, cancelBtn)
+	content := container.NewBorder(nil, buttons, nil, nil, w.input)
+
+	w.fyneWindow.SetContent(content)
+	w.fyneWindow.Resize(fyne.NewSize(300, 200))
+	w.fyneWindow.SetFixedSize(true)
 }
 
-// Show displays the window
+// Show shows the window
 func (w *Window) Show() {
-	w.window.Show()
-	if w.input != nil {
-		w.window.Canvas().Focus(w.input)
-	}
+	w.fyneWindow.Show()
+	w.fyneWindow.RequestFocus()
+	w.input.FocusGained()
 }
 
 // Hide hides the window
 func (w *Window) Hide() {
-	w.window.Hide()
+	w.fyneWindow.Hide()
 }
 
-// CenterOnScreen centers the window on the screen
+// Close closes the window
+func (w *Window) Close() {
+	w.fyneWindow.Close()
+}
+
+// CenterOnScreen centers the window on screen
 func (w *Window) CenterOnScreen() {
-	w.window.CenterOnScreen()
+	w.fyneWindow.CenterOnScreen()
+}
+
+// SetOnClosed sets the window close callback
+func (w *Window) SetOnClosed(callback func()) {
+	w.fyneWindow.SetOnClosed(callback)
+}
+
+// SetCloseIntercept sets the window close intercept callback
+func (w *Window) SetCloseIntercept(callback func()) {
+	w.fyneWindow.SetCloseIntercept(callback)
+}
+
+// Canvas returns the window canvas
+func (w *Window) Canvas() fyne.Canvas {
+	return w.fyneWindow.Canvas()
 }

@@ -2,6 +2,7 @@
 package testing
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -21,7 +22,8 @@ func (s *StoreSuite) Run(t *testing.T) {
 		store := s.NewStore()
 		defer store.Close()
 
-		tasks, err := store.List()
+		ctx := context.Background()
+		tasks, err := store.List(ctx)
 		assert.NoError(t, err)
 		assert.Empty(t, tasks)
 	})
@@ -30,6 +32,7 @@ func (s *StoreSuite) Run(t *testing.T) {
 		store := s.NewStore()
 		defer store.Close()
 
+		ctx := context.Background()
 		task := storage.Task{
 			ID:        "test-1",
 			Content:   "Test Task",
@@ -38,10 +41,10 @@ func (s *StoreSuite) Run(t *testing.T) {
 			UpdatedAt: time.Now(),
 		}
 
-		err := store.Add(task)
+		err := store.Add(ctx, task)
 		require.NoError(t, err)
 
-		tasks, err := store.List()
+		tasks, err := store.List(ctx)
 		assert.NoError(t, err)
 		assert.Len(t, tasks, 1)
 		assert.Equal(t, task.ID, tasks[0].ID)
@@ -53,6 +56,7 @@ func (s *StoreSuite) Run(t *testing.T) {
 		store := s.NewStore()
 		defer store.Close()
 
+		ctx := context.Background()
 		task := storage.Task{
 			ID:        "test-1",
 			Content:   "Original Content",
@@ -61,15 +65,15 @@ func (s *StoreSuite) Run(t *testing.T) {
 			UpdatedAt: time.Now(),
 		}
 
-		err := store.Add(task)
+		err := store.Add(ctx, task)
 		require.NoError(t, err)
 
 		task.Content = "Updated Content"
 		task.Done = true
-		err = store.Update(task)
+		err = store.Update(ctx, task)
 		assert.NoError(t, err)
 
-		updated, err := store.GetByID(task.ID)
+		updated, err := store.Get(ctx, task.ID)
 		assert.NoError(t, err)
 		assert.Equal(t, "Updated Content", updated.Content)
 		assert.True(t, updated.Done)
@@ -79,6 +83,7 @@ func (s *StoreSuite) Run(t *testing.T) {
 		store := s.NewStore()
 		defer store.Close()
 
+		ctx := context.Background()
 		task := storage.Task{
 			ID:        "test-1",
 			Content:   "Test Task",
@@ -86,21 +91,22 @@ func (s *StoreSuite) Run(t *testing.T) {
 			UpdatedAt: time.Now(),
 		}
 
-		err := store.Add(task)
+		err := store.Add(ctx, task)
 		require.NoError(t, err)
 
-		err = store.Delete(task.ID)
+		err = store.Delete(ctx, task.ID)
 		assert.NoError(t, err)
 
-		tasks, err := store.List()
+		tasks, err := store.List(ctx)
 		assert.NoError(t, err)
 		assert.Empty(t, tasks)
 	})
 
-	t.Run("GetByID", func(t *testing.T) {
+	t.Run("Get", func(t *testing.T) {
 		store := s.NewStore()
 		defer store.Close()
 
+		ctx := context.Background()
 		task := storage.Task{
 			ID:        "test-1",
 			Content:   "Test Task",
@@ -108,15 +114,15 @@ func (s *StoreSuite) Run(t *testing.T) {
 			UpdatedAt: time.Now(),
 		}
 
-		err := store.Add(task)
+		err := store.Add(ctx, task)
 		require.NoError(t, err)
 
-		retrieved, err := store.GetByID(task.ID)
+		retrieved, err := store.Get(ctx, task.ID)
 		assert.NoError(t, err)
 		assert.Equal(t, task.ID, retrieved.ID)
 		assert.Equal(t, task.Content, retrieved.Content)
 
-		_, err = store.GetByID("nonexistent")
+		_, err = store.Get(ctx, "nonexistent")
 		assert.Error(t, err)
 	})
 }

@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func setupTestStore(t *testing.T) (store storage.TaskTxStore, cleanup func()) {
+func setupTestStore(t *testing.T) (store storage.Store, cleanup func()) {
 	t.Helper()
 
 	// Create a temporary database file
@@ -69,13 +69,13 @@ func TestStore(t *testing.T) {
 	})
 
 	t.Run("get task", func(t *testing.T) {
-		task, err := store.GetByID(ctx, "test-1")
+		task, err := store.Get(ctx, "test-1")
 		require.NoError(t, err)
 		assert.Equal(t, "test-1", task.ID)
 		assert.Equal(t, "Test Task", task.Content)
 
 		// Try to get nonexistent task
-		_, err = store.GetByID(ctx, "nonexistent")
+		_, err = store.Get(ctx, "nonexistent")
 		assert.ErrorIs(t, err, errors.ErrTaskNotFound)
 	})
 
@@ -92,7 +92,7 @@ func TestStore(t *testing.T) {
 		require.NoError(t, err)
 
 		// Verify task was updated
-		updated, err := store.GetByID(ctx, "test-1")
+		updated, err := store.Get(ctx, "test-1")
 		require.NoError(t, err)
 		assert.Equal(t, task.Content, updated.Content)
 		assert.Equal(t, task.Done, updated.Done)

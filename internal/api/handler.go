@@ -2,91 +2,103 @@
 package api
 
 import (
+	"encoding/json"
 	"net/http"
 	"time"
 
 	"github.com/jonesrussell/godo/internal/storage"
 )
 
-// TaskHandler defines the interface for task-related HTTP handlers
-type TaskHandler interface {
-	// List returns all tasks
-	List(w http.ResponseWriter, r *http.Request)
-	// Create creates a new task
-	Create(w http.ResponseWriter, r *http.Request)
-	// Get returns a specific task
-	Get(w http.ResponseWriter, r *http.Request)
-	// Update replaces an existing task
-	Update(w http.ResponseWriter, r *http.Request)
-	// Patch partially updates an existing task
-	Patch(w http.ResponseWriter, r *http.Request)
-	// Delete removes a task
-	Delete(w http.ResponseWriter, r *http.Request)
+// TaskHandler handles HTTP requests for tasks
+type TaskHandler struct {
+	store storage.Store
 }
 
-// CreateTaskRequest represents a request to create a new task
-type CreateTaskRequest struct {
-	Content string `json:"content" validate:"required,max=1000"`
-}
-
-// UpdateTaskRequest represents a request to update an existing task
-type UpdateTaskRequest struct {
-	Content string `json:"content" validate:"required,max=1000"`
-	Done    bool   `json:"done"`
-}
-
-// PatchTaskRequest represents a request to partially update a task
-type PatchTaskRequest struct {
-	Content *string `json:"content,omitempty" validate:"omitempty,max=1000"`
-	Done    *bool   `json:"done,omitempty"`
-}
-
-// TaskResponse represents a task in API responses
-type TaskResponse struct {
-	ID        string    `json:"id"`
-	Content   string    `json:"content"`
-	Done      bool      `json:"done"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-}
-
-// NewTaskResponse creates a TaskResponse from a storage.Task
-func NewTaskResponse(task storage.Task) TaskResponse {
-	return TaskResponse{
-		ID:        task.ID,
-		Content:   task.Content,
-		Done:      task.Done,
-		CreatedAt: task.CreatedAt,
-		UpdatedAt: task.UpdatedAt,
+// NewTaskHandler creates a new task handler
+func NewTaskHandler(store storage.Store) *TaskHandler {
+	return &TaskHandler{
+		store: store,
 	}
 }
 
-// TaskListResponse represents a list of tasks in API responses
-type TaskListResponse struct {
-	Tasks []TaskResponse `json:"tasks"`
-}
-
-// NewTaskListResponse creates a TaskListResponse from a slice of storage.Tasks
-func NewTaskListResponse(tasks []storage.Task) TaskListResponse {
-	response := TaskListResponse{
-		Tasks: make([]TaskResponse, len(tasks)),
+// CreateTask handles task creation requests
+func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
+	var task storage.Task
+	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
-	for i, task := range tasks {
-		response.Tasks[i] = NewTaskResponse(task)
+
+	task.CreatedAt = time.Now().Unix()
+	task.UpdatedAt = time.Now().Unix()
+
+	if err := h.store.Add(r.Context(), task); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
-	return response
+
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(task)
 }
 
-// ErrorResponse represents an error in API responses
-type ErrorResponse struct {
-	Code    string `json:"code"`
-	Message string `json:"message"`
-	Details any    `json:"details,omitempty"`
+// GetTask handles task retrieval requests
+func (h *TaskHandler) GetTask(w http.ResponseWriter, r *http.Request) {
+	id := r.URL.Query().Get("id")
+	if id == "" {
+		http.Error(w, "missing task id", http.StatusBadRequest)
+		return
+	}
+
+	task, err := h.store.Get(r.Context(), id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
+	json.NewEncoder(w).Encode(task)
 }
 
-// ValidationErrorResponse represents a validation error in API responses
-type ValidationErrorResponse struct {
-	Code    string            `json:"code"`
-	Message string            `json:"message"`
-	Fields  map[string]string `json:"fields"`
+// UpdateTask handles task update requests
+func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
+	var task storage.Task
+	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	task.UpdatedAt = time.Now().Unix()
+
+	if err := h.store.Update(r.Context(), task); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(task)
+}
+
+// DeleteTask handles task deletion requests
+func (h *TaskHandler) DeleteTask(w http.ResponseWriter, r *http.Request) {
+	id := r.URL.Query().Get("id")
+	if id == "" {
+		http.Error(w, "missing task id", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.store.Delete(r.Context(), id); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// ListTasks handles task listing requests
+func (h *TaskHandler) ListTasks(w http.ResponseWriter, r *http.Request) {
+	tasks, err := h.store.List(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(tasks)
 }

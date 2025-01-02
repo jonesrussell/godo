@@ -11,6 +11,7 @@ import (
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"golang.design/x/hotkey"
 )
 
@@ -88,7 +89,8 @@ func TestWindowsManager_QuickNoteHotkey(t *testing.T) {
 
 	// Create manager
 	manager, err := NewWindowsManager(log)
-	assert.NoError(t, err, "Should create manager without error")
+	require.NoError(t, err, "Should create manager without error")
+	manager.SetQuickNote(mockQuickNote, binding)
 
 	// Create mock hotkey
 	mockHk := &mockHotkey{
@@ -99,9 +101,6 @@ func TestWindowsManager_QuickNoteHotkey(t *testing.T) {
 	mockHk.On("Register").Return(nil)
 	mockHk.On("Unregister").Return(nil)
 	manager.SetHotkey(mockHk)
-
-	// Set quick note service
-	manager.SetQuickNote(mockQuickNote, binding)
 
 	// Register hotkey
 	err = manager.Register()
@@ -143,9 +142,7 @@ func TestWindowsManager_InvalidKey(t *testing.T) {
 
 	// Create manager
 	manager, err := NewWindowsManager(log)
-	assert.NoError(t, err, "Should create manager without error")
-
-	// Set quick note service
+	require.NoError(t, err, "Should create manager without error")
 	manager.SetQuickNote(mockQuickNote, binding)
 
 	// Register hotkey should fail
@@ -167,9 +164,7 @@ func TestWindowsManager_NilBinding(t *testing.T) {
 
 	// Create manager
 	manager, err := NewWindowsManager(log)
-	assert.NoError(t, err, "Should create manager without error")
-
-	// Set quick note service without binding
+	require.NoError(t, err, "Should create manager without error")
 	manager.SetQuickNote(mockQuickNote, nil)
 
 	// Register should fail due to nil binding
@@ -197,7 +192,8 @@ func TestWindowsManager_UnregisterHotkey(t *testing.T) {
 
 	// Create manager
 	manager, err := NewWindowsManager(log)
-	assert.NoError(t, err, "Should create manager without error")
+	require.NoError(t, err, "Should create manager without error")
+	manager.SetQuickNote(mockQuickNote, binding)
 
 	// Create mock hotkey
 	mockHk := &mockHotkey{
@@ -208,9 +204,6 @@ func TestWindowsManager_UnregisterHotkey(t *testing.T) {
 	mockHk.On("Register").Return(nil)
 	mockHk.On("Unregister").Return(nil)
 	manager.SetHotkey(mockHk)
-
-	// Set quick note service
-	manager.SetQuickNote(mockQuickNote, binding)
 
 	// Register hotkey
 	err = manager.Register()
@@ -244,7 +237,8 @@ func TestWindowsManager_MultipleRegistrations(t *testing.T) {
 
 	// Create manager
 	manager, err := NewWindowsManager(log)
-	assert.NoError(t, err, "Should create manager without error")
+	require.NoError(t, err, "Should create manager without error")
+	manager.SetQuickNote(mockQuickNote, binding)
 
 	// Create mock hotkey
 	mockHk := &mockHotkey{
@@ -255,9 +249,6 @@ func TestWindowsManager_MultipleRegistrations(t *testing.T) {
 	mockHk.On("Register").Return(nil)
 	mockHk.On("Unregister").Return(nil)
 	manager.SetHotkey(mockHk)
-
-	// Set quick note service
-	manager.SetQuickNote(mockQuickNote, binding)
 
 	// First registration should succeed
 	err = manager.Register()
@@ -282,7 +273,7 @@ func TestWindowsManager_StopWithoutStart(t *testing.T) {
 
 	// Create manager
 	manager, err := NewWindowsManager(log)
-	assert.NoError(t, err, "Should create manager without error")
+	require.NoError(t, err, "Should create manager without error")
 
 	// Stop without starting should not error (safe to call)
 	err = manager.Stop()
@@ -304,9 +295,7 @@ func TestWindowsManager_StartWithoutRegister(t *testing.T) {
 
 	// Create manager
 	manager, err := NewWindowsManager(log)
-	assert.NoError(t, err, "Should create manager without error")
-
-	// Set quick note service
+	require.NoError(t, err, "Should create manager without error")
 	manager.SetQuickNote(quickNote, binding)
 
 	// Start without registering should fail
@@ -321,7 +310,7 @@ func TestWindowsManager_UnregisterWithoutRegister(t *testing.T) {
 
 	// Create manager
 	manager, err := NewWindowsManager(log)
-	assert.NoError(t, err, "Should create manager without error")
+	require.NoError(t, err, "Should create manager without error")
 
 	// Unregister without registering should not error (no-op)
 	err = manager.Unregister()
@@ -344,7 +333,8 @@ func TestWindowsManager_HotkeyTrigger(t *testing.T) {
 
 	// Create manager
 	manager, err := NewWindowsManager(log)
-	assert.NoError(t, err, "Should create manager without error")
+	require.NoError(t, err, "Should create manager without error")
+	manager.SetQuickNote(quickNote, binding)
 
 	// Create mock hotkey
 	mockHk := &mockHotkey{
@@ -355,9 +345,6 @@ func TestWindowsManager_HotkeyTrigger(t *testing.T) {
 	mockHk.On("Register").Return(nil)
 	mockHk.On("Unregister").Return(nil)
 	manager.SetHotkey(mockHk)
-
-	// Set quick note service
-	manager.SetQuickNote(quickNote, binding)
 
 	// Register and start
 	err = manager.Register()
@@ -397,9 +384,7 @@ func TestWindowsManager_StateTransitions(t *testing.T) {
 
 	// Create manager
 	manager, err := NewWindowsManager(log)
-	assert.NoError(t, err, "Should create manager without error")
-
-	// Set quick note service
+	require.NoError(t, err, "Should create manager without error")
 	manager.SetQuickNote(quickNote, binding)
 
 	// Create mock hotkey
@@ -444,9 +429,7 @@ func TestWindowsManager_SystemErrors(t *testing.T) {
 
 	// Create manager
 	manager, err := NewWindowsManager(log)
-	assert.NoError(t, err, "Should create manager without error")
-
-	// Set quick note service
+	require.NoError(t, err, "Should create manager without error")
 	manager.SetQuickNote(quickNote, binding)
 
 	// Create mock hotkey that returns errors

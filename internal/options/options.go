@@ -10,17 +10,23 @@ import (
 	"github.com/jonesrussell/godo/internal/storage"
 )
 
-// LoggerOptions groups logger configuration options
+// LoggerOptions defines options for logger configuration
 type LoggerOptions struct {
 	Level       common.LogLevel
 	Output      common.LogOutputPaths
 	ErrorOutput common.ErrorOutputPaths
 }
 
+// HotkeyOptions defines options for hotkey configuration
+type HotkeyOptions struct {
+	Modifiers common.ModifierKeys
+	Key       common.KeyCode
+}
+
 // CoreOptions groups core application dependencies
 type CoreOptions struct {
 	Logger logger.Logger
-	Store  storage.TaskStore
+	Store  storage.Store
 	Config *config.Config
 }
 
@@ -31,23 +37,10 @@ type GUIOptions struct {
 	QuickNote  gui.QuickNoteManager
 }
 
-// HotkeyOptions groups hotkey configuration
-type HotkeyOptions struct {
-	Modifiers common.ModifierKeys
-	Key       common.KeyCode
-}
-
-// HTTPOptions groups HTTP server configuration
-type HTTPOptions struct {
-	Config *common.HTTPConfig
-}
-
 // AppOptions groups all application dependencies
 type AppOptions struct {
 	Core    *CoreOptions
 	GUI     *GUIOptions
-	HTTP    *HTTPOptions
-	Hotkey  *HotkeyOptions
 	Name    common.AppName
 	Version common.AppVersion
 	ID      common.AppID

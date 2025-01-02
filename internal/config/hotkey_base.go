@@ -19,14 +19,16 @@ type Event struct{}
 
 // HotkeyHandler defines the interface for platform-specific hotkey implementations
 type HotkeyHandler interface {
-	Register() error
-	Unregister() error
-	Keydown() <-chan Event
+	Register(binding *common.HotkeyBinding) error
+	Unregister(binding *common.HotkeyBinding) error
+	Start() error
+	Stop() error
 }
 
-// HotkeyFactory creates platform-specific hotkey handlers
-type HotkeyFactory interface {
-	NewHotkey([]Modifier, Key) HotkeyHandler
+// HotkeyFactoryService defines the interface for creating hotkey configurations
+type HotkeyFactoryService interface {
+	CreateHotkey(key string, modifiers []string) (*common.HotkeyBinding, error)
+	CreateHotkeyFromString(combo string) (*common.HotkeyBinding, error)
 }
 
 // HotkeyConfig holds hotkey-related configuration

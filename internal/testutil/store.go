@@ -1,6 +1,7 @@
 package testutil
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"time"
@@ -13,6 +14,7 @@ type MockStore struct {
 	mu     sync.RWMutex
 	tasks  map[string]storage.Task
 	closed bool
+	Error  error
 }
 
 // NewMockStore creates a new MockStore instance
@@ -143,4 +145,16 @@ func (m *MockStore) Reset() {
 
 	m.tasks = make(map[string]storage.Task)
 	m.closed = false
+}
+
+// Get implements storage.Store.Get
+func (m *MockStore) Get(ctx context.Context, id string) (storage.Task, error) {
+	if m.Error != nil {
+		return storage.Task{}, m.Error
+	}
+	task, exists := m.tasks[id]
+	if !exists {
+		return storage.Task{}, storage.ErrTaskNotFound
+	}
+	return task, nil
 }

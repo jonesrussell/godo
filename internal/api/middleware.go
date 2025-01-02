@@ -4,12 +4,26 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
 )
+
+// ErrorResponse represents a standard error response format for the API
+type ErrorResponse struct {
+	Code    string `json:"code"`    // Machine-readable error code
+	Message string `json:"message"` // Human-readable error message
+}
+
+// ValidationErrorResponse represents a validation error response format for the API
+type ValidationErrorResponse struct {
+	Code    string            `json:"code"`    // Machine-readable error code
+	Message string            `json:"message"` // Human-readable error message
+	Fields  map[string]string `json:"fields"`  // Map of field names to validation error messages
+}
 
 // Middleware represents a function that wraps an http.HandlerFunc
 type Middleware func(http.HandlerFunc) http.HandlerFunc
@@ -72,13 +86,19 @@ func WithLogging(log logger.Logger) Middleware {
 	}
 }
 
-// WithErrorHandling adds error handling to a handler
+// WithErrorHandling adds panic recovery and error handling to a handler
 func WithErrorHandling(log logger.Logger) Middleware {
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			defer func() {
 				if err := recover(); err != nil {
-					log.Error("panic recovered", "error", err)
+					log.Error("panic recovered",
+						"error", err,
+						"method", r.Method,
+						"path", r.URL.Path,
+						"remote_addr", r.RemoteAddr,
+						"user_agent", r.UserAgent(),
+					)
 
 					var status int
 					var code string
@@ -90,15 +110,23 @@ func WithErrorHandling(log logger.Logger) Middleware {
 							status = http.StatusNotFound
 							code = "task_not_found"
 							msg = "Task not found"
+							log.Info("task not found error", "error", e)
 						} else {
 							status = http.StatusInternalServerError
 							code = "internal_error"
 							msg = "Internal server error"
+							log.Error("internal server error",
+								"error", e,
+							)
 						}
 					default:
 						status = http.StatusInternalServerError
 						code = "internal_error"
 						msg = "Internal server error"
+						log.Error("unknown panic value",
+							"type", fmt.Sprintf("%T", err),
+							"value", fmt.Sprintf("%+v", err),
+						)
 					}
 
 					writeError(w, status, code, msg)

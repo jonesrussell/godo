@@ -158,6 +158,112 @@ code_style:
   - implement_caching: "Cache expensive operations"
   - profile_performance: "Profile and optimize critical paths"
 
+  # API Server Rules
+  - api_server_implementation:
+    - use_handler_pattern: "Use separate handler types for route handling"
+    - validate_request_bodies: "Validate all incoming request bodies"
+    - use_context_properly: "Pass context through all API calls"
+    - handle_timeouts: "Set appropriate timeouts for all operations"
+    - proper_error_responses: "Return consistent error response formats"
+    - proper_http_methods: "Use appropriate HTTP methods for operations"
+    - proper_status_codes: "Use correct HTTP status codes"
+    - proper_headers: "Set appropriate response headers"
+    - validate_url_params: "Validate all URL parameters"
+    - handle_content_type: "Set and validate Content-Type headers"
+    - secure_headers: "Set security-related headers"
+    - handle_cors: "Properly configure CORS if needed"
+
+  # Mock Implementation Rules
+  - mock_implementations:
+    - implement_all_interfaces: "Mock types must implement all interface methods"
+    - thread_safe: "Mock implementations must be thread-safe"
+    - deterministic_behavior: "Mock behavior should be deterministic"
+    - error_simulation: "Support error simulation for testing"
+    - state_tracking: "Track internal state for verification"
+    - cleanup_resources: "Clean up resources in Close methods"
+
+  # Time Handling Rules
+  - time_handling:
+    - use_unix_timestamps: "Use Unix timestamps for storage"
+    - utc_timezone: "Use UTC for all time operations"
+    - time_comparison: "Use appropriate time comparison methods"
+    - time_parsing: "Handle time parsing errors"
+    - time_formatting: "Use consistent time formats"
+
+  # HTTP Server Rules
+  - http_server:
+    - graceful_shutdown: "Implement graceful shutdown"
+    - proper_timeouts: "Configure all timeout settings"
+    - handle_panic_recovery: "Implement panic recovery middleware"
+    - request_id_tracking: "Track request IDs for logging"
+    - proper_logging: "Log requests and responses appropriately"
+    - handle_server_errors: "Handle and log server errors properly"
+    - validate_server_config: "Validate server configuration"
+    - handle_tls: "Configure TLS properly if used"
+
+  # Testing Rules
+  - api_testing:
+    - use_httptest: "Use httptest for HTTP testing"
+    - mock_dependencies: "Mock external dependencies"
+    - test_error_cases: "Test error scenarios"
+    - test_edge_cases: "Test edge cases and boundaries"
+    - test_concurrent_access: "Test concurrent operations"
+    - cleanup_test_resources: "Clean up resources after tests"
+    - use_test_helpers: "Create reusable test helpers"
+    - test_timeouts: "Test timeout scenarios"
+    - test_cancellation: "Test context cancellation"
+    - integration_test_tags: "Use build tags for integration tests"
+
+  # Request/Response Rules
+  - request_response:
+    - validate_request_schema: "Validate request against schema"
+    - consistent_response_format: "Use consistent response format"
+    - proper_error_messages: "Return user-friendly error messages"
+    - handle_null_values: "Handle null/missing values properly"
+    - sanitize_input: "Sanitize user input"
+    - validate_content_length: "Validate request content length"
+    - handle_large_payloads: "Handle large payloads properly"
+
+  # Storage Interface Rules
+  - storage_interface:
+    - transaction_support: "Support transactions where needed"
+    - proper_error_wrapping: "Wrap storage errors with context"
+    - connection_management: "Manage connections properly"
+    - handle_deadlocks: "Handle potential deadlocks"
+    - proper_locking: "Use appropriate locking mechanisms"
+    - handle_concurrent_access: "Handle concurrent access properly"
+    - validate_data: "Validate data before storage"
+    - handle_duplicates: "Handle duplicate entries properly"
+
+  # Middleware Rules
+  - middleware:
+    - proper_chaining: "Support middleware chaining"
+    - preserve_context: "Preserve request context"
+    - handle_errors: "Handle errors appropriately"
+    - logging_middleware: "Implement request logging"
+    - panic_recovery: "Implement panic recovery"
+    - authentication: "Handle authentication properly"
+    - request_validation: "Validate incoming requests"
+    - response_headers: "Set appropriate response headers"
+
+  # Configuration Rules
+  - configuration:
+    - validate_config: "Validate configuration values"
+    - provide_defaults: "Provide sensible defaults"
+    - environment_override: "Support environment overrides"
+    - secure_sensitive_data: "Protect sensitive configuration"
+    - type_safety: "Use strong typing for configuration"
+    - document_options: "Document all configuration options"
+
+  # Logging Rules
+  - logging:
+    - structured_logging: "Use structured logging format"
+    - appropriate_levels: "Use appropriate log levels"
+    - context_inclusion: "Include relevant context in logs"
+    - sensitive_data: "Avoid logging sensitive data"
+    - correlation_ids: "Include correlation IDs"
+    - performance_impact: "Consider logging performance impact"
+
 snippets:
 - fyne_keyboard_shortcuts:
     description: "Add keyboard shortcuts using Fyne."

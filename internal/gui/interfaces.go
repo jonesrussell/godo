@@ -20,8 +20,8 @@ type SizeManager interface {
 	Resize(size fyne.Size)
 }
 
-// WindowAccessor defines window access capabilities
-type WindowAccessor interface {
+// WindowAccesser defines window access capabilities
+type WindowAccesser interface {
 	GetWindow() fyne.Window
 }
 
@@ -35,7 +35,7 @@ type MainWindowManager interface {
 	WindowManager
 	ContentManager
 	SizeManager
-	WindowAccessor
+	WindowAccesser
 }
 
 // MainWindow is an alias for MainWindowManager for backward compatibility

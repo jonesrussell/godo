@@ -1,19 +1,13 @@
 package app
 
-import "fyne.io/fyne/v2"
-
-// UI defines the user interface operations
-type UI interface {
-	Show()
-	Hide()
-	SetContent(content fyne.CanvasObject)
-	Resize(size fyne.Size)
-	CenterOnScreen()
+// UIManager defines the user interface management capabilities
+type UIManager interface {
+	SetupUI() error
 }
 
-// Application defines the core application behavior
-type Application interface {
-	SetupUI() error
+// ApplicationService defines the core application functionality
+type ApplicationService interface {
+	UIManager
 	Run()
 	Cleanup()
 }

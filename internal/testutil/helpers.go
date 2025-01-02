@@ -89,14 +89,14 @@ func WaitForWindowHidden(t *testing.T, state *WindowState, timeout time.Duration
 
 // AssertTaskExists asserts that a task exists in the store
 func AssertTaskExists(t *testing.T, store *storage.MockStore, id string) {
-	task, err := store.GetByID(context.Background(), id)
+	task, err := store.Get(context.Background(), id)
 	assert.NoError(t, err)
 	assert.Equal(t, id, task.ID)
 }
 
 // AssertTaskNotExists asserts that a task does not exist in the store
 func AssertTaskNotExists(t *testing.T, store *storage.MockStore, id string) {
-	_, err := store.GetByID(context.Background(), id)
+	_, err := store.Get(context.Background(), id)
 	assert.Error(t, err)
 }
 

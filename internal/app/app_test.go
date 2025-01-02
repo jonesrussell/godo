@@ -4,6 +4,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"fyne.io/fyne/v2/test"
@@ -14,6 +15,7 @@ import (
 	"github.com/jonesrussell/godo/internal/options"
 	"github.com/jonesrussell/godo/internal/storage"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type mockStore struct {
@@ -21,6 +23,12 @@ type mockStore struct {
 	tasks []storage.Task
 }
 
+// BeginTx implements storage.Store interface
+func (m *mockStore) BeginTx(_ context.Context) (storage.TaskTx, error) {
+	return nil, fmt.Errorf("transactions not supported in mock")
+}
+
+// List implements storage.TaskStore interface
 func (m *mockStore) List(_ context.Context) ([]storage.Task, error) {
 	return m.tasks, nil
 }
@@ -47,28 +55,34 @@ func TestApp_SetupUI(t *testing.T) {
 		},
 	}
 
-	// Create app options
-	appOpts := &options.AppOptions{
-		Name:    "Godo",
-		Version: "1.0.0",
-		ID:      "com.jonesrussell.godo",
-	}
-
 	// Create main window
 	mainWin := mainwindow.New(testApp, mockStore, mockLogger, cfg.UI.MainWindow)
 
-	// Create app with all required dependencies
-	app := &App{
-		name:       appOpts.Name,
-		version:    appOpts.Version,
-		id:         appOpts.ID,
-		fyneApp:    testApp,
-		logger:     mockLogger,
-		store:      mockStore,
-		hotkey:     mockHotkey,
-		config:     cfg,
-		mainWindow: mainWin,
+	// Create app options
+	appOpts := &options.AppOptions{
+		Core: &options.CoreOptions{
+			Logger: mockLogger,
+			Store:  mockStore,
+			Config: cfg,
+		},
+		GUI: &options.GUIOptions{
+			App:        testApp,
+			MainWindow: mainWin,
+		},
 	}
+
+	// Create app params
+	params := &Params{
+		Options:   appOpts,
+		Hotkey:    mockHotkey,
+		Version:   "1.0.0",
+		Commit:    "test",
+		BuildTime: "now",
+	}
+
+	// Create app with all required dependencies
+	app, err := New(params)
+	require.NoError(t, err)
 
 	// Test SetupUI
 	app.SetupUI()
@@ -100,28 +114,34 @@ func TestApp_Run(t *testing.T) {
 		},
 	}
 
-	// Create app options
-	appOpts := &options.AppOptions{
-		Name:    "Godo",
-		Version: "1.0.0",
-		ID:      "com.jonesrussell.godo",
-	}
-
 	// Create main window
 	mainWin := mainwindow.New(testApp, mockStore, mockLogger, cfg.UI.MainWindow)
 
-	// Create app with all required dependencies
-	app := &App{
-		name:       appOpts.Name,
-		version:    appOpts.Version,
-		id:         appOpts.ID,
-		fyneApp:    testApp,
-		logger:     mockLogger,
-		store:      mockStore,
-		hotkey:     mockHotkey,
-		config:     cfg,
-		mainWindow: mainWin,
+	// Create app options
+	appOpts := &options.AppOptions{
+		Core: &options.CoreOptions{
+			Logger: mockLogger,
+			Store:  mockStore,
+			Config: cfg,
+		},
+		GUI: &options.GUIOptions{
+			App:        testApp,
+			MainWindow: mainWin,
+		},
 	}
+
+	// Create app params
+	params := &Params{
+		Options:   appOpts,
+		Hotkey:    mockHotkey,
+		Version:   "1.0.0",
+		Commit:    "test",
+		BuildTime: "now",
+	}
+
+	// Create app with all required dependencies
+	app, err := New(params)
+	require.NoError(t, err)
 
 	// Run app in a goroutine since it blocks
 	go app.Run()
@@ -155,28 +175,34 @@ func TestApp_Cleanup(t *testing.T) {
 		},
 	}
 
-	// Create app options
-	appOpts := &options.AppOptions{
-		Name:    "Godo",
-		Version: "1.0.0",
-		ID:      "com.jonesrussell.godo",
-	}
-
 	// Create main window
 	mainWin := mainwindow.New(testApp, mockStore, mockLogger, cfg.UI.MainWindow)
 
-	// Create app with all required dependencies
-	app := &App{
-		name:       appOpts.Name,
-		version:    appOpts.Version,
-		id:         appOpts.ID,
-		fyneApp:    testApp,
-		logger:     mockLogger,
-		store:      mockStore,
-		hotkey:     mockHotkey,
-		config:     cfg,
-		mainWindow: mainWin,
+	// Create app options
+	appOpts := &options.AppOptions{
+		Core: &options.CoreOptions{
+			Logger: mockLogger,
+			Store:  mockStore,
+			Config: cfg,
+		},
+		GUI: &options.GUIOptions{
+			App:        testApp,
+			MainWindow: mainWin,
+		},
 	}
+
+	// Create app params
+	params := &Params{
+		Options:   appOpts,
+		Hotkey:    mockHotkey,
+		Version:   "1.0.0",
+		Commit:    "test",
+		BuildTime: "now",
+	}
+
+	// Create app with all required dependencies
+	app, err := New(params)
+	require.NoError(t, err)
 
 	// Test cleanup
 	app.Cleanup()
@@ -192,6 +218,11 @@ func TestApp_Cleanup(t *testing.T) {
 type mockStoreWithCleanup struct {
 	mockStore
 	cleanupCalled bool
+}
+
+// BeginTx implements storage.Store interface
+func (m *mockStoreWithCleanup) BeginTx(_ context.Context) (storage.TaskTx, error) {
+	return nil, fmt.Errorf("transactions not supported in mock")
 }
 
 func (m *mockStoreWithCleanup) Close() error {

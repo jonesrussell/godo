@@ -67,7 +67,7 @@ func TestMemoryStore(t *testing.T) {
 				require.NoError(t, err)
 			},
 			validate: func(t *testing.T, s *Store) {
-				task, err := s.GetByID(context.Background(), "test-1")
+				task, err := s.Get(context.Background(), "test-1")
 				assert.NoError(t, err)
 				assert.Equal(t, "Updated Content", task.Content)
 				assert.True(t, task.Done)
@@ -127,7 +127,7 @@ func TestMemoryStoreEdgeCases(t *testing.T) {
 		{
 			name: "get non-existent task",
 			op: func(s *Store) error {
-				_, err := s.GetByID(context.Background(), "nonexistent")
+				_, err := s.Get(context.Background(), "nonexistent")
 				return err
 			},
 			wantErr: storage.ErrTaskNotFound,

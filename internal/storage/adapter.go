@@ -1,49 +1,46 @@
+// Package storage provides interfaces and implementations for task persistence
 package storage
 
 import (
 	"context"
 )
 
-// StoreAdapter adapts the new TaskStore interface to the old Store interface
-type StoreAdapter struct {
+// LegacyStoreAdapter adapts the new TaskStore interface to the old Store interface
+type LegacyStoreAdapter struct {
 	store TaskStore
 }
 
-// NewStoreAdapter creates a new adapter
-func NewStoreAdapter(store TaskStore) *StoreAdapter {
-	return &StoreAdapter{store: store}
+// NewLegacyStoreAdapter creates a new adapter
+func NewLegacyStoreAdapter(store TaskStore) *LegacyStoreAdapter {
+	return &LegacyStoreAdapter{store: store}
 }
 
 // List returns all tasks
-func (a *StoreAdapter) List() ([]Task, error) {
+func (a *LegacyStoreAdapter) List() ([]Task, error) {
 	return a.store.List(context.Background())
 }
 
 // Add stores a new task
-func (a *StoreAdapter) Add(task Task) error {
+func (a *LegacyStoreAdapter) Add(task Task) error {
 	return a.store.Add(context.Background(), task)
 }
 
 // Update modifies an existing task
-func (a *StoreAdapter) Update(task Task) error {
+func (a *LegacyStoreAdapter) Update(task Task) error {
 	return a.store.Update(context.Background(), task)
 }
 
 // Delete removes a task by ID
-func (a *StoreAdapter) Delete(id string) error {
+func (a *LegacyStoreAdapter) Delete(id string) error {
 	return a.store.Delete(context.Background(), id)
 }
 
-// GetByID retrieves a task by its ID
-func (a *StoreAdapter) GetByID(id string) (*Task, error) {
-	task, err := a.store.GetByID(context.Background(), id)
-	if err != nil {
-		return nil, err
-	}
-	return &task, nil
+// Get retrieves a task by its ID
+func (a *LegacyStoreAdapter) Get(id string) (Task, error) {
+	return a.store.Get(context.Background(), id)
 }
 
 // Close releases any resources held by the store
-func (a *StoreAdapter) Close() error {
+func (a *LegacyStoreAdapter) Close() error {
 	return a.store.Close()
 }

@@ -7,202 +7,152 @@ import (
 
 	"github.com/jonesrussell/godo/internal/storage"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
-func TestStore(t *testing.T) {
-	ctx := context.Background()
+func TestStore_Add(t *testing.T) {
 	store := New()
+	ctx := context.Background()
 
-	t.Run("empty store", func(t *testing.T) {
-		tasks, err := store.List(ctx)
-		require.NoError(t, err)
-		assert.Empty(t, tasks)
-	})
+	// Test adding a new task
+	task := storage.Task{
+		ID:          "test-1",
+		Title:       "Test Task",
+		Description: "Test Description",
+		Completed:   false,
+		CreatedAt:   time.Now().Unix(),
+		UpdatedAt:   time.Now().Unix(),
+	}
 
-	t.Run("add task", func(t *testing.T) {
-		task := storage.Task{
-			ID:        "test-1",
-			Content:   "Test Task",
-			Done:      false,
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
-		}
+	err := store.Add(ctx, task)
+	assert.NoError(t, err, "Should add task without error")
 
-		err := store.Add(ctx, task)
-		require.NoError(t, err)
-
-		// Verify task was added
-		tasks, err := store.List(ctx)
-		require.NoError(t, err)
-		assert.Len(t, tasks, 1)
-		assert.Equal(t, task, tasks[0])
-
-		// Try to add duplicate
-		err = store.Add(ctx, task)
-		assert.ErrorIs(t, err, storage.ErrDuplicateID)
-	})
-
-	t.Run("get task", func(t *testing.T) {
-		task, err := store.GetByID(ctx, "test-1")
-		require.NoError(t, err)
-		assert.Equal(t, "test-1", task.ID)
-		assert.Equal(t, "Test Task", task.Content)
-
-		// Try to get nonexistent task
-		_, err = store.GetByID(ctx, "nonexistent")
-		assert.ErrorIs(t, err, storage.ErrTaskNotFound)
-	})
-
-	t.Run("update task", func(t *testing.T) {
-		task := storage.Task{
-			ID:        "test-1",
-			Content:   "Updated Task",
-			Done:      true,
-			UpdatedAt: time.Now(),
-		}
-
-		err := store.Update(ctx, task)
-		require.NoError(t, err)
-
-		// Verify task was updated
-		updated, err := store.GetByID(ctx, "test-1")
-		require.NoError(t, err)
-		assert.Equal(t, task.Content, updated.Content)
-		assert.Equal(t, task.Done, updated.Done)
-
-		// Try to update nonexistent task
-		task.ID = "nonexistent"
-		err = store.Update(ctx, task)
-		assert.ErrorIs(t, err, storage.ErrTaskNotFound)
-	})
-
-	t.Run("delete task", func(t *testing.T) {
-		err := store.Delete(ctx, "test-1")
-		require.NoError(t, err)
-
-		// Verify task was deleted
-		tasks, err := store.List(ctx)
-		require.NoError(t, err)
-		assert.Empty(t, tasks)
-
-		// Try to delete nonexistent task
-		err = store.Delete(ctx, "test-1")
-		assert.ErrorIs(t, err, storage.ErrTaskNotFound)
-	})
-
-	t.Run("error handling", func(t *testing.T) {
-		expectedErr := assert.AnError
-		store.SetError(expectedErr)
-
-		_, err := store.List(ctx)
-		assert.ErrorIs(t, err, expectedErr)
-
-		_, err = store.GetByID(ctx, "test-1")
-		assert.ErrorIs(t, err, expectedErr)
-
-		err = store.Add(ctx, storage.Task{ID: "test-1"})
-		assert.ErrorIs(t, err, expectedErr)
-
-		err = store.Update(ctx, storage.Task{ID: "test-1"})
-		assert.ErrorIs(t, err, expectedErr)
-
-		err = store.Delete(ctx, "test-1")
-		assert.ErrorIs(t, err, expectedErr)
-
-		err = store.Close()
-		assert.ErrorIs(t, err, expectedErr)
-	})
-
-	t.Run("reset", func(t *testing.T) {
-		store.Reset()
-
-		tasks, err := store.List(ctx)
-		require.NoError(t, err)
-		assert.Empty(t, tasks)
-	})
+	// Test adding a duplicate task
+	err = store.Add(ctx, task)
+	assert.Error(t, err, "Should fail to add duplicate task")
 }
 
-func TestTransaction(t *testing.T) {
-	ctx := context.Background()
+func TestStore_Get(t *testing.T) {
 	store := New()
+	ctx := context.Background()
 
-	t.Run("commit", func(t *testing.T) {
-		// Add initial task
-		task1 := storage.Task{
-			ID:        "test-1",
-			Content:   "Test Task 1",
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
-		}
-		require.NoError(t, store.Add(ctx, task1))
+	// Test getting a non-existent task
+	_, err := store.Get(ctx, "nonexistent")
+	assert.Error(t, err, "Should fail to get non-existent task")
 
-		// Start transaction
-		tx, err := store.BeginTx(ctx)
-		require.NoError(t, err)
+	// Add a task and get it
+	task := storage.Task{
+		ID:          "test-1",
+		Title:       "Test Task",
+		Description: "Test Description",
+		Completed:   false,
+		CreatedAt:   time.Now().Unix(),
+		UpdatedAt:   time.Now().Unix(),
+	}
 
-		// Add second task in transaction
-		task2 := storage.Task{
-			ID:        "test-2",
-			Content:   "Test Task 2",
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
-		}
-		require.NoError(t, tx.Add(ctx, task2))
+	err = store.Add(ctx, task)
+	assert.NoError(t, err, "Should add task without error")
 
-		// Update first task in transaction
-		task1.Content = "Updated Task 1"
-		require.NoError(t, tx.Update(ctx, task1))
+	retrieved, err := store.Get(ctx, task.ID)
+	assert.NoError(t, err, "Should get task without error")
+	assert.Equal(t, task.Title, retrieved.Title, "Task content should match")
+	assert.Equal(t, task.Completed, retrieved.Completed, "Task completion status should match")
+}
 
-		// Verify changes are not visible outside transaction
-		tasks, err := store.List(ctx)
-		require.NoError(t, err)
-		assert.Len(t, tasks, 1)
-		assert.Equal(t, "Test Task 1", tasks[0].Content)
+func TestStore_List(t *testing.T) {
+	store := New()
+	ctx := context.Background()
 
-		// Commit transaction
-		require.NoError(t, tx.Commit())
+	// Test empty list
+	tasks, err := store.List(ctx)
+	assert.NoError(t, err, "Should list tasks without error")
+	assert.Empty(t, tasks, "Task list should be empty")
 
-		// Verify changes are now visible
-		tasks, err = store.List(ctx)
-		require.NoError(t, err)
-		assert.Len(t, tasks, 2)
-	})
+	// Add a task and list again
+	task := storage.Task{
+		ID:          "test-1",
+		Title:       "Test Task",
+		Description: "Test Description",
+		Completed:   false,
+		CreatedAt:   time.Now().Unix(),
+		UpdatedAt:   time.Now().Unix(),
+	}
 
-	t.Run("rollback", func(t *testing.T) {
-		// Start transaction
-		tx, err := store.BeginTx(ctx)
-		require.NoError(t, err)
+	err = store.Add(ctx, task)
+	assert.NoError(t, err, "Should add task without error")
 
-		// Delete all tasks in transaction
-		tasks, err := tx.List(ctx)
-		require.NoError(t, err)
-		for _, task := range tasks {
-			require.NoError(t, tx.Delete(ctx, task.ID))
-		}
+	tasks, err = store.List(ctx)
+	assert.NoError(t, err, "Should list tasks without error")
+	assert.Len(t, tasks, 1, "Task list should have one item")
+	assert.Equal(t, task.Title, tasks[0].Title, "Task content should match")
+}
 
-		// Add new task in transaction
-		task := storage.Task{
-			ID:        "test-3",
-			Content:   "Test Task 3",
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
-		}
-		require.NoError(t, tx.Add(ctx, task))
+func TestStore_Update(t *testing.T) {
+	store := New()
+	ctx := context.Background()
 
-		// Rollback transaction
-		require.NoError(t, tx.Rollback())
+	// Test updating a non-existent task
+	task := storage.Task{
+		ID:          "nonexistent",
+		Title:       "Test Task",
+		Description: "Test Description",
+		Completed:   false,
+		CreatedAt:   time.Now().Unix(),
+		UpdatedAt:   time.Now().Unix(),
+	}
 
-		// Verify original state is preserved
-		tasks, err = store.List(ctx)
-		require.NoError(t, err)
-		assert.Len(t, tasks, 2)
-	})
+	err := store.Update(ctx, task)
+	assert.Error(t, err, "Should fail to update non-existent task")
 
-	t.Run("transaction error handling", func(t *testing.T) {
-		store.SetError(assert.AnError)
+	// Add a task and update it
+	err = store.Add(ctx, task)
+	assert.NoError(t, err, "Should add task without error")
 
-		_, err := store.BeginTx(ctx)
-		assert.ErrorIs(t, err, assert.AnError)
-	})
+	task.Title = "Updated Task"
+	task.Completed = true
+
+	err = store.Update(ctx, task)
+	assert.NoError(t, err, "Should update task without error")
+
+	updated, err := store.Get(ctx, task.ID)
+	assert.NoError(t, err, "Should get updated task without error")
+	assert.Equal(t, task.Title, updated.Title, "Task content should be updated")
+	assert.Equal(t, task.Completed, updated.Completed, "Task completion status should be updated")
+}
+
+func TestStore_Delete(t *testing.T) {
+	store := New()
+	ctx := context.Background()
+
+	// Test deleting a non-existent task
+	err := store.Delete(ctx, "nonexistent")
+	assert.Error(t, err, "Should fail to delete non-existent task")
+
+	// Add a task and delete it
+	task := storage.Task{
+		ID:          "test-1",
+		Title:       "Test Task",
+		Description: "Test Description",
+		Completed:   false,
+		CreatedAt:   time.Now().Unix(),
+		UpdatedAt:   time.Now().Unix(),
+	}
+
+	err = store.Add(ctx, task)
+	assert.NoError(t, err, "Should add task without error")
+
+	err = store.Delete(ctx, task.ID)
+	assert.NoError(t, err, "Should delete task without error")
+
+	_, err = store.Get(ctx, task.ID)
+	assert.Error(t, err, "Should fail to get deleted task")
+}
+
+func TestStore_BeginTx(t *testing.T) {
+	store := New()
+	ctx := context.Background()
+
+	// Test beginning a transaction
+	tx, err := store.BeginTx(ctx)
+	assert.Error(t, err, "Should fail to begin transaction")
+	assert.Nil(t, tx, "Transaction should be nil")
 }

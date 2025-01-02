@@ -4,25 +4,28 @@ package sqlite
 import (
 	"context"
 	"database/sql"
-	"time"
+	"fmt"
 
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
-	"github.com/jonesrussell/godo/internal/storage/errors"
 	_ "modernc.org/sqlite" // SQLite driver
 )
 
-// Store implements storage.TaskStore using SQLite
+// Store implements the storage.Store interface using SQLite
 type Store struct {
 	db     *sql.DB
 	logger logger.Logger
 }
 
-// New creates a new SQLite store
-func New(path string, logger logger.Logger) (*Store, error) {
-	db, err := sql.Open("sqlite", path)
+// New creates a new SQLite store instance
+func New(dbPath string, logger logger.Logger) (*Store, error) {
+	db, err := sql.Open("sqlite3", dbPath)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to open database: %w", err)
+	}
+
+	if err := db.Ping(); err != nil {
+		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
 	store := &Store{
@@ -30,96 +33,169 @@ func New(path string, logger logger.Logger) (*Store, error) {
 		logger: logger,
 	}
 
-	if err := RunMigrations(db); err != nil {
-		db.Close()
-		return nil, err
+	if err := store.migrate(); err != nil {
+		return nil, fmt.Errorf("failed to migrate database: %w", err)
 	}
 
 	return store, nil
 }
 
-// Add creates a new task in the store
-func (s *Store) Add(ctx context.Context, task storage.Task) error {
-	_, err := s.db.ExecContext(ctx,
-		"INSERT INTO tasks (id, content, done, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
-		task.ID, task.Content, task.Done, task.CreatedAt, task.UpdatedAt,
-	)
-	return err
+// migrate creates the necessary database tables
+func (s *Store) migrate() error {
+	query := `
+		CREATE TABLE IF NOT EXISTS tasks (
+			id TEXT PRIMARY KEY,
+			title TEXT NOT NULL,
+			description TEXT,
+			completed BOOLEAN NOT NULL DEFAULT 0,
+			created_at INTEGER NOT NULL,
+			updated_at INTEGER NOT NULL
+		);
+	`
+
+	if _, err := s.db.Exec(query); err != nil {
+		return fmt.Errorf("failed to create tasks table: %w", err)
+	}
+
+	return nil
 }
 
-// GetByID retrieves a task by its ID
-func (s *Store) GetByID(ctx context.Context, id string) (storage.Task, error) {
+// Add adds a new task
+func (s *Store) Add(ctx context.Context, task storage.Task) error {
+	query := `
+		INSERT INTO tasks (id, title, description, completed, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?)
+	`
+
+	_, err := s.db.ExecContext(ctx, query,
+		task.ID,
+		task.Title,
+		task.Description,
+		task.Completed,
+		task.CreatedAt,
+		task.UpdatedAt,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to insert task: %w", err)
+	}
+
+	return nil
+}
+
+// Get retrieves a task by ID
+func (s *Store) Get(ctx context.Context, id string) (storage.Task, error) {
+	query := `
+		SELECT id, title, description, completed, created_at, updated_at
+		FROM tasks
+		WHERE id = ?
+	`
+
 	var task storage.Task
-	err := s.db.QueryRowContext(ctx,
-		"SELECT id, content, done, created_at, updated_at FROM tasks WHERE id = ?",
-		id,
-	).Scan(&task.ID, &task.Content, &task.Done, &task.CreatedAt, &task.UpdatedAt)
+	err := s.db.QueryRowContext(ctx, query, id).Scan(
+		&task.ID,
+		&task.Title,
+		&task.Description,
+		&task.Completed,
+		&task.CreatedAt,
+		&task.UpdatedAt,
+	)
 
 	if err == sql.ErrNoRows {
-		return storage.Task{}, &errors.NotFoundError{ID: id}
+		return storage.Task{}, fmt.Errorf("task with ID %s not found", id)
 	}
-	return task, err
+	if err != nil {
+		return storage.Task{}, fmt.Errorf("failed to get task: %w", err)
+	}
+
+	return task, nil
 }
 
-// Update modifies an existing task
-func (s *Store) Update(ctx context.Context, task storage.Task) error {
-	result, err := s.db.ExecContext(ctx,
-		"UPDATE tasks SET content = ?, done = ?, updated_at = ? WHERE id = ?",
-		task.Content, task.Done, time.Now(), task.ID,
-	)
-	if err != nil {
-		return err
-	}
-
-	rows, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-
-	if rows == 0 {
-		return &errors.NotFoundError{ID: task.ID}
-	}
-	return nil
-}
-
-// Delete removes a task by ID
-func (s *Store) Delete(ctx context.Context, id string) error {
-	result, err := s.db.ExecContext(ctx, "DELETE FROM tasks WHERE id = ?", id)
-	if err != nil {
-		return err
-	}
-
-	rows, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-
-	if rows == 0 {
-		return &errors.NotFoundError{ID: id}
-	}
-	return nil
-}
-
-// List returns all tasks
+// List retrieves all tasks
 func (s *Store) List(ctx context.Context) ([]storage.Task, error) {
-	rows, err := s.db.QueryContext(ctx,
-		"SELECT id, content, done, created_at, updated_at FROM tasks ORDER BY created_at DESC",
-	)
+	query := `
+		SELECT id, title, description, completed, created_at, updated_at
+		FROM tasks
+		ORDER BY created_at DESC
+	`
+
+	rows, err := s.db.QueryContext(ctx, query)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to query tasks: %w", err)
 	}
 	defer rows.Close()
 
 	var tasks []storage.Task
 	for rows.Next() {
 		var task storage.Task
-		err := rows.Scan(&task.ID, &task.Content, &task.Done, &task.CreatedAt, &task.UpdatedAt)
+		err := rows.Scan(
+			&task.ID,
+			&task.Title,
+			&task.Description,
+			&task.Completed,
+			&task.CreatedAt,
+			&task.UpdatedAt,
+		)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to scan task: %w", err)
 		}
 		tasks = append(tasks, task)
 	}
-	return tasks, rows.Err()
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating tasks: %w", err)
+	}
+
+	return tasks, nil
+}
+
+// Update updates an existing task
+func (s *Store) Update(ctx context.Context, task storage.Task) error {
+	query := `
+		UPDATE tasks
+		SET title = ?, description = ?, completed = ?, updated_at = ?
+		WHERE id = ?
+	`
+
+	result, err := s.db.ExecContext(ctx, query,
+		task.Title,
+		task.Description,
+		task.Completed,
+		task.UpdatedAt,
+		task.ID,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to update task: %w", err)
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get affected rows: %w", err)
+	}
+	if rows == 0 {
+		return fmt.Errorf("task with ID %s not found", task.ID)
+	}
+
+	return nil
+}
+
+// Delete removes a task by ID
+func (s *Store) Delete(ctx context.Context, id string) error {
+	query := `DELETE FROM tasks WHERE id = ?`
+
+	result, err := s.db.ExecContext(ctx, query, id)
+	if err != nil {
+		return fmt.Errorf("failed to delete task: %w", err)
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get affected rows: %w", err)
+	}
+	if rows == 0 {
+		return fmt.Errorf("task with ID %s not found", id)
+	}
+
+	return nil
 }
 
 // Close closes the database connection
@@ -131,108 +207,152 @@ func (s *Store) Close() error {
 func (s *Store) BeginTx(ctx context.Context) (storage.TaskTx, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to begin transaction: %w", err)
 	}
+
 	return &Transaction{tx: tx}, nil
 }
 
-// Transaction implements storage.TaskTx
+// Transaction implements the storage.TaskTx interface
 type Transaction struct {
 	tx *sql.Tx
 }
 
-// Add creates a new task in the transaction
+// Add adds a new task within the transaction
 func (t *Transaction) Add(ctx context.Context, task storage.Task) error {
-	_, err := t.tx.ExecContext(ctx,
-		"INSERT INTO tasks (id, content, done, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
-		task.ID, task.Content, task.Done, task.CreatedAt, task.UpdatedAt,
+	query := `
+		INSERT INTO tasks (id, title, description, completed, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?)
+	`
+
+	_, err := t.tx.ExecContext(ctx, query,
+		task.ID,
+		task.Title,
+		task.Description,
+		task.Completed,
+		task.CreatedAt,
+		task.UpdatedAt,
 	)
-	return err
+	if err != nil {
+		return fmt.Errorf("failed to insert task: %w", err)
+	}
+
+	return nil
 }
 
-// List returns all tasks in the transaction
-func (t *Transaction) List(ctx context.Context) ([]storage.Task, error) {
-	rows, err := t.tx.QueryContext(ctx, "SELECT id, content, done, created_at, updated_at FROM tasks")
+// Get retrieves a task by ID within the transaction
+func (t *Transaction) Get(ctx context.Context, id string) (storage.Task, error) {
+	query := `
+		SELECT id, title, description, completed, created_at, updated_at
+		FROM tasks
+		WHERE id = ?
+	`
+
+	var task storage.Task
+	err := t.tx.QueryRowContext(ctx, query, id).Scan(
+		&task.ID,
+		&task.Title,
+		&task.Description,
+		&task.Completed,
+		&task.CreatedAt,
+		&task.UpdatedAt,
+	)
+
+	if err == sql.ErrNoRows {
+		return storage.Task{}, fmt.Errorf("task with ID %s not found", id)
+	}
 	if err != nil {
-		return nil, err
+		return storage.Task{}, fmt.Errorf("failed to get task: %w", err)
+	}
+
+	return task, nil
+}
+
+// List retrieves all tasks within the transaction
+func (t *Transaction) List(ctx context.Context) ([]storage.Task, error) {
+	query := `
+		SELECT id, title, description, completed, created_at, updated_at
+		FROM tasks
+		ORDER BY created_at DESC
+	`
+
+	rows, err := t.tx.QueryContext(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query tasks: %w", err)
 	}
 	defer rows.Close()
 
 	var tasks []storage.Task
 	for rows.Next() {
 		var task storage.Task
-		if err := rows.Scan(
+		err := rows.Scan(
 			&task.ID,
-			&task.Content,
-			&task.Done,
+			&task.Title,
+			&task.Description,
+			&task.Completed,
 			&task.CreatedAt,
 			&task.UpdatedAt,
-		); err != nil {
-			return nil, err
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan task: %w", err)
 		}
 		tasks = append(tasks, task)
 	}
-	return tasks, rows.Err()
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating tasks: %w", err)
+	}
+
+	return tasks, nil
 }
 
-// GetByID returns a task by its ID in the transaction
-func (t *Transaction) GetByID(ctx context.Context, id string) (storage.Task, error) {
-	var task storage.Task
-	err := t.tx.QueryRowContext(ctx,
-		"SELECT id, content, done, created_at, updated_at FROM tasks WHERE id = ?",
-		id,
-	).Scan(
-		&task.ID,
-		&task.Content,
-		&task.Done,
-		&task.CreatedAt,
-		&task.UpdatedAt,
-	)
-	if err == sql.ErrNoRows {
-		return storage.Task{}, &errors.NotFoundError{ID: id}
-	}
-	if err != nil {
-		return storage.Task{}, err
-	}
-	return task, nil
-}
-
-// Update modifies an existing task in the transaction
+// Update updates an existing task within the transaction
 func (t *Transaction) Update(ctx context.Context, task storage.Task) error {
-	result, err := t.tx.ExecContext(ctx,
-		"UPDATE tasks SET content = ?, done = ?, updated_at = ? WHERE id = ?",
-		task.Content, task.Done, time.Now(), task.ID,
+	query := `
+		UPDATE tasks
+		SET title = ?, description = ?, completed = ?, updated_at = ?
+		WHERE id = ?
+	`
+
+	result, err := t.tx.ExecContext(ctx, query,
+		task.Title,
+		task.Description,
+		task.Completed,
+		task.UpdatedAt,
+		task.ID,
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to update task: %w", err)
 	}
 
 	rows, err := result.RowsAffected()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get affected rows: %w", err)
+	}
+	if rows == 0 {
+		return fmt.Errorf("task with ID %s not found", task.ID)
 	}
 
-	if rows == 0 {
-		return &errors.NotFoundError{ID: task.ID}
-	}
 	return nil
 }
 
-// Delete removes a task by ID in the transaction
+// Delete removes a task by ID within the transaction
 func (t *Transaction) Delete(ctx context.Context, id string) error {
-	result, err := t.tx.ExecContext(ctx, "DELETE FROM tasks WHERE id = ?", id)
+	query := `DELETE FROM tasks WHERE id = ?`
+
+	result, err := t.tx.ExecContext(ctx, query, id)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to delete task: %w", err)
 	}
 
 	rows, err := result.RowsAffected()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get affected rows: %w", err)
+	}
+	if rows == 0 {
+		return fmt.Errorf("task with ID %s not found", id)
 	}
 
-	if rows == 0 {
-		return &errors.NotFoundError{ID: id}
-	}
 	return nil
 }
 

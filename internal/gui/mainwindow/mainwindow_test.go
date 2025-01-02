@@ -44,7 +44,7 @@ func TestMainWindow(t *testing.T) {
 		require.NoError(t, err)
 
 		// Get the task to verify it was added
-		addedTask, err := store.GetByID(ctx, task.ID)
+		addedTask, err := store.Get(ctx, task.ID)
 		require.NoError(t, err)
 		assert.Equal(t, task.ID, addedTask.ID)
 		assert.Equal(t, task.Content, addedTask.Content)
@@ -68,7 +68,7 @@ func TestMainWindow(t *testing.T) {
 		require.NoError(t, err)
 
 		// Get the task to verify it was updated
-		updatedTask, err := store.GetByID(ctx, task.ID)
+		updatedTask, err := store.Get(ctx, task.ID)
 		require.NoError(t, err)
 		assert.True(t, updatedTask.Done)
 	})
@@ -90,7 +90,7 @@ func TestMainWindow(t *testing.T) {
 		require.NoError(t, err)
 
 		// Verify the task is deleted
-		_, err = store.GetByID(ctx, task.ID)
+		_, err = store.Get(ctx, task.ID)
 		assert.Error(t, err)
 	})
 

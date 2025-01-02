@@ -6,13 +6,13 @@ import "github.com/jonesrussell/godo/internal/common"
 
 // TestManager is a mock hotkey implementation for testing
 type TestManager struct {
-	quickNote QuickNoteService
+	quickNote QuickNoteManager
 	binding   *common.HotkeyBinding
 	isActive  bool
 }
 
 // NewTestManager creates a new test hotkey manager
-func NewTestManager(quickNote QuickNoteService, binding *common.HotkeyBinding) Manager {
+func NewTestManager(quickNote QuickNoteManager, binding *common.HotkeyBinding) Manager {
 	return &TestManager{
 		quickNote: quickNote,
 		binding:   binding,

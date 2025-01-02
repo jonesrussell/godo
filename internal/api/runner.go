@@ -16,7 +16,7 @@ type Runner struct {
 }
 
 // NewRunner creates a new HTTP server runner
-func NewRunner(store storage.TaskStore, l logger.Logger, config *common.HTTPConfig) *Runner {
+func NewRunner(store storage.Store, l logger.Logger, config *common.HTTPConfig) *Runner {
 	return &Runner{
 		server: NewServer(store, l),
 		logger: l,

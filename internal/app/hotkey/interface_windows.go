@@ -4,12 +4,12 @@
 // Package hotkey provides hotkey functionality
 package hotkey
 
-import "golang.design/x/hotkey"
+import "github.com/jonesrussell/godo/internal/common"
 
-// hotkeyInterface defines the interface for hotkey functionality
-type hotkeyInterface interface {
-	Register() error
-	Unregister() error
-	Keydown() <-chan hotkey.Event
-	IsRegistered() bool
+// HotkeyHandler defines the interface for Windows hotkey functionality
+type HotkeyHandler interface {
+	Register(binding *common.HotkeyBinding) error
+	Unregister(binding *common.HotkeyBinding) error
+	Start() error
+	Stop() error
 }

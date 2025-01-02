@@ -4,8 +4,7 @@
 package hotkey
 
 import (
-	"fmt"
-
+	"github.com/jonesrussell/godo/internal/common"
 	"github.com/stretchr/testify/mock"
 	"golang.design/x/hotkey"
 )
@@ -18,7 +17,7 @@ type mockHotkey struct {
 	registered  bool
 }
 
-func newMockHotkey(mods []hotkey.Modifier, key hotkey.Key) hotkeyInterface {
+func newMockHotkey(mods []hotkey.Modifier, key hotkey.Key) HotkeyHandler {
 	return &mockHotkey{
 		keydownChan: make(chan hotkey.Event),
 		modifiers:   mods,
@@ -27,28 +26,32 @@ func newMockHotkey(mods []hotkey.Modifier, key hotkey.Key) hotkeyInterface {
 	}
 }
 
-func (m *mockHotkey) Register() error {
-	if m.registered {
-		return fmt.Errorf("already registered")
+func (m *mockHotkey) Register(binding *common.HotkeyBinding) error {
+	args := m.Called(binding)
+	if args.Get(0) != nil {
+		return args.Error(0)
 	}
-	args := m.Called()
-	err := args.Error(0)
-	if err == nil {
-		m.registered = true
-	}
-	return err
+	m.registered = true
+	return nil
 }
 
-func (m *mockHotkey) Unregister() error {
-	if !m.registered {
-		return fmt.Errorf("not registered")
+func (m *mockHotkey) Unregister(binding *common.HotkeyBinding) error {
+	args := m.Called(binding)
+	if args.Get(0) != nil {
+		return args.Error(0)
 	}
+	m.registered = false
+	return nil
+}
+
+func (m *mockHotkey) Start() error {
 	args := m.Called()
-	err := args.Error(0)
-	if err == nil {
-		m.registered = false
-	}
-	return err
+	return args.Error(0)
+}
+
+func (m *mockHotkey) Stop() error {
+	args := m.Called()
+	return args.Error(0)
 }
 
 func (m *mockHotkey) Keydown() <-chan hotkey.Event {

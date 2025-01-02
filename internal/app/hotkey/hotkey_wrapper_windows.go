@@ -6,10 +6,11 @@ package hotkey
 import (
 	"sync"
 
+	"github.com/jonesrussell/godo/internal/common"
 	"golang.design/x/hotkey"
 )
 
-// hotkeyWrapper wraps hotkey.Hotkey to implement hotkeyInterface
+// hotkeyWrapper wraps hotkey.Hotkey to implement HotkeyHandler
 type hotkeyWrapper struct {
 	hk       *hotkey.Hotkey
 	mu       sync.RWMutex
@@ -17,37 +18,51 @@ type hotkeyWrapper struct {
 }
 
 // newHotkeyWrapper creates a new hotkeyWrapper instance
-func newHotkeyWrapper(mods []hotkey.Modifier, key hotkey.Key) hotkeyInterface {
+func newHotkeyWrapper(mods []hotkey.Modifier, key hotkey.Key) *hotkeyWrapper {
 	return &hotkeyWrapper{
 		hk:       hotkey.New(mods, key),
 		isActive: false,
 	}
 }
 
-func (h *hotkeyWrapper) Register() error {
+func (h *hotkeyWrapper) Register(binding *common.HotkeyBinding) error {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
-	err := h.hk.Register()
-	if err == nil {
-		h.isActive = true
+	if h.isActive {
+		return nil
 	}
-	return err
+
+	if err := h.hk.Register(); err != nil {
+		return err
+	}
+
+	h.isActive = true
+	return nil
 }
 
-func (h *hotkeyWrapper) Unregister() error {
+func (h *hotkeyWrapper) Unregister(binding *common.HotkeyBinding) error {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
-	err := h.hk.Unregister()
-	if err == nil {
-		h.isActive = false
+	if !h.isActive {
+		return nil
 	}
-	return err
+
+	if err := h.hk.Unregister(); err != nil {
+		return err
+	}
+
+	h.isActive = false
+	return nil
 }
 
-func (h *hotkeyWrapper) Keydown() <-chan hotkey.Event {
-	return h.hk.Keydown()
+func (h *hotkeyWrapper) Start() error {
+	return nil
+}
+
+func (h *hotkeyWrapper) Stop() error {
+	return h.Unregister(nil)
 }
 
 func (h *hotkeyWrapper) IsRegistered() bool {

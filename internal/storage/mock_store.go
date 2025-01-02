@@ -48,8 +48,8 @@ func (s *MockStore) Add(_ context.Context, task Task) error {
 	return nil
 }
 
-// GetByID retrieves a task by its ID
-func (s *MockStore) GetByID(_ context.Context, id string) (Task, error) {
+// Get retrieves a task by its ID
+func (s *MockStore) Get(_ context.Context, id string) (Task, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -86,7 +86,7 @@ func (s *MockStore) Update(_ context.Context, task Task) error {
 		return &errors.NotFoundError{ID: task.ID}
 	}
 
-	task.UpdatedAt = time.Now()
+	task.UpdatedAt = time.Now().Unix()
 	s.tasks[task.ID] = task
 	return nil
 }

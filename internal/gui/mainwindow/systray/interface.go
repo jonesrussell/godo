@@ -2,9 +2,9 @@ package systray
 
 import "fyne.io/fyne/v2"
 
-// Interface defines the system tray functionality
-type Interface interface {
-	Setup(*fyne.Menu)
-	SetIcon(fyne.Resource)
-	IsReady() bool
+// SystrayManager defines the behavior of a system tray icon
+type SystrayManager interface {
+	SetupSystray(app fyne.App)
+	Show()
+	Hide()
 }

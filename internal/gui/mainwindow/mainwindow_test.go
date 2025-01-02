@@ -13,18 +13,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type mockLogger struct {
-	logger.Logger
-}
-
-func (m *mockLogger) Debug(_ string, _ ...interface{}) {}
-func (m *mockLogger) Info(_ string, _ ...interface{})  {}
-func (m *mockLogger) Warn(_ string, _ ...interface{})  {}
-func (m *mockLogger) Error(_ string, _ ...interface{}) {}
-
-func setupTestWindow() (*Window, *storage.MockStore) {
+func setupTestWindow(t *testing.T) (*Window, *storage.MockStore) {
 	store := storage.NewMockStore()
-	log := &mockLogger{}
+	log := logger.NewMockTestLogger(t)
 	app := test.NewApp()
 	cfg := config.WindowConfig{
 		Width:       800,
@@ -36,7 +27,7 @@ func setupTestWindow() (*Window, *storage.MockStore) {
 }
 
 func TestMainWindow(t *testing.T) {
-	mainWindow, store := setupTestWindow()
+	mainWindow, store := setupTestWindow(t)
 	require.NotNil(t, mainWindow)
 	ctx := context.Background()
 

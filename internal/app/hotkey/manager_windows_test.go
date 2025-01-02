@@ -25,37 +25,43 @@ func (m *mockQuickNoteService) Hide() {
 	m.Called()
 }
 
-type mockLogger struct {
+// mockTestLogger combines both test logger and mock functionality
+type mockTestLogger struct {
 	logger.Logger
 	mock.Mock
+	t *testing.T
 }
 
-func (m *mockLogger) Debug(msg string, args ...interface{}) {
-	m.Called(msg, mock.Anything)
+func newMockTestLogger(t *testing.T) *mockTestLogger {
+	l := &mockTestLogger{
+		Logger: logger.NewTestLogger(t),
+		t:      t,
+	}
+	// Set up default expectations
+	l.On("Debug", mock.Anything, mock.Anything).Return()
+	l.On("Info", mock.Anything, mock.Anything).Return()
+	l.On("Error", mock.Anything, mock.Anything).Return()
+	return l
 }
 
-func (m *mockLogger) Info(msg string, args ...interface{}) {
-	m.Called(msg, mock.Anything)
+func (m *mockTestLogger) Debug(msg string, args ...interface{}) {
+	m.Called(msg, args)
+	m.Logger.Debug(msg, args...)
 }
 
-func (m *mockLogger) Error(msg string, args ...interface{}) {
-	m.Called(msg, mock.Anything)
+func (m *mockTestLogger) Info(msg string, args ...interface{}) {
+	m.Called(msg, args)
+	m.Logger.Info(msg, args...)
 }
 
-func setupMockLogger() *mockLogger {
-	log := &mockLogger{}
-	// Accept any log message with any arguments
-	log.On("Info", mock.Anything, mock.Anything).Return()
-	log.On("Debug", mock.Anything, mock.Anything).Return()
-	log.On("Error", mock.Anything, mock.Anything).Return()
-	return log
+func (m *mockTestLogger) Error(msg string, args ...interface{}) {
+	m.Called(msg, args)
+	m.Logger.Error(msg, args...)
 }
 
 func TestWindowsManager_QuickNoteHotkey(t *testing.T) {
 	// Create mock logger
-	log := setupMockLogger()
-	log.On("Debug", mock.Anything, mock.Anything).Return()
-	log.On("Error", mock.Anything, mock.Anything).Return()
+	log := newMockTestLogger(t)
 
 	// Create mock quick note service
 	quickNote := &mockQuickNoteService{}
@@ -94,7 +100,7 @@ func TestWindowsManager_QuickNoteHotkey(t *testing.T) {
 
 func TestWindowsManager_InvalidKey(t *testing.T) {
 	// Create mock logger
-	log := setupMockLogger()
+	log := newMockTestLogger(t)
 
 	// Create mock quick note service
 	quickNote := &mockQuickNoteService{}
@@ -123,7 +129,7 @@ func TestWindowsManager_InvalidKey(t *testing.T) {
 
 func TestWindowsManager_NilBinding(t *testing.T) {
 	// Create mock logger
-	log := setupMockLogger()
+	log := newMockTestLogger(t)
 
 	// Create mock quick note service
 	quickNote := &mockQuickNoteService{}
@@ -146,9 +152,7 @@ func TestWindowsManager_NilBinding(t *testing.T) {
 
 func TestWindowsManager_UnregisterHotkey(t *testing.T) {
 	// Create mock logger
-	log := &mockLogger{}
-	log.On("Debug", mock.Anything, mock.Anything).Return()
-	log.On("Info", mock.Anything, mock.Anything).Return()
+	log := newMockTestLogger(t)
 
 	// Create mock quick note service
 	quickNote := &mockQuickNoteService{}
@@ -181,7 +185,7 @@ func TestWindowsManager_UnregisterHotkey(t *testing.T) {
 
 func TestWindowsManager_MultipleRegistrations(t *testing.T) {
 	// Create mock logger
-	log := setupMockLogger()
+	log := newMockTestLogger(t)
 
 	// Create mock quick note service
 	quickNote := &mockQuickNoteService{}
@@ -221,7 +225,7 @@ func TestWindowsManager_MultipleRegistrations(t *testing.T) {
 
 func TestWindowsManager_StopWithoutStart(t *testing.T) {
 	// Create mock logger
-	log := setupMockLogger()
+	log := newMockTestLogger(t)
 
 	// Create manager
 	manager, err := NewWindowsManager(log)
@@ -238,9 +242,7 @@ func TestWindowsManager_StopWithoutStart(t *testing.T) {
 
 func TestWindowsManager_StartWithoutRegister(t *testing.T) {
 	// Create mock logger
-	log := &mockLogger{}
-	log.On("Debug", mock.Anything, mock.Anything).Return()
-	log.On("Error", mock.Anything, mock.Anything).Return()
+	log := newMockTestLogger(t)
 
 	// Create manager
 	manager, err := NewWindowsManager(log)
@@ -257,9 +259,7 @@ func TestWindowsManager_StartWithoutRegister(t *testing.T) {
 
 func TestWindowsManager_UnregisterWithoutRegister(t *testing.T) {
 	// Create mock logger
-	log := &mockLogger{}
-	log.On("Debug", mock.Anything, mock.Anything).Return()
-	log.On("Error", mock.Anything, mock.Anything).Return()
+	log := newMockTestLogger(t)
 
 	// Create manager
 	manager, err := NewWindowsManager(log)

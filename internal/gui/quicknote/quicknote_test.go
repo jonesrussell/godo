@@ -13,18 +13,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type testLogger struct {
-	logger.Logger
-}
-
-func (m *testLogger) Debug(_ string, _ ...interface{}) {}
-func (m *testLogger) Info(_ string, _ ...interface{})  {}
-func (m *testLogger) Warn(_ string, _ ...interface{})  {}
-func (m *testLogger) Error(_ string, _ ...interface{}) {}
-
-func setupTestQuickNote() (*Window, *storage.MockStore) {
+func setupTestQuickNote(t *testing.T) (*Window, *storage.MockStore) {
 	store := storage.NewMockStore()
-	log := &testLogger{}
+	log := logger.NewMockTestLogger(t)
 	app := test.NewApp()
 	cfg := config.WindowConfig{
 		Width:       200,
@@ -39,7 +30,7 @@ func TestQuickNote(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("AddTask", func(t *testing.T) {
-		quickNote, store := setupTestQuickNote()
+		quickNote, store := setupTestQuickNote(t)
 		require.NotNil(t, quickNote)
 
 		// Add a task
@@ -61,7 +52,7 @@ func TestQuickNote(t *testing.T) {
 	})
 
 	t.Run("WindowClose", func(t *testing.T) {
-		quickNote, store := setupTestQuickNote()
+		quickNote, store := setupTestQuickNote(t)
 		require.NotNil(t, quickNote)
 
 		// Close the window
@@ -73,7 +64,7 @@ func TestQuickNote(t *testing.T) {
 	})
 
 	t.Run("StoreError", func(t *testing.T) {
-		quickNote, store := setupTestQuickNote()
+		quickNote, store := setupTestQuickNote(t)
 		require.NotNil(t, quickNote)
 
 		// Set store error
@@ -93,7 +84,7 @@ func TestQuickNote(t *testing.T) {
 	})
 
 	t.Run("EmptyContent", func(t *testing.T) {
-		quickNote, store := setupTestQuickNote()
+		quickNote, store := setupTestQuickNote(t)
 		require.NotNil(t, quickNote)
 
 		// Try to add a task with empty content

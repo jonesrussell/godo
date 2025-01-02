@@ -29,7 +29,7 @@ func TestApp_SetupUI(t *testing.T) {
 	testApp := test.NewApp()
 
 	// Create mock logger
-	mockLogger := &mockLogger{}
+	mockLogger := logger.NewMockTestLogger(t)
 
 	// Create mock store
 	mockStore := &mockStore{}

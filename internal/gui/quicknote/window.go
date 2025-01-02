@@ -21,6 +21,7 @@ type Window struct {
 	window fyne.Window
 	app    fyne.App
 	config config.WindowConfig
+	input  *widget.Entry
 }
 
 // New creates a new quick note window
@@ -39,15 +40,15 @@ func New(app fyne.App, store storage.TaskStore, logger logger.Logger, config con
 
 // setupUI initializes the window's UI components
 func (w *Window) setupUI() {
-	input := widget.NewMultiLineEntry()
-	input.SetPlaceHolder("Enter your quick note...")
+	w.input = widget.NewMultiLineEntry()
+	w.input.SetPlaceHolder("Enter your quick note...")
 
 	saveButton := widget.NewButton("Save", func() {
-		if input.Text != "" {
+		if w.input.Text != "" {
 			now := time.Now()
 			task := storage.Task{
 				ID:        uuid.New().String(),
-				Content:   input.Text,
+				Content:   w.input.Text,
 				Done:      false,
 				CreatedAt: now,
 				UpdatedAt: now,
@@ -56,7 +57,7 @@ func (w *Window) setupUI() {
 				w.logger.Error("Failed to add quick note", "error", err)
 				return
 			}
-			input.SetText("")
+			w.input.SetText("")
 			w.Hide()
 		}
 	})
@@ -66,7 +67,7 @@ func (w *Window) setupUI() {
 		saveButton, // bottom
 		nil,        // left
 		nil,        // right
-		input,      // center
+		w.input,    // Use w.input instead of input
 	)
 
 	w.window.SetContent(content)
@@ -76,7 +77,9 @@ func (w *Window) setupUI() {
 
 // Show displays the quick note window
 func (w *Window) Show() {
+	w.input.SetText("")
 	w.window.Show()
+	w.window.Canvas().Focus(w.input)
 }
 
 // Hide hides the quick note window

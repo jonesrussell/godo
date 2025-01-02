@@ -310,7 +310,7 @@ func TestWindowsManager_HotkeyTrigger(t *testing.T) {
 	assert.NoError(t, err, "Should start manager without error")
 
 	// Simulate hotkey trigger
-	mockHk.callback()
+	mockHk.SimulateKeyPress()
 
 	// Stop and cleanup
 	err = manager.Stop()

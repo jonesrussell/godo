@@ -8,7 +8,6 @@ import (
 	"os"
 	"runtime"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/jonesrussell/godo/internal/common"
@@ -17,8 +16,6 @@ import (
 )
 
 const (
-	// cleanupDelay is the delay before cleaning up resources
-	cleanupDelay = 100 * time.Millisecond
 	// retryDelay is the delay between retry attempts
 	retryDelay = 100 * time.Millisecond
 	// maxRetries is the maximum number of retry attempts
@@ -31,7 +28,6 @@ type WindowsManager struct {
 	quickNote QuickNoteService
 	binding   *common.HotkeyBinding
 	hk        hotkeyInterface
-	wg        sync.WaitGroup
 	stopChan  chan struct{}
 }
 

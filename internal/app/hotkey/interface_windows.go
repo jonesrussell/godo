@@ -1,7 +1,7 @@
-// Package hotkey provides hotkey functionality
 //go:build windows && !linux && !darwin
 // +build windows,!linux,!darwin
 
+// Package hotkey provides hotkey functionality
 package hotkey
 
 import "golang.design/x/hotkey"

@@ -9,6 +9,7 @@ import (
 	fyneapp "fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/theme"
 	"github.com/google/wire"
+	"github.com/jonesrussell/godo/internal/api"
 	"github.com/jonesrussell/godo/internal/app"
 	apphotkey "github.com/jonesrussell/godo/internal/app/hotkey"
 	"github.com/jonesrussell/godo/internal/common"
@@ -43,6 +44,13 @@ var (
 		wire.Bind(new(gui.QuickNote), new(*quicknote.Window)),
 	)
 
+	// APISet provides HTTP API server dependencies
+	APISet = wire.NewSet(
+		ProvideAPIConfig,
+		ProvideAPIServer,
+		ProvideAPIRunner,
+	)
+
 	// BaseSet provides basic application metadata
 	BaseSet = wire.NewSet(
 		ProvideAppName,
@@ -72,17 +80,6 @@ var (
 		ProvideConfig,
 	)
 
-	// HTTPSet provides HTTP server dependencies
-	HTTPSet = wire.NewSet(
-		ProvideHTTPPort,
-		ProvideReadTimeout,
-		ProvideWriteTimeout,
-		ProvideHeaderTimeout,
-		ProvideIdleTimeout,
-		ProvideHTTPOptions,
-		ProvideHTTPConfig,
-	)
-
 	// HotkeySet provides hotkey dependencies
 	HotkeySet = wire.NewSet(
 		ProvideModifierKeys,
@@ -107,7 +104,7 @@ func InitializeApp() (app.Application, func(), error) {
 		CoreSet,   // First initialize core services
 		UISet,     // Then UI components
 		HotkeySet, // Then platform-specific features
-		HTTPSet,   // Then HTTP server config
+		APISet,    // Then API server
 		AppSet,    // Finally the main app
 	)
 	return nil, nil, nil
@@ -118,101 +115,143 @@ func ProvideCoreOptions(
 	logger logger.Logger,
 	store storage.TaskStore,
 	config *config.Config,
-) *options.CoreOptions {
+) (*options.CoreOptions, error) {
+	if logger == nil {
+		return nil, fmt.Errorf("logger is required")
+	}
+	if store == nil {
+		return nil, fmt.Errorf("store is required")
+	}
+	if config == nil {
+		return nil, fmt.Errorf("config is required")
+	}
 	return &options.CoreOptions{
 		Logger: logger,
 		Store:  store,
 		Config: config,
-	}
+	}, nil
 }
 
 func ProvideGUIOptions(
 	app fyne.App,
 	mainWindow *mainwindow.Window,
 	quickNote *quicknote.Window,
-) *options.GUIOptions {
+) (*options.GUIOptions, error) {
+	if app == nil {
+		return nil, fmt.Errorf("fyne app is required")
+	}
+	if mainWindow == nil {
+		return nil, fmt.Errorf("main window is required")
+	}
+	if quickNote == nil {
+		return nil, fmt.Errorf("quick note window is required")
+	}
 	return &options.GUIOptions{
 		App:        app,
 		MainWindow: mainWindow,
 		QuickNote:  quickNote,
-	}
+	}, nil
 }
 
 func ProvideLoggerOptions(
 	level common.LogLevel,
 	output common.LogOutputPaths,
 	errorOutput common.ErrorOutputPaths,
-) *options.LoggerOptions {
+) (*options.LoggerOptions, error) {
+	if level == "" {
+		return nil, fmt.Errorf("log level is required")
+	}
+	if len(output) == 0 {
+		return nil, fmt.Errorf("log output paths are required")
+	}
+	if len(errorOutput) == 0 {
+		return nil, fmt.Errorf("error output paths are required")
+	}
 	return &options.LoggerOptions{
 		Level:       level,
 		Output:      output,
 		ErrorOutput: errorOutput,
-	}
+	}, nil
 }
 
 func ProvideHotkeyOptions(
 	modifiers common.ModifierKeys,
 	key common.KeyCode,
-) *options.HotkeyOptions {
+) (*options.HotkeyOptions, error) {
+	if len(modifiers) == 0 {
+		return nil, fmt.Errorf("at least one modifier key is required")
+	}
+	if key == "" {
+		return nil, fmt.Errorf("key code is required")
+	}
 	return &options.HotkeyOptions{
 		Modifiers: modifiers,
 		Key:       key,
-	}
-}
-
-func ProvideHTTPOptions(
-	port common.HTTPPort,
-	readTimeout common.ReadTimeoutSeconds,
-	writeTimeout common.WriteTimeoutSeconds,
-	readHeaderTimeout common.HeaderTimeoutSeconds,
-	idleTimeout common.IdleTimeoutSeconds,
-) *options.HTTPOptions {
-	return &options.HTTPOptions{
-		Config: &common.HTTPConfig{
-			Port:              port.Int(),
-			ReadTimeout:       int(readTimeout),
-			WriteTimeout:      int(writeTimeout),
-			ReadHeaderTimeout: int(readHeaderTimeout),
-			IdleTimeout:       int(idleTimeout),
-		},
-	}
+	}, nil
 }
 
 func ProvideAppOptions(
 	core *options.CoreOptions,
 	gui *options.GUIOptions,
-	http *options.HTTPOptions,
-	hotkey *options.HotkeyOptions,
 	name common.AppName,
 	version common.AppVersion,
 	id common.AppID,
-) *options.AppOptions {
+) (*options.AppOptions, error) {
+	if core == nil {
+		return nil, fmt.Errorf("core options are required")
+	}
+	if gui == nil {
+		return nil, fmt.Errorf("GUI options are required")
+	}
+	if name == "" {
+		return nil, fmt.Errorf("app name is required")
+	}
+	if version == "" {
+		return nil, fmt.Errorf("app version is required")
+	}
+	if id == "" {
+		return nil, fmt.Errorf("app ID is required")
+	}
 	return &options.AppOptions{
 		Core:    core,
 		GUI:     gui,
-		HTTP:    http,
-		Hotkey:  hotkey,
 		Name:    name,
 		Version: version,
 		ID:      id,
-	}
+	}, nil
 }
 
 // Provider functions for common types
-func ProvideAppName() common.AppName {
-	return "Godo"
+func ProvideAppName() (common.AppName, error) {
+	name := common.AppName("Godo")
+	if name == "" {
+		return "", fmt.Errorf("app name cannot be empty")
+	}
+	return name, nil
 }
 
-func ProvideAppVersion() common.AppVersion {
-	return "1.0.0"
+func ProvideAppVersion() (common.AppVersion, error) {
+	version := common.AppVersion("1.0.0")
+	if version == "" {
+		return "", fmt.Errorf("app version cannot be empty")
+	}
+	return version, nil
 }
 
-func ProvideAppID() common.AppID {
-	return "com.jonesrussell.godo"
+func ProvideAppID() (common.AppID, error) {
+	id := common.AppID("com.jonesrussell.godo")
+	if id == "" {
+		return "", fmt.Errorf("app ID cannot be empty")
+	}
+	return id, nil
 }
 
-func ProvideDatabasePath() common.DatabasePath {
-	return "godo.db"
+func ProvideDatabasePath() (common.DatabasePath, error) {
+	path := common.DatabasePath("godo.db")
+	if path == "" {
+		return "", fmt.Errorf("database path cannot be empty")
+	}
+	return path, nil
 }
 
 func ProvideLogLevel() common.LogLevel {
@@ -229,40 +268,85 @@ func ProvideHotkeyBinding() *common.HotkeyBinding {
 
 // ProvideLogger provides a zap logger instance using options
 func ProvideLogger(opts *options.LoggerOptions) (*logger.ZapLogger, func(), error) {
+	if opts == nil {
+		return nil, nil, fmt.Errorf("logger options are required")
+	}
+
 	cfg := &logger.Config{
 		Level:       string(opts.Level),
 		Development: true,
 		Encoding:    "console",
 	}
-	return logger.NewLogger(cfg)
+
+	log, cleanup, err := logger.NewLogger(cfg)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to create logger: %w", err)
+	}
+
+	return log, cleanup, nil
 }
 
 // ProvideSQLiteStore provides a SQLite store instance
-func ProvideSQLiteStore(log logger.Logger) (*sqlite.Store, func(), error) {
-	dbPath := string(ProvideDatabasePath())
-	store, err := sqlite.New(dbPath, log)
+func ProvideSQLiteStore(log logger.Logger, dbPath common.DatabasePath) (*sqlite.Store, func(), error) {
+	if log == nil {
+		return nil, nil, fmt.Errorf("logger is required")
+	}
+	if dbPath == "" {
+		return nil, nil, fmt.Errorf("database path is required")
+	}
+
+	store, err := sqlite.New(string(dbPath), log)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create store: %w", err)
 	}
 
 	cleanup := func() {
-		store.Close()
+		if err := store.Close(); err != nil {
+			log.Error("failed to close store during cleanup", "error", err)
+		}
 	}
 
 	return store, cleanup, nil
 }
 
-// ProvideHotkeyManager provides a hotkey manager instance using options
+// ProvideHotkeyManager provides a hotkey manager instance
 func ProvideHotkeyManager(log logger.Logger, cfg *config.Config, quickNote *quicknote.Window) (*apphotkey.WindowsManager, error) {
+	if log == nil {
+		return nil, fmt.Errorf("logger is required")
+	}
+	if cfg == nil {
+		return nil, fmt.Errorf("config is required")
+	}
+	if quickNote == nil {
+		return nil, fmt.Errorf("quick note window is required")
+	}
+
 	manager, err := apphotkey.NewWindowsManager(log)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create hotkey manager: %w", err)
 	}
 
-	// Use the binding from config and set the quick note service
-	manager.SetQuickNote(quickNote, &cfg.Hotkeys.QuickNote)
+	// Validate hotkey config
+	if err := validateHotkeyConfig(&cfg.Hotkeys.QuickNote); err != nil {
+		return nil, fmt.Errorf("invalid hotkey configuration: %w", err)
+	}
 
+	manager.SetQuickNote(quickNote, &cfg.Hotkeys.QuickNote)
 	return manager, nil
+}
+
+// validateHotkeyConfig validates the hotkey configuration
+func validateHotkeyConfig(binding *common.HotkeyBinding) error {
+	if binding == nil {
+		return fmt.Errorf("hotkey binding is required")
+	}
+	if len(binding.Modifiers) == 0 {
+		return fmt.Errorf("at least one modifier key is required")
+	}
+	if binding.Key == "" {
+		return fmt.Errorf("key is required")
+	}
+	return nil
 }
 
 // ProvideFyneApp provides a Fyne application instance
@@ -283,17 +367,6 @@ func ProvideQuickNote(app fyne.App, store storage.TaskStore, logger logger.Logge
 	return quicknote.New(app, store, logger, cfg.UI.QuickNote)
 }
 
-// ProvideHTTPConfig provides HTTP configuration using options
-func ProvideHTTPConfig(opts *options.HTTPOptions) *common.HTTPConfig {
-	return &common.HTTPConfig{
-		Port:              opts.Config.Port,
-		ReadTimeout:       opts.Config.ReadTimeout,
-		WriteTimeout:      opts.Config.WriteTimeout,
-		ReadHeaderTimeout: opts.Config.ReadHeaderTimeout,
-		IdleTimeout:       opts.Config.IdleTimeout,
-	}
-}
-
 // ProvideModifierKeys provides the hotkey modifiers from config
 func ProvideModifierKeys(cfg *config.Config) common.ModifierKeys {
 	return common.ModifierKeys(cfg.Hotkeys.QuickNote.Modifiers)
@@ -304,32 +377,6 @@ func ProvideKeyCode(cfg *config.Config) common.KeyCode {
 	return common.KeyCode(cfg.Hotkeys.QuickNote.Key)
 }
 
-// Provider functions for HTTP configuration
-func ProvideHTTPPort() common.HTTPPort {
-	return common.HTTPPort(8080)
-}
-
-func ProvideReadTimeout() common.ReadTimeoutSeconds {
-	return common.ReadTimeoutSeconds(30)
-}
-
-func ProvideWriteTimeout() common.WriteTimeoutSeconds {
-	return common.WriteTimeoutSeconds(30)
-}
-
-func ProvideHeaderTimeout() common.HeaderTimeoutSeconds {
-	return common.HeaderTimeoutSeconds(10)
-}
-
-func ProvideIdleTimeout() common.IdleTimeoutSeconds {
-	return common.IdleTimeoutSeconds(120)
-}
-
-// ProvideStoreAdapter provides a store adapter instance
-func ProvideStoreAdapter(store storage.TaskStore) *storage.StoreAdapter {
-	return storage.NewStoreAdapter(store)
-}
-
 // ProvideConfig provides the application configuration
 func ProvideConfig() (*config.Config, error) {
 	provider := config.NewProvider(
@@ -337,7 +384,37 @@ func ProvideConfig() (*config.Config, error) {
 		"default",
 		"yaml",
 	)
-	return provider.Load()
+
+	cfg, err := provider.Load()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load config: %w", err)
+	}
+
+	// Validate the loaded configuration
+	if err := validateConfig(cfg); err != nil {
+		return nil, fmt.Errorf("invalid configuration: %w", err)
+	}
+
+	return cfg, nil
+}
+
+// validateConfig performs validation of the entire configuration
+func validateConfig(cfg *config.Config) error {
+	if cfg == nil {
+		return fmt.Errorf("config is required")
+	}
+
+	// Validate UI configuration
+	if cfg.UI.MainWindow.Width <= 0 || cfg.UI.MainWindow.Height <= 0 {
+		return fmt.Errorf("invalid window dimensions")
+	}
+
+	// Validate hotkey configuration
+	if err := validateHotkeyConfig(&cfg.Hotkeys.QuickNote); err != nil {
+		return fmt.Errorf("invalid hotkey configuration: %w", err)
+	}
+
+	return nil
 }
 
 // ProvideLogOutputPaths provides the default log output paths
@@ -348,4 +425,25 @@ func ProvideLogOutputPaths() common.LogOutputPaths {
 // ProvideErrorOutputPaths provides the default error output paths
 func ProvideErrorOutputPaths() common.ErrorOutputPaths {
 	return common.ErrorOutputPaths{"stderr"}
+}
+
+// ProvideAPIConfig provides the API server configuration
+func ProvideAPIConfig() *api.ServerConfig {
+	return api.NewServerConfig()
+}
+
+// ProvideAPIServer provides the API server instance
+func ProvideAPIServer(store storage.TaskStore, log logger.Logger) *api.Server {
+	return api.NewServer(store, log)
+}
+
+// ProvideAPIRunner provides the API server runner
+func ProvideAPIRunner(store storage.TaskStore, log logger.Logger, cfg *api.ServerConfig) *api.Runner {
+	return api.NewRunner(store, log, &common.HTTPConfig{
+		Port:              8080, // Default port
+		ReadTimeout:       int(cfg.ReadTimeout.Seconds()),
+		WriteTimeout:      int(cfg.WriteTimeout.Seconds()),
+		ReadHeaderTimeout: int(cfg.ReadHeaderTimeout.Seconds()),
+		IdleTimeout:       int(cfg.IdleTimeout.Seconds()),
+	})
 }

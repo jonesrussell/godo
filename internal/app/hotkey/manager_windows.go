@@ -8,6 +8,7 @@ import (
 	"os"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/jonesrussell/godo/internal/common"
@@ -15,26 +16,14 @@ import (
 	"golang.design/x/hotkey"
 )
 
-const (
-	// cleanupDelay is the delay to wait for hotkey cleanup
-	cleanupDelay = 100 * time.Millisecond
-
-	// retryDelay is the delay between hotkey registration attempts
-	retryDelay = 100 * time.Millisecond
-
-	// maxRetries is the maximum number of registration attempts
-	maxRetries = 3
-)
-
-// WindowsManager implements the Manager interface for Windows systems.
-// It handles global hotkey registration and event handling using the
-// golang.design/x/hotkey package.
+// WindowsManager manages hotkeys for Windows
 type WindowsManager struct {
 	log       logger.Logger
-	hk        *hotkey.Hotkey
 	quickNote QuickNoteService
 	binding   *common.HotkeyBinding
-	quit      chan struct{}
+	hk        hotkeyInterface
+	wg        sync.WaitGroup
+	stopChan  chan struct{}
 }
 
 // NewWindowsManager creates a new WindowsManager instance with the provided logger.
@@ -45,8 +34,8 @@ func NewWindowsManager(log logger.Logger) (*WindowsManager, error) {
 		"arch", runtime.GOARCH,
 		"pid", os.Getpid())
 	return &WindowsManager{
-		log:  log,
-		quit: make(chan struct{}),
+		log:      log,
+		stopChan: make(chan struct{}),
 	}, nil
 }
 
@@ -197,7 +186,7 @@ func (m *WindowsManager) Start() error {
 		m.log.Info("Starting hotkey listener goroutine")
 		for {
 			select {
-			case <-m.quit:
+			case <-m.stopChan:
 				m.log.Info("Hotkey manager received quit signal")
 				return
 			case <-m.hk.Keydown():
@@ -215,6 +204,6 @@ func (m *WindowsManager) Start() error {
 // It's safe to call this method multiple times.
 func (m *WindowsManager) Stop() error {
 	m.log.Info("Stopping hotkey manager")
-	close(m.quit)
+	close(m.stopChan)
 	return m.Unregister()
 }

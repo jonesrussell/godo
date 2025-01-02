@@ -2,6 +2,8 @@
 package app
 
 import (
+	"fmt"
+
 	"fyne.io/fyne/v2"
 	"github.com/jonesrussell/godo/internal/app/hotkey"
 	"github.com/jonesrussell/godo/internal/common"
@@ -49,46 +51,56 @@ func New(params *Params) *App {
 	}
 }
 
-// SetupUI initializes the user interface
-func (a *App) SetupUI() {
+// setupHotkey initializes and starts the global hotkey system
+func (a *App) setupHotkey() error {
+	a.logger.Debug("Setting up global hotkey system",
+		"config", a.config.Hotkeys.QuickNote)
+
+	if err := a.hotkey.Register(); err != nil {
+		return fmt.Errorf("failed to register hotkey: %w", err)
+	}
+
+	if err := a.hotkey.Start(); err != nil {
+		return fmt.Errorf("failed to start hotkey listener: %w", err)
+	}
+
+	a.logger.Info("Hotkey system initialized successfully")
+	return nil
+}
+
+// SetupUI initializes the user interface components in the correct order
+func (a *App) SetupUI() error {
 	a.logger.Debug("Setting up UI components")
 
-	// Set up systray first
+	// 1. Set up systray first as it's the most visible component
 	systray.SetupSystray(a.fyneApp, a.mainWindow.GetWindow(), a.quickNote)
 
-	// Only show main window if not configured to start hidden
+	// 2. Show main window if not configured to start hidden
 	if !a.config.UI.MainWindow.StartHidden {
 		a.mainWindow.Show()
 	}
+
+	return nil
 }
 
 // Run starts the application
 func (a *App) Run() {
-	a.logger.Info("starting application",
+	a.logger.Info("Starting application",
 		"name", a.name,
 		"version", a.version,
 		"id", a.id,
 	)
 
 	// Set up UI components first
-	a.SetupUI()
+	if err := a.SetupUI(); err != nil {
+		a.logger.Error("Failed to setup UI", "error", err)
+		return
+	}
 
-	// Register and start hotkey after UI setup but before main loop
-	a.logger.Debug("Registering global hotkey",
-		"config", a.config.Hotkeys.QuickNote)
-	if err := a.hotkey.Register(); err != nil {
-		a.logger.Error("Failed to register hotkey",
-			"error", err,
-			"config", a.config.Hotkeys.QuickNote)
-	} else {
-		// Start hotkey listener
-		a.logger.Debug("Starting hotkey listener")
-		if err := a.hotkey.Start(); err != nil {
-			a.logger.Error("Failed to start hotkey listener",
-				"error", err)
-		} else {
-			a.logger.Info("Hotkey system initialized successfully")
-		}
+	// Set up hotkey system
+	if err := a.setupHotkey(); err != nil {
+		a.logger.Error("Failed to setup hotkey system", "error", err)
+		// Continue running even if hotkey fails
 	}
 
 	// Run the application main loop
@@ -97,23 +109,23 @@ func (a *App) Run() {
 
 // Cleanup performs cleanup before application exit
 func (a *App) Cleanup() {
-	a.logger.Info("cleaning up application")
+	a.logger.Info("Cleaning up application")
 
-	// First stop the hotkey manager (this unregisters the hotkey and stops the listener)
+	// First stop the hotkey manager
 	if err := a.hotkey.Stop(); err != nil {
-		a.logger.Error("failed to stop hotkey manager", "error", err)
+		a.logger.Error("Failed to stop hotkey manager", "error", err)
 	} else {
-		a.logger.Info("hotkey manager stopped successfully")
+		a.logger.Info("Hotkey manager stopped successfully")
 	}
 
 	// Then close the store
 	if err := a.store.Close(); err != nil {
-		a.logger.Error("failed to close store", "error", err)
+		a.logger.Error("Failed to close store", "error", err)
 	} else {
-		a.logger.Info("store closed successfully")
+		a.logger.Info("Store closed successfully")
 	}
 
-	a.logger.Info("cleanup completed")
+	a.logger.Info("Cleanup completed")
 }
 
 // Logger returns the application logger

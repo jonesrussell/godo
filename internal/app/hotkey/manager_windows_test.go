@@ -65,21 +65,24 @@ func TestWindowsManager_QuickNoteHotkey(t *testing.T) {
 	// Set quick note service
 	manager.SetQuickNote(quickNote, binding)
 
-	// Register hotkey
-	err = manager.Register()
-	assert.NoError(t, err, "Should register hotkey without error")
+	// Create mock hotkey
+	mockHk := newMockHotkey([]hotkey.Modifier{hotkey.ModCtrl, hotkey.ModShift}, hotkey.KeyG)
+	mockHk.On("Register").Return(nil)
+	mockHk.On("Unregister").Return(nil)
+	manager.hk = mockHk
 
 	// Start hotkey listener
 	err = manager.Start()
 	assert.NoError(t, err, "Should start hotkey listener without error")
 
+	// Give some time for the listener to start
+	time.Sleep(50 * time.Millisecond)
+
 	// Simulate hotkey press
-	if manager.hotkey != nil && manager.hotkey.Callback != nil {
-		manager.hotkey.Callback()
-	}
+	go mockHk.SimulateKeyPress()
 
 	// Give some time for the callback to execute
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(50 * time.Millisecond)
 
 	// Clean up
 	err = manager.Stop()
@@ -88,6 +91,7 @@ func TestWindowsManager_QuickNoteHotkey(t *testing.T) {
 	// Verify expectations
 	quickNote.AssertExpectations(t)
 	log.AssertExpectations(t)
+	mockHk.AssertExpectations(t)
 }
 
 func TestWindowsManager_InvalidKey(t *testing.T) {

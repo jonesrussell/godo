@@ -7,8 +7,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 	"time"
 
@@ -400,4 +402,193 @@ func TestHandleListTasks(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestHandlePatchTask(t *testing.T) {
+	server, store := setupTestServer(t)
+	ctx := context.Background()
+
+	existingTask := storage.Task{
+		ID:        "test-1",
+		Content:   "Test Task",
+		Done:      false,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+
+	tests := []struct {
+		name       string
+		taskID     string
+		patch      PatchTaskRequest
+		setupStore func()
+		wantStatus int
+		wantTask   *storage.Task
+	}{
+		{
+			name:   "patch content only",
+			taskID: existingTask.ID,
+			patch: PatchTaskRequest{
+				Content: stringPtr("Updated Content"),
+			},
+			setupStore: func() {
+				err := store.Add(ctx, existingTask)
+				require.NoError(t, err)
+			},
+			wantStatus: http.StatusOK,
+			wantTask: &storage.Task{
+				ID:      existingTask.ID,
+				Content: "Updated Content",
+				Done:    false,
+			},
+		},
+		{
+			name:   "patch done only",
+			taskID: existingTask.ID,
+			patch: PatchTaskRequest{
+				Done: boolPtr(true),
+			},
+			setupStore: func() {
+				err := store.Add(ctx, existingTask)
+				require.NoError(t, err)
+			},
+			wantStatus: http.StatusOK,
+			wantTask: &storage.Task{
+				ID:      existingTask.ID,
+				Content: existingTask.Content,
+				Done:    true,
+			},
+		},
+		{
+			name:   "patch both fields",
+			taskID: existingTask.ID,
+			patch: PatchTaskRequest{
+				Content: stringPtr("Updated Content"),
+				Done:    boolPtr(true),
+			},
+			setupStore: func() {
+				err := store.Add(ctx, existingTask)
+				require.NoError(t, err)
+			},
+			wantStatus: http.StatusOK,
+			wantTask: &storage.Task{
+				ID:      existingTask.ID,
+				Content: "Updated Content",
+				Done:    true,
+			},
+		},
+		{
+			name:   "nonexistent task",
+			taskID: "nonexistent",
+			patch: PatchTaskRequest{
+				Content: stringPtr("Updated Content"),
+			},
+			setupStore: func() {
+				store.Error = storage.ErrTaskNotFound
+			},
+			wantStatus: http.StatusNotFound,
+			wantTask:   nil,
+		},
+		{
+			name:   "store error",
+			taskID: existingTask.ID,
+			patch: PatchTaskRequest{
+				Content: stringPtr("Updated Content"),
+			},
+			setupStore: func() {
+				store.Error = assert.AnError
+			},
+			wantStatus: http.StatusInternalServerError,
+			wantTask:   nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			store.Reset()
+			tt.setupStore()
+
+			body, err := json.Marshal(tt.patch)
+			require.NoError(t, err)
+
+			req := httptest.NewRequest(http.MethodPatch, "/api/v1/tasks/"+tt.taskID, bytes.NewReader(body))
+			req.Header.Set("Content-Type", "application/json")
+			w := httptest.NewRecorder()
+
+			server.handlePatchTask(w, req)
+
+			assert.Equal(t, tt.wantStatus, w.Code)
+			if tt.wantTask != nil {
+				var response storage.Task
+				err = json.NewDecoder(w.Body).Decode(&response)
+				require.NoError(t, err)
+				assert.Equal(t, tt.wantTask.ID, response.ID)
+				assert.Equal(t, tt.wantTask.Content, response.Content)
+				assert.Equal(t, tt.wantTask.Done, response.Done)
+			}
+		})
+	}
+}
+
+func TestConcurrentOperations(t *testing.T) {
+	server, store := setupTestServer(t)
+	ctx := context.Background()
+
+	// Create initial task
+	task := storage.Task{
+		ID:        "test-1",
+		Content:   "Test Task",
+		Done:      false,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+	err := store.Add(ctx, task)
+	require.NoError(t, err)
+
+	// Number of concurrent operations
+	const numOps = 10
+
+	// Run concurrent updates
+	var wg sync.WaitGroup
+	wg.Add(numOps)
+	for i := 0; i < numOps; i++ {
+		go func(i int) {
+			defer wg.Done()
+
+			// Create update request
+			update := UpdateTaskRequest{
+				Content: fmt.Sprintf("Updated Content %d", i),
+				Done:    i%2 == 0,
+			}
+			body, err := json.Marshal(update)
+			require.NoError(t, err)
+
+			// Send request
+			req := httptest.NewRequest(http.MethodPut, "/api/v1/tasks/"+task.ID, bytes.NewReader(body))
+			req.Header.Set("Content-Type", "application/json")
+			w := httptest.NewRecorder()
+
+			server.handleUpdateTask(w, req)
+
+			// Verify response
+			assert.Equal(t, http.StatusOK, w.Code)
+		}(i)
+	}
+
+	// Wait for all operations to complete
+	wg.Wait()
+
+	// Verify final state
+	finalTask, err := store.GetByID(ctx, task.ID)
+	require.NoError(t, err)
+	assert.NotEmpty(t, finalTask.Content)
+	assert.Contains(t, finalTask.Content, "Updated Content")
+}
+
+// Helper functions
+func stringPtr(s string) *string {
+	return &s
+}
+
+func boolPtr(b bool) *bool {
+	return &b
 }

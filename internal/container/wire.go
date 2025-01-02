@@ -253,14 +253,14 @@ func ProvideSQLiteStore(log logger.Logger) (*sqlite.Store, func(), error) {
 }
 
 // ProvideHotkeyManager provides a hotkey manager instance using options
-func ProvideHotkeyManager(log logger.Logger, cfg *config.Config) (*apphotkey.WindowsManager, error) {
+func ProvideHotkeyManager(log logger.Logger, cfg *config.Config, quickNote *quicknote.Window) (*apphotkey.WindowsManager, error) {
 	manager, err := apphotkey.NewWindowsManager(log)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create hotkey manager: %w", err)
 	}
 
-	// Use the binding from config
-	manager.SetQuickNote(nil, &cfg.Hotkeys.QuickNote)
+	// Use the binding from config and set the quick note service
+	manager.SetQuickNote(quickNote, &cfg.Hotkeys.QuickNote)
 
 	return manager, nil
 }

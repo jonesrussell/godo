@@ -39,13 +39,24 @@
 - [ ] Performance benchmarks
 - [ ] Load testing
 - [ ] End-to-end tests
-- [ ] Test coverage improvements
-- [ ] Cross-platform test suite
-- [ ] Integration tests for systray
-- [ ] Visual regression tests
-- [ ] Memory leak detection tests
-- [ ] Race condition tests
-- [ ] Stress testing for hotkeys
+- [ ] Test coverage improvements:
+  - [ ] Window positioning tests
+  - [ ] Keyboard shortcut tests
+  - [ ] Visual regression tests
+  - [ ] Component interaction tests
+- [ ] Cross-platform test suite:
+  - [ ] Linux-specific features
+  - [ ] macOS preparation
+  - [ ] Platform-specific UI behavior
+- [ ] Integration tests:
+  - [ ] Systray integration
+  - [ ] Hotkey registration
+  - [ ] Window management
+- [ ] Stress testing:
+  - [ ] Memory leak detection
+  - [ ] Race condition tests
+  - [ ] Hotkey reliability
+  - [ ] Resource cleanup under load
 
 ## UI Improvements
 

@@ -41,13 +41,38 @@ type Window interface {
 
 ### Quick Note Window
 ```go
-type QuickNote interface {
-    Setup() error
+type Interface interface {
+    // Initialize sets up the window with the given app and logger
+    Initialize(app fyne.App, log logger.Logger)
+    // Show displays the quick note window and focuses the input field
     Show()
+    // Hide hides the quick note window
     Hide()
-    SetText(string)
 }
-```
+
+// Window configuration options
+type WindowConfig struct {
+    Width       int  // Window width in pixels
+    Height      int  // Window height in pixels
+    StartHidden bool // Whether window starts hidden
+}
+
+Features:
+- Global hotkey activation (Windows)
+- Rapid task entry with auto-focus
+- Automatic window positioning
+- Error handling with user feedback
+- Resource cleanup on window close
+- Platform-specific implementations:
+  - Windows: Full support with hotkeys
+  - Linux: Basic window support
+  - Docker: No-op implementation
+
+Error Handling:
+- Task creation failures keep window open
+- Storage errors are logged
+- Invalid states are prevented
+- Resource cleanup is guaranteed
 
 ## Event Handling
 

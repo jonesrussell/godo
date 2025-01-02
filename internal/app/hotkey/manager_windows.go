@@ -62,16 +62,22 @@ func (m *WindowsManager) SetQuickNote(quickNote QuickNoteService, binding *commo
 // It will attempt to register the hotkey multiple times in case of failure.
 // Returns an error if registration fails after all attempts.
 func (m *WindowsManager) Register() error {
+	if m.binding == nil {
+		m.log.Error("Hotkey binding not set")
+		return fmt.Errorf("hotkey binding not set")
+	}
+
+	// Check if already registered
+	if m.hk != nil {
+		m.log.Error("Hotkey already registered")
+		return fmt.Errorf("hotkey already registered")
+	}
+
 	m.log.Info("Starting hotkey registration",
 		"modifiers", strings.Join(m.binding.Modifiers, "+"),
 		"key", m.binding.Key,
 		"os", runtime.GOOS,
 		"pid", os.Getpid())
-
-	if m.binding == nil {
-		m.log.Error("Hotkey binding not set")
-		return fmt.Errorf("hotkey binding not set")
-	}
 
 	// Convert string modifiers to hotkey.Modifier
 	var mods []hotkey.Modifier
@@ -108,16 +114,6 @@ func (m *WindowsManager) Register() error {
 		m.log.Error("Unsupported key", "key", m.binding.Key,
 			"supported_keys", []string{"G", "N"})
 		return fmt.Errorf("unsupported key: %s", m.binding.Key)
-	}
-
-	// Try to unregister any existing hotkey first
-	if m.hk != nil {
-		m.log.Info("Unregistering existing hotkey before new registration")
-		if err := m.hk.Unregister(); err != nil {
-			m.log.Warn("Failed to unregister existing hotkey", "error", err)
-		}
-		m.hk = nil
-		time.Sleep(cleanupDelay) // Give system time to cleanup
 	}
 
 	// Create and register the hotkey

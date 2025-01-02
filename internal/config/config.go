@@ -130,7 +130,8 @@ func (p *Provider) Load() (*Config, error) {
 	v.SetDefault(KeyDBPath, cfg.Database.Path)
 	v.SetDefault(KeyLogLevel, cfg.Logger.Level)
 	v.SetDefault(KeyLogConsole, cfg.Logger.Console)
-	v.SetDefault(KeyQuickNote, cfg.Hotkeys.QuickNote)
+	v.SetDefault("hotkeys.quick_note.modifiers", cfg.Hotkeys.QuickNote.Modifiers)
+	v.SetDefault("hotkeys.quick_note.key", cfg.Hotkeys.QuickNote.Key)
 
 	// Configure and read config file
 	v.SetConfigType(p.configType)
@@ -148,13 +149,14 @@ func (p *Provider) Load() (*Config, error) {
 
 	// Bind environment variables explicitly
 	envBindings := map[string]string{
-		KeyAppName:    EnvPrefix + "_APP_NAME",
-		KeyAppVersion: EnvPrefix + "_APP_VERSION",
-		KeyAppID:      EnvPrefix + "_APP_ID",
-		KeyDBPath:     EnvPrefix + "_DATABASE_PATH",
-		KeyLogLevel:   EnvPrefix + "_LOGGER_LEVEL",
-		KeyLogConsole: EnvPrefix + "_LOGGER_CONSOLE",
-		KeyQuickNote:  EnvPrefix + "_HOTKEYS_QUICK_NOTE",
+		KeyAppName:                     EnvPrefix + "_APP_NAME",
+		KeyAppVersion:                  EnvPrefix + "_APP_VERSION",
+		KeyAppID:                       EnvPrefix + "_APP_ID",
+		KeyDBPath:                      EnvPrefix + "_DATABASE_PATH",
+		KeyLogLevel:                    EnvPrefix + "_LOGGER_LEVEL",
+		KeyLogConsole:                  EnvPrefix + "_LOGGER_CONSOLE",
+		"hotkeys.quick_note.modifiers": EnvPrefix + "_HOTKEYS_QUICK_NOTE_MODIFIERS",
+		"hotkeys.quick_note.key":       EnvPrefix + "_HOTKEYS_QUICK_NOTE_KEY",
 	}
 
 	for k, env := range envBindings {
@@ -163,12 +165,29 @@ func (p *Provider) Load() (*Config, error) {
 		}
 		if envVal := os.Getenv(env); envVal != "" {
 			p.log.Debug("environment variable found", "key", env, "value", envVal)
+			// Special handling for modifiers array
+			if k == "hotkeys.quick_note.modifiers" {
+				p.log.Debug("processing modifiers array", "raw_value", envVal)
+				// Remove brackets and quotes, then split by comma
+				trimmed := strings.Trim(envVal, "[]")
+				p.log.Debug("after trim brackets", "value", trimmed)
+				parts := strings.Split(trimmed, ",")
+				p.log.Debug("after split", "parts", parts)
+				modifiers := make([]string, len(parts))
+				for i, part := range parts {
+					modifiers[i] = strings.Trim(part, "\" ")
+					p.log.Debug("processed modifier", "index", i, "raw", part, "cleaned", modifiers[i])
+				}
+				p.log.Debug("setting modifiers", "final_value", modifiers)
+				v.Set(k, modifiers)
+			}
 		}
 	}
 
 	p.log.Debug("after env binding",
 		"app.name", v.GetString(KeyAppName),
-		"database.path", v.GetString(KeyDBPath))
+		"database.path", v.GetString(KeyDBPath),
+		"hotkeys.quick_note.modifiers", v.GetStringSlice("hotkeys.quick_note.modifiers"))
 
 	// Unmarshal into struct
 	cfg = &Config{}

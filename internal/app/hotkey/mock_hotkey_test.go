@@ -4,6 +4,8 @@
 package hotkey
 
 import (
+	"fmt"
+
 	"github.com/stretchr/testify/mock"
 	"golang.design/x/hotkey"
 )
@@ -26,6 +28,9 @@ func newMockHotkey(mods []hotkey.Modifier, key hotkey.Key) hotkeyInterface {
 }
 
 func (m *mockHotkey) Register() error {
+	if m.registered {
+		return fmt.Errorf("already registered")
+	}
 	args := m.Called()
 	if args.Error(0) == nil {
 		m.registered = true
@@ -34,6 +39,9 @@ func (m *mockHotkey) Register() error {
 }
 
 func (m *mockHotkey) Unregister() error {
+	if !m.registered {
+		return fmt.Errorf("not registered")
+	}
 	args := m.Called()
 	if args.Error(0) == nil {
 		m.registered = false

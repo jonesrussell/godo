@@ -58,6 +58,11 @@ func (m *WindowsManager) SetQuickNote(quickNote QuickNoteService, binding *commo
 	m.binding = binding
 }
 
+// SetHotkey sets the hotkey instance (used for testing)
+func (m *WindowsManager) SetHotkey(hk hotkeyInterface) {
+	m.hk = hk
+}
+
 // Register registers the configured hotkey with the Windows system.
 // It will attempt to register the hotkey multiple times in case of failure.
 // Returns an error if registration fails after all attempts.

@@ -81,6 +81,16 @@ func TestWindowsManager_QuickNoteHotkey(t *testing.T) {
 	// Set quick note service
 	manager.SetQuickNote(quickNote, binding)
 
+	// Create mock hotkey
+	mockHk := &mockHotkey{
+		keydownChan: make(chan hotkey.Event),
+		modifiers:   []hotkey.Modifier{hotkey.ModCtrl, hotkey.ModShift},
+		key:         hotkey.KeyG,
+	}
+	mockHk.On("Register").Return(nil)
+	mockHk.On("Unregister").Return(nil)
+	manager.SetHotkey(mockHk)
+
 	// Register hotkey
 	err = manager.Register()
 	assert.NoError(t, err, "Should register hotkey without error")
@@ -89,8 +99,7 @@ func TestWindowsManager_QuickNoteHotkey(t *testing.T) {
 	err = manager.Start()
 	assert.NoError(t, err, "Should start manager without error")
 
-	// Get the mock hotkey
-	mockHk := manager.hk.(*mockHotkey)
+	// Verify registration state
 	assert.True(t, mockHk.IsRegistered(), "Hotkey should be registered")
 
 	// Simulate hotkey trigger
@@ -100,8 +109,10 @@ func TestWindowsManager_QuickNoteHotkey(t *testing.T) {
 	err = manager.Stop()
 	assert.NoError(t, err, "Should stop manager without error")
 
+	// Verify final state
 	assert.False(t, mockHk.IsRegistered(), "Hotkey should be unregistered")
 	quickNote.AssertExpectations(t)
+	mockHk.AssertExpectations(t)
 }
 
 func TestWindowsManager_InvalidKey(t *testing.T) {
@@ -176,18 +187,30 @@ func TestWindowsManager_UnregisterHotkey(t *testing.T) {
 	// Set quick note service
 	manager.SetQuickNote(quickNote, binding)
 
+	// Create mock hotkey
+	mockHk := &mockHotkey{
+		keydownChan: make(chan hotkey.Event),
+		modifiers:   []hotkey.Modifier{hotkey.ModCtrl, hotkey.ModShift},
+		key:         hotkey.KeyG,
+	}
+	mockHk.On("Register").Return(nil)
+	mockHk.On("Unregister").Return(nil)
+	manager.SetHotkey(mockHk)
+
 	// Register hotkey
 	err = manager.Register()
 	assert.NoError(t, err, "Should register hotkey without error")
 
-	// Get the mock hotkey
-	mockHk := manager.hk.(*mockHotkey)
+	// Verify registration state
 	assert.True(t, mockHk.IsRegistered(), "Hotkey should be registered")
 
 	// Unregister hotkey
 	err = manager.Unregister()
 	assert.NoError(t, err, "Should unregister hotkey without error")
 	assert.False(t, mockHk.IsRegistered(), "Hotkey should be unregistered")
+
+	// Verify expectations
+	mockHk.AssertExpectations(t)
 }
 
 func TestWindowsManager_MultipleRegistrations(t *testing.T) {
@@ -210,6 +233,16 @@ func TestWindowsManager_MultipleRegistrations(t *testing.T) {
 	// Set quick note service
 	manager.SetQuickNote(quickNote, binding)
 
+	// Create mock hotkey
+	mockHk := &mockHotkey{
+		keydownChan: make(chan hotkey.Event),
+		modifiers:   []hotkey.Modifier{hotkey.ModCtrl, hotkey.ModShift},
+		key:         hotkey.KeyG,
+	}
+	mockHk.On("Register").Return(nil)
+	mockHk.On("Unregister").Return(nil)
+	manager.SetHotkey(mockHk)
+
 	// First registration should succeed
 	err = manager.Register()
 	assert.NoError(t, err, "First registration should succeed")
@@ -222,6 +255,9 @@ func TestWindowsManager_MultipleRegistrations(t *testing.T) {
 	// Clean up
 	err = manager.Stop()
 	assert.NoError(t, err, "Should stop manager without error")
+
+	// Verify expectations
+	mockHk.AssertExpectations(t)
 }
 
 func TestWindowsManager_StopWithoutStart(t *testing.T) {
@@ -301,6 +337,16 @@ func TestWindowsManager_HotkeyTrigger(t *testing.T) {
 	// Set quick note service
 	manager.SetQuickNote(quickNote, binding)
 
+	// Create mock hotkey
+	mockHk := &mockHotkey{
+		keydownChan: make(chan hotkey.Event),
+		modifiers:   []hotkey.Modifier{hotkey.ModCtrl, hotkey.ModShift},
+		key:         hotkey.KeyG,
+	}
+	mockHk.On("Register").Return(nil)
+	mockHk.On("Unregister").Return(nil)
+	manager.SetHotkey(mockHk)
+
 	// Register and start
 	err = manager.Register()
 	assert.NoError(t, err, "Should register hotkey without error")
@@ -308,8 +354,7 @@ func TestWindowsManager_HotkeyTrigger(t *testing.T) {
 	err = manager.Start()
 	assert.NoError(t, err, "Should start manager without error")
 
-	// Get the mock hotkey
-	mockHk := manager.hk.(*mockHotkey)
+	// Verify registration state
 	assert.True(t, mockHk.IsRegistered(), "Hotkey should be registered")
 
 	// Simulate hotkey trigger
@@ -319,8 +364,9 @@ func TestWindowsManager_HotkeyTrigger(t *testing.T) {
 	err = manager.Stop()
 	assert.NoError(t, err, "Should stop manager without error")
 
-	// Verify the Show method was called
+	// Verify expectations
 	quickNote.AssertExpectations(t)
+	mockHk.AssertExpectations(t)
 }
 
 func TestWindowsManager_StateTransitions(t *testing.T) {

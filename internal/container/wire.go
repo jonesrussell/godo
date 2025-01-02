@@ -427,20 +427,18 @@ func ProvideErrorOutputPaths() common.ErrorOutputPaths {
 	return common.ErrorOutputPaths{"stderr"}
 }
 
-// ProvideAPIConfig provides the API server configuration
+// Provider functions for API components
 func ProvideAPIConfig() *api.ServerConfig {
 	return api.NewServerConfig()
 }
 
-// ProvideAPIServer provides the API server instance
 func ProvideAPIServer(store storage.TaskStore, log logger.Logger) *api.Server {
 	return api.NewServer(store, log)
 }
 
-// ProvideAPIRunner provides the API server runner
 func ProvideAPIRunner(store storage.TaskStore, log logger.Logger, cfg *api.ServerConfig) *api.Runner {
 	return api.NewRunner(store, log, &common.HTTPConfig{
-		Port:              8080, // Default port
+		Port:              8080, // TODO: Get from config
 		ReadTimeout:       int(cfg.ReadTimeout.Seconds()),
 		WriteTimeout:      int(cfg.WriteTimeout.Seconds()),
 		ReadHeaderTimeout: int(cfg.ReadHeaderTimeout.Seconds()),

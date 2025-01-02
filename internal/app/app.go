@@ -2,9 +2,11 @@
 package app
 
 import (
+	"context"
 	"fmt"
 
 	"fyne.io/fyne/v2"
+	"github.com/jonesrussell/godo/internal/api"
 	"github.com/jonesrussell/godo/internal/app/hotkey"
 	"github.com/jonesrussell/godo/internal/common"
 	"github.com/jonesrussell/godo/internal/config"
@@ -27,12 +29,16 @@ type App struct {
 	store      storage.TaskStore
 	fyneApp    fyne.App
 	config     *config.Config
+	apiServer  *api.Server
+	apiRunner  *api.Runner
 }
 
 // Params holds the parameters for creating a new App instance
 type Params struct {
-	Options *options.AppOptions
-	Hotkey  hotkey.Manager
+	Options   *options.AppOptions
+	Hotkey    hotkey.Manager
+	APIServer *api.Server
+	APIRunner *api.Runner
 }
 
 // New creates a new application instance using the options pattern
@@ -48,6 +54,8 @@ func New(params *Params) *App {
 		store:      params.Options.Core.Store,
 		fyneApp:    params.Options.GUI.App,
 		config:     params.Options.Core.Config,
+		apiServer:  params.APIServer,
+		apiRunner:  params.APIRunner,
 	}
 }
 
@@ -103,6 +111,11 @@ func (a *App) Run() {
 		// Continue running even if hotkey fails
 	}
 
+	// Start API server
+	if a.apiRunner != nil {
+		a.apiRunner.Start(8080) // TODO: Get port from config
+	}
+
 	// Run the application main loop
 	a.fyneApp.Run()
 }
@@ -111,14 +124,23 @@ func (a *App) Run() {
 func (a *App) Cleanup() {
 	a.logger.Info("Cleaning up application")
 
-	// First stop the hotkey manager
+	// First stop the API server
+	if a.apiRunner != nil {
+		if err := a.apiRunner.Shutdown(context.Background()); err != nil {
+			a.logger.Error("Failed to stop API server", "error", err)
+		} else {
+			a.logger.Info("API server stopped successfully")
+		}
+	}
+
+	// Then stop the hotkey manager
 	if err := a.hotkey.Stop(); err != nil {
 		a.logger.Error("Failed to stop hotkey manager", "error", err)
 	} else {
 		a.logger.Info("Hotkey manager stopped successfully")
 	}
 
-	// Then close the store
+	// Finally close the store
 	if err := a.store.Close(); err != nil {
 		a.logger.Error("Failed to close store", "error", err)
 	} else {

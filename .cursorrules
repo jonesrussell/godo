@@ -7,9 +7,11 @@ code_style:
   # Core Code Organization
   - use_platform_specific_build_tags: "Use //go:build for platform-specific code"
   - follow_dependency_injection_pattern: "Use wire for DI, avoid global state"
-  - implement_interface_segregation: "Keep interfaces small and focused"
+  - implement_interface_segregation: "Keep interfaces small and focused (max 5 methods)"
   - use_options_pattern: "Use functional options for configurable components"
-  - follow_error_handling_conventions: "Use custom error types, wrap errors with context"
+  - follow_error_handling_conventions: "Use custom error types, wrap errors with context, log before return"
+  - follow_interface_naming: "Interface names should end with 'er' or 'Service'"
+  - define_interfaces_in_consumer_packages: "Interfaces belong in the package that uses them"
 
   # Architecture Rules
   - follow_clean_architecture:
@@ -17,6 +19,23 @@ code_style:
     - use_interface_abstractions: "Define interfaces in consumer packages"
     - separate_platform_specific_code: "Use separate files with build tags"
     - follow_dependency_rule: "Dependencies point inward"
+    - avoid_central_interfaces_package: "Don't create a central interfaces package"
+
+  # Error Handling Rules
+  - error_handling:
+    - wrap_errors: "Always wrap errors with context using fmt.Errorf with %w"
+    - log_before_return: "Log errors before returning them"
+    - use_custom_error_types: "Define domain-specific error types"
+    - include_error_context: "Include relevant context in error messages"
+    - validate_error_handling: "Ensure all error paths are handled"
+
+  # Interface Design Rules
+  - interface_design:
+    - max_methods: "Maximum 5 methods per interface"
+    - follow_isp: "Split interfaces based on client needs"
+    - proper_naming: "Use 'er' suffix for interfaces (e.g., Reader, Writer)"
+    - consumer_defined: "Define interfaces where they are used"
+    - document_contracts: "Document interface contracts clearly"
 
   # Testing Rules
   - write_focused_unit_tests: "Each test verifies one specific behavior"

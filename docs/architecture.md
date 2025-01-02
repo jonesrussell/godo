@@ -1,214 +1,333 @@
-# Godo Architecture
+# Architecture Overview
 
-## Overview
+## Core Principles
 
-Godo is a cross-platform Todo application with quick-note capabilities and REST API support, built in Go using the Fyne UI toolkit. The application is designed with a clean architecture that separates concerns and supports multiple platforms.
+1. **Clean Architecture**
+   - Business logic in `internal/`
+   - Dependencies point inward
+   - Interfaces defined by consumers
+   - Platform-specific code isolated
 
-## Core Components
+2. **Interface Segregation**
+   - Small, focused interfaces
+   - Split by client needs
+   - Maximum 5 methods per interface
+   - Clear responsibility boundaries
 
-### Application Layer (`internal/app`)
-- Main application lifecycle management
-- Component coordination
-- Event handling
-- Global hotkey management
-- Platform-specific implementations
+3. **Error Handling**
+   - Domain-specific error types
+   - Error wrapping with context
+   - Structured logging
+   - Clear error hierarchies
 
-### Storage Layer (`internal/storage`)
-- Task persistence
-- SQLite implementation
-- In-memory implementation for testing
-- Repository pattern implementation
+4. **Dependency Management**
+   - Wire for dependency injection
+   - Explicit dependencies
+   - No global state
+   - Testable components
 
-### GUI Layer (`internal/gui`)
-- Main window management
-- Quick note window
-- System tray integration (Windows)
-- Event handling
-- Cross-platform UI components
+## Layer Organization
 
-### HTTP API Layer (`internal/api`)
-- RESTful endpoints
-- Chi router with middleware
-- JSON response handling
-- Health check endpoint
-- Error handling
-- Future WebSocket support
+```
+cmd/
+  ├── godo/              # Main application
+  └── godo-linter/       # Custom linter tool
 
-### Configuration (`internal/config`)
-- YAML-based configuration
-- Environment-specific settings
-- Runtime configuration management
-- API configuration
+internal/
+  ├── app/              # Application core
+  │   ├── service.go    # Business logic
+  │   └── app.go        # App lifecycle
+  │
+  ├── task/            # Task domain
+  │   ├── model.go     # Task entity
+  │   ├── service.go   # Task operations
+  │   └── errors.go    # Domain errors
+  │
+  ├── storage/         # Data persistence
+  │   ├── memory/      # In-memory store
+  │   └── sqlite/      # SQLite store
+  │
+  ├── api/            # HTTP API
+  │   ├── server.go   # API server
+  │   ├── handler.go  # Request handlers
+  │   └── middleware/ # API middleware
+  │
+  ├── gui/           # User interface
+  │   ├── window.go  # Window management
+  │   ├── task/      # Task-related UI
+  │   └── theme/     # UI theming
+  │
+  └── platform/      # Platform-specific
+      ├── win/       # Windows features
+      └── linux/     # Linux features
 
-### Logging (`internal/logger`)
-- Clean logger abstraction
-- Multiple implementations:
-  - Production logger (Zap-based)
-  - Test logger for better test output
-  - No-op logger for benchmarks
-- Structured logging support
-- Log level management
-- Operation tracking
-- Easy extensibility for new implementations
+pkg/                 # Reusable packages
+  ├── config/        # Configuration
+  ├── log/          # Logging
+  └── errors/       # Error utilities
+```
 
-### Common (`internal/common`)
-- Shared types and utilities
-- Cross-cutting concerns
-- Common interfaces
-- Platform-specific utilities
+## Component Interactions
 
-## Dependency Management
+### 1. Task Management Flow
+```
+GUI/API → TaskService → TaskStore → Database
+   ↑          ↓            ↓
+   └──────── Events ←──────┘
+```
 
-The application uses Wire for dependency injection, configured in:
-- `internal/container/wire.go`
-- `internal/container/wire_gen.go`
+### 2. Quick Note Flow
+```
+Hotkey → QuickNote UI → TaskService → TaskStore
+   ↑          ↓             ↓
+   └──────── Events ←───────┘
+```
 
-## Data Flow
+### 3. Data Flow
+```
+User Input → Validation → Business Logic → Storage
+    ↑           ↓             ↓             ↓
+    └───────── Error Handling & Logging ────┘
+```
 
-1. User Interaction
-   - GUI events
-   - Global hotkeys
-   - System tray actions
-   - HTTP API requests
+## Interface Design
 
-2. Application Logic
-   - Event handling
-   - Task management
-   - State updates
-   - API request processing
+### 1. Service Layer
+```go
+type TaskService interface {
+    CreateTask(ctx context.Context, content string) (*Task, error)
+    CompleteTask(ctx context.Context, id string) error
+    ReopenTask(ctx context.Context, id string) error
+}
+```
 
-3. Storage
-   - Task persistence
-   - Data retrieval
-   - Transaction management
+### 2. Storage Layer
+```go
+type TaskReader interface {
+    GetByID(ctx context.Context, id string) (*Task, error)
+    List(ctx context.Context) ([]*Task, error)
+}
 
-## Build System
+type TaskWriter interface {
+    Create(ctx context.Context, task *Task) error
+    Update(ctx context.Context, task *Task) error
+    Delete(ctx context.Context, id string) error
+}
 
-- Task-based build automation
-- Platform-specific build tags
-- Docker support for Linux builds
-- Windows-native compilation
-- GitHub Actions CI/CD pipeline
-- Automated releases
-- Cross-platform binary distribution
+type TaskStore interface {
+    TaskReader
+    TaskWriter
+    Close() error
+}
+```
+
+### 3. UI Layer
+```go
+type Window interface {
+    Show()
+    Hide()
+    SetContent(content fyne.CanvasObject)
+    Close() error
+}
+
+type TaskView interface {
+    Refresh()
+    SetTasks([]*Task)
+    OnTaskSelected(func(*Task))
+}
+```
+
+## Error Handling
+
+### 1. Domain Errors
+```go
+type TaskError struct {
+    Op   string
+    Kind TaskErrorKind
+    Err  error
+}
+
+type TaskErrorKind int
+
+const (
+    TaskNotFound TaskErrorKind = iota
+    TaskInvalidState
+    TaskValidationFailed
+)
+```
+
+### 2. Error Wrapping
+```go
+if err != nil {
+    return &TaskError{
+        Op:   "CreateTask",
+        Kind: TaskValidationFailed,
+        Err:  err,
+    }
+}
+```
+
+### 3. Error Logging
+```go
+logger.Error("failed to create task",
+    "op", "CreateTask",
+    "content", content,
+    "error", err)
+```
 
 ## Testing Strategy
 
-- Unit tests for core components
-- Integration tests for storage and API
-- GUI testing utilities
-- Mock implementations for testing
-- API endpoint testing
-- Cross-platform testing
+### 1. Unit Tests
+```go
+func TestTaskService(t *testing.T) {
+    suite.Run(t, new(TaskServiceSuite))
+}
 
-## API Architecture
+type TaskServiceSuite struct {
+    suite.Suite
+    store  *mocks.TaskStore
+    logger *mocks.Logger
+    svc    *TaskService
+}
+```
 
-The HTTP API includes:
+### 2. Integration Tests
+```go
+func TestTaskIntegration(t *testing.T) {
+    store := sqlite.NewStore(":memory:")
+    defer store.Close()
+    
+    svc := task.NewService(store)
+    // Test full flow
+}
+```
 
-1. HTTP Server Layer
-   - Chi router for endpoints
-   - JSON response handling
-   - Middleware pipeline
-   - Health checks
-   - Error handling
+### 3. API Tests
+```go
+func TestTaskAPI(t *testing.T) {
+    srv := api.NewTestServer()
+    defer srv.Close()
+    
+    // Test HTTP endpoints
+}
+```
 
-2. Future Enhancements
-   - WebSocket support for real-time updates
-   - Connection management
-   - Event broadcasting
+## Configuration Management
+
+### 1. Application Config
+```yaml
+app:
+  name: "Godo"
+  version: "1.0.0"
+  
+storage:
+  type: "sqlite"
+  path: "tasks.db"
+  
+api:
+  port: 8080
+  timeout: 30s
+  
+gui:
+  theme: "dark"
+  scale: 1.0
+```
+
+### 2. Loading Config
+```go
+type Config struct {
+    App     AppConfig
+    Storage StorageConfig
+    API     APIConfig
+    GUI     GUIConfig
+}
+
+func LoadConfig() (*Config, error) {
+    // Load and validate configuration
+}
+```
+
+## Dependency Injection
+
+### 1. Wire Setup
+```go
+//+build wireinject
+
+func InitializeApp(cfg *Config) (*App, error) {
+    wire.Build(
+        NewLogger,
+        NewTaskStore,
+        NewTaskService,
+        NewAPIServer,
+        NewGUI,
+        wire.Struct(new(App), "*"),
+    )
+    return nil, nil
+}
+```
+
+### 2. Component Setup
+```go
+type App struct {
+    cfg     *Config
+    logger  Logger
+    store   TaskStore
+    service TaskService
+    api     *APIServer
+    gui     *GUI
+}
+```
+
+## Platform Integration
+
+### 1. Windows Support
+```go
+//go:build windows
+
+func (app *App) setupHotkeys() error {
+    // Windows-specific hotkey registration
+}
+```
+
+### 2. Linux Support
+```go
+//go:build linux
+
+func (app *App) setupHotkeys() error {
+    // Linux-specific hotkey registration
+}
+```
+
+## Security Considerations
+
+1. **Data Protection**
+   - Secure storage of tasks
+   - Proper file permissions
+   - Safe error messages
+
+2. **API Security**
+   - Input validation
    - Rate limiting
-   - Authentication
+   - CORS configuration
 
-3. API Documentation
-   - OpenAPI/Swagger specs
-   - Usage examples
-   - Integration guides 
-
-## Storage Layer Architecture
-
-### Interface Segregation
-The storage layer follows the Interface Segregation Principle (ISP) by breaking down the monolithic `Store` interface into more focused interfaces:
-
-1. `TaskReader` - Read-only operations
-   - `List() ([]Task, error)`
-   - `GetByID(id string) (*Task, error)`
-   - Enables read-only access patterns
-   - Supports caching implementations
-
-2. `TaskWriter` - Write operations
-   - `Add(task Task) error`
-   - `Update(task Task) error`
-   - `Delete(id string) error`
-   - Enforces write-specific validation
-   - Supports audit logging
-
-3. `TaskStore` - Combined interface
-   - Embeds `TaskReader` and `TaskWriter`
-   - Adds `io.Closer` for resource management
-   - Primary interface for full access
-
-4. `TaskTx` - Transaction support
-   - Extends `TaskStore`
-   - Adds `Begin()`, `Commit()`, `Rollback()`
-   - Ensures data consistency
-   - Supports atomic operations
-
-### Validation Layer
-- Input validation before storage operations
-- State validation for connection management
-- Data integrity checks (IDs, duplicates)
-- Custom error types for specific failures
-
-### Error Handling
-- Domain-specific error types
-- Error wrapping for context
-- Error code system for client handling
-- Structured logging integration
-
-### Implementation Guidelines
-1. SQLite Implementation
-   - Transaction support using `database/sql`
-   - Connection pooling
-   - Statement preparation
-   - Error mapping
-
-2. Memory Implementation
-   - Thread-safe operations
-   - Snapshot support for testing
-   - Simulated transactions
-   - Configurable failure modes
-
-### Testing Strategy
-1. Unit Tests
-   - Interface compliance tests
-   - Error condition coverage
-   - Transaction rollback scenarios
-   - Concurrent access patterns
-
-2. Integration Tests
-   - Database migrations
-   - Data consistency
-   - Performance benchmarks
+3. **Platform Security**
+   - Safe hotkey registration
+   - Protected IPC
    - Resource cleanup
 
-### Migration Path
-1. Phase 1: Interface Definition
-   - Define new interfaces
-   - Document migration guide
-   - Add validation layer
+## Performance Optimization
 
-2. Phase 2: Implementation
-   - Update SQLite store
-   - Complete memory store
-   - Add transaction support
+1. **Database**
+   - Connection pooling
+   - Prepared statements
+   - Index optimization
 
-3. Phase 3: Client Migration
-   - Update existing clients
-   - Add interface adapters
-   - Deprecate old interfaces
+2. **API**
+   - Response caching
+   - Compression
+   - Connection reuse
 
-### Success Metrics
-- Test coverage > 80%
-- No data inconsistencies
-- Proper resource cleanup
-- Clear error messages 
+3. **GUI**
+   - Lazy loading
+   - Resource pooling
+   - Event debouncing 

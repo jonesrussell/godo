@@ -99,13 +99,21 @@ func (a *App) Run() {
 func (a *App) Cleanup() {
 	a.logger.Info("cleaning up application")
 
-	if err := a.hotkey.Unregister(); err != nil {
-		a.logger.Error("failed to unregister hotkey", "error", err)
+	// First stop the hotkey manager (this unregisters the hotkey and stops the listener)
+	if err := a.hotkey.Stop(); err != nil {
+		a.logger.Error("failed to stop hotkey manager", "error", err)
+	} else {
+		a.logger.Info("hotkey manager stopped successfully")
 	}
 
+	// Then close the store
 	if err := a.store.Close(); err != nil {
 		a.logger.Error("failed to close store", "error", err)
+	} else {
+		a.logger.Info("store closed successfully")
 	}
+
+	a.logger.Info("cleanup completed")
 }
 
 // Logger returns the application logger

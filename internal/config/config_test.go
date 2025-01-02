@@ -244,12 +244,13 @@ func TestEnvironmentVariables(t *testing.T) {
 	t.Run("Complex environment variable overrides", func(t *testing.T) {
 		// Set multiple environment variables
 		envVars := map[string]string{
-			config.EnvPrefix + "_APP_NAME":           "EnvApp",
-			config.EnvPrefix + "_APP_VERSION":        "2.0.0",
-			config.EnvPrefix + "_APP_ID":             "env.app.id",
-			config.EnvPrefix + "_LOGGER_LEVEL":       "debug",
-			config.EnvPrefix + "_LOGGER_CONSOLE":     "false",
-			config.EnvPrefix + "_HOTKEYS_QUICK_NOTE": "Alt+Shift+N",
+			config.EnvPrefix + "_APP_NAME":                     "EnvApp",
+			config.EnvPrefix + "_APP_VERSION":                  "2.0.0",
+			config.EnvPrefix + "_APP_ID":                       "env.app.id",
+			config.EnvPrefix + "_LOGGER_LEVEL":                 "debug",
+			config.EnvPrefix + "_LOGGER_CONSOLE":               "false",
+			config.EnvPrefix + "_HOTKEYS_QUICK_NOTE_MODIFIERS": `["Alt", "Shift"]`,
+			config.EnvPrefix + "_HOTKEYS_QUICK_NOTE_KEY":       "N",
 		}
 
 		// Set environment variables and create cleanup function
@@ -278,7 +279,8 @@ func TestEnvironmentVariables(t *testing.T) {
 		assert.Equal(t, "env.app.id", cfg.App.ID)
 		assert.Equal(t, "debug", cfg.Logger.Level)
 		assert.False(t, cfg.Logger.Console)
-		assert.Equal(t, "Alt+Shift+N", cfg.Hotkeys.QuickNote.String())
+		assert.Equal(t, []string{"Alt", "Shift"}, cfg.Hotkeys.QuickNote.Modifiers)
+		assert.Equal(t, "N", cfg.Hotkeys.QuickNote.Key)
 	})
 
 	t.Run("Invalid environment variable values", func(t *testing.T) {

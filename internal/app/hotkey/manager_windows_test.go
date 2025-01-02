@@ -11,6 +11,7 @@ import (
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"golang.design/x/hotkey"
 )
 
 type mockQuickNoteService struct {
@@ -66,7 +67,7 @@ func TestWindowsManager_QuickNoteHotkey(t *testing.T) {
 	manager.SetQuickNote(quickNote, binding)
 
 	// Create mock hotkey
-	mockHk := newMockHotkey([]hotkey.Modifier{hotkey.ModCtrl, hotkey.ModShift}, hotkey.KeyG)
+	mockHk := newMockHotkey([]hotkey.Modifier{hotkey.ModCtrl, hotkey.ModShift}, hotkey.KeyG).(*mockHotkey)
 	mockHk.On("Register").Return(nil)
 	mockHk.On("Unregister").Return(nil)
 	manager.hk = mockHk

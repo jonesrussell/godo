@@ -22,7 +22,7 @@ type TestApp struct {
 }
 
 // SetupUI implements the Application interface for testing
-func (a *TestApp) SetupUI() {}
+func (a *TestApp) SetupUI() error { return nil }
 
 // Run implements the Application interface for testing
 func (a *TestApp) Run() {}

@@ -8,21 +8,18 @@ import (
 	"golang.design/x/hotkey"
 )
 
-// hotkeyInterface defines the interface for hotkey functionality
-type hotkeyInterface interface {
-	Register() error
-	Unregister() error
-	Keydown() <-chan hotkey.Event
-}
-
 type mockHotkey struct {
 	mock.Mock
 	keydownChan chan hotkey.Event
+	modifiers   []hotkey.Modifier
+	key         hotkey.Key
 }
 
 func newMockHotkey(mods []hotkey.Modifier, key hotkey.Key) hotkeyInterface {
 	return &mockHotkey{
 		keydownChan: make(chan hotkey.Event),
+		modifiers:   mods,
+		key:         key,
 	}
 }
 

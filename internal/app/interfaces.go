@@ -13,7 +13,7 @@ type UI interface {
 
 // Application defines the core application behavior
 type Application interface {
-	SetupUI()
+	SetupUI() error
 	Run()
 	Cleanup()
 }

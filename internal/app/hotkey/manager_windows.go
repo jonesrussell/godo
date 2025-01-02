@@ -16,6 +16,15 @@ import (
 	"golang.design/x/hotkey"
 )
 
+const (
+	// cleanupDelay is the delay before cleaning up resources
+	cleanupDelay = 100 * time.Millisecond
+	// retryDelay is the delay between retry attempts
+	retryDelay = 100 * time.Millisecond
+	// maxRetries is the maximum number of retry attempts
+	maxRetries = 3
+)
+
 // WindowsManager manages hotkeys for Windows
 type WindowsManager struct {
 	log       logger.Logger

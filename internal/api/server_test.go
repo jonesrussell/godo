@@ -559,8 +559,8 @@ func TestConcurrentOperations(t *testing.T) {
 				Content: fmt.Sprintf("Updated Content %d", i),
 				Done:    i%2 == 0,
 			}
-			body, err := json.Marshal(update)
-			require.NoError(t, err)
+			body, bodyErr := json.Marshal(update)
+			require.NoError(t, bodyErr)
 
 			// Send request
 			req := httptest.NewRequest(http.MethodPut, "/api/v1/tasks/"+task.ID, bytes.NewReader(body))

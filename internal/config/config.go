@@ -267,7 +267,10 @@ func NewDefaultConfig() *Config {
 			Path: "godo.db",
 		},
 		Hotkeys: HotkeyConfig{
-			QuickNote: "Ctrl+Alt+G",
+			QuickNote: common.HotkeyBinding{
+				Modifiers: []string{"Ctrl", "Shift"},
+				Key:       "G",
+			},
 		},
 		UI: UIConfig{
 			MainWindow: WindowConfig{

@@ -25,10 +25,6 @@ type DefaultManager struct {
 // NewManager creates a new DefaultManager with the specified modifiers and key
 func NewManager(modifiers []hotkey.Modifier, key hotkey.Key) (*DefaultManager, error) {
 	hk := hotkey.New(modifiers, key)
-	if err := hk.Register(); err != nil {
-		return nil, err
-	}
-
 	return &DefaultManager{
 		hk: hk,
 	}, nil

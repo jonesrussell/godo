@@ -191,7 +191,23 @@ func (m *platformManager) Start() error {
 	if m.hk == nil {
 		return fmt.Errorf("hotkey not registered")
 	}
-	return nil // Registration already starts the listener
+
+	// Start listening for hotkey in a goroutine
+	go func() {
+		fmt.Println("[DEBUG] Hotkey listener started")
+		for range m.hk.Keydown() {
+			fmt.Println("[DEBUG] Hotkey triggered!")
+			if m.quickNote != nil {
+				fmt.Println("[DEBUG] Showing quick note window...")
+				m.quickNote.Show()
+			} else {
+				fmt.Println("[ERROR] QuickNote service is nil!")
+			}
+		}
+		fmt.Println("[DEBUG] Hotkey listener stopped")
+	}()
+
+	return nil
 }
 
 func (m *platformManager) Stop() error {

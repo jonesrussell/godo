@@ -32,4 +32,6 @@ ui:
     height: 100
 
 hotkeys:
-  quick_note: "Ctrl+Shift+G"
+  quick_note:
+    modifiers: [ "Ctrl", "Shift" ]
+    key: "G"

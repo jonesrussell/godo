@@ -52,7 +52,7 @@ func New(params *Params) *App {
 // SetupUI initializes the user interface
 func (a *App) SetupUI() {
 	// Set up systray first
-	systray.SetupSystray(a.fyneApp, a.mainWindow.GetWindow())
+	systray.SetupSystray(a.fyneApp, a.mainWindow.GetWindow(), a.quickNote)
 
 	// Only show main window if not configured to start hidden
 	if !a.config.UI.MainWindow.StartHidden {

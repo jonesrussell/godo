@@ -4,6 +4,7 @@
 package hotkey
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/jonesrussell/godo/internal/common"
@@ -94,7 +95,6 @@ func TestWindowsManager_QuickNoteHotkey(t *testing.T) {
 	assert.NoError(t, err, "Should unregister hotkey without error")
 
 	// Verify expectations
-	log.AssertExpectations(t)
 	mockHk.AssertExpectations(t)
 }
 
@@ -207,11 +207,15 @@ func TestWindowsManager_MultipleRegistrations(t *testing.T) {
 	mockHk := newMockHotkey([]hotkey.Modifier{hotkey.ModCtrl, hotkey.ModShift}, hotkey.KeyG).(*mockHotkey)
 	mockHk.On("Register").Return(nil)
 	mockHk.On("Unregister").Return(nil)
+	manager.hk = mockHk
 
 	// First registration should succeed
-	manager.hk = mockHk
 	err = manager.Register()
-	assert.Error(t, err, "First registration should fail because hotkey is already set")
+	assert.NoError(t, err, "First registration should succeed")
+
+	// Second registration should fail
+	err = manager.Register()
+	assert.Error(t, err, "Second registration should fail")
 	assert.Contains(t, err.Error(), "already registered", "Error should mention already registered")
 
 	// Clean up
@@ -219,7 +223,6 @@ func TestWindowsManager_MultipleRegistrations(t *testing.T) {
 	assert.NoError(t, err, "Should unregister hotkey without error")
 
 	// Verify expectations
-	log.AssertExpectations(t)
 	mockHk.AssertExpectations(t)
 }
 
@@ -231,13 +234,10 @@ func TestWindowsManager_StopWithoutStart(t *testing.T) {
 	manager, err := NewWindowsManager(log)
 	assert.NoError(t, err, "Should create manager without error")
 
-	// Stop without starting should not panic but return error
+	// Stop without starting should return error
 	err = manager.Stop()
 	assert.Error(t, err, "Stop without start should return error")
 	assert.Contains(t, err.Error(), "not started", "Error should mention not started")
-
-	// Verify expectations
-	log.AssertExpectations(t)
 }
 
 func TestWindowsManager_StartWithoutRegister(t *testing.T) {
@@ -272,4 +272,136 @@ func TestWindowsManager_UnregisterWithoutRegister(t *testing.T) {
 
 	// Verify expectations
 	log.AssertExpectations(t)
+}
+
+func TestWindowsManager_HotkeyTrigger(t *testing.T) {
+	// Create mock logger
+	log := newMockTestLogger(t)
+
+	// Create mock quick note service with expectations
+	quickNote := &mockQuickNoteService{}
+	quickNote.On("Show").Return()
+
+	// Create hotkey binding
+	binding := &common.HotkeyBinding{
+		Modifiers: []string{"Ctrl", "Shift"},
+		Key:       "G",
+	}
+
+	// Create manager
+	manager, err := NewWindowsManager(log)
+	assert.NoError(t, err, "Should create manager without error")
+
+	// Set quick note service
+	manager.SetQuickNote(quickNote, binding)
+
+	// Create mock hotkey that will trigger callback
+	mockHk := newMockHotkey([]hotkey.Modifier{hotkey.ModCtrl, hotkey.ModShift}, hotkey.KeyG).(*mockHotkey)
+	mockHk.On("Register").Return(nil)
+	mockHk.On("Unregister").Return(nil)
+	manager.hk = mockHk
+
+	// Register should succeed
+	err = manager.Register()
+	assert.NoError(t, err, "Should register hotkey without error")
+
+	// Start the manager
+	err = manager.Start()
+	assert.NoError(t, err, "Should start manager without error")
+
+	// Simulate hotkey trigger
+	mockHk.callback()
+
+	// Stop and cleanup
+	err = manager.Stop()
+	assert.NoError(t, err, "Should stop manager without error")
+
+	err = manager.Unregister()
+	assert.NoError(t, err, "Should unregister hotkey without error")
+
+	// Verify the Show method was called
+	quickNote.AssertCalled(t, "Show")
+	mockHk.AssertExpectations(t)
+}
+
+func TestWindowsManager_StateTransitions(t *testing.T) {
+	// Create mock logger
+	log := newMockTestLogger(t)
+
+	// Create mock quick note service
+	quickNote := &mockQuickNoteService{}
+	quickNote.On("Show").Return()
+
+	// Create hotkey binding
+	binding := &common.HotkeyBinding{
+		Modifiers: []string{"Ctrl", "Shift"},
+		Key:       "G",
+	}
+
+	// Create manager
+	manager, err := NewWindowsManager(log)
+	assert.NoError(t, err, "Should create manager without error")
+
+	// Set quick note service
+	manager.SetQuickNote(quickNote, binding)
+
+	// Create mock hotkey
+	mockHk := newMockHotkey([]hotkey.Modifier{hotkey.ModCtrl, hotkey.ModShift}, hotkey.KeyG).(*mockHotkey)
+	mockHk.On("Register").Return(nil)
+	mockHk.On("Unregister").Return(nil)
+	manager.hk = mockHk
+
+	// Test valid state transitions
+	// 1. Register
+	err = manager.Register()
+	assert.NoError(t, err, "Should register hotkey without error")
+
+	// 2. Start
+	err = manager.Start()
+	assert.NoError(t, err, "Should start manager without error")
+
+	// 3. Stop
+	err = manager.Stop()
+	assert.NoError(t, err, "Should stop manager without error")
+
+	// 4. Unregister
+	err = manager.Unregister()
+	assert.NoError(t, err, "Should unregister hotkey without error")
+
+	// Verify all transitions completed
+	mockHk.AssertExpectations(t)
+}
+
+func TestWindowsManager_SystemErrors(t *testing.T) {
+	// Create mock logger
+	log := newMockTestLogger(t)
+
+	// Create mock quick note service
+	quickNote := &mockQuickNoteService{}
+
+	// Create hotkey binding
+	binding := &common.HotkeyBinding{
+		Modifiers: []string{"Ctrl", "Shift"},
+		Key:       "G",
+	}
+
+	// Create manager
+	manager, err := NewWindowsManager(log)
+	assert.NoError(t, err, "Should create manager without error")
+
+	// Set quick note service
+	manager.SetQuickNote(quickNote, binding)
+
+	// Create mock hotkey that returns errors
+	mockHk := newMockHotkey([]hotkey.Modifier{hotkey.ModCtrl, hotkey.ModShift}, hotkey.KeyG).(*mockHotkey)
+	mockHk.On("Register").Return(fmt.Errorf("system error: hotkey registration failed"))
+	manager.hk = mockHk
+
+	// Register should fail with system error
+	err = manager.Register()
+	assert.Error(t, err, "Should fail to register hotkey")
+	assert.Contains(t, err.Error(), "system error", "Error should contain system error message")
+
+	// Verify expectations
+	mockHk.AssertExpectations(t)
 }

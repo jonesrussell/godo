@@ -1,76 +1,70 @@
-//go:build linux && !windows && !darwin
-// +build linux,!windows,!darwin
+//go:build linux
+// +build linux
 
 package hotkey
 
 import (
 	"fmt"
-	"strings"
+	"sync"
 
 	"github.com/jonesrussell/godo/internal/common"
-	"golang.design/x/hotkey"
 )
 
-type platformManager struct {
-	hk        *hotkey.Hotkey
+type linuxManager struct {
 	quickNote QuickNoteService
 	binding   *common.HotkeyBinding
+	running   bool
+	mu        sync.Mutex
 }
 
 func newPlatformManager(quickNote QuickNoteService, binding *common.HotkeyBinding) Manager {
-	return &platformManager{
+	return &linuxManager{
 		quickNote: quickNote,
 		binding:   binding,
 	}
 }
 
-func (m *platformManager) Register() error {
-	// Convert string modifiers to hotkey.Modifier
-	var mods []hotkey.Modifier
-	for _, mod := range m.binding.Modifiers {
-		switch strings.ToLower(mod) {
-		case "ctrl":
-			mods = append(mods, hotkey.ModCtrl)
-		case "shift":
-			mods = append(mods, hotkey.ModShift)
-		case "alt":
-			// On Linux, Alt can be either Mod1 or Mod4 depending on the system
-			mods = append(mods, hotkey.Mod1)
-			mods = append(mods, hotkey.Mod4)
-		}
+func (m *linuxManager) Register() error {
+	// TODO: Implement Linux-specific hotkey registration using X11/Wayland
+	// For now, return a not implemented error
+	return fmt.Errorf("hotkey registration not yet implemented for Linux")
+}
+
+func (m *linuxManager) Start() error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if m.running {
+		return nil
 	}
 
-	// Convert key string to hotkey.Key
-	var key hotkey.Key
-	switch strings.ToUpper(m.binding.Key) {
-	case "N":
-		key = hotkey.KeyN
-	// Add more key mappings as needed
-	default:
-		return fmt.Errorf("unsupported key: %s", m.binding.Key)
+	// TODO: Implement Linux-specific hotkey listening
+	// For now, return a not implemented error
+	return fmt.Errorf("hotkey listening not yet implemented for Linux")
+}
+
+func (m *linuxManager) Stop() error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if !m.running {
+		return nil
 	}
 
-	hk := hotkey.New(mods, key)
-	if err := hk.Register(); err != nil {
-		return err
-	}
-	m.hk = hk
-
-	// Start listening for hotkey in a goroutine
-	go func() {
-		for range hk.Keydown() {
-			if m.quickNote != nil {
-				m.quickNote.Show()
-			}
-		}
-	}()
-
+	m.running = false
 	return nil
 }
 
-func (m *platformManager) Unregister() error {
-	if m.hk != nil {
-		return m.hk.Unregister()
+func (m *linuxManager) Unregister() error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if !m.running {
+		return nil
 	}
+
+	// TODO: Implement Linux-specific hotkey unregistration
+	// For now, just mark as not running
+	m.running = false
 	return nil
 }

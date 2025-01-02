@@ -1,5 +1,5 @@
-//go:build windows && !linux && !darwin && !docker
-// +build windows,!linux,!darwin,!docker
+//go:build linux && !windows && !darwin && !docker
+// +build linux,!windows,!darwin,!docker
 
 package config
 
@@ -9,10 +9,11 @@ import (
 	"golang.design/x/hotkey"
 )
 
-// Modifier constants for hotkeys on Windows
+// Modifier constants for hotkeys on Linux
 const (
 	ModCtrl  = hotkey.ModCtrl  // Control key
 	ModShift = hotkey.ModShift // Shift key
+	ModAlt   = hotkey.Mod1     // Alt key (Mod1 on X11)
 )
 
 // GetDefaultQuickNoteKey returns the default key for quick note hotkey

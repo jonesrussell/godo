@@ -11,7 +11,7 @@
             "unusedparams": true,
             "shadow": true
         },
-        "buildFlags": ["-tags=wireinject,windows"]
+        "buildFlags": ["-tags=wireinject,windows,integration"]
     },
     "[go]": {
         "editor.formatOnSave": true,

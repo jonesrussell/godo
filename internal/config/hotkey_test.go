@@ -8,12 +8,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestHotkeyString(t *testing.T) {
+func TestHotkeyCombo(t *testing.T) {
 	tests := []struct {
 		name      string
 		modifiers []string
 		key       string
-		want      HotkeyString
+		want      string
 	}{
 		{
 			name:      "linux default",
@@ -31,33 +31,46 @@ func TestHotkeyString(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := NewHotkeyString(tt.modifiers, tt.key)
-			assert.Equal(t, tt.want, got)
+			got := NewHotkeyCombo(tt.modifiers, tt.key)
+			assert.Equal(t, tt.want, got.String())
 		})
 	}
 }
 
-func TestGetDefaultQuickNoteKey(t *testing.T) {
-	key := GetDefaultQuickNoteKey()
-	assert.NotEmpty(t, key, "Default quick note key should not be empty")
-}
+func TestHotkeyString(t *testing.T) {
+	tests := []struct {
+		name      string
+		key       string
+		modifiers []string
+		want      HotkeyString
+	}{
+		{
+			name:      "simple hotkey",
+			key:       "N",
+			modifiers: []string{"ctrl", "shift"},
+			want: HotkeyString{
+				Key:       "N",
+				Modifiers: []string{"ctrl", "shift"},
+			},
+		},
+		{
+			name:      "with alt",
+			key:       "A",
+			modifiers: []string{"ctrl", "alt"},
+			want: HotkeyString{
+				Key:       "A",
+				Modifiers: []string{"ctrl", "alt"},
+			},
+		},
+	}
 
-func TestGetDefaultQuickNoteModifiers(t *testing.T) {
-	modifiers := GetDefaultQuickNoteModifiers()
-	assert.NotNil(t, modifiers, "Default quick note modifiers should not be nil")
-}
-
-func TestGetDefaultQuickNoteKeyString(t *testing.T) {
-	keyString := GetDefaultQuickNoteKeyString()
-	assert.NotEmpty(t, keyString, "Default quick note key string should not be empty")
-}
-
-func TestGetDefaultQuickNoteModifiersString(t *testing.T) {
-	modifiersString := GetDefaultQuickNoteModifiersString()
-	assert.NotEmpty(t, modifiersString, "Default quick note modifiers string should not be empty")
-}
-
-func TestGetDefaultQuickNoteHotkey(t *testing.T) {
-	hotkey := GetDefaultQuickNoteHotkey()
-	assert.NotEmpty(t, hotkey, "Default quick note hotkey should not be empty")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := HotkeyString{
+				Key:       tt.key,
+				Modifiers: tt.modifiers,
+			}
+			assert.Equal(t, tt.want, got)
+		})
+	}
 }

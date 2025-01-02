@@ -27,18 +27,18 @@ type HotkeyFactory interface {
 
 // HotkeyConfig holds hotkey configuration
 type HotkeyConfig struct {
-	QuickNote HotkeyString `mapstructure:"quick_note"`
+	QuickNote HotkeyCombo `mapstructure:"quick_note"`
 }
 
-// HotkeyString represents a hotkey combination as a string
-type HotkeyString string
+// HotkeyCombo represents a hotkey combination as a string
+type HotkeyCombo string
 
-// NewHotkeyString creates a new hotkey string from modifiers and key
-func NewHotkeyString(modifiers []string, key string) HotkeyString {
-	return HotkeyString(strings.Join(append(modifiers, key), "+"))
+// NewHotkeyCombo creates a new hotkey string from modifiers and key
+func NewHotkeyCombo(modifiers []string, key string) HotkeyCombo {
+	return HotkeyCombo(strings.Join(append(modifiers, key), "+"))
 }
 
-// String implements the Stringer interface
-func (h HotkeyString) String() string {
+// String returns the string representation of the hotkey combination
+func (h HotkeyCombo) String() string {
 	return string(h)
 }

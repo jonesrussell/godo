@@ -7,6 +7,9 @@ import (
 	"golang.org/x/tools/go/analysis/singlechecker"
 )
 
+// maxInterfaceMethods defines the maximum number of methods allowed in an interface
+const maxInterfaceMethods = 5
+
 // Analyzer is the main entry point for the linter
 var Analyzer = &analysis.Analyzer{
 	Name: "godolinter",
@@ -56,7 +59,7 @@ func checkInterfaceSegregation(pass *analysis.Pass, decl *ast.GenDecl) {
 	for _, spec := range decl.Specs {
 		if typeSpec, ok := spec.(*ast.TypeSpec); ok {
 			if iface, ok := typeSpec.Type.(*ast.InterfaceType); ok {
-				if len(iface.Methods.List) > 5 {
+				if len(iface.Methods.List) > maxInterfaceMethods {
 					pass.Reportf(typeSpec.Pos(), "interface %s has too many methods, consider splitting it", typeSpec.Name.Name)
 				}
 			}

@@ -12,6 +12,7 @@
 - [x] Regression tests for core functionality
 - [x] Hotkey lifecycle management
 - [x] Proper cleanup on exit
+- [x] Custom linter implementation
 
 ### In Progress
 - [ ] Task categories/tags
@@ -24,26 +25,28 @@
 ## Code Cleanup
 
 ### High Priority
-- [ ] Task Creation Consolidation:
-  - [ ] Create TaskService interface
-  - [ ] Move task creation logic to service layer
-  - [ ] Update GUI and API to use TaskService
-  - [ ] Add validation at service layer
-- [ ] Storage Interface Cleanup:
-  - [ ] Remove deprecated Store interface
-  - [ ] Consolidate TaskReader into TaskStore
-  - [ ] Update all implementations
-  - [ ] Add migration guide
-- [ ] Error Handling Standardization:
-  - [ ] Create common ErrorHandler interface
-  - [ ] Implement consistent error types
-  - [ ] Add error mapping layer
+- [ ] Interface Segregation (Linter Findings):
+  - [ ] Split TaskStore interface (storage/store.go)
+  - [ ] Split TaskTx interface (storage/store.go)
+  - [ ] Split Store interface (storage/store.go)
+  - [ ] Split TaskHandler interface (api/handler.go)
+  - [ ] Split MainWindow interface (gui/interfaces.go)
+  - [ ] Add interface documentation
+  - [ ] Update interface tests
+- [ ] Error Handling Standardization (Linter Findings):
+  - [ ] Add error wrapping in storage layer (sqlite/store.go)
+  - [ ] Add error wrapping in config layer (config/config.go)
+  - [ ] Add error wrapping in hotkey layer (app/hotkey/)
+  - [ ] Add error wrapping in container layer (container/wire_gen.go)
+  - [ ] Create error wrapping guidelines
   - [ ] Update error documentation
-- [ ] Documentation Alignment:
-  - [ ] Update storage documentation
-  - [ ] Standardize task model documentation
-  - [ ] Add service layer documentation
-  - [ ] Update API documentation
+- [ ] Test Assertions Standardization (Linter Findings):
+  - [ ] Update API tests to use testify
+  - [ ] Update app tests to use testify
+  - [ ] Update config tests to use testify
+  - [ ] Update GUI tests to use testify
+  - [ ] Update storage tests to use testify
+  - [ ] Create test assertion guidelines
 
 ### Technical Debt
 - [ ] Code Duplication Removal:
@@ -51,11 +54,6 @@
   - [ ] Extract common UI patterns
   - [ ] Standardize test setup code
   - [ ] Create shared test utilities
-- [ ] Interface Optimization:
-  - [ ] Review and simplify interfaces
-  - [ ] Remove unused methods
-  - [ ] Add interface documentation
-  - [ ] Update interface tests
 - [ ] Test Coverage:
   - [ ] Add service layer tests
   - [ ] Update storage tests

@@ -213,6 +213,8 @@ type mockLogger struct {
 	logger.Logger
 }
 
+func (m *mockLogger) Debug(msg string, args ...interface{}) {}
+func (m *mockLogger) Info(msg string, args ...interface{})  {}
 func (m *mockLogger) Error(msg string, args ...interface{}) {}
 
 type mockHotkey struct {

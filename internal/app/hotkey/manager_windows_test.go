@@ -50,7 +50,7 @@ func TestWindowsManager_QuickNoteHotkey(t *testing.T) {
 
 	// Create mock quick note service
 	quickNote := &mockQuickNoteService{}
-	quickNote.On("Show").Return()
+	quickNote.On("Show").Return().Once()
 
 	// Create hotkey binding
 	binding := &common.HotkeyBinding{
@@ -73,7 +73,12 @@ func TestWindowsManager_QuickNoteHotkey(t *testing.T) {
 	err = manager.Start()
 	assert.NoError(t, err, "Should start hotkey listener without error")
 
-	// Give some time for the listener to start
+	// Simulate hotkey press
+	if manager.hotkey != nil && manager.hotkey.Callback != nil {
+		manager.hotkey.Callback()
+	}
+
+	// Give some time for the callback to execute
 	time.Sleep(100 * time.Millisecond)
 
 	// Clean up
@@ -90,6 +95,7 @@ func TestWindowsManager_InvalidKey(t *testing.T) {
 	log := &mockLogger{}
 	log.On("Debug", mock.Anything, mock.Anything).Return()
 	log.On("Error", mock.Anything, mock.Anything).Return()
+	log.On("Info", mock.Anything, mock.Anything).Return()
 
 	// Create mock quick note service
 	quickNote := &mockQuickNoteService{}

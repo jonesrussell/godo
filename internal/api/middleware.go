@@ -16,8 +16,9 @@ type Middleware func(http.HandlerFunc) http.HandlerFunc
 
 // Chain applies a sequence of middleware to a handler
 func Chain(h http.HandlerFunc, middleware ...Middleware) http.HandlerFunc {
-	for _, m := range middleware {
-		h = m(h)
+	// Apply middleware in reverse order so they execute in the order they were passed
+	for i := len(middleware) - 1; i >= 0; i-- {
+		h = middleware[i](h)
 	}
 	return h
 }
@@ -71,14 +72,36 @@ func WithLogging(log logger.Logger) Middleware {
 	}
 }
 
-// WithErrorHandling handles errors from the handler
+// WithErrorHandling adds error handling to a handler
 func WithErrorHandling(log logger.Logger) Middleware {
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			defer func() {
 				if err := recover(); err != nil {
 					log.Error("panic recovered", "error", err)
-					writeError(w, http.StatusInternalServerError, "internal_error", "Internal server error")
+
+					var status int
+					var code string
+					var msg string
+
+					switch e := err.(type) {
+					case error:
+						if errors.Is(e, storage.ErrTaskNotFound) {
+							status = http.StatusNotFound
+							code = "task_not_found"
+							msg = "Task not found"
+						} else {
+							status = http.StatusInternalServerError
+							code = "internal_error"
+							msg = "Internal server error"
+						}
+					default:
+						status = http.StatusInternalServerError
+						code = "internal_error"
+						msg = "Internal server error"
+					}
+
+					writeError(w, status, code, msg)
 				}
 			}()
 			next(w, r)

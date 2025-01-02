@@ -21,6 +21,7 @@ type Window struct {
 	logger     logger.Logger
 	config     config.WindowConfig
 	input      *widget.Entry
+	saveBtn    *widget.Button
 }
 
 // New creates a new quick note window instance
@@ -41,7 +42,7 @@ func (w *Window) setupUI() {
 	w.input = widget.NewMultiLineEntry()
 	w.input.SetPlaceHolder("Enter your quick note...")
 
-	saveBtn := widget.NewButton("Save", func() {
+	w.saveBtn = widget.NewButton("Save", func() {
 		if w.input.Text == "" {
 			return
 		}
@@ -69,7 +70,7 @@ func (w *Window) setupUI() {
 		w.Hide()
 	})
 
-	buttons := container.NewHBox(saveBtn, cancelBtn)
+	buttons := container.NewHBox(w.saveBtn, cancelBtn)
 	content := container.NewBorder(nil, buttons, nil, nil, w.input)
 
 	w.fyneWindow.SetContent(content)
@@ -99,17 +100,17 @@ func (w *Window) CenterOnScreen() {
 	w.fyneWindow.CenterOnScreen()
 }
 
-// SetOnClosed sets the window close callback
+// SetOnClosed sets the callback to be called when the window is closed
 func (w *Window) SetOnClosed(callback func()) {
 	w.fyneWindow.SetOnClosed(callback)
 }
 
-// SetCloseIntercept sets the window close intercept callback
+// SetCloseIntercept sets the callback to be called when the window is about to close
 func (w *Window) SetCloseIntercept(callback func()) {
 	w.fyneWindow.SetCloseIntercept(callback)
 }
 
-// Canvas returns the window canvas
-func (w *Window) Canvas() fyne.Canvas {
-	return w.fyneWindow.Canvas()
+// GetWindow returns the underlying fyne.Window
+func (w *Window) GetWindow() fyne.Window {
+	return w.fyneWindow
 }

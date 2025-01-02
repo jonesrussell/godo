@@ -152,17 +152,6 @@ func checkErrorHandlingBlock(pass *analysis.Pass, block *ast.BlockStmt) {
 	}
 }
 
-func isLoggingCall(call *ast.CallExpr) bool {
-	if sel, ok := call.Fun.(*ast.SelectorExpr); ok {
-		return strings.HasPrefix(sel.Sel.Name, "Log") ||
-			strings.HasPrefix(sel.Sel.Name, "Error") ||
-			strings.HasPrefix(sel.Sel.Name, "Warn") ||
-			strings.HasPrefix(sel.Sel.Name, "Info") ||
-			strings.HasPrefix(sel.Sel.Name, "Debug")
-	}
-	return false
-}
-
 func checkTestPatterns(pass *analysis.Pass, fn *ast.FuncDecl) {
 	hasAssert := false
 	ast.Inspect(fn.Body, func(n ast.Node) bool {
@@ -190,6 +179,22 @@ func isWrappedError(expr ast.Expr) bool {
 	if call, ok := expr.(*ast.CallExpr); ok {
 		if sel, ok := call.Fun.(*ast.SelectorExpr); ok {
 			return sel.Sel.Name == "Wrap" || sel.Sel.Name == "Wrapf"
+		}
+	}
+	return false
+}
+
+func isLoggingCall(call *ast.CallExpr) bool {
+	if sel, ok := call.Fun.(*ast.SelectorExpr); ok {
+		if ident, ok := sel.X.(*ast.Ident); ok {
+			// Match both direct log calls and logger instances
+			return ident.Name == "log" ||
+				strings.HasSuffix(ident.Name, "Logger") ||
+				strings.HasPrefix(sel.Sel.Name, "Log") ||
+				strings.HasPrefix(sel.Sel.Name, "Error") ||
+				strings.HasPrefix(sel.Sel.Name, "Warn") ||
+				strings.HasPrefix(sel.Sel.Name, "Info") ||
+				strings.HasPrefix(sel.Sel.Name, "Debug")
 		}
 	}
 	return false

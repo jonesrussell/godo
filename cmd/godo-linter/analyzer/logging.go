@@ -1,17 +1,22 @@
 package analyzer
 
 import (
+	"fmt"
 	"go/ast"
 	"strings"
 
 	"golang.org/x/tools/go/analysis"
+	"golang.org/x/tools/go/analysis/passes/inspect"
 )
 
 // LoggingAnalyzer checks for proper logging patterns
 var LoggingAnalyzer = &analysis.Analyzer{
 	Name: "loggingcheck",
-	Doc:  "checks for proper logging patterns and practices",
+	Doc:  "checks for proper logging patterns and provides auto-fixes",
 	Run:  runLoggingCheck,
+	Requires: []*analysis.Analyzer{
+		inspect.Analyzer,
+	},
 }
 
 func runLoggingCheck(pass *analysis.Pass) (interface{}, error) {
@@ -19,11 +24,9 @@ func runLoggingCheck(pass *analysis.Pass) (interface{}, error) {
 		ast.Inspect(file, func(n ast.Node) bool {
 			switch node := n.(type) {
 			case *ast.CallExpr:
-				if isLoggerCall(node) {
+				if isLoggingCall(node) {
 					checkLoggingPattern(pass, node)
 				}
-			case *ast.FuncDecl:
-				checkFunctionLogging(pass, node)
 			}
 			return true
 		})
@@ -31,156 +34,128 @@ func runLoggingCheck(pass *analysis.Pass) (interface{}, error) {
 	return nil, nil
 }
 
-func isLoggerCall(call *ast.CallExpr) bool {
-	if sel, ok := call.Fun.(*ast.SelectorExpr); ok {
-		name := sel.Sel.Name
-		return strings.HasPrefix(name, "Log") ||
-			name == "Error" ||
-			name == "Info" ||
-			name == "Debug" ||
-			name == "Warn" ||
-			name == "Fatal"
-	}
-	return false
-}
-
 func checkLoggingPattern(pass *analysis.Pass, call *ast.CallExpr) {
-	// Check for structured logging
-	if !hasStructuredFields(call) {
-		pass.Reportf(call.Pos(), "use structured logging with key-value pairs")
+	sel := call.Fun.(*ast.SelectorExpr)
+
+	// Check if it's using structured logging
+	if !isStructuredLogging(call) {
+		suggestStructuredLogging(pass, call, sel)
 	}
 
-	// Check for appropriate log level
-	if !hasAppropriateLogLevel(call) {
-		pass.Reportf(call.Pos(), "use appropriate log level (Error, Info, Debug, Warn)")
-	}
-
-	// Check for context inclusion
-	if !hasContextField(call) {
-		pass.Reportf(call.Pos(), "include relevant context in log messages")
-	}
-
-	// Check for sensitive data
-	if hasSensitiveData(call) {
-		pass.Reportf(call.Pos(), "avoid logging sensitive information")
+	// Check if context is included
+	if !hasContext(call) {
+		suggestContextInclusion(pass, call)
 	}
 }
 
-func checkFunctionLogging(pass *analysis.Pass, fn *ast.FuncDecl) {
-	var hasErrorLogging bool
-	var hasErrorReturn bool
-
-	ast.Inspect(fn.Body, func(n ast.Node) bool {
-		switch node := n.(type) {
-		case *ast.ReturnStmt:
-			for _, result := range node.Results {
-				if isErrorType(result) {
-					hasErrorReturn = true
-				}
-			}
-		case *ast.CallExpr:
-			if isErrorLoggingCall(node) {
-				hasErrorLogging = true
-			}
+func isStructuredLogging(call *ast.CallExpr) bool {
+	// Check if any argument is a key-value pair
+	for _, arg := range call.Args {
+		if _, ok := arg.(*ast.KeyValueExpr); ok {
+			return true
 		}
-		return true
+	}
+	return false
+}
+
+func hasContext(call *ast.CallExpr) bool {
+	// Check function parameters for context
+	if len(call.Args) > 0 {
+		if ident, ok := call.Args[0].(*ast.Ident); ok {
+			return strings.Contains(strings.ToLower(ident.Name), "ctx")
+		}
+	}
+	return false
+}
+
+func suggestStructuredLogging(pass *analysis.Pass, call *ast.CallExpr, sel *ast.SelectorExpr) {
+	// Convert simple logging to structured logging
+	var newArgs []ast.Expr
+	if len(call.Args) > 0 {
+		// First arg is usually the message
+		newArgs = append(newArgs, call.Args[0])
+
+		// Add structured fields for remaining args
+		for i, arg := range call.Args[1:] {
+			fieldName := fmt.Sprintf("field%d", i+1)
+			newArgs = append(newArgs, &ast.KeyValueExpr{
+				Key:   &ast.Ident{Name: fieldName},
+				Value: arg,
+			})
+		}
+	}
+
+	pass.Report(analysis.Diagnostic{
+		Pos:     call.Pos(),
+		Message: "use structured logging with key-value pairs",
+		SuggestedFixes: []analysis.SuggestedFix{
+			{
+				Message: "Convert to structured logging",
+				TextEdits: []analysis.TextEdit{
+					{
+						Pos:     call.Pos(),
+						End:     call.End(),
+						NewText: []byte(formatStructuredLogging(sel, newArgs)),
+					},
+				},
+			},
+		},
 	})
-
-	if hasErrorReturn && !hasErrorLogging {
-		pass.Reportf(fn.Pos(), "log errors before returning them")
-	}
 }
 
-func hasStructuredFields(call *ast.CallExpr) bool {
-	if len(call.Args) < 2 {
-		return false
-	}
+func suggestContextInclusion(pass *analysis.Pass, call *ast.CallExpr) {
+	// Add context parameter if not present
+	newArgs := []ast.Expr{&ast.Ident{Name: "ctx"}}
+	newArgs = append(newArgs, call.Args...)
 
-	// Check if arguments are key-value pairs
-	for i := 1; i < len(call.Args); i += 2 {
-		if !isStringLiteral(call.Args[i-1]) {
-			return false
+	pass.Report(analysis.Diagnostic{
+		Pos:     call.Pos(),
+		Message: "include relevant context in log messages",
+		SuggestedFixes: []analysis.SuggestedFix{
+			{
+				Message: "Add context parameter",
+				TextEdits: []analysis.TextEdit{
+					{
+						Pos:     call.Lparen,
+						End:     call.Lparen + 1,
+						NewText: []byte("ctx, "),
+					},
+				},
+			},
+		},
+	})
+}
+
+func formatStructuredLogging(sel *ast.SelectorExpr, args []ast.Expr) string {
+	var parts []string
+	parts = append(parts, sel.X.(*ast.Ident).Name+"."+sel.Sel.Name+"(")
+
+	for i, arg := range args {
+		if i > 0 {
+			parts = append(parts, ", ")
+		}
+
+		switch v := arg.(type) {
+		case *ast.KeyValueExpr:
+			parts = append(parts, fmt.Sprintf("%s: %s", v.Key.(*ast.Ident).Name, formatExpr(v.Value)))
+		default:
+			parts = append(parts, formatExpr(arg))
 		}
 	}
-	return true
+
+	parts = append(parts, ")")
+	return strings.Join(parts, "")
 }
 
-func hasAppropriateLogLevel(call *ast.CallExpr) bool {
-	if sel, ok := call.Fun.(*ast.SelectorExpr); ok {
-		switch sel.Sel.Name {
-		case "Error", "Info", "Debug", "Warn", "Fatal":
-			return true
-		}
+func formatExpr(expr ast.Expr) string {
+	switch v := expr.(type) {
+	case *ast.BasicLit:
+		return v.Value
+	case *ast.Ident:
+		return v.Name
+	case *ast.SelectorExpr:
+		return fmt.Sprintf("%s.%s", v.X.(*ast.Ident).Name, v.Sel.Name)
+	default:
+		return "value"
 	}
-	return false
-}
-
-func hasContextField(call *ast.CallExpr) bool {
-	for _, arg := range call.Args {
-		if isStringLiteral(arg) {
-			str := getStringValue(arg)
-			if strings.Contains(strings.ToLower(str), "ctx") ||
-				strings.Contains(strings.ToLower(str), "context") ||
-				strings.Contains(strings.ToLower(str), "correlation") ||
-				strings.Contains(strings.ToLower(str), "request_id") {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-func hasSensitiveData(call *ast.CallExpr) bool {
-	sensitivePatterns := []string{
-		"password", "token", "secret", "key", "auth",
-		"credential", "private", "cert", "ssh",
-	}
-
-	for _, arg := range call.Args {
-		if isStringLiteral(arg) {
-			str := strings.ToLower(getStringValue(arg))
-			for _, pattern := range sensitivePatterns {
-				if strings.Contains(str, pattern) {
-					return true
-				}
-			}
-		}
-	}
-	return false
-}
-
-func isErrorLoggingCall(call *ast.CallExpr) bool {
-	if sel, ok := call.Fun.(*ast.SelectorExpr); ok {
-		return sel.Sel.Name == "Error" ||
-			(sel.Sel.Name == "Log" && hasErrorArg(call))
-	}
-	return false
-}
-
-func hasErrorArg(call *ast.CallExpr) bool {
-	for _, arg := range call.Args {
-		if isErrorType(arg) {
-			return true
-		}
-	}
-	return false
-}
-
-func isErrorType(expr ast.Expr) bool {
-	if ident, ok := expr.(*ast.Ident); ok {
-		return ident.Name == "error" || ident.Name == "err"
-	}
-	return false
-}
-
-func isStringLiteral(expr ast.Expr) bool {
-	_, ok := expr.(*ast.BasicLit)
-	return ok
-}
-
-func getStringValue(expr ast.Expr) string {
-	if lit, ok := expr.(*ast.BasicLit); ok {
-		return strings.Trim(lit.Value, `"`)
-	}
-	return ""
 }

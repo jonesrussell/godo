@@ -12,7 +12,7 @@ import (
 type Container struct {
 	App    godoapp.Application
 	Logger logger.Logger
-	Store  storage.TaskStore
+	Store  storage.Store
 }
 
 // New creates a new container instance

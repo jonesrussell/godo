@@ -33,12 +33,13 @@ func TestMainWindow(t *testing.T) {
 
 	t.Run("AddTask", func(t *testing.T) {
 		// Add a task
+		now := time.Now().Unix()
 		task := storage.Task{
 			ID:        "test-1",
-			Content:   "Test Task",
-			Done:      false,
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
+			Title:     "Test Task",
+			Completed: false,
+			CreatedAt: now,
+			UpdatedAt: now,
 		}
 		err := store.Add(ctx, task)
 		require.NoError(t, err)
@@ -47,40 +48,47 @@ func TestMainWindow(t *testing.T) {
 		addedTask, err := store.Get(ctx, task.ID)
 		require.NoError(t, err)
 		assert.Equal(t, task.ID, addedTask.ID)
-		assert.Equal(t, task.Content, addedTask.Content)
+		assert.Equal(t, task.Title, addedTask.Title)
+		assert.Equal(t, task.Completed, addedTask.Completed)
+		assert.Equal(t, task.CreatedAt, addedTask.CreatedAt)
+		assert.Equal(t, task.UpdatedAt, addedTask.UpdatedAt)
 	})
 
 	t.Run("UpdateTask", func(t *testing.T) {
 		// Add a task
+		now := time.Now().Unix()
 		task := storage.Task{
 			ID:        "test-2",
-			Content:   "Test Task",
-			Done:      false,
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
+			Title:     "Test Task",
+			Completed: false,
+			CreatedAt: now,
+			UpdatedAt: now,
 		}
 		err := store.Add(ctx, task)
 		require.NoError(t, err)
 
 		// Update the task
-		task.Done = true
+		task.Completed = true
+		task.UpdatedAt = time.Now().Unix()
 		err = store.Update(ctx, task)
 		require.NoError(t, err)
 
 		// Get the task to verify it was updated
 		updatedTask, err := store.Get(ctx, task.ID)
 		require.NoError(t, err)
-		assert.True(t, updatedTask.Done)
+		assert.True(t, updatedTask.Completed)
+		assert.Equal(t, task.UpdatedAt, updatedTask.UpdatedAt)
 	})
 
 	t.Run("DeleteTask", func(t *testing.T) {
 		// Add a task
+		now := time.Now().Unix()
 		task := storage.Task{
 			ID:        "test-3",
-			Content:   "Test Task",
-			Done:      false,
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
+			Title:     "Test Task",
+			Completed: false,
+			CreatedAt: now,
+			UpdatedAt: now,
 		}
 		err := store.Add(ctx, task)
 		require.NoError(t, err)
@@ -96,29 +104,39 @@ func TestMainWindow(t *testing.T) {
 
 	t.Run("ListTasks", func(t *testing.T) {
 		// Add some tasks
+		now := time.Now().Unix()
 		task1 := storage.Task{
 			ID:        "test-4",
-			Content:   "Test Task 1",
-			Done:      false,
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
-		}
-		task2 := storage.Task{
-			ID:        "test-5",
-			Content:   "Test Task 2",
-			Done:      true,
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
+			Title:     "Test Task 1",
+			Completed: false,
+			CreatedAt: now,
+			UpdatedAt: now,
 		}
 		err := store.Add(ctx, task1)
 		require.NoError(t, err)
+
+		task2 := storage.Task{
+			ID:        "test-5",
+			Title:     "Test Task 2",
+			Completed: true,
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
 		err = store.Add(ctx, task2)
 		require.NoError(t, err)
 
 		// List tasks
 		tasks, err := store.List(ctx)
 		require.NoError(t, err)
-		assert.GreaterOrEqual(t, len(tasks), 2)
+		assert.Len(t, tasks, 2)
+
+		// Verify task order and fields
+		assert.Equal(t, task1.ID, tasks[0].ID)
+		assert.Equal(t, task1.Title, tasks[0].Title)
+		assert.Equal(t, task1.Completed, tasks[0].Completed)
+		assert.Equal(t, task2.ID, tasks[1].ID)
+		assert.Equal(t, task2.Title, tasks[1].Title)
+		assert.Equal(t, task2.Completed, tasks[1].Completed)
 	})
 
 	t.Run("WindowClose", func(t *testing.T) {

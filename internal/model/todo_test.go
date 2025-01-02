@@ -10,39 +10,39 @@ import (
 
 func TestNewTodo(t *testing.T) {
 	tests := []struct {
-		name    string
-		content string
-		want    *Todo
+		name  string
+		title string
+		want  *Todo
 	}{
 		{
-			name:    "creates todo with content",
-			content: "Test todo",
+			name:  "creates todo with title",
+			title: "Test todo",
 			want: &Todo{
-				Content: "Test todo",
-				Done:    false,
+				Title:     "Test todo",
+				Completed: false,
 			},
 		},
 		{
-			name:    "creates todo with empty content",
-			content: "",
+			name:  "creates todo with empty title",
+			title: "",
 			want: &Todo{
-				Content: "",
-				Done:    false,
+				Title:     "",
+				Completed: false,
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := NewTodo(tt.content)
+			got := NewTodo(tt.title)
 
 			// Verify UUID format
 			_, err := uuid.Parse(got.ID)
 			assert.NoError(t, err)
 
-			// Verify content and done status
-			assert.Equal(t, tt.want.Content, got.Content)
-			assert.Equal(t, tt.want.Done, got.Done)
+			// Verify title and completed status
+			assert.Equal(t, tt.want.Title, got.Title)
+			assert.Equal(t, tt.want.Completed, got.Completed)
 
 			// Verify timestamps
 			assert.NotZero(t, got.CreatedAt)
@@ -50,40 +50,83 @@ func TestNewTodo(t *testing.T) {
 			assert.Equal(t, got.CreatedAt, got.UpdatedAt)
 
 			// Verify timestamps are recent
-			now := time.Now()
-			assert.True(t, got.CreatedAt.Before(now) || got.CreatedAt.Equal(now))
-			assert.True(t, got.UpdatedAt.Before(now) || got.UpdatedAt.Equal(now))
+			now := time.Now().Unix()
+			assert.True(t, got.CreatedAt <= now)
+			assert.True(t, got.UpdatedAt <= now)
 		})
 	}
 }
 
-func TestTodo_ToggleDone(t *testing.T) {
+func TestTodo_ToggleCompleted(t *testing.T) {
+	tests := []struct {
+		name          string
+		todo          *Todo
+		wantCompleted bool
+	}{
+		{
+			name: "toggles uncompleted to completed",
+			todo: &Todo{
+				ID:        uuid.New().String(),
+				Title:     "Test todo",
+				Completed: false,
+				CreatedAt: time.Now().Unix(),
+				UpdatedAt: time.Now().Unix(),
+			},
+			wantCompleted: true,
+		},
+		{
+			name: "toggles completed to uncompleted",
+			todo: &Todo{
+				ID:        uuid.New().String(),
+				Title:     "Test todo",
+				Completed: true,
+				CreatedAt: time.Now().Unix(),
+				UpdatedAt: time.Now().Unix(),
+			},
+			wantCompleted: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			originalUpdatedAt := tt.todo.UpdatedAt
+			time.Sleep(time.Millisecond) // Ensure time difference
+
+			tt.todo.ToggleCompleted()
+
+			assert.Equal(t, tt.wantCompleted, tt.todo.Completed)
+			assert.True(t, tt.todo.UpdatedAt > originalUpdatedAt)
+		})
+	}
+}
+
+func TestTodo_UpdateTitle(t *testing.T) {
 	tests := []struct {
 		name     string
 		todo     *Todo
-		wantDone bool
+		newTitle string
 	}{
 		{
-			name: "toggles undone to done",
+			name: "updates title",
 			todo: &Todo{
 				ID:        uuid.New().String(),
-				Content:   "Test todo",
-				Done:      false,
-				CreatedAt: time.Now(),
-				UpdatedAt: time.Now(),
+				Title:     "Original title",
+				Completed: false,
+				CreatedAt: time.Now().Unix(),
+				UpdatedAt: time.Now().Unix(),
 			},
-			wantDone: true,
+			newTitle: "Updated title",
 		},
 		{
-			name: "toggles done to undone",
+			name: "updates to empty title",
 			todo: &Todo{
 				ID:        uuid.New().String(),
-				Content:   "Test todo",
-				Done:      true,
-				CreatedAt: time.Now(),
-				UpdatedAt: time.Now(),
+				Title:     "Original title",
+				Completed: false,
+				CreatedAt: time.Now().Unix(),
+				UpdatedAt: time.Now().Unix(),
 			},
-			wantDone: false,
+			newTitle: "",
 		},
 	}
 
@@ -92,54 +135,10 @@ func TestTodo_ToggleDone(t *testing.T) {
 			originalUpdatedAt := tt.todo.UpdatedAt
 			time.Sleep(time.Millisecond) // Ensure time difference
 
-			tt.todo.ToggleDone()
+			tt.todo.UpdateTitle(tt.newTitle)
 
-			assert.Equal(t, tt.wantDone, tt.todo.Done)
-			assert.True(t, tt.todo.UpdatedAt.After(originalUpdatedAt))
-		})
-	}
-}
-
-func TestTodo_UpdateContent(t *testing.T) {
-	tests := []struct {
-		name        string
-		todo        *Todo
-		newContent  string
-		wantContent string
-	}{
-		{
-			name: "updates with new content",
-			todo: &Todo{
-				ID:        uuid.New().String(),
-				Content:   "Original content",
-				CreatedAt: time.Now(),
-				UpdatedAt: time.Now(),
-			},
-			newContent:  "Updated content",
-			wantContent: "Updated content",
-		},
-		{
-			name: "updates with empty content",
-			todo: &Todo{
-				ID:        uuid.New().String(),
-				Content:   "Original content",
-				CreatedAt: time.Now(),
-				UpdatedAt: time.Now(),
-			},
-			newContent:  "",
-			wantContent: "",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			originalUpdatedAt := tt.todo.UpdatedAt
-			time.Sleep(time.Millisecond) // Ensure time difference
-
-			tt.todo.UpdateContent(tt.newContent)
-
-			assert.Equal(t, tt.wantContent, tt.todo.Content)
-			assert.True(t, tt.todo.UpdatedAt.After(originalUpdatedAt))
+			assert.Equal(t, tt.newTitle, tt.todo.Title)
+			assert.True(t, tt.todo.UpdatedAt > originalUpdatedAt)
 		})
 	}
 }

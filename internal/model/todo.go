@@ -7,35 +7,35 @@ import (
 	"github.com/google/uuid"
 )
 
-// Todo represents a single todo item
+// Todo represents a todo item
 type Todo struct {
-	ID        string    `json:"id"`
-	Content   string    `json:"content"`
-	Done      bool      `json:"done"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID        string `json:"id"`
+	Title     string `json:"title"`
+	Completed bool   `json:"completed"`
+	CreatedAt int64  `json:"created_at"`
+	UpdatedAt int64  `json:"updated_at"`
 }
 
-// NewTodo creates a new Todo item
-func NewTodo(content string) *Todo {
-	now := time.Now()
+// NewTodo creates a new todo item
+func NewTodo(title string) *Todo {
+	now := time.Now().Unix()
 	return &Todo{
 		ID:        uuid.New().String(),
-		Content:   content,
-		Done:      false,
+		Title:     title,
+		Completed: false,
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
 }
 
-// ToggleDone toggles the done status of the todo
-func (t *Todo) ToggleDone() {
-	t.Done = !t.Done
-	t.UpdatedAt = time.Now()
+// ToggleCompleted toggles the completed status of the todo
+func (t *Todo) ToggleCompleted() {
+	t.Completed = !t.Completed
+	t.UpdatedAt = time.Now().Unix()
 }
 
-// UpdateContent updates the content of the todo
-func (t *Todo) UpdateContent(content string) {
-	t.Content = content
-	t.UpdatedAt = time.Now()
+// UpdateTitle updates the title of the todo
+func (t *Todo) UpdateTitle(title string) {
+	t.Title = title
+	t.UpdatedAt = time.Now().Unix()
 }

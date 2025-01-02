@@ -8,7 +8,6 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/test"
-	"github.com/jonesrussell/godo/internal/common"
 	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
@@ -73,12 +72,12 @@ func (f *TestFixture) Cleanup() {
 }
 
 // CreateTestTask creates a task for testing
-func CreateTestTask(id, content string, done bool) storage.Task {
-	now := time.Now()
+func CreateTestTask(id, title string, completed bool) storage.Task {
+	now := time.Now().Unix()
 	return storage.Task{
 		ID:        id,
-		Content:   content,
-		Done:      done,
+		Title:     title,
+		Completed: completed,
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
@@ -100,24 +99,6 @@ func CreateTestTasks(count int) []storage.Task {
 // CreateTestConfig creates a test configuration with default values
 func CreateTestConfig() *config.Config {
 	return &config.Config{
-		App: config.AppConfig{
-			Name:    "Godo Test",
-			Version: "0.1.0",
-			ID:      "io.github.jonesrussell.godo.test",
-		},
-		Logger: common.LogConfig{
-			Level:   "debug",
-			Console: true,
-		},
-		Hotkeys: config.HotkeyConfig{
-			QuickNote: common.HotkeyBinding{
-				Modifiers: []string{"Ctrl"},
-				Key:       "Space",
-			},
-		},
-		Database: config.DatabaseConfig{
-			Path: ":memory:",
-		},
 		UI: config.UIConfig{
 			MainWindow: config.WindowConfig{
 				Width:       DefaultMainWindowWidth,

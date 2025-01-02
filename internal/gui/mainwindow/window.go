@@ -183,3 +183,8 @@ func (w *Window) SetCloseIntercept(callback func()) {
 func (w *Window) Canvas() fyne.Canvas {
 	return w.fyneWindow.Canvas()
 }
+
+// GetWindow returns the underlying fyne.Window
+func (w *Window) GetWindow() fyne.Window {
+	return w.fyneWindow
+}

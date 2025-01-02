@@ -5,13 +5,13 @@ import (
 	"context"
 )
 
-// LegacyStoreAdapter adapts the new TaskStore interface to the old Store interface
+// LegacyStoreAdapter adapts the new Store interface to the old Store interface
 type LegacyStoreAdapter struct {
-	store TaskStore
+	store Store
 }
 
 // NewLegacyStoreAdapter creates a new adapter
-func NewLegacyStoreAdapter(store TaskStore) *LegacyStoreAdapter {
+func NewLegacyStoreAdapter(store Store) *LegacyStoreAdapter {
 	return &LegacyStoreAdapter{store: store}
 }
 

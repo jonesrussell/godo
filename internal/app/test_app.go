@@ -11,7 +11,7 @@ import (
 // TestApp is a special version of App used for testing
 type TestApp struct {
 	Logger     logger.Logger
-	Store      storage.TaskStore
+	Store      storage.Store
 	MainWindow gui.MainWindow
 	QuickNote  gui.QuickNote
 	Hotkey     hotkey.Manager

@@ -83,7 +83,7 @@ func (m *MockStore) Update(task storage.Task) error {
 		return storage.ErrTaskNotFound
 	}
 
-	task.UpdatedAt = time.Now()
+	task.UpdatedAt = time.Now().Unix()
 	m.tasks[task.ID] = task
 	return nil
 }

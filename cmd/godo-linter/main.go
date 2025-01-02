@@ -15,5 +15,9 @@ func main() {
 		analyzer.LoggingAnalyzer,
 		analyzer.ErrorAnalyzer,
 		analyzer.TaskAnalyzer,
+		analyzer.MiddlewareAnalyzer,
+		analyzer.StandardAnalyzer,
+		analyzer.ArchitectureAnalyzer,
+		analyzer.InterfaceLocationAnalyzer,
 	)
 }

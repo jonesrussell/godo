@@ -79,9 +79,9 @@ func TestMockWindowWithTasks(t *testing.T) {
 
 	// Add a test task
 	task := storage.Task{
-		ID:      "test-task",
-		Content: "Test Task",
-		Done:    false,
+		ID:        "test-task",
+		Title:     "Test Task",
+		Completed: false,
 	}
 	err := store.Add(ctx, task)
 	require.NoError(t, err)
@@ -92,7 +92,7 @@ func TestMockWindowWithTasks(t *testing.T) {
 	assert.Equal(t, content, win.ContentSet)
 
 	// Test task completion
-	task.Done = true
+	task.Completed = true
 	err = store.Update(ctx, task)
 	require.NoError(t, err)
 

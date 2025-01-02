@@ -4,7 +4,6 @@ package validation
 import (
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/jonesrussell/godo/internal/storage"
 )
@@ -12,8 +11,8 @@ import (
 var (
 	// ErrInvalidID indicates that the task ID is invalid
 	ErrInvalidID = errors.New("invalid task ID")
-	// ErrInvalidContent indicates that the task content is invalid
-	ErrInvalidContent = errors.New("invalid task content")
+	// ErrInvalidTitle indicates that the task title is invalid
+	ErrInvalidTitle = errors.New("invalid task title")
 )
 
 // TaskValidator provides validation for task operations
@@ -35,9 +34,9 @@ func (v *TaskValidator) ValidateTask(task storage.Task) error {
 		}
 	}
 
-	if err := v.validateContent(task.Content); err != nil {
+	if err := v.validateTitle(task.Title); err != nil {
 		return &storage.ValidationError{
-			Field:   "content",
+			Field:   "title",
 			Message: err.Error(),
 		}
 	}
@@ -65,30 +64,30 @@ func (v *TaskValidator) ValidateID(id string) error {
 	return nil
 }
 
-// validateContent validates the task content
-func (v *TaskValidator) validateContent(content string) error {
-	if content == "" {
-		return fmt.Errorf("task content cannot be empty")
+// validateTitle validates the task title
+func (v *TaskValidator) validateTitle(title string) error {
+	if title == "" {
+		return fmt.Errorf("task title cannot be empty")
 	}
 
-	if len(content) > MaxContentLength {
-		return fmt.Errorf("task content too long (max %d characters)", MaxContentLength)
+	if len(title) > MaxTitleLength {
+		return fmt.Errorf("task title too long (max %d characters)", MaxTitleLength)
 	}
 
 	return nil
 }
 
 // validateTimestamps validates task timestamps
-func (v *TaskValidator) validateTimestamps(createdAt, updatedAt time.Time) error {
-	if createdAt.IsZero() {
+func (v *TaskValidator) validateTimestamps(createdAt, updatedAt int64) error {
+	if createdAt == 0 {
 		return fmt.Errorf("created_at timestamp cannot be zero")
 	}
 
-	if updatedAt.IsZero() {
+	if updatedAt == 0 {
 		return fmt.Errorf("updated_at timestamp cannot be zero")
 	}
 
-	if updatedAt.Before(createdAt) {
+	if updatedAt < createdAt {
 		return fmt.Errorf("updated_at cannot be before created_at")
 	}
 
@@ -120,8 +119,8 @@ func ValidateTransaction(err error) error {
 const (
 	// MaxIDLength is the maximum allowed length for task IDs
 	MaxIDLength = 100
-	// MaxContentLength is the maximum allowed length for task content
-	MaxContentLength = 1000
+	// MaxTitleLength is the maximum allowed length for task titles
+	MaxTitleLength = 1000
 )
 
 // ValidateID checks if a task ID is valid
@@ -132,10 +131,65 @@ func ValidateID(id string) error {
 	return nil
 }
 
-// ValidateContent checks if task content is valid
-func ValidateContent(content string) error {
-	if len(content) > MaxContentLength {
-		return ErrInvalidContent
+// ValidateTitle checks if task title is valid
+func ValidateTitle(title string) error {
+	if len(title) > MaxTitleLength {
+		return ErrInvalidTitle
 	}
+	return nil
+}
+
+// ValidationError represents a validation error
+type ValidationError struct {
+	Field   string
+	Message string
+}
+
+func (e *ValidationError) Error() string {
+	return fmt.Sprintf("validation error for field %s: %s", e.Field, e.Message)
+}
+
+// ValidateTask validates a Task struct
+func ValidateTask(task storage.Task) error {
+	// Validate ID
+	if task.ID == "" {
+		return &ValidationError{
+			Field:   "id",
+			Message: "ID cannot be empty",
+		}
+	}
+
+	// Validate Title
+	if task.Title == "" {
+		return &ValidationError{
+			Field:   "title",
+			Message: "Title cannot be empty",
+		}
+	}
+
+	// Validate CreatedAt
+	if task.CreatedAt == 0 {
+		return &ValidationError{
+			Field:   "created_at",
+			Message: "CreatedAt must be set",
+		}
+	}
+
+	// Validate UpdatedAt
+	if task.UpdatedAt == 0 {
+		return &ValidationError{
+			Field:   "updated_at",
+			Message: "UpdatedAt must be set",
+		}
+	}
+
+	// Validate timestamps order
+	if task.UpdatedAt < task.CreatedAt {
+		return &ValidationError{
+			Field:   "timestamps",
+			Message: "UpdatedAt cannot be before CreatedAt",
+		}
+	}
+
 	return nil
 }

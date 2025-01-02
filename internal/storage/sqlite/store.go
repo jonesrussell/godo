@@ -46,7 +46,6 @@ func (s *Store) migrate() error {
 		CREATE TABLE IF NOT EXISTS tasks (
 			id TEXT PRIMARY KEY,
 			title TEXT NOT NULL,
-			description TEXT,
 			completed BOOLEAN NOT NULL DEFAULT 0,
 			created_at INTEGER NOT NULL,
 			updated_at INTEGER NOT NULL
@@ -63,14 +62,13 @@ func (s *Store) migrate() error {
 // Add adds a new task
 func (s *Store) Add(ctx context.Context, task storage.Task) error {
 	query := `
-		INSERT INTO tasks (id, title, description, completed, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?)
+		INSERT INTO tasks (id, title, completed, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?)
 	`
 
 	_, err := s.db.ExecContext(ctx, query,
 		task.ID,
 		task.Title,
-		task.Description,
 		task.Completed,
 		task.CreatedAt,
 		task.UpdatedAt,
@@ -85,7 +83,7 @@ func (s *Store) Add(ctx context.Context, task storage.Task) error {
 // Get retrieves a task by ID
 func (s *Store) Get(ctx context.Context, id string) (storage.Task, error) {
 	query := `
-		SELECT id, title, description, completed, created_at, updated_at
+		SELECT id, title, completed, created_at, updated_at
 		FROM tasks
 		WHERE id = ?
 	`
@@ -94,7 +92,6 @@ func (s *Store) Get(ctx context.Context, id string) (storage.Task, error) {
 	err := s.db.QueryRowContext(ctx, query, id).Scan(
 		&task.ID,
 		&task.Title,
-		&task.Description,
 		&task.Completed,
 		&task.CreatedAt,
 		&task.UpdatedAt,
@@ -113,7 +110,7 @@ func (s *Store) Get(ctx context.Context, id string) (storage.Task, error) {
 // List retrieves all tasks
 func (s *Store) List(ctx context.Context) ([]storage.Task, error) {
 	query := `
-		SELECT id, title, description, completed, created_at, updated_at
+		SELECT id, title, completed, created_at, updated_at
 		FROM tasks
 		ORDER BY created_at DESC
 	`
@@ -130,7 +127,6 @@ func (s *Store) List(ctx context.Context) ([]storage.Task, error) {
 		err := rows.Scan(
 			&task.ID,
 			&task.Title,
-			&task.Description,
 			&task.Completed,
 			&task.CreatedAt,
 			&task.UpdatedAt,
@@ -152,13 +148,12 @@ func (s *Store) List(ctx context.Context) ([]storage.Task, error) {
 func (s *Store) Update(ctx context.Context, task storage.Task) error {
 	query := `
 		UPDATE tasks
-		SET title = ?, description = ?, completed = ?, updated_at = ?
+		SET title = ?, completed = ?, updated_at = ?
 		WHERE id = ?
 	`
 
 	result, err := s.db.ExecContext(ctx, query,
 		task.Title,
-		task.Description,
 		task.Completed,
 		task.UpdatedAt,
 		task.ID,
@@ -221,14 +216,13 @@ type Transaction struct {
 // Add adds a new task within the transaction
 func (t *Transaction) Add(ctx context.Context, task storage.Task) error {
 	query := `
-		INSERT INTO tasks (id, title, description, completed, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?)
+		INSERT INTO tasks (id, title, completed, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?)
 	`
 
 	_, err := t.tx.ExecContext(ctx, query,
 		task.ID,
 		task.Title,
-		task.Description,
 		task.Completed,
 		task.CreatedAt,
 		task.UpdatedAt,
@@ -243,7 +237,7 @@ func (t *Transaction) Add(ctx context.Context, task storage.Task) error {
 // Get retrieves a task by ID within the transaction
 func (t *Transaction) Get(ctx context.Context, id string) (storage.Task, error) {
 	query := `
-		SELECT id, title, description, completed, created_at, updated_at
+		SELECT id, title, completed, created_at, updated_at
 		FROM tasks
 		WHERE id = ?
 	`
@@ -252,7 +246,6 @@ func (t *Transaction) Get(ctx context.Context, id string) (storage.Task, error) 
 	err := t.tx.QueryRowContext(ctx, query, id).Scan(
 		&task.ID,
 		&task.Title,
-		&task.Description,
 		&task.Completed,
 		&task.CreatedAt,
 		&task.UpdatedAt,
@@ -271,7 +264,7 @@ func (t *Transaction) Get(ctx context.Context, id string) (storage.Task, error) 
 // List retrieves all tasks within the transaction
 func (t *Transaction) List(ctx context.Context) ([]storage.Task, error) {
 	query := `
-		SELECT id, title, description, completed, created_at, updated_at
+		SELECT id, title, completed, created_at, updated_at
 		FROM tasks
 		ORDER BY created_at DESC
 	`
@@ -288,7 +281,6 @@ func (t *Transaction) List(ctx context.Context) ([]storage.Task, error) {
 		err := rows.Scan(
 			&task.ID,
 			&task.Title,
-			&task.Description,
 			&task.Completed,
 			&task.CreatedAt,
 			&task.UpdatedAt,
@@ -310,13 +302,12 @@ func (t *Transaction) List(ctx context.Context) ([]storage.Task, error) {
 func (t *Transaction) Update(ctx context.Context, task storage.Task) error {
 	query := `
 		UPDATE tasks
-		SET title = ?, description = ?, completed = ?, updated_at = ?
+		SET title = ?, completed = ?, updated_at = ?
 		WHERE id = ?
 	`
 
 	result, err := t.tx.ExecContext(ctx, query,
 		task.Title,
-		task.Description,
 		task.Completed,
 		task.UpdatedAt,
 		task.ID,

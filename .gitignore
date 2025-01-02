@@ -16,3 +16,4 @@ internal/container/wire_gen.go
 dist/
 godo.db-shm
 godo.db-wal
+godo-linter.exe

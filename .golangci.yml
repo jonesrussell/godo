@@ -14,8 +14,15 @@ linters:
   - unused
   - mnd
   - copyloopvar
+  - godolinter
 
 linters-settings:
+  custom:
+    godolinter:
+      path: ./cmd/godo-linter
+      description: "Godo project-specific linting rules"
+      original-url: "github.com/jonesrussell/godo/cmd/godo-linter"
+
   gocritic:
     enabled-tags:
     - diagnostic

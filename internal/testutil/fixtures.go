@@ -15,13 +15,13 @@ import (
 )
 
 const (
-	// DefaultMainWindowWidth is the default width for the main window
+	// DefaultMainWindowWidth is the default width for the main window in tests
 	DefaultMainWindowWidth = 800
-	// DefaultMainWindowHeight is the default height for the main window
+	// DefaultMainWindowHeight is the default height for the main window in tests
 	DefaultMainWindowHeight = 600
-	// DefaultQuickNoteWidth is the default width for the quick note window
+	// DefaultQuickNoteWidth is the default width for the quick note window in tests
 	DefaultQuickNoteWidth = 400
-	// DefaultQuickNoteHeight is the default height for the quick note window
+	// DefaultQuickNoteHeight is the default height for the quick note window in tests
 	DefaultQuickNoteHeight = 300
 )
 
@@ -48,8 +48,8 @@ func NewTestFixture(t *testing.T) *TestFixture {
 		Config: &config.Config{
 			UI: config.UIConfig{
 				MainWindow: config.WindowConfig{
-					Width:       800,
-					Height:      600,
+					Width:       DefaultMainWindowWidth,
+					Height:      DefaultMainWindowHeight,
 					StartHidden: false,
 				},
 			},
@@ -97,20 +97,38 @@ func CreateTestTasks(count int) []storage.Task {
 	return tasks
 }
 
-// WithTestConfig sets up a test configuration
-func WithTestConfig() *config.Config {
+// CreateTestConfig creates a test configuration with default values
+func CreateTestConfig() *config.Config {
 	return &config.Config{
-		UI: config.UIConfig{
-			MainWindow: config.WindowConfig{
-				Width:       800,
-				Height:      600,
-				StartHidden: false,
-			},
+		App: config.AppConfig{
+			Name:    "Godo Test",
+			Version: "0.1.0",
+			ID:      "io.github.jonesrussell.godo.test",
 		},
 		Logger: common.LogConfig{
 			Level:   "debug",
 			Console: true,
-			Output:  []string{"stdout"},
+		},
+		Hotkeys: config.HotkeyConfig{
+			QuickNote: common.HotkeyBinding{
+				Modifiers: []string{"Ctrl"},
+				Key:       "Space",
+			},
+		},
+		Database: config.DatabaseConfig{
+			Path: ":memory:",
+		},
+		UI: config.UIConfig{
+			MainWindow: config.WindowConfig{
+				Width:       DefaultMainWindowWidth,
+				Height:      DefaultMainWindowHeight,
+				StartHidden: false,
+			},
+			QuickNote: config.WindowConfig{
+				Width:       DefaultQuickNoteWidth,
+				Height:      DefaultQuickNoteHeight,
+				StartHidden: true,
+			},
 		},
 	}
 }

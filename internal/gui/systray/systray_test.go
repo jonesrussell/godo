@@ -13,8 +13,7 @@ import (
 type mockDesktopApp struct {
 	fyne.App
 	mock.Mock
-	menu     *fyne.Menu
-	menuItem *fyne.MenuItem
+	menu *fyne.Menu
 }
 
 func (m *mockDesktopApp) SetSystemTrayMenu(menu *fyne.Menu) {
@@ -36,10 +35,6 @@ func (m *mockQuickNote) Show() {
 
 func (m *mockQuickNote) Hide() {
 	m.Called()
-}
-
-type mockSystrayMenu struct {
-	shown bool
 }
 
 func TestSetupSystray_QuickNoteMenuItem(t *testing.T) {

@@ -1,3 +1,5 @@
+// Package main provides the entry point for the godolinter tool.
+// It initializes and runs the custom analyzer that enforces Godo project conventions.
 package main
 
 import (

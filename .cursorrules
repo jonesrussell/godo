@@ -26,6 +26,14 @@ code_style:
   - maintain_test_coverage: "Keep >70% coverage for critical paths"
   - use_testify_suite: "Use testify/suite for organized tests"
   - use_gomock: "Use gomock for interface mocking"
+  - test_cleanup_paths: "Test resource cleanup and shutdown"
+  - test_lifecycle_management: "Test component lifecycle thoroughly"
+  - verify_error_messages: "Verify error message contents"
+  - test_platform_specific: "Test platform-specific features separately"
+  - test_concurrent_operations: "Test concurrent access and race conditions"
+  - test_resource_leaks: "Test for memory and resource leaks"
+  - test_error_recovery: "Test system recovery from errors"
+  - test_invalid_states: "Test handling of invalid state transitions"
 
   # UI Rules
   - follow_fyne_patterns:

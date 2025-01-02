@@ -21,6 +21,8 @@ The quick-note feature uses a minimal graphical window that appears when you pre
   - Press hotkey → Graphical popup appears
   - Type note → Press enter → Window disappears
   - Zero-friction task capture with minimal visual interruption
+  - Robust hotkey lifecycle management
+  - Proper cleanup and resource management
 - Graphical todo management interface
   - Organize and manage tasks
   - Mark tasks as complete
@@ -47,6 +49,14 @@ The quick-note feature uses a minimal graphical window that appears when you pre
   - Test-friendly logging for better test output
   - Comprehensive operation tracking
   - Clean abstraction for easy customization
+- Comprehensive testing
+  - Unit tests with high coverage
+  - Integration tests for critical paths
+  - Platform-specific feature testing
+  - Error path and edge case coverage
+  - Resource cleanup verification
+  - Component lifecycle testing
+  - Mock implementations for reliable testing
 - Automated builds and releases
   - GitHub Actions CI/CD pipeline
   - Cross-platform binary releases

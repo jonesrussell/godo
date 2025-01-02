@@ -10,6 +10,8 @@
 - [x] SQLite storage
 - [x] Human-readable logging in development
 - [x] Regression tests for core functionality
+- [x] Hotkey lifecycle management
+- [x] Proper cleanup on exit
 
 ### In Progress
 - [ ] Task categories/tags
@@ -27,6 +29,11 @@
 - [x] Mock implementations for testing
 - [x] Test coverage for UI components
 - [x] Regression tests for systray and hotkeys
+- [x] Hotkey lifecycle tests
+- [x] Cleanup and resource management tests
+- [x] Error path testing
+- [x] Edge case coverage
+- [x] Platform-specific test coverage (Windows)
 
 ### In Progress
 - [ ] Performance benchmarks
@@ -34,6 +41,11 @@
 - [ ] End-to-end tests
 - [ ] Test coverage improvements
 - [ ] Cross-platform test suite
+- [ ] Integration tests for systray
+- [ ] Visual regression tests
+- [ ] Memory leak detection tests
+- [ ] Race condition tests
+- [ ] Stress testing for hotkeys
 
 ## UI Improvements
 

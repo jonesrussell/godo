@@ -74,6 +74,80 @@ func TestWindowVisibility(t *testing.T) {
 }
 ```
 
+### Platform-Specific Tests
+- Test platform-specific features separately
+- Use build tags to control test execution
+- Test platform-specific error cases
+- Example:
+```go
+//go:build windows && !linux && !darwin && !docker
+
+func TestWindowsHotkey(t *testing.T) {
+    // Test Windows-specific hotkey behavior
+    manager := NewWindowsManager(logger)
+    err := manager.Register()
+    assert.NoError(t, err)
+    
+    // Test cleanup
+    err = manager.Unregister()
+    assert.NoError(t, err)
+}
+```
+
+### Lifecycle Tests
+- Test component initialization
+- Test proper cleanup and shutdown
+- Test resource management
+- Example:
+```go
+func TestComponentLifecycle(t *testing.T) {
+    // Test initialization
+    component := New(deps...)
+    assert.NotNil(t, component)
+
+    // Test operation
+    err := component.Start()
+    assert.NoError(t, err)
+
+    // Test cleanup
+    err = component.Stop()
+    assert.NoError(t, err)
+    // Verify resources are released
+}
+```
+
+### Error Path Tests
+- Test all error conditions
+- Verify error messages
+- Test recovery from errors
+- Example:
+```go
+func TestErrorHandling(t *testing.T) {
+    cases := []struct {
+        name          string
+        input         Input
+        expectedErr   error
+        errorContains string
+    }{
+        {
+            name:          "invalid state",
+            input:         invalidInput,
+            expectedErr:   ErrInvalidState,
+            errorContains: "invalid state",
+        },
+        // ... more cases ...
+    }
+
+    for _, tc := range cases {
+        t.Run(tc.name, func(t *testing.T) {
+            err := component.Operation(tc.input)
+            assert.Error(t, err)
+            assert.ErrorIs(t, err, tc.expectedErr)
+            assert.Contains(t, err.Error(), tc.errorContains)
+        })
+    }
+}
+
 ## Test Helpers
 
 ### Mock Store
@@ -132,6 +206,35 @@ require.NoError(t, err, "Operation should succeed")
 - Test both success and error cases
 - Test edge cases and boundaries
 - Test concurrent operations where relevant
+- Test cleanup and resource management
+- Test component lifecycles
+- Test platform-specific features
+- Test error messages and recovery
+- Test invalid state transitions
+
+### Resource Management
+- Always clean up resources in tests
+- Use defer for cleanup operations
+- Verify cleanup was successful
+- Test resource leak scenarios
+- Example:
+```go
+func TestResourceManagement(t *testing.T) {
+    // Create resources
+    resource := NewResource()
+    defer func() {
+        err := resource.Close()
+        assert.NoError(t, err, "Cleanup should succeed")
+    }()
+
+    // Use resource
+    err := resource.Operation()
+    assert.NoError(t, err)
+
+    // Verify no leaks
+    assert.Zero(t, resource.ActiveConnections())
+}
+```
 
 ## Running Tests
 

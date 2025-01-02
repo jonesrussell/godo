@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"fyne.io/fyne/v2/test"
-	"fyne.io/fyne/v2/widget"
 	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/storage"
 	"github.com/jonesrussell/godo/internal/testutil"
@@ -33,6 +32,7 @@ func TestWindow(t *testing.T) {
 		assert.NotNil(t, window.input, "Input field should be initialized")
 		assert.Equal(t, "", window.input.Text, "Input field should be empty")
 		assert.NotNil(t, window.window, "Window should be initialized")
+		assert.NotNil(t, window.saveBtn, "Save button should be initialized")
 	})
 
 	t.Run("Show", func(t *testing.T) {
@@ -65,9 +65,8 @@ func TestWindow(t *testing.T) {
 		// Simulate entering text
 		window.input.SetText("Test Task")
 
-		// Get the save button and trigger it
-		saveBtn := window.window.Content().(*widget.Button)
-		test.Tap(saveBtn)
+		// Click the save button
+		test.Tap(window.saveBtn)
 
 		// Verify task was saved
 		tasks, err := store.List(ctx)
@@ -80,9 +79,8 @@ func TestWindow(t *testing.T) {
 	t.Run("SaveEmptyTask", func(t *testing.T) {
 		window, store := setupTestWindow(t)
 
-		// Get the save button and trigger it
-		saveBtn := window.window.Content().(*widget.Button)
-		test.Tap(saveBtn)
+		// Click the save button
+		test.Tap(window.saveBtn)
 
 		// Verify no task was saved
 		tasks, err := store.List(ctx)
@@ -98,8 +96,9 @@ func TestWindow(t *testing.T) {
 
 		// Try to save task
 		window.input.SetText("Test Task")
-		saveBtn := window.window.Content().(*widget.Button)
-		test.Tap(saveBtn)
+
+		// Click the save button
+		test.Tap(window.saveBtn)
 
 		// Verify window is still shown (not hidden after error)
 		assert.NotNil(t, window.window)

@@ -16,12 +16,13 @@ import (
 
 // Window implements the quick note window
 type Window struct {
-	store  storage.TaskStore
-	logger logger.Logger
-	window fyne.Window
-	app    fyne.App
-	config config.WindowConfig
-	input  *widget.Entry
+	store   storage.TaskStore
+	logger  logger.Logger
+	window  fyne.Window
+	app     fyne.App
+	config  config.WindowConfig
+	input   *widget.Entry
+	saveBtn *widget.Button
 }
 
 // New creates a new quick note window
@@ -43,7 +44,7 @@ func (w *Window) setupUI() {
 	w.input = widget.NewMultiLineEntry()
 	w.input.SetPlaceHolder("Enter your quick note...")
 
-	saveButton := widget.NewButton("Save", func() {
+	w.saveBtn = widget.NewButton("Save", func() {
 		if w.input.Text != "" {
 			now := time.Now()
 			task := storage.Task{
@@ -63,11 +64,11 @@ func (w *Window) setupUI() {
 	})
 
 	content := container.NewBorder(
-		nil,        // top
-		saveButton, // bottom
-		nil,        // left
-		nil,        // right
-		w.input,    // Use w.input instead of input
+		nil,       // top
+		w.saveBtn, // bottom
+		nil,       // left
+		nil,       // right
+		w.input,   // center
 	)
 
 	w.window.SetContent(content)

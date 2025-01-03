@@ -72,7 +72,7 @@ var (
 	StorageSet = wire.NewSet(
 		ProvideDatabasePath,
 		ProvideSQLiteStore,
-		wire.Bind(new(storage.TaskStore), new(*sqlite.Store)),
+		wire.Bind(new(storage.Store), new(*sqlite.Store)),
 	)
 
 	// ConfigSet provides configuration dependencies
@@ -113,7 +113,7 @@ func InitializeApp() (app.Application, func(), error) {
 // Provider functions for options structs
 func ProvideCoreOptions(
 	logger logger.Logger,
-	store storage.TaskStore,
+	store storage.Store,
 	config *config.Config,
 ) (*options.CoreOptions, error) {
 	if logger == nil {
@@ -358,12 +358,12 @@ func ProvideFyneApp() fyne.App {
 }
 
 // ProvideMainWindow provides a main window instance
-func ProvideMainWindow(app fyne.App, store storage.TaskStore, logger logger.Logger, cfg *config.Config) *mainwindow.Window {
+func ProvideMainWindow(app fyne.App, store storage.Store, logger logger.Logger, cfg *config.Config) *mainwindow.Window {
 	return mainwindow.New(app, store, logger, cfg.UI.MainWindow)
 }
 
 // ProvideQuickNote provides a quick note window instance
-func ProvideQuickNote(app fyne.App, store storage.TaskStore, logger logger.Logger, cfg *config.Config) *quicknote.Window {
+func ProvideQuickNote(app fyne.App, store storage.Store, logger logger.Logger, cfg *config.Config) *quicknote.Window {
 	return quicknote.New(app, store, logger, cfg.UI.QuickNote)
 }
 
@@ -432,11 +432,11 @@ func ProvideAPIConfig() *api.ServerConfig {
 	return api.NewServerConfig()
 }
 
-func ProvideAPIServer(store storage.TaskStore, log logger.Logger) *api.Server {
+func ProvideAPIServer(store storage.Store, log logger.Logger) *api.Server {
 	return api.NewServer(store, log)
 }
 
-func ProvideAPIRunner(store storage.TaskStore, log logger.Logger, cfg *api.ServerConfig) *api.Runner {
+func ProvideAPIRunner(store storage.Store, log logger.Logger, cfg *api.ServerConfig) *api.Runner {
 	return api.NewRunner(store, log, &common.HTTPConfig{
 		Port:              8080, // TODO: Get from config
 		ReadTimeout:       int(cfg.ReadTimeout.Seconds()),

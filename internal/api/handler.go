@@ -9,78 +9,78 @@ import (
 	"github.com/jonesrussell/godo/internal/storage"
 )
 
-// TaskHandler handles HTTP requests for tasks
-type TaskHandler struct {
+// NoteHandler handles HTTP requests for notes
+type NoteHandler struct {
 	store storage.Store
 }
 
-// NewTaskHandler creates a new task handler
-func NewTaskHandler(store storage.Store) *TaskHandler {
-	return &TaskHandler{
+// NewNoteHandler creates a new note handler
+func NewNoteHandler(store storage.Store) *NoteHandler {
+	return &NoteHandler{
 		store: store,
 	}
 }
 
-// CreateTask handles task creation requests
-func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
-	var task storage.Task
-	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
+// CreateNote handles note creation requests
+func (h *NoteHandler) CreateNote(w http.ResponseWriter, r *http.Request) {
+	var note storage.Note
+	if err := json.NewDecoder(r.Body).Decode(&note); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	task.CreatedAt = time.Now().Unix()
-	task.UpdatedAt = time.Now().Unix()
+	note.CreatedAt = time.Now().Unix()
+	note.UpdatedAt = time.Now().Unix()
 
-	if err := h.store.Add(r.Context(), task); err != nil {
+	if err := h.store.Add(r.Context(), note); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(task)
+	json.NewEncoder(w).Encode(note)
 }
 
-// GetTask handles task retrieval requests
-func (h *TaskHandler) GetTask(w http.ResponseWriter, r *http.Request) {
+// GetNote handles note retrieval requests
+func (h *NoteHandler) GetNote(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
 	if id == "" {
-		http.Error(w, "missing task id", http.StatusBadRequest)
+		http.Error(w, "missing note id", http.StatusBadRequest)
 		return
 	}
 
-	task, err := h.store.Get(r.Context(), id)
+	note, err := h.store.Get(r.Context(), id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
 
-	json.NewEncoder(w).Encode(task)
+	json.NewEncoder(w).Encode(note)
 }
 
-// UpdateTask handles task update requests
-func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
-	var task storage.Task
-	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
+// UpdateNote handles note update requests
+func (h *NoteHandler) UpdateNote(w http.ResponseWriter, r *http.Request) {
+	var note storage.Note
+	if err := json.NewDecoder(r.Body).Decode(&note); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	task.UpdatedAt = time.Now().Unix()
+	note.UpdatedAt = time.Now().Unix()
 
-	if err := h.store.Update(r.Context(), task); err != nil {
+	if err := h.store.Update(r.Context(), note); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	json.NewEncoder(w).Encode(task)
+	json.NewEncoder(w).Encode(note)
 }
 
-// DeleteTask handles task deletion requests
-func (h *TaskHandler) DeleteTask(w http.ResponseWriter, r *http.Request) {
+// DeleteNote handles note deletion requests
+func (h *NoteHandler) DeleteNote(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
 	if id == "" {
-		http.Error(w, "missing task id", http.StatusBadRequest)
+		http.Error(w, "missing note id", http.StatusBadRequest)
 		return
 	}
 
@@ -92,13 +92,13 @@ func (h *TaskHandler) DeleteTask(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// ListTasks handles task listing requests
-func (h *TaskHandler) ListTasks(w http.ResponseWriter, r *http.Request) {
-	tasks, err := h.store.List(r.Context())
+// ListNotes handles note listing requests
+func (h *NoteHandler) ListNotes(w http.ResponseWriter, r *http.Request) {
+	notes, err := h.store.List(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	json.NewEncoder(w).Encode(tasks)
+	json.NewEncoder(w).Encode(notes)
 }

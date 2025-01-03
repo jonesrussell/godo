@@ -32,7 +32,7 @@ We use options structs to group related dependencies:
 ```go
 type CoreOptions struct {
     Logger logger.Logger
-    Store  storage.TaskStore
+    Store  storage.Store
     Config *config.Config
 }
 
@@ -103,7 +103,7 @@ func ProvideHotkeyManager(opts *options.HotkeyOptions) (*hotkey.Manager, error) 
 ```go
 var StorageSet = wire.NewSet(
     ProvideSQLiteStore,
-    wire.Bind(new(storage.TaskStore), new(*sqlite.Store)),
+    wire.Bind(new(storage.Store), new(*sqlite.Store)),
 )
 ```
 
@@ -114,7 +114,7 @@ var StorageSet = wire.NewSet(
 var TestSet = wire.NewSet(
     ProvideMockStore,
     ProvideMockLogger,
-    wire.Bind(new(storage.TaskStore), new(*mock.Store)),
+    wire.Bind(new(storage.Store), new(*mock.Store)),
 )
 ```
 
@@ -125,7 +125,7 @@ var TestSet = wire.NewSet(
 type App struct {
     name    string
     logger  logger.Logger
-    store   storage.TaskStore
+    store   storage.Store
     hotkey  hotkey.Manager
 }
 
@@ -199,7 +199,7 @@ func ProvideConfig() (*config.Config, error) {
 
 ### Mock Providers
 ```go
-func ProvideMockStore() storage.TaskStore {
+func ProvideMockStore() storage.Store {
     return &mock.Store{}
 }
 ```

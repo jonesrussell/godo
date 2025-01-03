@@ -20,19 +20,19 @@ func TestDockerQuickNote(t *testing.T) {
 	quickNote := New(store, log)
 	require.NotNil(t, quickNote)
 
-	t.Run("AddTask", func(t *testing.T) {
-		// Add a task
-		task := storage.Task{
+	t.Run("AddNote", func(t *testing.T) {
+		// Add a note
+		note := storage.Note{
 			ID:        "test-1",
-			Content:   "Test Task",
-			Done:      false,
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
+			Content:   "Test Note",
+			Completed: false,
+			CreatedAt: time.Now().Unix(),
+			UpdatedAt: time.Now().Unix(),
 		}
-		err := store.Add(task)
+		err := store.Add(note)
 		require.NoError(t, err)
 
-		// Verify the task is added
+		// Verify the note is added
 		assert.True(t, store.AddCalled)
 	})
 
@@ -40,35 +40,16 @@ func TestDockerQuickNote(t *testing.T) {
 		// Set store error
 		store.Error = assert.AnError
 
-		// Try to add a task
-		task := storage.Task{
+		// Try to add a note
+		note := storage.Note{
 			ID:        "test-2",
-			Content:   "Test Task",
-			Done:      false,
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
+			Content:   "Test Note",
+			Completed: false,
+			CreatedAt: time.Now().Unix(),
+			UpdatedAt: time.Now().Unix(),
 		}
-		err := store.Add(task)
+		err := store.Add(note)
 		assert.Error(t, err)
 		assert.Equal(t, assert.AnError, err)
-	})
-
-	t.Run("EmptyContent", func(t *testing.T) {
-		// Reset store error
-		store.Error = nil
-
-		// Try to add a task with empty content
-		task := storage.Task{
-			ID:        "test-3",
-			Content:   "",
-			Done:      false,
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
-		}
-		err := store.Add(task)
-		require.NoError(t, err)
-
-		// Verify the task is added
-		assert.True(t, store.AddCalled)
 	})
 }

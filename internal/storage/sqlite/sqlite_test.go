@@ -20,68 +20,67 @@ func TestSQLiteStore(t *testing.T) {
 	tempDir := t.TempDir()
 	dbPath := filepath.Join(tempDir, "test.db")
 
-	store, err := New(dbPath, log)
+	store, err := New(dbPath)
 	require.NoError(t, err)
 	defer func() {
 		store.Close()
 		os.Remove(dbPath)
 	}()
 
-	now := time.Now()
+	now := time.Now().Unix()
 	ctx := context.Background()
 
 	t.Run("Add and List", func(t *testing.T) {
-		task := storage.Task{
+		note := storage.Note{
 			ID:        "1",
-			Content:   "Test Task",
-			Done:      false,
+			Content:   "Test Note",
+			Completed: false,
 			CreatedAt: now,
 			UpdatedAt: now,
 		}
 
-		err := store.Add(ctx, task)
+		err := store.Add(ctx, note)
 		assert.NoError(t, err)
 
-		tasks, err := store.List(ctx)
+		notes, err := store.List(ctx)
 		assert.NoError(t, err)
-		assert.Len(t, tasks, 1)
+		assert.Len(t, notes, 1)
 
 		// Compare fields individually
-		assert.Equal(t, task.ID, tasks[0].ID)
-		assert.Equal(t, task.Content, tasks[0].Content)
-		assert.Equal(t, task.Done, tasks[0].Done)
-		// Compare times with some tolerance for database rounding
-		assert.WithinDuration(t, task.CreatedAt, tasks[0].CreatedAt, time.Second)
-		assert.WithinDuration(t, task.UpdatedAt, tasks[0].UpdatedAt, time.Second)
+		assert.Equal(t, note.ID, notes[0].ID)
+		assert.Equal(t, note.Content, notes[0].Content)
+		assert.Equal(t, note.Completed, notes[0].Completed)
+		assert.Equal(t, note.CreatedAt, notes[0].CreatedAt)
+		assert.Equal(t, note.UpdatedAt, notes[0].UpdatedAt)
 	})
 
 	t.Run("Update", func(t *testing.T) {
-		task := storage.Task{
+		note := storage.Note{
 			ID:        "1",
-			Content:   "Updated Task",
-			Done:      true,
+			Content:   "Updated Note",
+			Completed: true,
 			CreatedAt: now,
 			UpdatedAt: now,
 		}
 
-		err := store.Update(ctx, task)
+		err := store.Update(ctx, note)
 		assert.NoError(t, err)
 
-		tasks, err := store.List(ctx)
+		notes, err := store.List(ctx)
 		assert.NoError(t, err)
-		assert.Equal(t, "Updated Task", tasks[0].Content)
-		assert.True(t, tasks[0].Done)
+		assert.Equal(t, "Updated Note", notes[0].Content)
+		assert.True(t, notes[0].Completed)
 	})
 
 	t.Run("Delete", func(t *testing.T) {
 		err := store.Delete(ctx, "1")
 		assert.NoError(t, err)
 
-		tasks, err := store.List(ctx)
+		notes, err := store.List(ctx)
 		assert.NoError(t, err)
-		assert.Empty(t, tasks)
+		assert.Empty(t, notes)
 
 		err = store.Delete(ctx, "1")
-		assert.ErrorIs(t, err, errors.ErrTaskNotFound)
+		assert.ErrorIs(t, err, errors.ErrNoteNotFound)
 	})
 }

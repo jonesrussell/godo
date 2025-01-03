@@ -25,18 +25,18 @@ func TestRunMigrations(t *testing.T) {
 
 	// Verify table exists
 	var tableName string
-	err = db.QueryRow("SELECT name FROM sqlite_master WHERE type='table' AND name='tasks'").Scan(&tableName)
+	err = db.QueryRow("SELECT name FROM sqlite_master WHERE type='table' AND name='notes'").Scan(&tableName)
 	require.NoError(t, err)
-	assert.Equal(t, "tasks", tableName)
+	assert.Equal(t, "notes", tableName)
 
 	// Verify index exists
 	var indexName string
-	err = db.QueryRow("SELECT name FROM sqlite_master WHERE type='index' AND name='idx_tasks_created_at'").Scan(&indexName)
+	err = db.QueryRow("SELECT name FROM sqlite_master WHERE type='index' AND name='idx_notes_created_at'").Scan(&indexName)
 	require.NoError(t, err)
-	assert.Equal(t, "idx_tasks_created_at", indexName)
+	assert.Equal(t, "idx_notes_created_at", indexName)
 
 	// Verify table schema
-	rows, err := db.Query("PRAGMA table_info(tasks)")
+	rows, err := db.Query("PRAGMA table_info(notes)")
 	require.NoError(t, err)
 	defer rows.Close()
 

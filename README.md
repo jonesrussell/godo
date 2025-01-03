@@ -1,97 +1,47 @@
 # Godo
 
-A cross-platform todo application with quick-note hotkey support and REST API.
+A cross-platform note-taking application built with Go and Fyne. The global hotkey feature enables instant note capture without interrupting your workflow. The management interface provides efficient note organization with a clean, modern design. The REST API allows for integration with other tools and services.
 
 ## Overview
-
-Godo combines three powerful features:
-1. A global hotkey that triggers a lightweight graphical popup for instantly capturing thoughts and tasks
-2. A full-featured graphical interface for detailed todo management
-3. A REST API for programmatic task management and integration
-
-The quick-note feature uses a minimal graphical window that appears when you press the hotkey - type your note, hit enter, and it disappears. The main todo management interface provides efficient task organization with a clean, modern design. The REST API allows for integration with other tools and services.
+Godo is a cross-platform note-taking application built with Go and Fyne. The global hotkey feature enables instant note capture without interrupting your workflow. The management interface provides efficient note organization with a clean, modern design. The REST API allows for integration with other tools and services.
 
 ## Features
-
-- Cross-platform support
-  - Windows: Full support with system tray integration
-  - Linux: Full support (except system tray)
-  - macOS: Coming soon
-- Instant note capture with global hotkey
-  - Press hotkey → Graphical popup appears
-  - Type note → Press enter → Window disappears
-  - Zero-friction task capture with minimal visual interruption
-  - Robust hotkey lifecycle management
-  - Proper cleanup and resource management
-- Graphical todo management interface
-  - Organize and manage tasks
-  - Mark tasks as complete
-  - Delete tasks when done
+- Zero-friction note capture with minimal visual interruption
+- Global hotkey support
+- SQLite storage
+- Organize and manage notes
+- Mark notes as complete
+- Delete notes when done
 - REST API
-  - Full CRUD operations for tasks
-  - JSON responses
-  - Health check endpoint
-  - Proper error handling
-- Robust storage system
-  - SQLite-based persistence with comprehensive validation
-  - Interface segregation (TaskReader, TaskWriter, TaskStore)
-  - Transaction support with proper rollback
-  - Connection pooling and prepared statements
-  - Thread-safe operations with proper concurrency
-  - Snapshot support for testing
-  - Prevents data inconsistencies (empty IDs, duplicates)
-  - Connection state management
-  - Structured error handling
-  - Automated migrations
-  - High test coverage (80%+)
-- Robust logging system
-  - Structured logging with multiple implementations
-  - Test-friendly logging for better test output
-  - Comprehensive operation tracking
-  - Clean abstraction for easy customization
-- Comprehensive testing
-  - Unit tests with high coverage
-  - Integration tests for critical paths
-  - Platform-specific feature testing
-  - Error path and edge case coverage
-  - Resource cleanup verification
-  - Component lifecycle testing
-  - Mock implementations for reliable testing
-- Automated builds and releases
-  - GitHub Actions CI/CD pipeline
-  - Cross-platform binary releases
-  - Docker support for development and testing
-- Built with Fyne toolkit for native look and feel
+- Full CRUD operations for notes
+- Cross-platform support
 
-## API Endpoints
+## Architecture
+- Clean Architecture
+- Dependency Injection
+- Interface segregation (NoteReader, NoteWriter, NoteStore)
+- Testable components
+- Modular design
 
-All endpoints return JSON responses. The base URL is `http://localhost:8080`.
+### Notes
+- List all notes: `GET /api/v1/notes`
+- Create note: `POST /api/v1/notes`
+- Update note: `PUT /api/v1/notes/{id}`
+- Delete note: `DELETE /api/v1/notes/{id}`
 
-### Health Check
-```
-GET /health
-Response: {"status": "ok"}
-```
-
-### Tasks
-- List all tasks: `GET /api/v1/tasks`
-- Create task: `POST /api/v1/tasks`
-- Update task: `PUT /api/v1/tasks/{id}`
-- Delete task: `DELETE /api/v1/tasks/{id}`
-
-Example using HTTPie:
+### Examples
 ```bash
-# List tasks
-http :8080/api/v1/tasks
+# List notes
+http :8080/api/v1/notes
 
-# Create task
-http POST :8080/api/v1/tasks title="Buy groceries" description="Milk, bread, eggs"
+# Create note
+http POST :8080/api/v1/notes content="Buy groceries"
 
-# Update task
-http PUT :8080/api/v1/tasks/{id} title="Updated title" description="New description"
+# Update note
+http PUT :8080/api/v1/notes/{id} content="Updated content"
 
-# Delete task
-http DELETE :8080/api/v1/tasks/{id}
+# Delete note
+http DELETE :8080/api/v1/notes/{id}
 ```
 
 ## Prerequisites

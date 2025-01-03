@@ -66,7 +66,7 @@ func TestMockWindow(t *testing.T) {
 	}
 }
 
-func TestMockWindowWithTasks(t *testing.T) {
+func TestMockWindowWithNotes(t *testing.T) {
 	// Create test dependencies
 	store := storage.NewMockStore()
 	testWindow := test.NewWindow(nil)
@@ -77,26 +77,26 @@ func TestMockWindowWithTasks(t *testing.T) {
 		Window: testWindow,
 	}
 
-	// Add a test task
-	task := storage.Task{
-		ID:        "test-task",
-		Title:     "Test Task",
+	// Add a test note
+	note := storage.Note{
+		ID:        "test-note",
+		Content:   "Test Note",
 		Completed: false,
 	}
-	err := store.Add(ctx, task)
+	err := store.Add(ctx, note)
 	require.NoError(t, err)
 
-	// Test task operations
+	// Test note operations
 	content := container.NewVBox()
 	win.SetContent(content)
 	assert.Equal(t, content, win.ContentSet)
 
-	// Test task completion
-	task.Completed = true
-	err = store.Update(ctx, task)
+	// Test note completion
+	note.Completed = true
+	err = store.Update(ctx, note)
 	require.NoError(t, err)
 
-	// Test task deletion
-	err = store.Delete(ctx, task.ID)
+	// Test note deletion
+	err = store.Delete(ctx, note.ID)
 	require.NoError(t, err)
 }

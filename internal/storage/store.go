@@ -47,7 +47,7 @@ type Transaction interface {
 	// Commit commits the transaction
 	Commit() error
 
-	// Rollback aborts the transaction
+	// Rollback rolls back the transaction
 	Rollback() error
 }
 

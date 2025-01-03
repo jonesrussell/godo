@@ -29,12 +29,11 @@ type ValidationErrorResponse struct {
 type Middleware func(http.HandlerFunc) http.HandlerFunc
 
 // Chain applies a sequence of middleware to a handler
-func Chain(h http.HandlerFunc, middleware ...Middleware) http.HandlerFunc {
-	// Apply middleware in reverse order so they execute in the order they were passed
+func Chain(handler http.HandlerFunc, middleware ...Middleware) http.HandlerFunc {
 	for i := len(middleware) - 1; i >= 0; i-- {
-		h = middleware[i](h)
+		handler = middleware[i](handler)
 	}
-	return h
+	return handler
 }
 
 // WithValidation validates the request body against the provided type
@@ -51,32 +50,26 @@ func WithValidation[T any](log logger.Logger) Middleware {
 			}
 
 			if err := validate.Struct(req); err != nil {
-				var validationErrors validator.ValidationErrors
-				if errors.As(err, &validationErrors) {
-					fields := make(map[string]string)
-					for _, err := range validationErrors {
-						fields[err.Field()] = err.Tag()
-					}
-					writeValidationError(w, fields)
-					return
+				log.Error("validation failed", "error", err)
+				fields := make(map[string]string)
+				for _, err := range err.(validator.ValidationErrors) {
+					fields[err.Field()] = err.Tag()
 				}
-				writeError(w, http.StatusBadRequest, "validation_failed", "Request validation failed")
+				writeValidationError(w, fields)
 				return
 			}
 
-			// Store the validated request in the context
-			ctx := r.Context()
-			ctx = context.WithValue(ctx, requestKey{}, req)
+			ctx := context.WithValue(r.Context(), requestKey{}, req)
 			next(w, r.WithContext(ctx))
 		}
 	}
 }
 
-// WithLogging logs request details
+// WithLogging adds request logging
 func WithLogging(log logger.Logger) Middleware {
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			log.Info("handling request",
+			log.Info("request started",
 				"method", r.Method,
 				"path", r.URL.Path,
 				"remote_addr", r.RemoteAddr,
@@ -86,31 +79,22 @@ func WithLogging(log logger.Logger) Middleware {
 	}
 }
 
-// WithErrorHandling adds panic recovery and error handling to a handler
+// WithErrorHandling adds error handling and recovery
 func WithErrorHandling(log logger.Logger) Middleware {
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			defer func() {
 				if err := recover(); err != nil {
-					log.Error("panic recovered",
-						"error", err,
-						"method", r.Method,
-						"path", r.URL.Path,
-						"remote_addr", r.RemoteAddr,
-						"user_agent", r.UserAgent(),
-					)
-
 					var status int
-					var code string
-					var msg string
+					var code, msg string
 
 					switch e := err.(type) {
 					case error:
-						if errors.Is(e, storage.ErrTaskNotFound) {
+						if errors.Is(e, storage.ErrNoteNotFound) {
 							status = http.StatusNotFound
-							code = "task_not_found"
-							msg = "Task not found"
-							log.Info("task not found error", "error", e)
+							code = "note_not_found"
+							msg = "Note not found"
+							log.Info("note not found error", "error", e)
 						} else {
 							status = http.StatusInternalServerError
 							code = "internal_error"
@@ -168,10 +152,10 @@ func writeValidationError(w http.ResponseWriter, fields map[string]string) {
 // mapError maps an error to an HTTP status code and error message
 func mapError(err error) (code int, msg, details string) {
 	switch {
-	case errors.Is(err, storage.ErrTaskNotFound):
-		return http.StatusNotFound, "Task not found", err.Error()
+	case errors.Is(err, storage.ErrNoteNotFound):
+		return http.StatusNotFound, "Note not found", err.Error()
 	case errors.Is(err, storage.ErrDuplicateID):
-		return http.StatusConflict, "Task ID already exists", err.Error()
+		return http.StatusConflict, "Note ID already exists", err.Error()
 	default:
 		return http.StatusInternalServerError, "Internal server error", err.Error()
 	}

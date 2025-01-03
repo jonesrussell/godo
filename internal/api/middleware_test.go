@@ -114,9 +114,9 @@ func TestWithErrorHandling(t *testing.T) {
 			wantStatus: http.StatusOK,
 		},
 		{
-			name: "task not found error",
+			name: "note not found error",
 			handler: func(_ http.ResponseWriter, _ *http.Request) {
-				panic(storage.ErrTaskNotFound)
+				panic(storage.ErrNoteNotFound)
 			},
 			wantStatus: http.StatusNotFound,
 		},

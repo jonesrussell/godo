@@ -41,19 +41,19 @@ func TestQuickNote_Show(t *testing.T) {
 - Test complete workflows
 - Example:
 ```go
-func TestTaskWorkflow(t *testing.T) {
+func TestNoteWorkflow(t *testing.T) {
     store := sqlite.NewStore()
     defer store.Close()
 
-    // Add task
-    task := storage.Task{ID: "test-1", Content: "Test Task"}
-    err := store.Add(context.Background(), task)
+    // Add note
+    note := storage.Note{ID: "test-1", Content: "Test Note"}
+    err := store.Add(context.Background(), note)
     require.NoError(t, err)
 
-    // Verify task
-    tasks, err := store.List(context.Background())
+    // Verify note
+    notes, err := store.List(context.Background())
     require.NoError(t, err)
-    assert.Contains(t, tasks, task)
+    assert.Contains(t, notes, note)
 }
 ```
 

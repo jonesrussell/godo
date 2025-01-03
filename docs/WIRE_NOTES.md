@@ -39,7 +39,7 @@
    - Use separate debug provider functions for testing
    - Example:
    ```go
-   func ProvideDebugMockStore() storage.TaskStore {
+   func ProvideDebugMockStore() storage.Store {
        result := ProvideMockStore()
        fmt.Printf("Debug: Providing MockStore: %T %+v\n", result, result)
        return result

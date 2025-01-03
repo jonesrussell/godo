@@ -4,6 +4,7 @@ package storage
 import (
 	"context"
 
+	"github.com/jonesrussell/godo/internal/domain/note"
 	"github.com/jonesrussell/godo/internal/storage/types"
 )
 
@@ -18,22 +19,22 @@ func NewAdapter(store types.Store) *Adapter {
 }
 
 // Add adds a note to the store
-func (a *Adapter) Add(ctx context.Context, note types.Note) error {
+func (a *Adapter) Add(ctx context.Context, note *note.Note) error {
 	return a.store.Add(ctx, note)
 }
 
 // Get retrieves a note from the store
-func (a *Adapter) Get(ctx context.Context, id string) (types.Note, error) {
+func (a *Adapter) Get(ctx context.Context, id string) (*note.Note, error) {
 	return a.store.Get(ctx, id)
 }
 
 // List retrieves all notes from the store
-func (a *Adapter) List(ctx context.Context) ([]types.Note, error) {
+func (a *Adapter) List(ctx context.Context) ([]*note.Note, error) {
 	return a.store.List(ctx)
 }
 
 // Update updates a note in the store
-func (a *Adapter) Update(ctx context.Context, note types.Note) error {
+func (a *Adapter) Update(ctx context.Context, note *note.Note) error {
 	return a.store.Update(ctx, note)
 }
 

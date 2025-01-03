@@ -6,24 +6,25 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/jonesrussell/godo/internal/domain/note"
 	"github.com/jonesrussell/godo/internal/storage/types"
 )
 
 // Store implements an in-memory storage
 type Store struct {
 	mu    sync.RWMutex
-	notes map[string]types.Note
+	notes map[string]*note.Note
 }
 
 // New creates a new memory store
 func New() *Store {
 	return &Store{
-		notes: make(map[string]types.Note),
+		notes: make(map[string]*note.Note),
 	}
 }
 
 // Add stores a new note
-func (s *Store) Add(_ context.Context, note types.Note) error {
+func (s *Store) Add(_ context.Context, note *note.Note) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -36,24 +37,24 @@ func (s *Store) Add(_ context.Context, note types.Note) error {
 }
 
 // Get retrieves a note by ID
-func (s *Store) Get(_ context.Context, id string) (types.Note, error) {
+func (s *Store) Get(_ context.Context, id string) (*note.Note, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
 	note, exists := s.notes[id]
 	if !exists {
-		return types.Note{}, fmt.Errorf("note with ID %s not found", id)
+		return nil, fmt.Errorf("note with ID %s not found", id)
 	}
 
 	return note, nil
 }
 
 // List returns all notes
-func (s *Store) List(_ context.Context) ([]types.Note, error) {
+func (s *Store) List(_ context.Context) ([]*note.Note, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	notes := make([]types.Note, 0, len(s.notes))
+	notes := make([]*note.Note, 0, len(s.notes))
 	for _, note := range s.notes {
 		notes = append(notes, note)
 	}
@@ -62,7 +63,7 @@ func (s *Store) List(_ context.Context) ([]types.Note, error) {
 }
 
 // Update modifies an existing note
-func (s *Store) Update(_ context.Context, note types.Note) error {
+func (s *Store) Update(_ context.Context, note *note.Note) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 

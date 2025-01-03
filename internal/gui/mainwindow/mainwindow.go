@@ -11,6 +11,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/google/uuid"
+	"github.com/jonesrussell/godo/internal/domain/note"
 	"github.com/jonesrussell/godo/internal/storage/types"
 )
 
@@ -19,7 +20,7 @@ type MainWindow struct {
 	window fyne.Window
 	store  types.Store
 	list   *widget.List
-	notes  []types.Note
+	notes  []note.Note
 }
 
 // NewMainWindow creates a new main window
@@ -119,7 +120,7 @@ func (w *MainWindow) showAddNoteDialog() {
 				return
 			}
 
-			note := types.Note{
+			note := note.Note{
 				ID:        uuid.New().String(),
 				Content:   entry.Text,
 				CreatedAt: time.Now().Unix(),

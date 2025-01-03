@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jonesrussell/godo/internal/domain/note"
 	"github.com/jonesrussell/godo/internal/storage/types"
 )
 
@@ -21,32 +22,32 @@ func New(store types.Store) *Store {
 }
 
 // Add validates and adds a new note
-func (s *Store) Add(ctx context.Context, note types.Note) error {
-	if err := validateNote(note); err != nil {
+func (s *Store) Add(ctx context.Context, n *note.Note) error {
+	if err := validateNote(n); err != nil {
 		return fmt.Errorf("invalid note: %w", err)
 	}
-	return s.store.Add(ctx, note)
+	return s.store.Add(ctx, n)
 }
 
 // Get retrieves a note by ID
-func (s *Store) Get(ctx context.Context, id string) (types.Note, error) {
+func (s *Store) Get(ctx context.Context, id string) (*note.Note, error) {
 	if err := validateID(id); err != nil {
-		return types.Note{}, fmt.Errorf("invalid id: %w", err)
+		return nil, fmt.Errorf("invalid id: %w", err)
 	}
 	return s.store.Get(ctx, id)
 }
 
 // List retrieves all notes
-func (s *Store) List(ctx context.Context) ([]types.Note, error) {
+func (s *Store) List(ctx context.Context) ([]*note.Note, error) {
 	return s.store.List(ctx)
 }
 
 // Update validates and updates an existing note
-func (s *Store) Update(ctx context.Context, note types.Note) error {
-	if err := validateNote(note); err != nil {
+func (s *Store) Update(ctx context.Context, n *note.Note) error {
+	if err := validateNote(n); err != nil {
 		return fmt.Errorf("invalid note: %w", err)
 	}
-	return s.store.Update(ctx, note)
+	return s.store.Update(ctx, n)
 }
 
 // Delete removes a note by ID
@@ -68,28 +69,32 @@ func (s *Store) BeginTx(ctx context.Context) (types.Transaction, error) {
 }
 
 // validateNote validates a note
-func validateNote(note types.Note) error {
-	if err := validateID(note.ID); err != nil {
+func validateNote(n *note.Note) error {
+	if n == nil {
+		return fmt.Errorf("note cannot be nil")
+	}
+
+	if err := validateID(n.ID); err != nil {
 		return err
 	}
 
-	if strings.TrimSpace(note.Content) == "" {
+	if strings.TrimSpace(n.Content) == "" {
 		return fmt.Errorf("content cannot be empty")
 	}
 
-	if note.CreatedAt <= 0 {
-		return fmt.Errorf("created_at must be positive")
+	if n.CreatedAt.IsZero() {
+		return fmt.Errorf("created_at must be set")
 	}
 
-	if note.UpdatedAt <= 0 {
-		return fmt.Errorf("updated_at must be positive")
+	if n.UpdatedAt.IsZero() {
+		return fmt.Errorf("updated_at must be set")
 	}
 
-	if note.UpdatedAt < note.CreatedAt {
+	if n.UpdatedAt.Before(n.CreatedAt) {
 		return fmt.Errorf("updated_at cannot be before created_at")
 	}
 
-	if note.UpdatedAt > time.Now().Unix()+1 {
+	if n.UpdatedAt.After(time.Now().Add(time.Second)) {
 		return fmt.Errorf("updated_at cannot be in the future")
 	}
 

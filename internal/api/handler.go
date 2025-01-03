@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/jonesrussell/godo/internal/domain/note"
 	"github.com/jonesrussell/godo/internal/storage/types"
 )
 
@@ -23,7 +24,7 @@ func NewNoteHandler(store types.Store) *NoteHandler {
 
 // CreateNote handles note creation requests
 func (h *NoteHandler) CreateNote(w http.ResponseWriter, r *http.Request) {
-	var note types.Note
+	var note note.Note
 	if err := json.NewDecoder(r.Body).Decode(&note); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -60,7 +61,7 @@ func (h *NoteHandler) GetNote(w http.ResponseWriter, r *http.Request) {
 
 // UpdateNote handles note update requests
 func (h *NoteHandler) UpdateNote(w http.ResponseWriter, r *http.Request) {
-	var note types.Note
+	var note note.Note
 	if err := json.NewDecoder(r.Body).Decode(&note); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

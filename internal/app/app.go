@@ -12,6 +12,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/jonesrussell/godo/internal/api"
 	"github.com/jonesrussell/godo/internal/app/hotkey"
+	"github.com/jonesrussell/godo/internal/domain/note"
 	"github.com/jonesrussell/godo/internal/gui"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage/types"
@@ -24,7 +25,7 @@ type App struct {
 	logger   logger.Logger
 	stopOnce sync.Once
 	stopChan chan struct{}
-	notes    map[string]types.Note
+	notes    map[string]note.Note
 	list     *widget.List
 }
 
@@ -80,7 +81,7 @@ func New(params Params) (*App, error) {
 		window:   params.Window,
 		logger:   params.Logger,
 		stopChan: make(chan struct{}),
-		notes:    make(map[string]types.Note),
+		notes:    make(map[string]note.Note),
 	}, nil
 }
 
@@ -163,7 +164,7 @@ func (a *App) initWindow() error {
 		}
 
 		now := time.Now().Unix()
-		note := types.Note{
+		note := note.Note{
 			ID:        fmt.Sprintf("%d", now),
 			Content:   text,
 			Completed: false,
@@ -187,7 +188,7 @@ func (a *App) initWindow() error {
 }
 
 // getNoteByIndex returns a note by its list index
-func (a *App) getNoteByIndex(index int) *types.Note {
+func (a *App) getNoteByIndex(index int) *note.Note {
 	i := 0
 	for _, note := range a.notes {
 		if i == index {
@@ -199,7 +200,7 @@ func (a *App) getNoteByIndex(index int) *types.Note {
 }
 
 // AddNote adds a new note
-func (a *App) AddNote(ctx context.Context, note types.Note) error {
+func (a *App) AddNote(ctx context.Context, note note.Note) error {
 	if err := a.store.Add(ctx, note); err != nil {
 		return fmt.Errorf("failed to add note: %w", err)
 	}
@@ -212,7 +213,7 @@ func (a *App) AddNote(ctx context.Context, note types.Note) error {
 }
 
 // UpdateNote updates an existing note
-func (a *App) UpdateNote(ctx context.Context, note types.Note) error {
+func (a *App) UpdateNote(ctx context.Context, note note.Note) error {
 	if err := a.store.Update(ctx, note); err != nil {
 		return fmt.Errorf("failed to update note: %w", err)
 	}

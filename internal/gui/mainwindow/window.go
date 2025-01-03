@@ -9,6 +9,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 	"github.com/google/uuid"
+	"github.com/jonesrussell/godo/internal/domain/note"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage/types"
 )
@@ -19,7 +20,7 @@ type Window struct {
 	store      types.Store
 	logger     logger.Logger
 	list       *widget.List
-	notes      map[string]types.Note
+	notes      map[string]*note.Note
 }
 
 // New creates a new main window
@@ -28,7 +29,7 @@ func New(win fyne.Window, store types.Store, log logger.Logger) *Window {
 		fyneWindow: win,
 		store:      store,
 		logger:     log,
-		notes:      make(map[string]types.Note),
+		notes:      make(map[string]*note.Note),
 	}
 
 	w.setupUI()
@@ -63,8 +64,8 @@ func (w *Window) setupUI() {
 			check.Checked = note.Completed
 			check.OnChanged = func(checked bool) {
 				note.Completed = checked
-				note.UpdatedAt = time.Now().Unix()
-				w.updateNote(*note)
+				note.UpdatedAt = time.Now()
+				w.updateNote(note)
 			}
 
 			label.SetText(note.Content)
@@ -76,12 +77,12 @@ func (w *Window) setupUI() {
 			return
 		}
 
-		note := types.Note{
+		note := &note.Note{
 			ID:        uuid.New().String(),
 			Content:   text,
 			Completed: false,
-			CreatedAt: time.Now().Unix(),
-			UpdatedAt: time.Now().Unix(),
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
 		}
 
 		if err := w.store.Add(context.Background(), note); err != nil {
@@ -114,7 +115,7 @@ func (w *Window) loadNotes() {
 }
 
 // updateNote updates a note in storage
-func (w *Window) updateNote(note types.Note) {
+func (w *Window) updateNote(note *note.Note) {
 	if err := w.store.Update(context.Background(), note); err != nil {
 		w.logger.Error("Failed to update note", "error", err)
 		return
@@ -124,11 +125,11 @@ func (w *Window) updateNote(note types.Note) {
 }
 
 // getNoteByIndex returns a note by its list index
-func (w *Window) getNoteByIndex(index int) *types.Note {
+func (w *Window) getNoteByIndex(index int) *note.Note {
 	i := 0
 	for _, note := range w.notes {
 		if i == index {
-			return &note
+			return note
 		}
 		i++
 	}

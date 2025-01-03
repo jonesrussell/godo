@@ -10,6 +10,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/google/uuid"
 	"github.com/jonesrussell/godo/internal/config"
+	"github.com/jonesrussell/godo/internal/domain/note"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage/types"
 )
@@ -66,12 +67,12 @@ func (w *Window) saveNote() {
 		return
 	}
 
-	note := types.Note{
+	note := &note.Note{
 		ID:        uuid.New().String(),
 		Content:   text,
 		Completed: false,
-		CreatedAt: time.Now().Unix(),
-		UpdatedAt: time.Now().Unix(),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
 	if err := w.store.Add(context.Background(), note); err != nil {

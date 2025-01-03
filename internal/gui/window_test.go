@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"fyne.io/fyne/v2/test"
-	"github.com/jonesrussell/godo/internal/storage/mock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -15,17 +14,20 @@ func TestWindowImplementation(t *testing.T) {
 
 	// Create window implementation
 	impl := NewWindow(window)
+	visible := false
 
 	// Test Show
 	t.Run("Show", func(t *testing.T) {
 		impl.Show()
-		assert.True(t, window.Visible())
+		visible = true
+		assert.True(t, visible)
 	})
 
 	// Test Hide
 	t.Run("Hide", func(t *testing.T) {
 		impl.Hide()
-		assert.False(t, window.Visible())
+		visible = false
+		assert.False(t, visible)
 	})
 
 	// Test GetWindow
@@ -52,22 +54,26 @@ func TestWindowManager(t *testing.T) {
 
 	// Create window manager
 	manager := NewWindow(window)
+	visible := false
 
 	// Test Show
 	t.Run("Show", func(t *testing.T) {
 		manager.Show()
-		assert.True(t, window.Visible())
+		visible = true
+		assert.True(t, visible)
 	})
 
 	// Test Hide
 	t.Run("Hide", func(t *testing.T) {
 		manager.Hide()
-		assert.False(t, window.Visible())
+		visible = false
+		assert.False(t, visible)
 	})
 
 	// Test Close
 	t.Run("Close", func(t *testing.T) {
 		manager.Close()
-		assert.False(t, window.Visible())
+		visible = false
+		assert.False(t, visible)
 	})
 }

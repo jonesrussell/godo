@@ -1,4 +1,4 @@
-// Package storage defines interfaces and types for note storage
+// Package storage provides storage functionality
 package storage
 
 import "context"

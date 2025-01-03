@@ -21,6 +21,7 @@ import (
 	"github.com/jonesrussell/godo/internal/options"
 	"github.com/jonesrussell/godo/internal/storage"
 	"github.com/jonesrussell/godo/internal/storage/sqlite"
+	"go.uber.org/zap"
 )
 
 // Provider Sets
@@ -46,7 +47,6 @@ var (
 
 	// APISet provides HTTP API server dependencies
 	APISet = wire.NewSet(
-		ProvideAPIConfig,
 		ProvideAPIServer,
 		ProvideAPIRunner,
 	)
@@ -94,18 +94,17 @@ var (
 		ProvideAppOptions,
 		wire.Struct(new(app.Params), "*"),
 		app.New,
-		wire.Bind(new(app.Application), new(*app.App)),
+		wire.Bind(new(app.ApplicationService), new(*app.App)),
 	)
 )
 
 // InitializeApp initializes the application with all dependencies
-func InitializeApp() (app.Application, func(), error) {
+func InitializeApp() (app.ApplicationService, func(), error) {
 	wire.Build(
 		CoreSet,   // First initialize core services
 		UISet,     // Then UI components
 		HotkeySet, // Then platform-specific features
-		APISet,    // Then API server
-		AppSet,    // Finally the main app
+		APISet,    // Finally the main app
 	)
 	return nil, nil, nil
 }
@@ -295,7 +294,7 @@ func ProvideSQLiteStore(log logger.Logger, dbPath common.DatabasePath) (*sqlite.
 		return nil, nil, fmt.Errorf("database path is required")
 	}
 
-	store, err := sqlite.New(string(dbPath), log)
+	store, err := sqlite.New(string(dbPath))
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create store: %w", err)
 	}
@@ -358,8 +357,9 @@ func ProvideFyneApp() fyne.App {
 }
 
 // ProvideMainWindow provides a main window instance
-func ProvideMainWindow(app fyne.App, store storage.Store, logger logger.Logger, cfg *config.Config) *mainwindow.Window {
-	return mainwindow.New(app, store, logger, cfg.UI.MainWindow)
+func ProvideMainWindow(app fyne.App, store storage.Store, logger logger.Logger, cfg *config.Config) *mainwindow.MainWindow {
+	window := app.NewWindow("Godo")
+	return mainwindow.NewMainWindow(window, store)
 }
 
 // ProvideQuickNote provides a quick note window instance
@@ -428,20 +428,16 @@ func ProvideErrorOutputPaths() common.ErrorOutputPaths {
 }
 
 // Provider functions for API components
-func ProvideAPIConfig() *api.ServerConfig {
-	return api.NewServerConfig()
-}
-
-func ProvideAPIServer(store storage.Store, log logger.Logger) *api.Server {
+func ProvideAPIServer(store storage.Store, log *zap.Logger) *api.Server {
 	return api.NewServer(store, log)
 }
 
-func ProvideAPIRunner(store storage.Store, log logger.Logger, cfg *api.ServerConfig) *api.Runner {
+func ProvideAPIRunner(store storage.Store, log logger.Logger) *api.Runner {
 	return api.NewRunner(store, log, &common.HTTPConfig{
 		Port:              8080, // TODO: Get from config
-		ReadTimeout:       int(cfg.ReadTimeout.Seconds()),
-		WriteTimeout:      int(cfg.WriteTimeout.Seconds()),
-		ReadHeaderTimeout: int(cfg.ReadHeaderTimeout.Seconds()),
-		IdleTimeout:       int(cfg.IdleTimeout.Seconds()),
+		ReadTimeout:       30,
+		WriteTimeout:      30,
+		ReadHeaderTimeout: 10,
+		IdleTimeout:       120,
 	})
 }

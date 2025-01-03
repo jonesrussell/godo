@@ -10,7 +10,7 @@ import (
 
 // Container holds all application dependencies
 type Container struct {
-	App    godoapp.Application
+	App    godoapp.ApplicationService
 	Logger logger.Logger
 	Store  storage.Store
 }

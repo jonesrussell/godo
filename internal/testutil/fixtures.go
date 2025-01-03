@@ -7,12 +7,12 @@ import (
 	"github.com/jonesrussell/godo/internal/storage"
 )
 
-// CreateTestNote creates a note for testing
-func CreateTestNote(id, title string, completed bool) storage.Note {
+// CreateTestNote creates a test note with the given parameters
+func CreateTestNote(id, content string, completed bool) storage.Note {
 	now := time.Now().Unix()
 	return storage.Note{
 		ID:        id,
-		Title:     title,
+		Content:   content,
 		Completed: completed,
 		CreatedAt: now,
 		UpdatedAt: now,

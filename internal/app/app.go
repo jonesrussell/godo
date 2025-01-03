@@ -11,6 +11,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 	"github.com/jonesrussell/godo/internal/gui"
+	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
 )
 
@@ -18,16 +19,43 @@ import (
 type App struct {
 	store    storage.Store
 	window   gui.MainWindowManager
+	logger   logger.Logger
 	stopOnce sync.Once
 	stopChan chan struct{}
 	notes    map[string]storage.Note
 	list     *widget.List
 }
 
+// SetupUI implements the UIManager interface
+func (a *App) SetupUI() error {
+	return a.initWindow()
+}
+
+// Run implements the ApplicationService interface
+func (a *App) Run() {
+	a.window.Show()
+}
+
+// Cleanup implements the ApplicationService interface
+func (a *App) Cleanup() {
+	_ = a.Stop()
+}
+
+// Store returns the storage.Store instance
+func (a *App) Store() storage.Store {
+	return a.store
+}
+
+// Logger returns the logger instance
+func (a *App) Logger() logger.Logger {
+	return a.logger
+}
+
 // Params contains the parameters for creating a new App instance
 type Params struct {
 	Store  storage.Store
 	Window gui.MainWindowManager
+	Logger logger.Logger
 }
 
 // New creates a new App instance
@@ -38,10 +66,14 @@ func New(params Params) (*App, error) {
 	if params.Window == nil {
 		return nil, fmt.Errorf("window is required")
 	}
+	if params.Logger == nil {
+		return nil, fmt.Errorf("logger is required")
+	}
 
 	return &App{
 		store:    params.Store,
 		window:   params.Window,
+		logger:   params.Logger,
 		stopChan: make(chan struct{}),
 		notes:    make(map[string]storage.Note),
 	}, nil
@@ -112,7 +144,7 @@ func (a *App) initWindow() error {
 				a.UpdateNote(context.Background(), *note)
 			}
 
-			label.Text = note.Title
+			label.Text = note.Content
 			label.Refresh()
 		},
 	)
@@ -128,7 +160,7 @@ func (a *App) initWindow() error {
 		now := time.Now().Unix()
 		note := storage.Note{
 			ID:        fmt.Sprintf("%d", now),
-			Title:     text,
+			Content:   text,
 			Completed: false,
 			CreatedAt: now,
 			UpdatedAt: now,

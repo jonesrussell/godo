@@ -3,7 +3,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
@@ -73,74 +72,4 @@ func (s *Server) Stop(ctx context.Context) error {
 		return fmt.Errorf("failed to stop server: %w", err)
 	}
 	return nil
-}
-
-// NoteHandler handles note-related requests
-type NoteHandler struct {
-	store storage.Store
-}
-
-// NewNoteHandler creates a new note handler
-func NewNoteHandler(store storage.Store) *NoteHandler {
-	return &NoteHandler{store: store}
-}
-
-// ListNotes handles GET /api/v1/notes
-func (h *NoteHandler) ListNotes(w http.ResponseWriter, r *http.Request) {
-	notes, err := h.store.List(r.Context())
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(notes)
-}
-
-// CreateNote handles POST /api/v1/notes
-func (h *NoteHandler) CreateNote(w http.ResponseWriter, r *http.Request) {
-	var note storage.Note
-	if err := json.NewDecoder(r.Body).Decode(&note); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	if err := h.store.Add(r.Context(), note); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(note)
-}
-
-// UpdateNote handles PUT /api/v1/notes/:id
-func (h *NoteHandler) UpdateNote(w http.ResponseWriter, r *http.Request) {
-	var note storage.Note
-	if err := json.NewDecoder(r.Body).Decode(&note); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	if err := h.store.Update(r.Context(), note); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(note)
-}
-
-// DeleteNote handles DELETE /api/v1/notes/:id
-func (h *NoteHandler) DeleteNote(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id := vars["id"]
-
-	if err := h.store.Delete(r.Context(), id); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusNoContent)
 }

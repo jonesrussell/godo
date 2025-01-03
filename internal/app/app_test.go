@@ -168,7 +168,7 @@ func TestAppOperations(t *testing.T) {
 
 		note := storage.Note{
 			ID:        "1",
-			Title:     "Test Note",
+			Content:   "Test Note",
 			Completed: false,
 			CreatedAt: time.Now().Unix(),
 			UpdatedAt: time.Now().Unix(),
@@ -181,7 +181,7 @@ func TestAppOperations(t *testing.T) {
 		notes, err := store.List(ctx)
 		require.NoError(t, err)
 		assert.Len(t, notes, 1)
-		assert.Equal(t, note.Title, notes[0].Title)
+		assert.Equal(t, note.Content, notes[0].Content)
 	})
 
 	t.Run("UpdateNote", func(t *testing.T) {
@@ -197,7 +197,7 @@ func TestAppOperations(t *testing.T) {
 
 		note := storage.Note{
 			ID:        "1",
-			Title:     "Test Note",
+			Content:   "Test Note",
 			Completed: false,
 			CreatedAt: time.Now().Unix(),
 			UpdatedAt: time.Now().Unix(),
@@ -208,7 +208,7 @@ func TestAppOperations(t *testing.T) {
 		require.NoError(t, err)
 
 		// Update note
-		note.Title = "Updated Note"
+		note.Content = "Updated Note"
 		note.Completed = true
 		err = app.UpdateNote(ctx, note)
 		require.NoError(t, err)
@@ -216,7 +216,7 @@ func TestAppOperations(t *testing.T) {
 		// Verify note was updated
 		updated, err := store.Get(ctx, note.ID)
 		require.NoError(t, err)
-		assert.Equal(t, note.Title, updated.Title)
+		assert.Equal(t, note.Content, updated.Content)
 		assert.Equal(t, note.Completed, updated.Completed)
 	})
 
@@ -233,7 +233,7 @@ func TestAppOperations(t *testing.T) {
 
 		note := storage.Note{
 			ID:        "1",
-			Title:     "Test Note",
+			Content:   "Test Note",
 			Completed: false,
 			CreatedAt: time.Now().Unix(),
 			UpdatedAt: time.Now().Unix(),

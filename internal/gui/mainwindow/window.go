@@ -135,7 +135,32 @@ func (w *Window) getNoteByIndex(index int) *storage.Note {
 	return nil
 }
 
+// CenterOnScreen centers the window on screen
+func (w *Window) CenterOnScreen() {
+	w.fyneWindow.CenterOnScreen()
+}
+
 // Show shows the window
 func (w *Window) Show() {
 	w.fyneWindow.Show()
+}
+
+// Hide hides the window
+func (w *Window) Hide() {
+	w.fyneWindow.Hide()
+}
+
+// GetWindow returns the underlying fyne.Window
+func (w *Window) GetWindow() fyne.Window {
+	return w.fyneWindow
+}
+
+// Resize resizes the window
+func (w *Window) Resize(size fyne.Size) {
+	w.fyneWindow.Resize(size)
+}
+
+// SetContent sets the window content
+func (w *Window) SetContent(content fyne.CanvasObject) {
+	w.fyneWindow.SetContent(content)
 }

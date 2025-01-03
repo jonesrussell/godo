@@ -5,13 +5,13 @@ import (
 	"github.com/jonesrussell/godo/internal/common"
 	"github.com/jonesrussell/godo/internal/gui"
 	"github.com/jonesrussell/godo/internal/logger"
-	"github.com/jonesrussell/godo/internal/storage"
+	"github.com/jonesrussell/godo/internal/storage/types"
 )
 
 // TestApp is a special version of App used for testing
 type TestApp struct {
 	Logger     logger.Logger
-	Store      storage.Store
+	Store      types.Store
 	MainWindow gui.MainWindow
 	QuickNote  gui.QuickNote
 	Hotkey     hotkey.Manager

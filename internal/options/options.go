@@ -7,7 +7,7 @@ import (
 	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/gui"
 	"github.com/jonesrussell/godo/internal/logger"
-	"github.com/jonesrussell/godo/internal/storage"
+	"github.com/jonesrussell/godo/internal/storage/types"
 )
 
 // LoggerOptions defines options for logger configuration
@@ -26,7 +26,7 @@ type HotkeyOptions struct {
 // CoreOptions groups core application dependencies
 type CoreOptions struct {
 	Logger logger.Logger
-	Store  storage.Store
+	Store  types.Store
 	Config *config.Config
 }
 

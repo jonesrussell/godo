@@ -4,13 +4,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jonesrussell/godo/internal/storage"
+	"github.com/jonesrussell/godo/internal/storage/types"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNoteCreation(t *testing.T) {
 	// Using correct field names and time handling
-	note := storage.Note{
+	note := types.Note{
 		Content:   "Buy groceries",
 		Completed: false,
 		CreatedAt: time.Now().Unix(),
@@ -28,14 +28,14 @@ func TestNoteCreation(t *testing.T) {
 }
 
 func TestNoteUpdate(t *testing.T) {
-	originalNote := &storage.Note{
+	originalNote := &types.Note{
 		Content:   "Original note",
 		Completed: true,
 		CreatedAt: time.Now().Unix(),
 		UpdatedAt: time.Now().Unix(),
 	}
 
-	updatedNote := &storage.Note{
+	updatedNote := &types.Note{
 		Content:   "Updated note",
 		Completed: false,
 		UpdatedAt: time.Now().Unix(),

@@ -14,17 +14,17 @@ import (
 	"github.com/jonesrussell/godo/internal/app/hotkey"
 	"github.com/jonesrussell/godo/internal/gui"
 	"github.com/jonesrussell/godo/internal/logger"
-	"github.com/jonesrussell/godo/internal/storage"
+	"github.com/jonesrussell/godo/internal/storage/types"
 )
 
 // App represents the main application
 type App struct {
-	store    storage.Store
+	store    types.Store
 	window   gui.MainWindowManager
 	logger   logger.Logger
 	stopOnce sync.Once
 	stopChan chan struct{}
-	notes    map[string]storage.Note
+	notes    map[string]types.Note
 	list     *widget.List
 }
 
@@ -44,7 +44,7 @@ func (a *App) Cleanup() {
 }
 
 // Store returns the storage.Store instance
-func (a *App) Store() storage.Store {
+func (a *App) Store() types.Store {
 	return a.store
 }
 
@@ -55,7 +55,7 @@ func (a *App) Logger() logger.Logger {
 
 // Params contains the parameters for creating a new App instance
 type Params struct {
-	Store     storage.Store
+	Store     types.Store
 	Window    gui.MainWindowManager
 	Logger    logger.Logger
 	Hotkey    hotkey.Manager
@@ -80,7 +80,7 @@ func New(params Params) (*App, error) {
 		window:   params.Window,
 		logger:   params.Logger,
 		stopChan: make(chan struct{}),
-		notes:    make(map[string]storage.Note),
+		notes:    make(map[string]types.Note),
 	}, nil
 }
 
@@ -163,7 +163,7 @@ func (a *App) initWindow() error {
 		}
 
 		now := time.Now().Unix()
-		note := storage.Note{
+		note := types.Note{
 			ID:        fmt.Sprintf("%d", now),
 			Content:   text,
 			Completed: false,
@@ -187,7 +187,7 @@ func (a *App) initWindow() error {
 }
 
 // getNoteByIndex returns a note by its list index
-func (a *App) getNoteByIndex(index int) *storage.Note {
+func (a *App) getNoteByIndex(index int) *types.Note {
 	i := 0
 	for _, note := range a.notes {
 		if i == index {
@@ -199,7 +199,7 @@ func (a *App) getNoteByIndex(index int) *storage.Note {
 }
 
 // AddNote adds a new note
-func (a *App) AddNote(ctx context.Context, note storage.Note) error {
+func (a *App) AddNote(ctx context.Context, note types.Note) error {
 	if err := a.store.Add(ctx, note); err != nil {
 		return fmt.Errorf("failed to add note: %w", err)
 	}
@@ -212,7 +212,7 @@ func (a *App) AddNote(ctx context.Context, note storage.Note) error {
 }
 
 // UpdateNote updates an existing note
-func (a *App) UpdateNote(ctx context.Context, note storage.Note) error {
+func (a *App) UpdateNote(ctx context.Context, note types.Note) error {
 	if err := a.store.Update(ctx, note); err != nil {
 		return fmt.Errorf("failed to update note: %w", err)
 	}

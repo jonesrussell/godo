@@ -12,24 +12,25 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jonesrussell/godo/internal/storage"
+	"github.com/jonesrussell/godo/internal/storage/types"
+	"github.com/jonesrussell/godo/internal/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestNoteHandler(t *testing.T) {
-	store := storage.NewMockStore()
+	store := testutil.NewMockStore()
 	handler := NewNoteHandler(store)
 
 	t.Run("create note", func(t *testing.T) {
 		tests := []struct {
 			name    string
-			note    storage.Note
+			note    types.Note
 			wantErr bool
 		}{
 			{
 				name: "valid note",
-				note: storage.Note{
+				note: types.Note{
 					Content:   "Test Note",
 					CreatedAt: time.Now().Unix(),
 					UpdatedAt: time.Now().Unix(),
@@ -38,7 +39,7 @@ func TestNoteHandler(t *testing.T) {
 			},
 			{
 				name:    "invalid note",
-				note:    storage.Note{},
+				note:    types.Note{},
 				wantErr: true,
 			},
 		}
@@ -60,7 +61,7 @@ func TestNoteHandler(t *testing.T) {
 
 				assert.Equal(t, http.StatusCreated, w.Code)
 
-				var response storage.Note
+				var response types.Note
 				err = json.NewDecoder(w.Body).Decode(&response)
 				require.NoError(t, err)
 				assert.Equal(t, tt.note.Content, response.Content)
@@ -72,10 +73,10 @@ func TestNoteHandler(t *testing.T) {
 
 	t.Run("list notes", func(t *testing.T) {
 		// Clear any existing notes
-		store = storage.NewMockStore()
+		store = testutil.NewMockStore()
 
 		// Add some test notes
-		notes := []storage.Note{
+		notes := []types.Note{
 			{
 				ID:        "test-1",
 				Content:   "Note 1",
@@ -102,7 +103,7 @@ func TestNoteHandler(t *testing.T) {
 
 		assert.Equal(t, http.StatusOK, w.Code)
 
-		var response []storage.Note
+		var response []types.Note
 		err := json.NewDecoder(w.Body).Decode(&response)
 		require.NoError(t, err)
 		assert.Len(t, response, len(notes))
@@ -118,13 +119,13 @@ func TestNoteHandler(t *testing.T) {
 		tests := []struct {
 			name    string
 			noteID  string
-			update  storage.Note
+			update  types.Note
 			wantErr bool
 		}{
 			{
 				name:   "existing note",
 				noteID: "test-1",
-				update: storage.Note{
+				update: types.Note{
 					ID:        "test-1",
 					Content:   "Updated Note",
 					UpdatedAt: time.Now().Unix(),
@@ -134,7 +135,7 @@ func TestNoteHandler(t *testing.T) {
 			{
 				name:   "nonexistent note",
 				noteID: "nonexistent",
-				update: storage.Note{
+				update: types.Note{
 					ID:        "nonexistent",
 					Content:   "Updated Note",
 					UpdatedAt: time.Now().Unix(),
@@ -146,7 +147,7 @@ func TestNoteHandler(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				if tt.noteID == "test-1" {
-					existingNote := storage.Note{
+					existingNote := types.Note{
 						ID:        "test-1",
 						Content:   "Original Note",
 						CreatedAt: time.Now().Unix(),
@@ -171,7 +172,7 @@ func TestNoteHandler(t *testing.T) {
 
 				assert.Equal(t, http.StatusOK, w.Code)
 
-				var response storage.Note
+				var response types.Note
 				err = json.NewDecoder(w.Body).Decode(&response)
 				require.NoError(t, err)
 				assert.Equal(t, tt.update.Content, response.Content)
@@ -201,7 +202,7 @@ func TestNoteHandler(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				if tt.noteID == "test-1" {
-					note := storage.Note{
+					note := types.Note{
 						ID:        "test-1",
 						Content:   "Test Note",
 						CreatedAt: time.Now().Unix(),

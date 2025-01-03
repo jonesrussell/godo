@@ -7,16 +7,16 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/jonesrussell/godo/internal/storage"
+	"github.com/jonesrussell/godo/internal/storage/types"
 	_ "modernc.org/sqlite"
 )
 
-// Store implements the storage.Store interface using SQLite
+// Store implements the types.Store interface using SQLite
 type Store struct {
 	db *sql.DB
 }
 
-// Transaction implements the storage.Transaction interface
+// Transaction implements the types.Transaction interface
 type Transaction struct {
 	tx *sql.Tx
 }
@@ -61,7 +61,7 @@ func (s *Store) initialize() error {
 }
 
 // BeginTx starts a new transaction
-func (s *Store) BeginTx(ctx context.Context) (storage.Transaction, error) {
+func (s *Store) BeginTx(ctx context.Context) (types.Transaction, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to begin transaction: %w", err)
@@ -71,7 +71,7 @@ func (s *Store) BeginTx(ctx context.Context) (storage.Transaction, error) {
 }
 
 // Add adds a new note
-func (s *Store) Add(ctx context.Context, note storage.Note) error {
+func (s *Store) Add(ctx context.Context, note types.Note) error {
 	query := `
 		INSERT INTO notes (id, content, completed, created_at, updated_at)
 		VALUES (?, ?, ?, ?, ?)
@@ -92,14 +92,14 @@ func (s *Store) Add(ctx context.Context, note storage.Note) error {
 }
 
 // Get retrieves a note by ID
-func (s *Store) Get(ctx context.Context, id string) (storage.Note, error) {
+func (s *Store) Get(ctx context.Context, id string) (types.Note, error) {
 	query := `
 		SELECT id, content, completed, created_at, updated_at
 		FROM notes
 		WHERE id = ?
 	`
 
-	var note storage.Note
+	var note types.Note
 	err := s.db.QueryRowContext(ctx, query, id).Scan(
 		&note.ID,
 		&note.Content,
@@ -109,18 +109,18 @@ func (s *Store) Get(ctx context.Context, id string) (storage.Note, error) {
 	)
 
 	if err == sql.ErrNoRows {
-		return storage.Note{}, fmt.Errorf("note with ID %s not found", id)
+		return types.Note{}, fmt.Errorf("note with ID %s not found", id)
 	}
 
 	if err != nil {
-		return storage.Note{}, fmt.Errorf("failed to get note: %w", err)
+		return types.Note{}, fmt.Errorf("failed to get note: %w", err)
 	}
 
 	return note, nil
 }
 
 // List retrieves all notes
-func (s *Store) List(ctx context.Context) ([]storage.Note, error) {
+func (s *Store) List(ctx context.Context) ([]types.Note, error) {
 	query := `
 		SELECT id, content, completed, created_at, updated_at
 		FROM notes
@@ -133,9 +133,9 @@ func (s *Store) List(ctx context.Context) ([]storage.Note, error) {
 	}
 	defer rows.Close()
 
-	var notes []storage.Note
+	var notes []types.Note
 	for rows.Next() {
-		var note storage.Note
+		var note types.Note
 		err := rows.Scan(
 			&note.ID,
 			&note.Content,
@@ -157,7 +157,7 @@ func (s *Store) List(ctx context.Context) ([]storage.Note, error) {
 }
 
 // Update updates an existing note
-func (s *Store) Update(ctx context.Context, note storage.Note) error {
+func (s *Store) Update(ctx context.Context, note types.Note) error {
 	query := `
 		UPDATE notes
 		SET content = ?, completed = ?, updated_at = ?
@@ -219,7 +219,7 @@ func (s *Store) Close() error {
 // Transaction methods
 
 // Add adds a new note in the transaction
-func (tx *Transaction) Add(ctx context.Context, note storage.Note) error {
+func (tx *Transaction) Add(ctx context.Context, note types.Note) error {
 	query := `
 		INSERT INTO notes (id, content, completed, created_at, updated_at)
 		VALUES (?, ?, ?, ?, ?)
@@ -240,14 +240,14 @@ func (tx *Transaction) Add(ctx context.Context, note storage.Note) error {
 }
 
 // Get retrieves a note by ID in the transaction
-func (tx *Transaction) Get(ctx context.Context, id string) (storage.Note, error) {
+func (tx *Transaction) Get(ctx context.Context, id string) (types.Note, error) {
 	query := `
 		SELECT id, content, completed, created_at, updated_at
 		FROM notes
 		WHERE id = ?
 	`
 
-	var note storage.Note
+	var note types.Note
 	err := tx.tx.QueryRowContext(ctx, query, id).Scan(
 		&note.ID,
 		&note.Content,
@@ -257,18 +257,18 @@ func (tx *Transaction) Get(ctx context.Context, id string) (storage.Note, error)
 	)
 
 	if err == sql.ErrNoRows {
-		return storage.Note{}, fmt.Errorf("note with ID %s not found", id)
+		return types.Note{}, fmt.Errorf("note with ID %s not found", id)
 	}
 
 	if err != nil {
-		return storage.Note{}, fmt.Errorf("failed to get note in transaction: %w", err)
+		return types.Note{}, fmt.Errorf("failed to get note in transaction: %w", err)
 	}
 
 	return note, nil
 }
 
 // List retrieves all notes in the transaction
-func (tx *Transaction) List(ctx context.Context) ([]storage.Note, error) {
+func (tx *Transaction) List(ctx context.Context) ([]types.Note, error) {
 	query := `
 		SELECT id, content, completed, created_at, updated_at
 		FROM notes
@@ -281,9 +281,9 @@ func (tx *Transaction) List(ctx context.Context) ([]storage.Note, error) {
 	}
 	defer rows.Close()
 
-	var notes []storage.Note
+	var notes []types.Note
 	for rows.Next() {
-		var note storage.Note
+		var note types.Note
 		err := rows.Scan(
 			&note.ID,
 			&note.Content,
@@ -305,7 +305,7 @@ func (tx *Transaction) List(ctx context.Context) ([]storage.Note, error) {
 }
 
 // Update updates an existing note in the transaction
-func (tx *Transaction) Update(ctx context.Context, note storage.Note) error {
+func (tx *Transaction) Update(ctx context.Context, note types.Note) error {
 	query := `
 		UPDATE notes
 		SET content = ?, completed = ?, updated_at = ?

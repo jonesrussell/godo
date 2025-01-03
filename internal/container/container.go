@@ -5,14 +5,14 @@ import (
 
 	godoapp "github.com/jonesrussell/godo/internal/app"
 	"github.com/jonesrussell/godo/internal/logger"
-	"github.com/jonesrussell/godo/internal/storage"
+	"github.com/jonesrussell/godo/internal/storage/types"
 )
 
 // Container holds all application dependencies
 type Container struct {
 	App    godoapp.ApplicationService
 	Logger logger.Logger
-	Store  storage.Store
+	Store  types.Store
 }
 
 // New creates a new container instance

@@ -9,7 +9,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/jonesrussell/godo/internal/logger"
-	"github.com/jonesrussell/godo/internal/storage"
+	"github.com/jonesrussell/godo/internal/storage/types"
 )
 
 const (
@@ -19,13 +19,13 @@ const (
 
 // Server represents the API server
 type Server struct {
-	store  storage.Store
+	store  types.Store
 	logger logger.Logger
 	srv    *http.Server
 }
 
 // NewServer creates a new API server
-func NewServer(store storage.Store, logger logger.Logger) *Server {
+func NewServer(store types.Store, logger logger.Logger) *Server {
 	return &Server{
 		store:  store,
 		logger: logger,

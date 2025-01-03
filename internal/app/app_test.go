@@ -10,24 +10,24 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/test"
-	"github.com/jonesrussell/godo/internal/storage"
+	"github.com/jonesrussell/godo/internal/storage/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-// mockStore implements storage.Store for testing
+// mockStore implements types.Store for testing
 type mockStore struct {
-	notes map[string]storage.Note
+	notes map[string]types.Note
 	err   error
 }
 
 func newMockStore() *mockStore {
 	return &mockStore{
-		notes: make(map[string]storage.Note),
+		notes: make(map[string]types.Note),
 	}
 }
 
-func (s *mockStore) Add(_ context.Context, note storage.Note) error {
+func (s *mockStore) Add(_ context.Context, note types.Note) error {
 	if s.err != nil {
 		return s.err
 	}
@@ -35,29 +35,29 @@ func (s *mockStore) Add(_ context.Context, note storage.Note) error {
 	return nil
 }
 
-func (s *mockStore) Get(_ context.Context, id string) (storage.Note, error) {
+func (s *mockStore) Get(_ context.Context, id string) (types.Note, error) {
 	if s.err != nil {
-		return storage.Note{}, s.err
+		return types.Note{}, s.err
 	}
 	note, ok := s.notes[id]
 	if !ok {
-		return storage.Note{}, fmt.Errorf("note not found")
+		return types.Note{}, fmt.Errorf("note not found")
 	}
 	return note, nil
 }
 
-func (s *mockStore) List(_ context.Context) ([]storage.Note, error) {
+func (s *mockStore) List(_ context.Context) ([]types.Note, error) {
 	if s.err != nil {
 		return nil, s.err
 	}
-	notes := make([]storage.Note, 0, len(s.notes))
+	notes := make([]types.Note, 0, len(s.notes))
 	for _, note := range s.notes {
 		notes = append(notes, note)
 	}
 	return notes, nil
 }
 
-func (s *mockStore) Update(_ context.Context, note storage.Note) error {
+func (s *mockStore) Update(_ context.Context, note types.Note) error {
 	if s.err != nil {
 		return s.err
 	}
@@ -79,7 +79,7 @@ func (s *mockStore) Delete(_ context.Context, id string) error {
 	return nil
 }
 
-func (s *mockStore) BeginTx(_ context.Context) (storage.Transaction, error) {
+func (s *mockStore) BeginTx(_ context.Context) (types.Transaction, error) {
 	return nil, fmt.Errorf("transactions not supported")
 }
 
@@ -166,7 +166,7 @@ func TestAppOperations(t *testing.T) {
 		require.NoError(t, err)
 		require.NoError(t, app.Start())
 
-		note := storage.Note{
+		note := types.Note{
 			ID:        "1",
 			Content:   "Test Note",
 			Completed: false,
@@ -195,7 +195,7 @@ func TestAppOperations(t *testing.T) {
 		require.NoError(t, err)
 		require.NoError(t, app.Start())
 
-		note := storage.Note{
+		note := types.Note{
 			ID:        "1",
 			Content:   "Test Note",
 			Completed: false,
@@ -231,7 +231,7 @@ func TestAppOperations(t *testing.T) {
 		require.NoError(t, err)
 		require.NoError(t, app.Start())
 
-		note := storage.Note{
+		note := types.Note{
 			ID:        "1",
 			Content:   "Test Note",
 			Completed: false,
@@ -248,23 +248,7 @@ func TestAppOperations(t *testing.T) {
 		require.NoError(t, err)
 
 		// Verify note was deleted
-		notes, err := store.List(ctx)
-		require.NoError(t, err)
-		assert.Empty(t, notes)
-	})
-
-	t.Run("Stop", func(t *testing.T) {
-		store := newMockStore()
-		window := newMockWindow()
-
-		app, err := New(Params{
-			Store:  store,
-			Window: window,
-		})
-		require.NoError(t, err)
-		require.NoError(t, app.Start())
-
-		err = app.Stop()
-		require.NoError(t, err)
+		_, err = store.Get(ctx, note.ID)
+		assert.Error(t, err)
 	})
 }

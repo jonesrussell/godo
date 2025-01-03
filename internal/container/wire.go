@@ -19,8 +19,8 @@ import (
 	"github.com/jonesrussell/godo/internal/gui/quicknote"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/options"
-	"github.com/jonesrussell/godo/internal/storage"
 	"github.com/jonesrussell/godo/internal/storage/sqlite"
+	"github.com/jonesrussell/godo/internal/storage/types"
 )
 
 // Provider Sets
@@ -71,7 +71,7 @@ var (
 	StorageSet = wire.NewSet(
 		ProvideDatabasePath,
 		ProvideSQLiteStore,
-		wire.Bind(new(storage.Store), new(*sqlite.Store)),
+		wire.Bind(new(types.Store), new(*sqlite.Store)),
 	)
 
 	// ConfigSet provides configuration dependencies
@@ -112,7 +112,7 @@ func InitializeApp() (app.ApplicationService, func(), error) {
 // Provider functions for options structs
 func ProvideCoreOptions(
 	logger logger.Logger,
-	store storage.Store,
+	store types.Store,
 	config *config.Config,
 ) (*options.CoreOptions, error) {
 	if logger == nil {
@@ -357,13 +357,13 @@ func ProvideFyneApp() fyne.App {
 }
 
 // ProvideMainWindow provides a main window instance
-func ProvideMainWindow(app fyne.App, store storage.Store, logger logger.Logger, cfg *config.Config) *mainwindow.Window {
+func ProvideMainWindow(app fyne.App, store types.Store, logger logger.Logger, cfg *config.Config) *mainwindow.Window {
 	window := app.NewWindow("Godo")
 	return mainwindow.New(window, store, logger)
 }
 
 // ProvideQuickNote provides a quick note window instance
-func ProvideQuickNote(app fyne.App, store storage.Store, logger logger.Logger, cfg *config.Config) *quicknote.Window {
+func ProvideQuickNote(app fyne.App, store types.Store, logger logger.Logger, cfg *config.Config) *quicknote.Window {
 	return quicknote.New(app, store, logger, cfg.UI.QuickNote)
 }
 
@@ -428,11 +428,11 @@ func ProvideErrorOutputPaths() common.ErrorOutputPaths {
 }
 
 // Provider functions for API components
-func ProvideAPIServer(store storage.Store, log logger.Logger) *api.Server {
+func ProvideAPIServer(store types.Store, log logger.Logger) *api.Server {
 	return api.NewServer(store, log)
 }
 
-func ProvideAPIRunner(store storage.Store, log logger.Logger) *api.Runner {
+func ProvideAPIRunner(store types.Store, log logger.Logger) *api.Runner {
 	return api.NewRunner(store, log, &common.HTTPConfig{
 		Port:              8080, // TODO: Get from config
 		ReadTimeout:       30,

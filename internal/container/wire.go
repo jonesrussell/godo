@@ -21,7 +21,6 @@ import (
 	"github.com/jonesrussell/godo/internal/options"
 	"github.com/jonesrussell/godo/internal/storage"
 	"github.com/jonesrussell/godo/internal/storage/sqlite"
-	"go.uber.org/zap"
 )
 
 // Provider Sets
@@ -41,8 +40,8 @@ var (
 		ProvideGUIOptions,
 		ProvideMainWindow,
 		ProvideQuickNote,
-		wire.Bind(new(gui.MainWindow), new(*mainwindow.Window)),
-		wire.Bind(new(gui.QuickNote), new(*quicknote.Window)),
+		wire.Bind(new(gui.MainWindowManager), new(*mainwindow.Window)),
+		wire.Bind(new(gui.QuickNoteManager), new(*quicknote.Window)),
 	)
 
 	// APISet provides HTTP API server dependencies
@@ -104,7 +103,8 @@ func InitializeApp() (app.ApplicationService, func(), error) {
 		CoreSet,   // First initialize core services
 		UISet,     // Then UI components
 		HotkeySet, // Then platform-specific features
-		APISet,    // Finally the main app
+		APISet,    // Then API components
+		AppSet,    // Finally the main app
 	)
 	return nil, nil, nil
 }
@@ -357,9 +357,9 @@ func ProvideFyneApp() fyne.App {
 }
 
 // ProvideMainWindow provides a main window instance
-func ProvideMainWindow(app fyne.App, store storage.Store, logger logger.Logger, cfg *config.Config) *mainwindow.MainWindow {
+func ProvideMainWindow(app fyne.App, store storage.Store, logger logger.Logger, cfg *config.Config) *mainwindow.Window {
 	window := app.NewWindow("Godo")
-	return mainwindow.NewMainWindow(window, store)
+	return mainwindow.New(window, store, logger)
 }
 
 // ProvideQuickNote provides a quick note window instance
@@ -428,7 +428,7 @@ func ProvideErrorOutputPaths() common.ErrorOutputPaths {
 }
 
 // Provider functions for API components
-func ProvideAPIServer(store storage.Store, log *zap.Logger) *api.Server {
+func ProvideAPIServer(store storage.Store, log logger.Logger) *api.Server {
 	return api.NewServer(store, log)
 }
 

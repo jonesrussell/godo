@@ -10,6 +10,8 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
+	"github.com/jonesrussell/godo/internal/api"
+	"github.com/jonesrussell/godo/internal/app/hotkey"
 	"github.com/jonesrussell/godo/internal/gui"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
@@ -53,9 +55,12 @@ func (a *App) Logger() logger.Logger {
 
 // Params contains the parameters for creating a new App instance
 type Params struct {
-	Store  storage.Store
-	Window gui.MainWindowManager
-	Logger logger.Logger
+	Store     storage.Store
+	Window    gui.MainWindowManager
+	Logger    logger.Logger
+	Hotkey    hotkey.Manager
+	APIServer *api.Server
+	APIRunner *api.Runner
 }
 
 // New creates a new App instance

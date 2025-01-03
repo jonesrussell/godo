@@ -8,19 +8,19 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
-	"go.uber.org/zap"
 )
 
 // Server represents the API server
 type Server struct {
 	store  storage.Store
-	logger *zap.Logger
+	logger logger.Logger
 	srv    *http.Server
 }
 
 // NewServer creates a new API server
-func NewServer(store storage.Store, logger *zap.Logger) *Server {
+func NewServer(store storage.Store, logger logger.Logger) *Server {
 	return &Server{
 		store:  store,
 		logger: logger,
@@ -60,6 +60,7 @@ func (s *Server) Start(addr string) error {
 
 	// Start server
 	if err := s.srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		s.logger.Error("Failed to start server", "error", err)
 		return fmt.Errorf("failed to start server: %w", err)
 	}
 
@@ -69,6 +70,7 @@ func (s *Server) Start(addr string) error {
 // Stop stops the API server
 func (s *Server) Stop(ctx context.Context) error {
 	if err := s.srv.Shutdown(ctx); err != nil {
+		s.logger.Error("Failed to stop server", "error", err)
 		return fmt.Errorf("failed to stop server: %w", err)
 	}
 	return nil

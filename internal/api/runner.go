@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/jonesrussell/godo/internal/common"
 	"github.com/jonesrussell/godo/internal/logger"
@@ -17,8 +18,14 @@ type Runner struct {
 
 // NewRunner creates a new HTTP server runner
 func NewRunner(store storage.Store, l logger.Logger, config *common.HTTPConfig) *Runner {
+	// Convert logger.Logger to *zap.Logger
+	zapLogger, ok := l.(*logger.ZapLogger)
+	if !ok {
+		panic("logger must be a ZapLogger")
+	}
+
 	return &Runner{
-		server: NewServer(store, l),
+		server: NewServer(store, zapLogger.SugaredLogger.Desugar()),
 		logger: l,
 		config: config,
 	}
@@ -27,7 +34,8 @@ func NewRunner(store storage.Store, l logger.Logger, config *common.HTTPConfig) 
 // Start starts the HTTP server in a goroutine
 func (r *Runner) Start(port int) {
 	go func() {
-		if err := r.server.Start(port); err != nil {
+		addr := fmt.Sprintf(":%d", port)
+		if err := r.server.Start(addr); err != nil {
 			r.logger.Error("HTTP server error", "error", err)
 		}
 	}()
@@ -35,5 +43,5 @@ func (r *Runner) Start(port int) {
 
 // Shutdown gracefully shuts down the HTTP server
 func (r *Runner) Shutdown(ctx context.Context) error {
-	return r.server.Shutdown(ctx)
+	return r.server.Stop(ctx)
 }

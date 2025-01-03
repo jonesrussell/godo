@@ -1,30 +1,22 @@
-// Package mock provides a mock implementation of the storage interface for testing
+// Package mock provides mock implementations for testing
 package mock
 
 import (
 	"context"
-	"fmt"
 	"sync"
-	"time"
 
 	"github.com/jonesrussell/godo/internal/storage"
+	"github.com/jonesrussell/godo/internal/storage/errors"
 )
 
 // Store implements the storage.Store interface for testing
 type Store struct {
-	mu    sync.RWMutex
+	sync.RWMutex
 	notes map[string]storage.Note
 	err   error
 }
 
-// Transaction represents a mock transaction
-type Transaction struct {
-	store     *Store
-	notes     map[string]storage.Note
-	committed bool
-}
-
-// New creates a new mock store instance
+// New creates a new mock store
 func New() *Store {
 	return &Store{
 		notes: make(map[string]storage.Note),
@@ -33,15 +25,100 @@ func New() *Store {
 
 // SetError sets the error to be returned by store operations
 func (s *Store) SetError(err error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	s.Lock()
+	defer s.Unlock()
 	s.err = err
+}
+
+// List retrieves all notes
+func (s *Store) List(_ context.Context) ([]storage.Note, error) {
+	s.RLock()
+	defer s.RUnlock()
+
+	if s.err != nil {
+		return nil, s.err
+	}
+
+	notes := make([]storage.Note, 0, len(s.notes))
+	for _, note := range s.notes {
+		notes = append(notes, note)
+	}
+
+	return notes, nil
+}
+
+// Get retrieves a note by ID
+func (s *Store) Get(_ context.Context, id string) (storage.Note, error) {
+	s.RLock()
+	defer s.RUnlock()
+
+	if s.err != nil {
+		return storage.Note{}, s.err
+	}
+
+	note, exists := s.notes[id]
+	if !exists {
+		return storage.Note{}, errors.ErrNoteNotFound
+	}
+
+	return note, nil
+}
+
+// Add adds a new note
+func (s *Store) Add(_ context.Context, note storage.Note) error {
+	s.Lock()
+	defer s.Unlock()
+
+	if s.err != nil {
+		return s.err
+	}
+
+	if _, exists := s.notes[note.ID]; exists {
+		return errors.ErrNoteExists
+	}
+
+	s.notes[note.ID] = note
+	return nil
+}
+
+// Update updates an existing note
+func (s *Store) Update(_ context.Context, note storage.Note) error {
+	s.Lock()
+	defer s.Unlock()
+
+	if s.err != nil {
+		return s.err
+	}
+
+	if _, exists := s.notes[note.ID]; !exists {
+		return errors.ErrNoteNotFound
+	}
+
+	s.notes[note.ID] = note
+	return nil
+}
+
+// Delete removes a note by ID
+func (s *Store) Delete(_ context.Context, id string) error {
+	s.Lock()
+	defer s.Unlock()
+
+	if s.err != nil {
+		return s.err
+	}
+
+	if _, exists := s.notes[id]; !exists {
+		return errors.ErrNoteNotFound
+	}
+
+	delete(s.notes, id)
+	return nil
 }
 
 // BeginTx starts a new transaction
 func (s *Store) BeginTx(_ context.Context) (storage.Transaction, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+	s.Lock()
+	defer s.Unlock()
 
 	if s.err != nil {
 		return nil, s.err
@@ -60,96 +137,10 @@ func (s *Store) BeginTx(_ context.Context) (storage.Transaction, error) {
 	}, nil
 }
 
-// Add adds a new note
-func (s *Store) Add(_ context.Context, note storage.Note) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if s.err != nil {
-		return s.err
-	}
-
-	if _, exists := s.notes[note.ID]; exists {
-		return fmt.Errorf("note with ID %s already exists", note.ID)
-	}
-
-	s.notes[note.ID] = note
-	return nil
-}
-
-// Get retrieves a note by ID
-func (s *Store) Get(_ context.Context, id string) (storage.Note, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	if s.err != nil {
-		return storage.Note{}, s.err
-	}
-
-	note, exists := s.notes[id]
-	if !exists {
-		return storage.Note{}, fmt.Errorf("note with ID %s not found", id)
-	}
-
-	return note, nil
-}
-
-// List retrieves all notes
-func (s *Store) List(_ context.Context) ([]storage.Note, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	if s.err != nil {
-		return nil, s.err
-	}
-
-	notes := make([]storage.Note, 0, len(s.notes))
-	for _, note := range s.notes {
-		notes = append(notes, note)
-	}
-
-	return notes, nil
-}
-
-// Update updates an existing note
-func (s *Store) Update(_ context.Context, note storage.Note) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if s.err != nil {
-		return s.err
-	}
-
-	if _, exists := s.notes[note.ID]; !exists {
-		return fmt.Errorf("note with ID %s not found", note.ID)
-	}
-
-	note.UpdatedAt = time.Now().Unix()
-	s.notes[note.ID] = note
-	return nil
-}
-
-// Delete removes a note by ID
-func (s *Store) Delete(_ context.Context, id string) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if s.err != nil {
-		return s.err
-	}
-
-	if _, exists := s.notes[id]; !exists {
-		return fmt.Errorf("note with ID %s not found", id)
-	}
-
-	delete(s.notes, id)
-	return nil
-}
-
 // Close cleans up any resources
 func (s *Store) Close() error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	s.Lock()
+	defer s.Unlock()
 
 	if s.err != nil {
 		return s.err
@@ -159,16 +150,21 @@ func (s *Store) Close() error {
 	return nil
 }
 
-// Transaction methods
+// Transaction represents a mock transaction
+type Transaction struct {
+	store     *Store
+	notes     map[string]storage.Note
+	committed bool
+}
 
 // Add adds a new note in the transaction
 func (tx *Transaction) Add(_ context.Context, note storage.Note) error {
 	if tx.committed {
-		return fmt.Errorf("transaction already committed")
+		return errors.ErrTransactionClosed
 	}
 
 	if _, exists := tx.notes[note.ID]; exists {
-		return fmt.Errorf("note with ID %s already exists", note.ID)
+		return errors.ErrNoteExists
 	}
 
 	tx.notes[note.ID] = note
@@ -178,12 +174,12 @@ func (tx *Transaction) Add(_ context.Context, note storage.Note) error {
 // Get retrieves a note by ID in the transaction
 func (tx *Transaction) Get(_ context.Context, id string) (storage.Note, error) {
 	if tx.committed {
-		return storage.Note{}, fmt.Errorf("transaction already committed")
+		return storage.Note{}, errors.ErrTransactionClosed
 	}
 
 	note, exists := tx.notes[id]
 	if !exists {
-		return storage.Note{}, fmt.Errorf("note with ID %s not found", id)
+		return storage.Note{}, errors.ErrNoteNotFound
 	}
 
 	return note, nil
@@ -192,7 +188,7 @@ func (tx *Transaction) Get(_ context.Context, id string) (storage.Note, error) {
 // List retrieves all notes in the transaction
 func (tx *Transaction) List(_ context.Context) ([]storage.Note, error) {
 	if tx.committed {
-		return nil, fmt.Errorf("transaction already committed")
+		return nil, errors.ErrTransactionClosed
 	}
 
 	notes := make([]storage.Note, 0, len(tx.notes))
@@ -206,14 +202,13 @@ func (tx *Transaction) List(_ context.Context) ([]storage.Note, error) {
 // Update updates an existing note in the transaction
 func (tx *Transaction) Update(_ context.Context, note storage.Note) error {
 	if tx.committed {
-		return fmt.Errorf("transaction already committed")
+		return errors.ErrTransactionClosed
 	}
 
 	if _, exists := tx.notes[note.ID]; !exists {
-		return fmt.Errorf("note with ID %s not found", note.ID)
+		return errors.ErrNoteNotFound
 	}
 
-	note.UpdatedAt = time.Now().Unix()
 	tx.notes[note.ID] = note
 	return nil
 }
@@ -221,11 +216,11 @@ func (tx *Transaction) Update(_ context.Context, note storage.Note) error {
 // Delete removes a note by ID in the transaction
 func (tx *Transaction) Delete(_ context.Context, id string) error {
 	if tx.committed {
-		return fmt.Errorf("transaction already committed")
+		return errors.ErrTransactionClosed
 	}
 
 	if _, exists := tx.notes[id]; !exists {
-		return fmt.Errorf("note with ID %s not found", id)
+		return errors.ErrNoteNotFound
 	}
 
 	delete(tx.notes, id)
@@ -235,11 +230,11 @@ func (tx *Transaction) Delete(_ context.Context, id string) error {
 // Commit commits the transaction
 func (tx *Transaction) Commit() error {
 	if tx.committed {
-		return fmt.Errorf("transaction already committed")
+		return errors.ErrTransactionClosed
 	}
 
-	tx.store.mu.Lock()
-	defer tx.store.mu.Unlock()
+	tx.store.Lock()
+	defer tx.store.Unlock()
 
 	// Copy all changes back to the store
 	for k, v := range tx.notes {
@@ -253,7 +248,7 @@ func (tx *Transaction) Commit() error {
 // Rollback rolls back the transaction
 func (tx *Transaction) Rollback() error {
 	if tx.committed {
-		return fmt.Errorf("transaction already committed")
+		return errors.ErrTransactionClosed
 	}
 
 	tx.committed = true

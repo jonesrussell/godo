@@ -1,102 +1,73 @@
 package gui
 
 import (
-	"context"
 	"testing"
 
-	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/test"
-	"github.com/jonesrussell/godo/internal/storage"
+	"github.com/jonesrussell/godo/internal/storage/mock"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
-func TestMockWindow(t *testing.T) {
-	testWindow := test.NewWindow(nil)
+func TestWindowImplementation(t *testing.T) {
+	// Create test window
+	window := test.NewWindow(nil)
+	defer window.Close()
 
-	tests := []struct {
-		name  string
-		title string
-	}{
-		{
-			name:  "creates window with valid title",
-			title: "Test Window",
-		},
-		{
-			name:  "creates window with empty title",
-			title: "",
-		},
-	}
+	// Create window implementation
+	impl := NewWindow(window)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Create mock window
-			win := &MockMainWindow{
-				Window: testWindow,
-			}
+	// Test Show
+	t.Run("Show", func(t *testing.T) {
+		impl.Show()
+		assert.True(t, window.Visible())
+	})
 
-			assert.NotNil(t, win)
-			assert.NotNil(t, win.GetWindow())
+	// Test Hide
+	t.Run("Hide", func(t *testing.T) {
+		impl.Hide()
+		assert.False(t, window.Visible())
+	})
 
-			// Test window properties
-			assert.False(t, win.ShowCalled)
-			assert.False(t, win.HideCalled)
-			assert.False(t, win.ResizeCalled)
-			assert.False(t, win.CenterCalled)
-			assert.Nil(t, win.ContentSet)
+	// Test GetWindow
+	t.Run("GetWindow", func(t *testing.T) {
+		assert.Equal(t, window, impl.GetWindow())
+	})
 
-			// Test window operations
-			win.Show()
-			assert.True(t, win.ShowCalled)
-
-			win.Hide()
-			assert.True(t, win.HideCalled)
-
-			win.Resize(fyne.NewSize(800, 600))
-			assert.True(t, win.ResizeCalled)
-
-			win.CenterOnScreen()
-			assert.True(t, win.CenterCalled)
-
-			content := container.NewVBox()
-			win.SetContent(content)
-			assert.Equal(t, content, win.ContentSet)
+	// Test SetOnClosed
+	t.Run("SetOnClosed", func(t *testing.T) {
+		called := false
+		impl.SetOnClosed(func() {
+			called = true
 		})
-	}
+
+		window.Close()
+		assert.True(t, called)
+	})
 }
 
-func TestMockWindowWithNotes(t *testing.T) {
-	// Create test dependencies
-	store := storage.NewMockStore()
-	testWindow := test.NewWindow(nil)
-	ctx := context.Background()
+func TestWindowManager(t *testing.T) {
+	// Create test window
+	window := test.NewWindow(nil)
+	defer window.Close()
 
-	// Create mock window
-	win := &MockMainWindow{
-		Window: testWindow,
-	}
+	// Create window manager
+	manager := NewWindow(window)
 
-	// Add a test note
-	note := storage.Note{
-		ID:        "test-note",
-		Content:   "Test Note",
-		Completed: false,
-	}
-	err := store.Add(ctx, note)
-	require.NoError(t, err)
+	// Test Show
+	t.Run("Show", func(t *testing.T) {
+		manager.Show()
+		assert.True(t, window.Visible())
+	})
 
-	// Test note operations
-	content := container.NewVBox()
-	win.SetContent(content)
-	assert.Equal(t, content, win.ContentSet)
+	// Test Hide
+	t.Run("Hide", func(t *testing.T) {
+		manager.Hide()
+		assert.False(t, window.Visible())
+	})
 
-	// Test note completion
-	note.Completed = true
-	err = store.Update(ctx, note)
-	require.NoError(t, err)
-
-	// Test note deletion
-	err = store.Delete(ctx, note.ID)
-	require.NoError(t, err)
+	// Test Close
+	t.Run("Close", func(t *testing.T) {
+		manager.Close()
+		assert.False(t, window.Visible())
+	})
 }

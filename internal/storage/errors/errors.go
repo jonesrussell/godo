@@ -1,30 +1,18 @@
-// Package errors provides error definitions for the storage package
+// Package errors provides error types for storage operations
 package errors
 
-import (
-	"errors"
-	"fmt"
-)
+import "errors"
 
-// Common errors
 var (
+	// ErrNoteNotFound is returned when a note is not found
 	ErrNoteNotFound = errors.New("note not found")
-	ErrStoreClosed  = errors.New("store is closed")
-	ErrEmptyID      = errors.New("empty note ID")
-	ErrDuplicateID  = errors.New("duplicate note ID")
+
+	// ErrNoteExists is returned when a note already exists
+	ErrNoteExists = errors.New("note already exists")
+
+	// ErrTransactionClosed is returned when attempting to use a closed transaction
+	ErrTransactionClosed = errors.New("transaction is closed")
+
+	// ErrStoreClosed is returned when attempting to use a closed store
+	ErrStoreClosed = errors.New("store is closed")
 )
-
-// NotFoundError represents a note not found error
-type NotFoundError struct {
-	ID string
-}
-
-// Error returns the error message
-func (e *NotFoundError) Error() string {
-	return fmt.Sprintf("note not found: %s", e.ID)
-}
-
-// Is reports whether the target error matches this error
-func (e *NotFoundError) Is(target error) bool {
-	return target == ErrNoteNotFound
-}

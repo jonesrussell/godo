@@ -149,18 +149,6 @@ func writeValidationError(w http.ResponseWriter, fields map[string]string) {
 	writeJSON(w, http.StatusBadRequest, resp)
 }
 
-// mapError maps an error to an HTTP status code and error message
-func mapError(err error) (code int, msg, details string) {
-	switch {
-	case errors.Is(err, storage.ErrNoteNotFound):
-		return http.StatusNotFound, "Note not found", err.Error()
-	case errors.Is(err, storage.ErrDuplicateID):
-		return http.StatusConflict, "Note ID already exists", err.Error()
-	default:
-		return http.StatusInternalServerError, "Internal server error", err.Error()
-	}
-}
-
 // requestKey is a type for request context keys
 type requestKey struct{}
 

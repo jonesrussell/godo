@@ -7,8 +7,8 @@ import (
 	"github.com/jonesrussell/godo/internal/common"
 )
 
-// HotkeyHandler defines the interface for platform-specific hotkey handling
-type HotkeyHandler interface {
+// Handler defines the interface for platform-specific hotkey handling
+type Handler interface {
 	// Register registers the hotkey with the system
 	Register(*common.HotkeyBinding) error
 

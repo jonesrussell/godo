@@ -8,6 +8,11 @@ import (
 	"golang.org/x/tools/go/analysis/passes/inspect"
 )
 
+const (
+	maxStructFields     = 10
+	maxInterfaceMethods = 5
+)
+
 // StandardAnalyzer enforces consistent code patterns and clean code practices
 var StandardAnalyzer = &analysis.Analyzer{
 	Name: "standardcheck",
@@ -98,9 +103,9 @@ func checkTypeStandards(pass *analysis.Pass, typeSpec *ast.TypeSpec) {
 }
 
 func checkStructStandards(pass *analysis.Pass, name string, st *ast.StructType) {
-	// Check struct field count (max 10)
-	if len(st.Fields.List) > 10 {
-		pass.Reportf(st.Pos(), "struct %s has too many fields (> 10), consider breaking it down", name)
+	// Check struct field count
+	if len(st.Fields.List) > maxStructFields {
+		pass.Reportf(st.Pos(), "struct %s has too many fields (> %d), consider breaking it down", name, maxStructFields)
 	}
 
 	// Check struct field ordering (exported fields first)
@@ -117,7 +122,7 @@ func checkStructStandards(pass *analysis.Pass, name string, st *ast.StructType) 
 }
 
 func checkInterfaceStandards(pass *analysis.Pass, name string, iface *ast.InterfaceType) {
-	// Check interface method count (max 5)
+	// Check interface method count
 	if len(iface.Methods.List) > 5 {
 		pass.Reportf(iface.Pos(), "interface %s has too many methods (> 5), consider splitting it", name)
 	}

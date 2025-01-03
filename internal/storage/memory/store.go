@@ -23,7 +23,7 @@ func New() *Store {
 }
 
 // Add stores a new note
-func (s *Store) Add(ctx context.Context, note types.Note) error {
+func (s *Store) Add(_ context.Context, note types.Note) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -36,7 +36,7 @@ func (s *Store) Add(ctx context.Context, note types.Note) error {
 }
 
 // Get retrieves a note by ID
-func (s *Store) Get(ctx context.Context, id string) (types.Note, error) {
+func (s *Store) Get(_ context.Context, id string) (types.Note, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -49,7 +49,7 @@ func (s *Store) Get(ctx context.Context, id string) (types.Note, error) {
 }
 
 // List returns all notes
-func (s *Store) List(ctx context.Context) ([]types.Note, error) {
+func (s *Store) List(_ context.Context) ([]types.Note, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -62,7 +62,7 @@ func (s *Store) List(ctx context.Context) ([]types.Note, error) {
 }
 
 // Update modifies an existing note
-func (s *Store) Update(ctx context.Context, note types.Note) error {
+func (s *Store) Update(_ context.Context, note types.Note) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -75,7 +75,7 @@ func (s *Store) Update(ctx context.Context, note types.Note) error {
 }
 
 // Delete removes a note by ID
-func (s *Store) Delete(ctx context.Context, id string) error {
+func (s *Store) Delete(_ context.Context, id string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -93,6 +93,6 @@ func (s *Store) Close() error {
 }
 
 // BeginTx begins a new transaction
-func (s *Store) BeginTx(ctx context.Context) (types.Transaction, error) {
+func (s *Store) BeginTx(_ context.Context) (types.Transaction, error) {
 	return nil, fmt.Errorf("transactions not supported in memory store")
 }

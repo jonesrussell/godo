@@ -6,10 +6,11 @@ package hotkey
 
 import "github.com/jonesrussell/godo/internal/common"
 
-// HotkeyHandler defines the interface for Windows hotkey functionality
-type HotkeyHandler interface {
-	Register(binding *common.HotkeyBinding) error
-	Unregister(binding *common.HotkeyBinding) error
+// Handler defines the interface for hotkey handling
+type Handler interface {
+	Register(*common.HotkeyBinding) error
+	Unregister(*common.HotkeyBinding) error
 	Start() error
 	Stop() error
+	IsRegistered() bool
 }

@@ -7,14 +7,14 @@ import (
 	"fyne.io/fyne/v2/test"
 	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/logger"
-	"github.com/jonesrussell/godo/internal/storage"
+	"github.com/jonesrussell/godo/internal/storage/mock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestWindow(t *testing.T) {
 	ctx := context.Background()
-	store := storage.NewMockStore()
+	store := mock.New()
 	logger := logger.NewMockTestLogger(t)
 	cfg := config.WindowConfig{
 		Width:       400,

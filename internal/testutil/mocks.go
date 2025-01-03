@@ -3,8 +3,17 @@ package testutil
 import (
 	"testing"
 
+	"github.com/jonesrussell/godo/internal/storage"
 	"github.com/stretchr/testify/mock"
 )
+
+// TestFixture holds test dependencies
+type TestFixture struct {
+	Store     *storage.MockStore
+	Window    *MockWindow
+	QuickNote *MockQuickNote
+	Hotkey    *MockHotkeyManager
+}
 
 // MockWindow is a mock implementation of a window
 type MockWindow struct {

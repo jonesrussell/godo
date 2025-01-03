@@ -12,6 +12,11 @@ import (
 	"github.com/jonesrussell/godo/internal/storage"
 )
 
+const (
+	defaultReadTimeout  = 30 * time.Second
+	defaultWriteTimeout = 30 * time.Second
+)
+
 // Server represents the API server
 type Server struct {
 	store  storage.Store
@@ -54,8 +59,8 @@ func (s *Server) Start(addr string) error {
 	s.srv = &http.Server{
 		Addr:         addr,
 		Handler:      router,
-		ReadTimeout:  30 * time.Second,
-		WriteTimeout: 30 * time.Second,
+		ReadTimeout:  defaultReadTimeout,
+		WriteTimeout: defaultWriteTimeout,
 	}
 
 	// Start server

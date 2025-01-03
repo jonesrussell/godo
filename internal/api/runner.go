@@ -18,14 +18,8 @@ type Runner struct {
 
 // NewRunner creates a new HTTP server runner
 func NewRunner(store storage.Store, l logger.Logger, config *common.HTTPConfig) *Runner {
-	// Convert logger.Logger to *zap.Logger
-	zapLogger, ok := l.(*logger.ZapLogger)
-	if !ok {
-		panic("logger must be a ZapLogger")
-	}
-
 	return &Runner{
-		server: NewServer(store, zapLogger.SugaredLogger.Desugar()),
+		server: NewServer(store, l),
 		logger: l,
 		config: config,
 	}

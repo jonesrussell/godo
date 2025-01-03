@@ -5,8 +5,8 @@ import (
 	"github.com/jonesrussell/godo/internal/logger"
 )
 
-// QuickNoteInitializer defines the behavior of a quick note window
-type QuickNoteInitializer interface {
+// Initializer defines the behavior of a quick note window
+type Initializer interface {
 	// Initialize sets up the window with the given app and logger
 	Initialize(app fyne.App, log logger.Logger)
 	// Show displays the quick note window

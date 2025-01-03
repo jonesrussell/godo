@@ -1,105 +1,114 @@
-# Storage Layer
+# Storage Component
 
-## Overview
+The storage component provides a unified interface for storing and retrieving notes in the application.
 
-The storage layer provides persistent data storage for tasks using SQLite, with an in-memory implementation for testing.
+## Interface
 
-## Components
+The storage interface is defined in `internal/storage/store.go`:
 
-### Storage Interface (`internal/storage/store.go`)
 ```go
 type Store interface {
-    Add(task Task) error
-    List() ([]Task, error)
-    Update(task Task) error
-    Delete(id string) error
+    // Add adds a new note to the store
+    Add(ctx context.Context, note Note) error
+
+    // Get retrieves a note by its ID
+    Get(ctx context.Context, id string) (Note, error)
+
+    // Update updates an existing note
+    Update(ctx context.Context, note Note) error
+
+    // Delete removes a note by its ID
+    Delete(ctx context.Context, id string) error
+
+    // List returns all notes in the store
+    List(ctx context.Context) ([]Note, error)
+
+    // Close closes the store and releases any resources
+    Close() error
 }
 ```
 
-### Implementations
+## Data Model
 
-#### SQLite (`internal/storage/sqlite/`)
-- Primary storage implementation
-- Uses modernc.org/sqlite driver
-- Supports migrations
-- Transaction support
-- Thread-safe operations
-
-#### In-Memory (`internal/storage/memory/`)
-- Used for testing
-- No persistence
-- Fast operations
-- Thread-safe implementation
-
-## Task Model
+The core data model is the `Note` struct:
 
 ```go
-type Task struct {
-    ID        string
-    Title     string
-    Completed bool
+type Note struct {
+    ID        string `json:"id"`
+    Content   string `json:"content"`
+    Completed bool   `json:"completed"`
+    CreatedAt int64  `json:"created_at"`
+    UpdatedAt int64  `json:"updated_at"`
 }
 ```
 
-## Usage Examples
+## Implementations
 
-### Adding a Task
-```go
-task := storage.Task{
-    ID:    uuid.New().String(),
-    Title: "New Task",
-}
-err := store.Add(task)
-```
+### SQLite Store
 
-### Listing Tasks
-```go
-tasks, err := store.List()
-```
+The SQLite implementation uses the `modernc.org/sqlite` package to store notes in a SQLite database. The implementation is in `internal/storage/sqlite/store.go`.
 
-### Updating a Task
-```go
-task.Completed = true
-err := store.Update(task)
-```
+Key features:
+- Uses prepared statements for all operations
+- Handles concurrent access with proper locking
+- Supports automatic schema migrations
+- Provides efficient indexing for common queries
 
-### Deleting a Task
-```go
-err := store.Delete(taskID)
-```
+### Memory Store
+
+The in-memory implementation stores notes in memory using a map. This is primarily used for testing and development. The implementation is in `internal/storage/memory/store.go`.
+
+Key features:
+- Fast access for all operations
+- No persistence between application restarts
+- Thread-safe operations using a mutex
+- Useful for testing and prototyping
+
+### Mock Store
+
+A mock implementation is provided for testing in `internal/storage/mock/store.go`. This allows tests to verify storage operations without requiring a real database.
+
+Key features:
+- Configurable behavior for testing edge cases
+- Records method calls for verification
+- Can be used to simulate errors and edge cases
 
 ## Error Handling
 
-Common errors:
-- `ErrTaskNotFound`: Task doesn't exist
-- Database errors: Connection, constraint violations
-- Transaction errors: Rollback scenarios
+The storage component defines several error types in `internal/storage/errors/errors.go`:
 
-## Testing
+- `ErrNotFound`: Returned when a note is not found
+- `ErrInvalidID`: Returned when an invalid ID is provided
+- `ErrInvalidNote`: Returned when a note is invalid
+- `ErrDuplicate`: Returned when trying to add a note with an existing ID
 
-### Unit Tests
-- CRUD operation tests
-- Error case tests
-- Transaction tests
+## Usage Example
 
-### Integration Tests
-- Database connection tests
-- Migration tests
-- Concurrent operation tests
+```go
+// Create a new SQLite store
+store, err := sqlite.NewStore("notes.db")
+if err != nil {
+    log.Fatal(err)
+}
+defer store.Close()
 
-## Configuration
+// Add a new note
+note := storage.Note{
+    ID:        uuid.New().String(),
+    Content:   "Buy groceries",
+    CreatedAt: time.Now().Unix(),
+    UpdatedAt: time.Now().Unix(),
+}
+if err := store.Add(context.Background(), note); err != nil {
+    log.Fatal(err)
+}
 
-Storage configuration in `configs/default.yaml`:
-```yaml
-database:
-  path: "godo.db"  # SQLite database path
-```
-
-## Best Practices
-
-1. Always use transactions for multi-operation changes
-2. Handle database errors appropriately
-3. Use prepared statements for repeated operations
-4. Close database connections properly
-5. Use appropriate indices for performance
-6. Follow repository pattern conventions 
+// List all notes
+notes, err := store.List(context.Background())
+if err != nil {
+    log.Fatal(err)
+}
+for _, note := range notes {
+    fmt.Printf("Note: %s\n", note.Content)
+}
+``` 

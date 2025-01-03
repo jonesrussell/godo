@@ -4,87 +4,89 @@ package validation
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/jonesrussell/godo/internal/storage"
 )
 
 var (
-	// ErrInvalidID indicates that the task ID is invalid
-	ErrInvalidID = errors.New("invalid task ID")
-	// ErrInvalidTitle indicates that the task title is invalid
-	ErrInvalidTitle = errors.New("invalid task title")
+	// ErrInvalidID indicates that the note ID is invalid
+	ErrInvalidID = errors.New("invalid note ID")
+	// ErrInvalidContent indicates that the note content is invalid
+	ErrInvalidContent = errors.New("invalid note content")
 )
 
-// TaskValidator provides validation for task operations
-type TaskValidator struct {
-	store storage.TaskReader // For uniqueness checks
+// NoteValidator provides validation for note operations
+type NoteValidator struct {
+	store storage.Store // For uniqueness checks
 }
 
-// NewTaskValidator creates a new TaskValidator
-func NewTaskValidator(store storage.TaskReader) *TaskValidator {
-	return &TaskValidator{store: store}
+// NewNoteValidator creates a new NoteValidator
+func NewNoteValidator(store storage.Store) *NoteValidator {
+	return &NoteValidator{store: store}
 }
 
-// ValidateTask validates a task for creation or update
-func (v *TaskValidator) ValidateTask(task storage.Task) error {
-	if err := v.ValidateID(task.ID); err != nil {
-		return &storage.ValidationError{
-			Field:   "id",
-			Message: err.Error(),
-		}
+// ValidateNote validates a note for creation or update
+func (v *NoteValidator) ValidateNote(note storage.Note) error {
+	if err := v.ValidateID(note.ID); err != nil {
+		return fmt.Errorf("invalid ID: %w", err)
 	}
 
-	if err := v.validateTitle(task.Title); err != nil {
-		return &storage.ValidationError{
-			Field:   "title",
-			Message: err.Error(),
-		}
+	if err := v.validateContent(note.Content); err != nil {
+		return fmt.Errorf("invalid content: %w", err)
 	}
 
-	if err := v.validateTimestamps(task.CreatedAt, task.UpdatedAt); err != nil {
-		return &storage.ValidationError{
-			Field:   "timestamps",
-			Message: err.Error(),
-		}
+	if err := v.validateTimestamps(note.CreatedAt, note.UpdatedAt); err != nil {
+		return fmt.Errorf("invalid timestamps: %w", err)
 	}
 
 	return nil
 }
 
-// ValidateID validates the task ID
-func (v *TaskValidator) ValidateID(id string) error {
+// ValidateID validates the note ID
+func (v *NoteValidator) ValidateID(id string) error {
 	if id == "" {
-		return fmt.Errorf("task ID cannot be empty")
+		return fmt.Errorf("note ID cannot be empty")
 	}
 
 	if len(id) > MaxIDLength {
-		return fmt.Errorf("task ID too long (max %d characters)", MaxIDLength)
+		return fmt.Errorf("note ID too long (max %d characters)", MaxIDLength)
 	}
 
 	return nil
 }
 
-// validateTitle validates the task title
-func (v *TaskValidator) validateTitle(title string) error {
-	if title == "" {
-		return fmt.Errorf("task title cannot be empty")
+// validateContent validates the note content
+func (v *NoteValidator) validateContent(content string) error {
+	if content == "" {
+		return fmt.Errorf("note content cannot be empty")
 	}
 
-	if len(title) > MaxTitleLength {
-		return fmt.Errorf("task title too long (max %d characters)", MaxTitleLength)
+	if len(content) > MaxContentLength {
+		return fmt.Errorf("note content too long (max %d characters)", MaxContentLength)
 	}
 
 	return nil
 }
 
-// validateTimestamps validates task timestamps
-func (v *TaskValidator) validateTimestamps(createdAt, updatedAt int64) error {
-	if createdAt == 0 {
-		return fmt.Errorf("created_at timestamp cannot be zero")
+// validateTimestamps validates note timestamps
+func (v *NoteValidator) validateTimestamps(createdAt, updatedAt int64) error {
+	now := time.Now().Unix()
+
+	if createdAt <= 0 {
+		return fmt.Errorf("created_at must be positive")
 	}
 
-	if updatedAt == 0 {
-		return fmt.Errorf("updated_at timestamp cannot be zero")
+	if updatedAt <= 0 {
+		return fmt.Errorf("updated_at must be positive")
+	}
+
+	if createdAt > now {
+		return fmt.Errorf("created_at cannot be in the future")
+	}
+
+	if updatedAt > now {
+		return fmt.Errorf("updated_at cannot be in the future")
 	}
 
 	if updatedAt < createdAt {
@@ -94,101 +96,70 @@ func (v *TaskValidator) validateTimestamps(createdAt, updatedAt int64) error {
 	return nil
 }
 
-// ValidateConnection validates the database connection state
-func ValidateConnection(err error) error {
-	if err != nil {
-		return &storage.ConnectionError{
-			Operation: "validate connection",
-			Err:       err,
-		}
-	}
-	return nil
-}
-
-// ValidateTransaction validates transaction state
-func ValidateTransaction(err error) error {
-	if err != nil {
-		return &storage.TransactionError{
-			Operation: "validate transaction",
-			Err:       err,
-		}
-	}
-	return nil
-}
-
 const (
-	// MaxIDLength is the maximum allowed length for task IDs
-	MaxIDLength = 100
-	// MaxTitleLength is the maximum allowed length for task titles
-	MaxTitleLength = 1000
+	// MaxIDLength is the maximum allowed length for note IDs
+	MaxIDLength = 36
+	// MaxContentLength is the maximum allowed length for note content
+	MaxContentLength = 1000
 )
 
-// ValidateID checks if a task ID is valid
+// ValidateID checks if a note ID is valid
 func ValidateID(id string) error {
+	if id == "" {
+		return ErrInvalidID
+	}
+
 	if len(id) > MaxIDLength {
 		return ErrInvalidID
 	}
+
 	return nil
 }
 
-// ValidateTitle checks if task title is valid
-func ValidateTitle(title string) error {
-	if len(title) > MaxTitleLength {
-		return ErrInvalidTitle
+// ValidateContent checks if note content is valid
+func ValidateContent(content string) error {
+	if content == "" {
+		return ErrInvalidContent
 	}
+
+	if len(content) > MaxContentLength {
+		return ErrInvalidContent
+	}
+
 	return nil
 }
 
-// ValidationError represents a validation error
-type ValidationError struct {
-	Field   string
-	Message string
-}
-
-func (e *ValidationError) Error() string {
-	return fmt.Sprintf("validation error for field %s: %s", e.Field, e.Message)
-}
-
-// ValidateTask validates a Task struct
-func ValidateTask(task storage.Task) error {
+// ValidateNote validates a Note struct
+func ValidateNote(note storage.Note) error {
 	// Validate ID
-	if task.ID == "" {
-		return &ValidationError{
-			Field:   "id",
-			Message: "ID cannot be empty",
-		}
+	if note.ID == "" {
+		return fmt.Errorf("note ID cannot be empty")
 	}
 
-	// Validate Title
-	if task.Title == "" {
-		return &ValidationError{
-			Field:   "title",
-			Message: "Title cannot be empty",
-		}
+	if len(note.ID) > MaxIDLength {
+		return fmt.Errorf("note ID too long (max %d characters)", MaxIDLength)
 	}
 
-	// Validate CreatedAt
-	if task.CreatedAt == 0 {
-		return &ValidationError{
-			Field:   "created_at",
-			Message: "CreatedAt must be set",
-		}
+	// Validate Content
+	if note.Content == "" {
+		return fmt.Errorf("note content cannot be empty")
 	}
 
-	// Validate UpdatedAt
-	if task.UpdatedAt == 0 {
-		return &ValidationError{
-			Field:   "updated_at",
-			Message: "UpdatedAt must be set",
-		}
+	if len(note.Content) > MaxContentLength {
+		return fmt.Errorf("note content too long (max %d characters)", MaxContentLength)
 	}
 
-	// Validate timestamps order
-	if task.UpdatedAt < task.CreatedAt {
-		return &ValidationError{
-			Field:   "timestamps",
-			Message: "UpdatedAt cannot be before CreatedAt",
-		}
+	// Validate timestamps
+	if note.CreatedAt == 0 {
+		return fmt.Errorf("created_at cannot be zero")
+	}
+
+	if note.UpdatedAt == 0 {
+		return fmt.Errorf("updated_at cannot be zero")
+	}
+
+	if note.UpdatedAt < note.CreatedAt {
+		return fmt.Errorf("updated_at cannot be before created_at")
 	}
 
 	return nil

@@ -3,12 +3,12 @@ package quicknote
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
+	"github.com/google/uuid"
 	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
@@ -43,26 +43,7 @@ func (w *Window) setupUI() {
 	w.input.SetPlaceHolder("Enter your quick note...")
 
 	w.saveBtn = widget.NewButton("Save", func() {
-		if w.input.Text == "" {
-			return
-		}
-
-		now := time.Now().Unix()
-		task := storage.Task{
-			ID:        fmt.Sprintf("%d", now), // Simple ID generation
-			Title:     w.input.Text,
-			Completed: false,
-			CreatedAt: now,
-			UpdatedAt: now,
-		}
-
-		if err := w.store.Add(context.Background(), task); err != nil {
-			w.logger.Error("Failed to save quick note", "error", err)
-			return
-		}
-
-		w.input.SetText("")
-		w.Hide()
+		w.saveNote()
 	})
 
 	cancelBtn := widget.NewButton("Cancel", func() {
@@ -76,6 +57,30 @@ func (w *Window) setupUI() {
 	w.fyneWindow.SetContent(content)
 	w.fyneWindow.Resize(fyne.NewSize(300, 200))
 	w.fyneWindow.SetFixedSize(true)
+}
+
+// saveNote saves the current note text
+func (w *Window) saveNote() {
+	text := w.input.Text
+	if text == "" {
+		return
+	}
+
+	note := storage.Note{
+		ID:        uuid.New().String(),
+		Content:   text,
+		Completed: false,
+		CreatedAt: time.Now().Unix(),
+		UpdatedAt: time.Now().Unix(),
+	}
+
+	if err := w.store.Add(context.Background(), note); err != nil {
+		w.logger.Error("Failed to save note", "error", err)
+		return
+	}
+
+	w.input.SetText("")
+	w.Hide()
 }
 
 // Show shows the window

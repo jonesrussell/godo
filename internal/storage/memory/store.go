@@ -1,4 +1,4 @@
-// Package memory provides an in-memory implementation of the storage.TaskStore interface
+// Package memory provides an in-memory implementation of the storage interface
 package memory
 
 import (
@@ -12,78 +12,78 @@ import (
 // Store implements the storage.Store interface using in-memory storage
 type Store struct {
 	mu    sync.RWMutex
-	tasks map[string]storage.Task
+	notes map[string]storage.Note
 }
 
 // New creates a new memory store instance
 func New() *Store {
 	return &Store{
-		tasks: make(map[string]storage.Task),
+		notes: make(map[string]storage.Note),
 	}
 }
 
-// Add adds a new task
-func (s *Store) Add(_ context.Context, task storage.Task) error {
+// Add adds a new note
+func (s *Store) Add(_ context.Context, note storage.Note) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if _, exists := s.tasks[task.ID]; exists {
-		return fmt.Errorf("task with ID %s already exists", task.ID)
+	if _, exists := s.notes[note.ID]; exists {
+		return fmt.Errorf("note with ID %s already exists", note.ID)
 	}
 
-	s.tasks[task.ID] = task
+	s.notes[note.ID] = note
 	return nil
 }
 
-// Get retrieves a task by ID
-func (s *Store) Get(_ context.Context, id string) (storage.Task, error) {
+// Get retrieves a note by ID
+func (s *Store) Get(_ context.Context, id string) (storage.Note, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	task, exists := s.tasks[id]
+	note, exists := s.notes[id]
 	if !exists {
-		return storage.Task{}, fmt.Errorf("task with ID %s not found", id)
+		return storage.Note{}, fmt.Errorf("note with ID %s not found", id)
 	}
 
-	return task, nil
+	return note, nil
 }
 
-// List retrieves all tasks
-func (s *Store) List(_ context.Context) ([]storage.Task, error) {
+// List retrieves all notes
+func (s *Store) List(_ context.Context) ([]storage.Note, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	tasks := make([]storage.Task, 0, len(s.tasks))
-	for _, task := range s.tasks {
-		tasks = append(tasks, task)
+	notes := make([]storage.Note, 0, len(s.notes))
+	for _, note := range s.notes {
+		notes = append(notes, note)
 	}
 
-	return tasks, nil
+	return notes, nil
 }
 
-// Update updates an existing task
-func (s *Store) Update(_ context.Context, task storage.Task) error {
+// Update updates an existing note
+func (s *Store) Update(_ context.Context, note storage.Note) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if _, exists := s.tasks[task.ID]; !exists {
-		return fmt.Errorf("task with ID %s not found", task.ID)
+	if _, exists := s.notes[note.ID]; !exists {
+		return fmt.Errorf("note with ID %s not found", note.ID)
 	}
 
-	s.tasks[task.ID] = task
+	s.notes[note.ID] = note
 	return nil
 }
 
-// Delete removes a task by ID
+// Delete removes a note by ID
 func (s *Store) Delete(_ context.Context, id string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if _, exists := s.tasks[id]; !exists {
-		return fmt.Errorf("task with ID %s not found", id)
+	if _, exists := s.notes[id]; !exists {
+		return fmt.Errorf("note with ID %s not found", id)
 	}
 
-	delete(s.tasks, id)
+	delete(s.notes, id)
 	return nil
 }
 
@@ -92,11 +92,11 @@ func (s *Store) Close() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.tasks = make(map[string]storage.Task)
+	s.notes = make(map[string]storage.Note)
 	return nil
 }
 
 // BeginTx starts a new transaction
-func (s *Store) BeginTx(_ context.Context) (storage.TaskTx, error) {
+func (s *Store) BeginTx(_ context.Context) (storage.Transaction, error) {
 	return nil, fmt.Errorf("transactions not supported in memory store")
 }

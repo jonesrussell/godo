@@ -8,9 +8,9 @@ import (
 	"github.com/jonesrussell/godo/internal/storage/errors"
 )
 
-// MockStore provides a mock implementation of TaskStore for testing
+// MockStore provides a mock implementation of Store for testing
 type MockStore struct {
-	tasks  map[string]Task
+	notes  map[string]Note
 	mu     sync.RWMutex
 	Error  error
 	closed bool
@@ -19,12 +19,12 @@ type MockStore struct {
 // NewMockStore creates a new mock store
 func NewMockStore() *MockStore {
 	return &MockStore{
-		tasks: make(map[string]Task),
+		notes: make(map[string]Note),
 	}
 }
 
-// Add stores a new task
-func (s *MockStore) Add(_ context.Context, task Task) error {
+// Add stores a new note
+func (s *MockStore) Add(_ context.Context, note Note) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -36,41 +36,41 @@ func (s *MockStore) Add(_ context.Context, task Task) error {
 		return errors.ErrStoreClosed
 	}
 
-	if task.ID == "" {
+	if note.ID == "" {
 		return errors.ErrEmptyID
 	}
 
-	if _, exists := s.tasks[task.ID]; exists {
+	if _, exists := s.notes[note.ID]; exists {
 		return errors.ErrDuplicateID
 	}
 
-	s.tasks[task.ID] = task
+	s.notes[note.ID] = note
 	return nil
 }
 
-// Get retrieves a task by its ID
-func (s *MockStore) Get(_ context.Context, id string) (Task, error) {
+// Get retrieves a note by its ID
+func (s *MockStore) Get(_ context.Context, id string) (Note, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
 	if s.Error != nil {
-		return Task{}, s.Error
+		return Note{}, s.Error
 	}
 
 	if s.closed {
-		return Task{}, errors.ErrStoreClosed
+		return Note{}, errors.ErrStoreClosed
 	}
 
-	task, exists := s.tasks[id]
+	note, exists := s.notes[id]
 	if !exists {
-		return Task{}, &errors.NotFoundError{ID: id}
+		return Note{}, &errors.NotFoundError{ID: id}
 	}
 
-	return task, nil
+	return note, nil
 }
 
-// Update modifies an existing task
-func (s *MockStore) Update(_ context.Context, task Task) error {
+// Update modifies an existing note
+func (s *MockStore) Update(_ context.Context, note Note) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -82,16 +82,16 @@ func (s *MockStore) Update(_ context.Context, task Task) error {
 		return errors.ErrStoreClosed
 	}
 
-	if _, exists := s.tasks[task.ID]; !exists {
-		return &errors.NotFoundError{ID: task.ID}
+	if _, exists := s.notes[note.ID]; !exists {
+		return &errors.NotFoundError{ID: note.ID}
 	}
 
-	task.UpdatedAt = time.Now().Unix()
-	s.tasks[task.ID] = task
+	note.UpdatedAt = time.Now().Unix()
+	s.notes[note.ID] = note
 	return nil
 }
 
-// Delete removes a task by ID
+// Delete removes a note by ID
 func (s *MockStore) Delete(_ context.Context, id string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -104,16 +104,16 @@ func (s *MockStore) Delete(_ context.Context, id string) error {
 		return errors.ErrStoreClosed
 	}
 
-	if _, exists := s.tasks[id]; !exists {
+	if _, exists := s.notes[id]; !exists {
 		return &errors.NotFoundError{ID: id}
 	}
 
-	delete(s.tasks, id)
+	delete(s.notes, id)
 	return nil
 }
 
-// List returns all tasks
-func (s *MockStore) List(_ context.Context) ([]Task, error) {
+// List returns all notes
+func (s *MockStore) List(_ context.Context) ([]Note, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -125,11 +125,11 @@ func (s *MockStore) List(_ context.Context) ([]Task, error) {
 		return nil, errors.ErrStoreClosed
 	}
 
-	tasks := make([]Task, 0, len(s.tasks))
-	for _, task := range s.tasks {
-		tasks = append(tasks, task)
+	notes := make([]Note, 0, len(s.notes))
+	for _, note := range s.notes {
+		notes = append(notes, note)
 	}
-	return tasks, nil
+	return notes, nil
 }
 
 // Close marks the store as closed
@@ -145,12 +145,17 @@ func (s *MockStore) Close() error {
 	return nil
 }
 
-// Reset clears all tasks and resets error state
+// BeginTx starts a new transaction
+func (s *MockStore) BeginTx(_ context.Context) (Transaction, error) {
+	return nil, ErrTransactionNotSupported
+}
+
+// Reset clears all notes and resets error state
 func (s *MockStore) Reset() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.tasks = make(map[string]Task)
+	s.notes = make(map[string]Note)
 	s.Error = nil
 	s.closed = false
 }

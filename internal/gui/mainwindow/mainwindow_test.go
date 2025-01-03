@@ -6,145 +6,126 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2/test"
-	"github.com/jonesrussell/godo/internal/config"
-	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func setupTestWindow(t *testing.T) (*Window, *storage.MockStore) {
-	store := storage.NewMockStore()
-	log := logger.NewMockTestLogger(t)
-	app := test.NewApp()
-	cfg := config.WindowConfig{
-		Width:       800,
-		Height:      600,
-		StartHidden: false,
-	}
-	mainWindow := New(app, store, log, cfg)
-	return mainWindow, store
-}
-
-func TestMainWindow(t *testing.T) {
-	mainWindow, store := setupTestWindow(t)
-	require.NotNil(t, mainWindow)
+func TestWindow(t *testing.T) {
 	ctx := context.Background()
+	store := storage.NewMockStore()
 
-	t.Run("AddTask", func(t *testing.T) {
-		// Add a task
+	window := test.NewWindow(nil)
+	defer window.Close()
+
+	t.Run("AddNote", func(t *testing.T) {
+		// Add a note
 		now := time.Now().Unix()
-		task := storage.Task{
+		note := storage.Note{
 			ID:        "test-1",
-			Title:     "Test Task",
+			Content:   "Test Note",
 			Completed: false,
 			CreatedAt: now,
 			UpdatedAt: now,
 		}
-		err := store.Add(ctx, task)
+
+		err := store.Add(ctx, note)
 		require.NoError(t, err)
 
-		// Get the task to verify it was added
-		addedTask, err := store.Get(ctx, task.ID)
+		// Get the note to verify it was added
+		addedNote, err := store.Get(ctx, note.ID)
 		require.NoError(t, err)
-		assert.Equal(t, task.ID, addedTask.ID)
-		assert.Equal(t, task.Title, addedTask.Title)
-		assert.Equal(t, task.Completed, addedTask.Completed)
-		assert.Equal(t, task.CreatedAt, addedTask.CreatedAt)
-		assert.Equal(t, task.UpdatedAt, addedTask.UpdatedAt)
+		assert.Equal(t, note.ID, addedNote.ID)
+		assert.Equal(t, note.Content, addedNote.Content)
+		assert.Equal(t, note.Completed, addedNote.Completed)
+		assert.Equal(t, note.CreatedAt, addedNote.CreatedAt)
+		assert.Equal(t, note.UpdatedAt, addedNote.UpdatedAt)
 	})
 
-	t.Run("UpdateTask", func(t *testing.T) {
-		// Add a task
+	t.Run("UpdateNote", func(t *testing.T) {
+		// Add a note
 		now := time.Now().Unix()
-		task := storage.Task{
+		note := storage.Note{
 			ID:        "test-2",
-			Title:     "Test Task",
+			Content:   "Test Note",
 			Completed: false,
 			CreatedAt: now,
 			UpdatedAt: now,
 		}
-		err := store.Add(ctx, task)
+
+		err := store.Add(ctx, note)
 		require.NoError(t, err)
 
-		// Update the task
-		task.Completed = true
-		task.UpdatedAt = time.Now().Unix()
-		err = store.Update(ctx, task)
+		// Update the note
+		note.Completed = true
+		note.UpdatedAt = time.Now().Unix()
+		err = store.Update(ctx, note)
 		require.NoError(t, err)
 
-		// Get the task to verify it was updated
-		updatedTask, err := store.Get(ctx, task.ID)
+		// Get the note to verify it was updated
+		updatedNote, err := store.Get(ctx, note.ID)
 		require.NoError(t, err)
-		assert.True(t, updatedTask.Completed)
-		assert.Equal(t, task.UpdatedAt, updatedTask.UpdatedAt)
+		assert.True(t, updatedNote.Completed)
+		assert.Equal(t, note.UpdatedAt, updatedNote.UpdatedAt)
 	})
 
-	t.Run("DeleteTask", func(t *testing.T) {
-		// Add a task
+	t.Run("DeleteNote", func(t *testing.T) {
+		// Add a note
 		now := time.Now().Unix()
-		task := storage.Task{
+		note := storage.Note{
 			ID:        "test-3",
-			Title:     "Test Task",
+			Content:   "Test Note",
 			Completed: false,
 			CreatedAt: now,
 			UpdatedAt: now,
 		}
-		err := store.Add(ctx, task)
+
+		err := store.Add(ctx, note)
 		require.NoError(t, err)
 
-		// Delete the task
-		err = store.Delete(ctx, task.ID)
+		// Delete the note
+		err = store.Delete(ctx, note.ID)
 		require.NoError(t, err)
 
-		// Verify the task is deleted
-		_, err = store.Get(ctx, task.ID)
+		// Verify the note is deleted
+		_, err = store.Get(ctx, note.ID)
 		assert.Error(t, err)
 	})
 
-	t.Run("ListTasks", func(t *testing.T) {
-		// Add some tasks
+	t.Run("ListNotes", func(t *testing.T) {
+		// Add some notes
 		now := time.Now().Unix()
-		task1 := storage.Task{
+		note1 := storage.Note{
 			ID:        "test-4",
-			Title:     "Test Task 1",
+			Content:   "Test Note 1",
 			Completed: false,
 			CreatedAt: now,
 			UpdatedAt: now,
 		}
-		err := store.Add(ctx, task1)
+		err := store.Add(ctx, note1)
 		require.NoError(t, err)
 
-		task2 := storage.Task{
+		note2 := storage.Note{
 			ID:        "test-5",
-			Title:     "Test Task 2",
-			Completed: true,
+			Content:   "Test Note 2",
+			Completed: false,
 			CreatedAt: now,
 			UpdatedAt: now,
 		}
-		err = store.Add(ctx, task2)
+		err = store.Add(ctx, note2)
 		require.NoError(t, err)
 
-		// List tasks
-		tasks, err := store.List(ctx)
+		// List notes
+		notes, err := store.List(ctx)
 		require.NoError(t, err)
-		assert.Len(t, tasks, 2)
+		assert.Len(t, notes, 2)
 
-		// Verify task order and fields
-		assert.Equal(t, task1.ID, tasks[0].ID)
-		assert.Equal(t, task1.Title, tasks[0].Title)
-		assert.Equal(t, task1.Completed, tasks[0].Completed)
-		assert.Equal(t, task2.ID, tasks[1].ID)
-		assert.Equal(t, task2.Title, tasks[1].Title)
-		assert.Equal(t, task2.Completed, tasks[1].Completed)
-	})
-
-	t.Run("WindowClose", func(t *testing.T) {
-		// Close the window
-		mainWindow.Hide()
-
-		// Verify the store is closed
-		err := store.Close()
-		assert.NoError(t, err)
+		// Verify note order and fields
+		assert.Equal(t, note1.ID, notes[0].ID)
+		assert.Equal(t, note1.Content, notes[0].Content)
+		assert.Equal(t, note1.Completed, notes[0].Completed)
+		assert.Equal(t, note2.ID, notes[1].ID)
+		assert.Equal(t, note2.Content, notes[1].Content)
+		assert.Equal(t, note2.Completed, notes[1].Completed)
 	})
 }

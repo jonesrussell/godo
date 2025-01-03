@@ -1,4 +1,4 @@
-// Package storage provides interfaces and implementations for task persistence
+// Package storage provides interfaces and implementations for note persistence
 package storage
 
 import (
@@ -15,28 +15,28 @@ func NewLegacyStoreAdapter(store Store) *LegacyStoreAdapter {
 	return &LegacyStoreAdapter{store: store}
 }
 
-// List returns all tasks
-func (a *LegacyStoreAdapter) List() ([]Task, error) {
+// List returns all notes
+func (a *LegacyStoreAdapter) List() ([]Note, error) {
 	return a.store.List(context.Background())
 }
 
-// Add stores a new task
-func (a *LegacyStoreAdapter) Add(task Task) error {
-	return a.store.Add(context.Background(), task)
+// Add stores a new note
+func (a *LegacyStoreAdapter) Add(note Note) error {
+	return a.store.Add(context.Background(), note)
 }
 
-// Update modifies an existing task
-func (a *LegacyStoreAdapter) Update(task Task) error {
-	return a.store.Update(context.Background(), task)
+// Update modifies an existing note
+func (a *LegacyStoreAdapter) Update(note Note) error {
+	return a.store.Update(context.Background(), note)
 }
 
-// Delete removes a task by ID
+// Delete removes a note by ID
 func (a *LegacyStoreAdapter) Delete(id string) error {
 	return a.store.Delete(context.Background(), id)
 }
 
-// Get retrieves a task by its ID
-func (a *LegacyStoreAdapter) Get(id string) (Task, error) {
+// Get retrieves a note by its ID
+func (a *LegacyStoreAdapter) Get(id string) (Note, error) {
 	return a.store.Get(context.Background(), id)
 }
 

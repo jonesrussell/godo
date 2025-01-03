@@ -1,23 +1,23 @@
-// Package storage defines interfaces and types for task storage
+// Package storage defines interfaces and types for note storage
 package storage
 
 import "context"
 
-// Store defines the interface for task storage implementations
+// Store defines the interface for note storage implementations
 type Store interface {
-	// List returns all tasks
-	List(ctx context.Context) ([]Task, error)
+	// List returns all notes
+	List(ctx context.Context) ([]Note, error)
 
-	// Get returns a task by ID
-	Get(ctx context.Context, id string) (Task, error)
+	// Get returns a note by ID
+	Get(ctx context.Context, id string) (Note, error)
 
-	// Add creates a new task
-	Add(ctx context.Context, task Task) error
+	// Add creates a new note
+	Add(ctx context.Context, note Note) error
 
-	// Update modifies an existing task
-	Update(ctx context.Context, task Task) error
+	// Update modifies an existing note
+	Update(ctx context.Context, note Note) error
 
-	// Delete removes a task by ID
+	// Delete removes a note by ID
 	Delete(ctx context.Context, id string) error
 
 	// BeginTx starts a new transaction
@@ -29,19 +29,19 @@ type Store interface {
 
 // Transaction represents a database transaction
 type Transaction interface {
-	// List returns all tasks in the transaction
-	List(ctx context.Context) ([]Task, error)
+	// List returns all notes in the transaction
+	List(ctx context.Context) ([]Note, error)
 
-	// Get returns a task by ID in the transaction
-	Get(ctx context.Context, id string) (Task, error)
+	// Get returns a note by ID in the transaction
+	Get(ctx context.Context, id string) (Note, error)
 
-	// Add creates a new task in the transaction
-	Add(ctx context.Context, task Task) error
+	// Add creates a new note in the transaction
+	Add(ctx context.Context, note Note) error
 
-	// Update modifies an existing task in the transaction
-	Update(ctx context.Context, task Task) error
+	// Update modifies an existing note in the transaction
+	Update(ctx context.Context, note Note) error
 
-	// Delete removes a task by ID in the transaction
+	// Delete removes a note by ID in the transaction
 	Delete(ctx context.Context, id string) error
 
 	// Commit commits the transaction
@@ -51,11 +51,11 @@ type Transaction interface {
 	Rollback() error
 }
 
-// Task represents a todo item
-type Task struct {
+// Note represents a quick note item
+type Note struct {
 	ID        string `json:"id"`
-	Title     string `json:"title"`     // Changed from Content
-	Completed bool   `json:"completed"` // Changed from Done
+	Content   string `json:"content"`
+	Completed bool   `json:"completed"`
 	CreatedAt int64  `json:"created_at"`
 	UpdatedAt int64  `json:"updated_at"`
 }

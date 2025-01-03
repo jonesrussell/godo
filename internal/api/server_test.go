@@ -13,281 +13,216 @@ import (
 	"time"
 
 	"github.com/jonesrussell/godo/internal/storage"
-	"github.com/jonesrussell/godo/internal/storage/mock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestTaskHandler(t *testing.T) {
-	store := mock.New()
-	handler := NewTaskHandler(store)
+func TestNoteHandler(t *testing.T) {
+	store := storage.NewMockStore()
+	handler := NewNoteHandler(store)
 
-	t.Run("create task", func(t *testing.T) {
+	t.Run("create note", func(t *testing.T) {
 		tests := []struct {
-			name       string
-			task       storage.Task
-			wantStatus int
-			wantErr    bool
+			name    string
+			note    storage.Note
+			wantErr bool
 		}{
 			{
-				name: "valid task",
-				task: storage.Task{
-					Title:       "Test Task",
-					Description: "Test Description",
-					CreatedAt:   time.Now().Unix(),
-					UpdatedAt:   time.Now().Unix(),
+				name: "valid note",
+				note: storage.Note{
+					Content:   "Test Note",
+					CreatedAt: time.Now().Unix(),
+					UpdatedAt: time.Now().Unix(),
 				},
-				wantStatus: http.StatusCreated,
+				wantErr: false,
 			},
 			{
-				name: "empty title",
-				task: storage.Task{
-					Title:       "",
-					Description: "Test Description",
-					CreatedAt:   time.Now().Unix(),
-					UpdatedAt:   time.Now().Unix(),
-				},
-				wantStatus: http.StatusBadRequest,
-				wantErr:    true,
+				name:    "invalid note",
+				note:    storage.Note{},
+				wantErr: true,
 			},
 		}
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				body, err := json.Marshal(tt.task)
+				body, err := json.Marshal(tt.note)
 				require.NoError(t, err)
 
-				req := httptest.NewRequest(http.MethodPost, "/tasks", bytes.NewReader(body))
+				req := httptest.NewRequest(http.MethodPost, "/notes", bytes.NewReader(body))
 				w := httptest.NewRecorder()
 
-				handler.CreateTask(w, req)
+				handler.CreateNote(w, req)
 
-				assert.Equal(t, tt.wantStatus, w.Code)
-
-				if !tt.wantErr {
-					var response storage.Task
-					err := json.NewDecoder(w.Body).Decode(&response)
-					require.NoError(t, err)
-					assert.Equal(t, tt.task.Title, response.Title)
-					assert.Equal(t, tt.task.Description, response.Description)
+				if tt.wantErr {
+					assert.Equal(t, http.StatusBadRequest, w.Code)
+					return
 				}
+
+				assert.Equal(t, http.StatusCreated, w.Code)
+
+				var response storage.Note
+				err = json.NewDecoder(w.Body).Decode(&response)
+				require.NoError(t, err)
+				assert.Equal(t, tt.note.Content, response.Content)
+				assert.Equal(t, tt.note.CreatedAt, response.CreatedAt)
+				assert.Equal(t, tt.note.UpdatedAt, response.UpdatedAt)
 			})
 		}
 	})
 
-	t.Run("get task", func(t *testing.T) {
-		tests := []struct {
-			name       string
-			taskID     string
-			wantTask   *storage.Task
-			wantStatus int
-		}{
+	t.Run("list notes", func(t *testing.T) {
+		// Clear any existing notes
+		store = storage.NewMockStore()
+
+		// Add some test notes
+		notes := []storage.Note{
 			{
-				name:   "existing task",
-				taskID: "test-1",
-				wantTask: &storage.Task{
-					ID:          "test-1",
-					Title:       "Test Task",
-					Description: "Test Description",
-					Completed:   false,
-					CreatedAt:   time.Now().Unix(),
-					UpdatedAt:   time.Now().Unix(),
-				},
-				wantStatus: http.StatusOK,
+				ID:        "test-1",
+				Content:   "Note 1",
+				CreatedAt: time.Now().Unix(),
+				UpdatedAt: time.Now().Unix(),
 			},
 			{
-				name:       "nonexistent task",
-				taskID:     "nonexistent",
-				wantStatus: http.StatusNotFound,
+				ID:        "test-2",
+				Content:   "Note 2",
+				CreatedAt: time.Now().Unix(),
+				UpdatedAt: time.Now().Unix(),
+			},
+		}
+
+		for _, note := range notes {
+			err := store.Add(context.Background(), note)
+			require.NoError(t, err)
+		}
+
+		req := httptest.NewRequest(http.MethodGet, "/notes", nil)
+		w := httptest.NewRecorder()
+
+		handler.ListNotes(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+
+		var response []storage.Note
+		err := json.NewDecoder(w.Body).Decode(&response)
+		require.NoError(t, err)
+		assert.Len(t, response, len(notes))
+
+		for i, note := range notes {
+			assert.Equal(t, note.Content, response[i].Content)
+			assert.Equal(t, note.CreatedAt, response[i].CreatedAt)
+			assert.Equal(t, note.UpdatedAt, response[i].UpdatedAt)
+		}
+	})
+
+	t.Run("update note", func(t *testing.T) {
+		tests := []struct {
+			name    string
+			noteID  string
+			update  storage.Note
+			wantErr bool
+		}{
+			{
+				name:   "existing note",
+				noteID: "test-1",
+				update: storage.Note{
+					ID:        "test-1",
+					Content:   "Updated Note",
+					UpdatedAt: time.Now().Unix(),
+				},
+				wantErr: false,
+			},
+			{
+				name:   "nonexistent note",
+				noteID: "nonexistent",
+				update: storage.Note{
+					ID:        "nonexistent",
+					Content:   "Updated Note",
+					UpdatedAt: time.Now().Unix(),
+				},
+				wantErr: true,
 			},
 		}
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				if tt.wantTask != nil {
-					err := store.Add(context.Background(), *tt.wantTask)
-					require.NoError(t, err)
-				}
-
-				req := httptest.NewRequest(http.MethodGet, "/tasks/"+tt.taskID, nil)
-				w := httptest.NewRecorder()
-
-				handler.GetTask(w, req)
-
-				assert.Equal(t, tt.wantStatus, w.Code)
-
-				if tt.wantTask != nil {
-					var response storage.Task
-					err := json.NewDecoder(w.Body).Decode(&response)
-					require.NoError(t, err)
-					assert.Equal(t, tt.wantTask.Title, response.Title)
-					assert.Equal(t, tt.wantTask.Description, response.Description)
-					assert.Equal(t, tt.wantTask.Completed, response.Completed)
-				}
-			})
-		}
-	})
-
-	t.Run("update task", func(t *testing.T) {
-		tests := []struct {
-			name       string
-			taskID     string
-			update     storage.Task
-			wantStatus int
-		}{
-			{
-				name:   "valid update",
-				taskID: "test-1",
-				update: storage.Task{
-					ID:          "test-1",
-					Title:       "Updated Task",
-					Description: "Updated Description",
-					Completed:   true,
-					CreatedAt:   time.Now().Unix(),
-					UpdatedAt:   time.Now().Unix(),
-				},
-				wantStatus: http.StatusOK,
-			},
-			{
-				name:   "nonexistent task",
-				taskID: "nonexistent",
-				update: storage.Task{
-					ID:          "nonexistent",
-					Title:       "Updated Task",
-					Description: "Updated Description",
-					Completed:   true,
-					CreatedAt:   time.Now().Unix(),
-					UpdatedAt:   time.Now().Unix(),
-				},
-				wantStatus: http.StatusNotFound,
-			},
-		}
-
-		for _, tt := range tests {
-			t.Run(tt.name, func(t *testing.T) {
-				if tt.taskID == "test-1" {
-					existingTask := storage.Task{
-						ID:          "test-1",
-						Title:       "Original Task",
-						Description: "Original Description",
-						Completed:   false,
-						CreatedAt:   time.Now().Unix(),
-						UpdatedAt:   time.Now().Unix(),
+				if tt.noteID == "test-1" {
+					existingNote := storage.Note{
+						ID:        "test-1",
+						Content:   "Original Note",
+						CreatedAt: time.Now().Unix(),
+						UpdatedAt: time.Now().Unix(),
 					}
-					err := store.Add(context.Background(), existingTask)
+					err := store.Add(context.Background(), existingNote)
 					require.NoError(t, err)
 				}
 
 				body, err := json.Marshal(tt.update)
 				require.NoError(t, err)
 
-				req := httptest.NewRequest(http.MethodPut, "/tasks/"+tt.taskID, bytes.NewReader(body))
+				req := httptest.NewRequest(http.MethodPut, "/notes/"+tt.noteID, bytes.NewReader(body))
 				w := httptest.NewRecorder()
 
-				handler.UpdateTask(w, req)
+				handler.UpdateNote(w, req)
 
-				assert.Equal(t, tt.wantStatus, w.Code)
-
-				if tt.wantStatus == http.StatusOK {
-					var response storage.Task
-					err := json.NewDecoder(w.Body).Decode(&response)
-					require.NoError(t, err)
-					assert.Equal(t, tt.update.Title, response.Title)
-					assert.Equal(t, tt.update.Description, response.Description)
-					assert.Equal(t, tt.update.Completed, response.Completed)
+				if tt.wantErr {
+					assert.Equal(t, http.StatusNotFound, w.Code)
+					return
 				}
+
+				assert.Equal(t, http.StatusOK, w.Code)
+
+				var response storage.Note
+				err = json.NewDecoder(w.Body).Decode(&response)
+				require.NoError(t, err)
+				assert.Equal(t, tt.update.Content, response.Content)
+				assert.Equal(t, tt.update.UpdatedAt, response.UpdatedAt)
 			})
 		}
 	})
 
-	t.Run("delete task", func(t *testing.T) {
+	t.Run("delete note", func(t *testing.T) {
 		tests := []struct {
-			name       string
-			taskID     string
-			wantStatus int
+			name    string
+			noteID  string
+			wantErr bool
 		}{
 			{
-				name:       "existing task",
-				taskID:     "test-1",
-				wantStatus: http.StatusNoContent,
+				name:    "existing note",
+				noteID:  "test-1",
+				wantErr: false,
 			},
 			{
-				name:       "nonexistent task",
-				taskID:     "nonexistent",
-				wantStatus: http.StatusNotFound,
+				name:    "nonexistent note",
+				noteID:  "nonexistent",
+				wantErr: true,
 			},
 		}
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				if tt.taskID == "test-1" {
-					task := storage.Task{
-						ID:          "test-1",
-						Title:       "Test Task",
-						Description: "Test Description",
-						Completed:   false,
-						CreatedAt:   time.Now().Unix(),
-						UpdatedAt:   time.Now().Unix(),
+				if tt.noteID == "test-1" {
+					note := storage.Note{
+						ID:        "test-1",
+						Content:   "Test Note",
+						CreatedAt: time.Now().Unix(),
+						UpdatedAt: time.Now().Unix(),
 					}
-					err := store.Add(context.Background(), task)
+					err := store.Add(context.Background(), note)
 					require.NoError(t, err)
 				}
 
-				req := httptest.NewRequest(http.MethodDelete, "/tasks/"+tt.taskID, nil)
+				req := httptest.NewRequest(http.MethodDelete, "/notes/"+tt.noteID, nil)
 				w := httptest.NewRecorder()
 
-				handler.DeleteTask(w, req)
+				handler.DeleteNote(w, req)
 
-				assert.Equal(t, tt.wantStatus, w.Code)
+				if tt.wantErr {
+					assert.Equal(t, http.StatusNotFound, w.Code)
+					return
+				}
+
+				assert.Equal(t, http.StatusNoContent, w.Code)
 			})
-		}
-	})
-
-	t.Run("list tasks", func(t *testing.T) {
-		// Clear any existing tasks
-		store.Close()
-
-		// Add some test tasks
-		tasks := []storage.Task{
-			{
-				ID:          "test-1",
-				Title:       "Task 1",
-				Description: "Description 1",
-				Completed:   false,
-				CreatedAt:   time.Now().Unix(),
-				UpdatedAt:   time.Now().Unix(),
-			},
-			{
-				ID:          "test-2",
-				Title:       "Task 2",
-				Description: "Description 2",
-				Completed:   true,
-				CreatedAt:   time.Now().Unix(),
-				UpdatedAt:   time.Now().Unix(),
-			},
-		}
-
-		for _, task := range tasks {
-			err := store.Add(context.Background(), task)
-			require.NoError(t, err)
-		}
-
-		req := httptest.NewRequest(http.MethodGet, "/tasks", nil)
-		w := httptest.NewRecorder()
-
-		handler.ListTasks(w, req)
-
-		assert.Equal(t, http.StatusOK, w.Code)
-
-		var response []storage.Task
-		err := json.NewDecoder(w.Body).Decode(&response)
-		require.NoError(t, err)
-		assert.Len(t, response, len(tasks))
-
-		for i, task := range tasks {
-			assert.Equal(t, task.Title, response[i].Title)
-			assert.Equal(t, task.Description, response[i].Description)
-			assert.Equal(t, task.Completed, response[i].Completed)
 		}
 	})
 }

@@ -188,3 +188,8 @@ func (w *Window) Canvas() fyne.Canvas {
 func (w *Window) GetWindow() fyne.Window {
 	return w.fyneWindow
 }
+
+// SetContent sets the window content
+func (w *Window) SetContent(content fyne.CanvasObject) {
+	w.fyneWindow.SetContent(content)
+}

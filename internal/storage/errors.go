@@ -1,4 +1,4 @@
-// Package storage provides interfaces and implementations for task persistence
+// Package storage provides interfaces and implementations for note persistence
 package storage
 
 import (
@@ -8,37 +8,40 @@ import (
 
 // Common errors returned by storage operations
 var (
-	// ErrTaskNotFound is returned when a task cannot be found
-	ErrTaskNotFound = errors.New("task not found")
+	// ErrNoteNotFound is returned when a note cannot be found
+	ErrNoteNotFound = errors.New("note not found")
 
 	// ErrStoreClosed is returned when attempting to use a closed store
 	ErrStoreClosed = errors.New("store is closed")
 
-	// ErrEmptyID is returned when an empty task ID is provided
-	ErrEmptyID = errors.New("task ID cannot be empty")
+	// ErrEmptyID is returned when an empty note ID is provided
+	ErrEmptyID = errors.New("note ID cannot be empty")
 
-	// ErrDuplicateID is returned when attempting to add a task with an existing ID
-	ErrDuplicateID = errors.New("task ID already exists")
+	// ErrDuplicateID is returned when attempting to add a note with an existing ID
+	ErrDuplicateID = errors.New("note ID already exists")
 
 	// ErrInvalidPath is returned when an invalid database path is provided
 	ErrInvalidPath = errors.New("invalid database path")
 
-	// ErrInvalidID is returned when a task ID is invalid
-	ErrInvalidID = errors.New("invalid task ID")
+	// ErrInvalidID is returned when a note ID is invalid
+	ErrInvalidID = errors.New("invalid note ID")
+
+	// ErrTransactionNotSupported is returned when transactions are not supported
+	ErrTransactionNotSupported = errors.New("transactions not supported")
 )
 
-// NotFoundError is returned when a task cannot be found
+// NotFoundError is returned when a note cannot be found
 type NotFoundError struct {
 	ID string
 }
 
 func (e *NotFoundError) Error() string {
-	return "task not found: " + e.ID
+	return "note not found: " + e.ID
 }
 
-// Is implements errors.Is interface to match against ErrTaskNotFound
+// Is implements errors.Is interface to match against ErrNoteNotFound
 func (e *NotFoundError) Is(target error) bool {
-	return target == ErrTaskNotFound
+	return target == ErrNoteNotFound
 }
 
 // ValidationError represents a validation error
@@ -71,8 +74,8 @@ func (e *TransactionError) Error() string {
 	return "transaction error in " + e.Operation + ": " + e.Err.Error()
 }
 
-// TaskReader is an interface for read-only task operations
-type TaskReader interface {
-	Get(ctx context.Context, id string) (Task, error)
-	List(ctx context.Context) ([]Task, error)
+// NoteReader is an interface for read-only note operations
+type NoteReader interface {
+	Get(ctx context.Context, id string) (Note, error)
+	List(ctx context.Context) ([]Note, error)
 }

@@ -13,21 +13,21 @@ import (
 // Store implements the storage.Store interface for testing
 type Store struct {
 	mu    sync.RWMutex
-	tasks map[string]storage.Task
+	notes map[string]storage.Note
 	err   error
 }
 
 // Transaction represents a mock transaction
 type Transaction struct {
 	store     *Store
-	tasks     map[string]storage.Task
+	notes     map[string]storage.Note
 	committed bool
 }
 
 // New creates a new mock store instance
 func New() *Store {
 	return &Store{
-		tasks: make(map[string]storage.Task),
+		notes: make(map[string]storage.Note),
 	}
 }
 
@@ -47,21 +47,21 @@ func (s *Store) BeginTx(_ context.Context) (storage.Transaction, error) {
 		return nil, s.err
 	}
 
-	// Create a copy of the tasks map for the transaction
-	tasks := make(map[string]storage.Task)
-	for k, v := range s.tasks {
-		tasks[k] = v
+	// Create a copy of the notes map for the transaction
+	notes := make(map[string]storage.Note)
+	for k, v := range s.notes {
+		notes[k] = v
 	}
 
 	return &Transaction{
 		store:     s,
-		tasks:     tasks,
+		notes:     notes,
 		committed: false,
 	}, nil
 }
 
-// Add adds a new task
-func (s *Store) Add(_ context.Context, task storage.Task) error {
+// Add adds a new note
+func (s *Store) Add(_ context.Context, note storage.Note) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -69,33 +69,33 @@ func (s *Store) Add(_ context.Context, task storage.Task) error {
 		return s.err
 	}
 
-	if _, exists := s.tasks[task.ID]; exists {
-		return fmt.Errorf("task with ID %s already exists", task.ID)
+	if _, exists := s.notes[note.ID]; exists {
+		return fmt.Errorf("note with ID %s already exists", note.ID)
 	}
 
-	s.tasks[task.ID] = task
+	s.notes[note.ID] = note
 	return nil
 }
 
-// Get retrieves a task by ID
-func (s *Store) Get(_ context.Context, id string) (storage.Task, error) {
+// Get retrieves a note by ID
+func (s *Store) Get(_ context.Context, id string) (storage.Note, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
 	if s.err != nil {
-		return storage.Task{}, s.err
+		return storage.Note{}, s.err
 	}
 
-	task, exists := s.tasks[id]
+	note, exists := s.notes[id]
 	if !exists {
-		return storage.Task{}, fmt.Errorf("task with ID %s not found", id)
+		return storage.Note{}, fmt.Errorf("note with ID %s not found", id)
 	}
 
-	return task, nil
+	return note, nil
 }
 
-// List retrieves all tasks
-func (s *Store) List(_ context.Context) ([]storage.Task, error) {
+// List retrieves all notes
+func (s *Store) List(_ context.Context) ([]storage.Note, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -103,16 +103,16 @@ func (s *Store) List(_ context.Context) ([]storage.Task, error) {
 		return nil, s.err
 	}
 
-	tasks := make([]storage.Task, 0, len(s.tasks))
-	for _, task := range s.tasks {
-		tasks = append(tasks, task)
+	notes := make([]storage.Note, 0, len(s.notes))
+	for _, note := range s.notes {
+		notes = append(notes, note)
 	}
 
-	return tasks, nil
+	return notes, nil
 }
 
-// Update updates an existing task
-func (s *Store) Update(_ context.Context, task storage.Task) error {
+// Update updates an existing note
+func (s *Store) Update(_ context.Context, note storage.Note) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -120,16 +120,16 @@ func (s *Store) Update(_ context.Context, task storage.Task) error {
 		return s.err
 	}
 
-	if _, exists := s.tasks[task.ID]; !exists {
-		return fmt.Errorf("task with ID %s not found", task.ID)
+	if _, exists := s.notes[note.ID]; !exists {
+		return fmt.Errorf("note with ID %s not found", note.ID)
 	}
 
-	task.UpdatedAt = time.Now().Unix()
-	s.tasks[task.ID] = task
+	note.UpdatedAt = time.Now().Unix()
+	s.notes[note.ID] = note
 	return nil
 }
 
-// Delete removes a task by ID
+// Delete removes a note by ID
 func (s *Store) Delete(_ context.Context, id string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -138,11 +138,11 @@ func (s *Store) Delete(_ context.Context, id string) error {
 		return s.err
 	}
 
-	if _, exists := s.tasks[id]; !exists {
-		return fmt.Errorf("task with ID %s not found", id)
+	if _, exists := s.notes[id]; !exists {
+		return fmt.Errorf("note with ID %s not found", id)
 	}
 
-	delete(s.tasks, id)
+	delete(s.notes, id)
 	return nil
 }
 
@@ -155,80 +155,80 @@ func (s *Store) Close() error {
 		return s.err
 	}
 
-	s.tasks = make(map[string]storage.Task)
+	s.notes = make(map[string]storage.Note)
 	return nil
 }
 
 // Transaction methods
 
-// Add adds a new task in the transaction
-func (tx *Transaction) Add(_ context.Context, task storage.Task) error {
+// Add adds a new note in the transaction
+func (tx *Transaction) Add(_ context.Context, note storage.Note) error {
 	if tx.committed {
 		return fmt.Errorf("transaction already committed")
 	}
 
-	if _, exists := tx.tasks[task.ID]; exists {
-		return fmt.Errorf("task with ID %s already exists", task.ID)
+	if _, exists := tx.notes[note.ID]; exists {
+		return fmt.Errorf("note with ID %s already exists", note.ID)
 	}
 
-	tx.tasks[task.ID] = task
+	tx.notes[note.ID] = note
 	return nil
 }
 
-// Get retrieves a task by ID in the transaction
-func (tx *Transaction) Get(_ context.Context, id string) (storage.Task, error) {
+// Get retrieves a note by ID in the transaction
+func (tx *Transaction) Get(_ context.Context, id string) (storage.Note, error) {
 	if tx.committed {
-		return storage.Task{}, fmt.Errorf("transaction already committed")
+		return storage.Note{}, fmt.Errorf("transaction already committed")
 	}
 
-	task, exists := tx.tasks[id]
+	note, exists := tx.notes[id]
 	if !exists {
-		return storage.Task{}, fmt.Errorf("task with ID %s not found", id)
+		return storage.Note{}, fmt.Errorf("note with ID %s not found", id)
 	}
 
-	return task, nil
+	return note, nil
 }
 
-// List retrieves all tasks in the transaction
-func (tx *Transaction) List(_ context.Context) ([]storage.Task, error) {
+// List retrieves all notes in the transaction
+func (tx *Transaction) List(_ context.Context) ([]storage.Note, error) {
 	if tx.committed {
 		return nil, fmt.Errorf("transaction already committed")
 	}
 
-	tasks := make([]storage.Task, 0, len(tx.tasks))
-	for _, task := range tx.tasks {
-		tasks = append(tasks, task)
+	notes := make([]storage.Note, 0, len(tx.notes))
+	for _, note := range tx.notes {
+		notes = append(notes, note)
 	}
 
-	return tasks, nil
+	return notes, nil
 }
 
-// Update updates an existing task in the transaction
-func (tx *Transaction) Update(_ context.Context, task storage.Task) error {
+// Update updates an existing note in the transaction
+func (tx *Transaction) Update(_ context.Context, note storage.Note) error {
 	if tx.committed {
 		return fmt.Errorf("transaction already committed")
 	}
 
-	if _, exists := tx.tasks[task.ID]; !exists {
-		return fmt.Errorf("task with ID %s not found", task.ID)
+	if _, exists := tx.notes[note.ID]; !exists {
+		return fmt.Errorf("note with ID %s not found", note.ID)
 	}
 
-	task.UpdatedAt = time.Now().Unix()
-	tx.tasks[task.ID] = task
+	note.UpdatedAt = time.Now().Unix()
+	tx.notes[note.ID] = note
 	return nil
 }
 
-// Delete removes a task by ID in the transaction
+// Delete removes a note by ID in the transaction
 func (tx *Transaction) Delete(_ context.Context, id string) error {
 	if tx.committed {
 		return fmt.Errorf("transaction already committed")
 	}
 
-	if _, exists := tx.tasks[id]; !exists {
-		return fmt.Errorf("task with ID %s not found", id)
+	if _, exists := tx.notes[id]; !exists {
+		return fmt.Errorf("note with ID %s not found", id)
 	}
 
-	delete(tx.tasks, id)
+	delete(tx.notes, id)
 	return nil
 }
 
@@ -241,13 +241,16 @@ func (tx *Transaction) Commit() error {
 	tx.store.mu.Lock()
 	defer tx.store.mu.Unlock()
 
-	// Replace the store's tasks with the transaction's tasks
-	tx.store.tasks = tx.tasks
+	// Copy all changes back to the store
+	for k, v := range tx.notes {
+		tx.store.notes[k] = v
+	}
+
 	tx.committed = true
 	return nil
 }
 
-// Rollback aborts the transaction
+// Rollback rolls back the transaction
 func (tx *Transaction) Rollback() error {
 	if tx.committed {
 		return fmt.Errorf("transaction already committed")

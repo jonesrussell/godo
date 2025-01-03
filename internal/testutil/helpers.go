@@ -10,6 +10,7 @@ import (
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -87,15 +88,15 @@ func WaitForWindowHidden(t *testing.T, state *WindowState, timeout time.Duration
 	t.Error("Window was not hidden within timeout")
 }
 
-// AssertTaskExists asserts that a task exists in the store
-func AssertTaskExists(t *testing.T, store *storage.MockStore, id string) {
-	task, err := store.Get(context.Background(), id)
-	assert.NoError(t, err)
-	assert.Equal(t, id, task.ID)
+// AssertNoteExists asserts that a note exists in the store
+func AssertNoteExists(t *testing.T, store *storage.MockStore, id string) {
+	note, err := store.Get(context.Background(), id)
+	require.NoError(t, err)
+	assert.Equal(t, id, note.ID)
 }
 
-// AssertTaskNotExists asserts that a task does not exist in the store
-func AssertTaskNotExists(t *testing.T, store *storage.MockStore, id string) {
+// AssertNoteNotExists asserts that a note does not exist in the store
+func AssertNoteNotExists(t *testing.T, store *storage.MockStore, id string) {
 	_, err := store.Get(context.Background(), id)
 	assert.Error(t, err)
 }

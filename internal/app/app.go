@@ -2,136 +2,200 @@
 package app
 
 import (
+	"context"
 	"fmt"
+	"sync"
+	"time"
 
 	"fyne.io/fyne/v2"
-	"github.com/jonesrussell/godo/internal/app/hotkey"
-	"github.com/jonesrussell/godo/internal/config"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/widget"
 	"github.com/jonesrussell/godo/internal/gui"
-	"github.com/jonesrussell/godo/internal/gui/systray"
-	"github.com/jonesrussell/godo/internal/logger"
-	"github.com/jonesrussell/godo/internal/options"
 	"github.com/jonesrussell/godo/internal/storage"
 )
 
-// Application defines the interface for the main application
-type Application interface {
-	SetupUI() error
-	Run()
-	Cleanup()
-	Logger() logger.Logger
-	Store() storage.Store
-}
-
-// App implements the Application interface
+// App represents the main application
 type App struct {
-	logger     logger.Logger
-	config     *config.Config
-	mainWindow gui.MainWindowManager
-	quickNote  gui.QuickNoteManager
-	hotkey     hotkey.Manager
-	store      storage.Store
-	fyneApp    fyne.App
+	store    storage.Store
+	window   gui.MainWindowManager
+	stopOnce sync.Once
+	stopChan chan struct{}
+	notes    map[string]storage.Note
+	list     *widget.List
 }
 
-// Params holds the parameters for creating a new App instance
+// Params contains the parameters for creating a new App instance
 type Params struct {
-	Options   *options.AppOptions
-	Hotkey    hotkey.Manager
-	Version   string
-	Commit    string
-	BuildTime string
+	Store  storage.Store
+	Window gui.MainWindowManager
 }
 
-// New creates a new application instance using the options pattern
-func New(params *Params) (*App, error) {
-	app := &App{
-		logger:     params.Options.Core.Logger,
-		config:     params.Options.Core.Config,
-		mainWindow: params.Options.GUI.MainWindow,
-		quickNote:  params.Options.GUI.QuickNote,
-		hotkey:     params.Hotkey,
-		store:      params.Options.Core.Store,
-		fyneApp:    params.Options.GUI.App,
+// New creates a new App instance
+func New(params Params) (*App, error) {
+	if params.Store == nil {
+		return nil, fmt.Errorf("store is required")
+	}
+	if params.Window == nil {
+		return nil, fmt.Errorf("window is required")
 	}
 
-	app.logger.Info("Application initialized",
-		"version", params.Version,
-		"commit", params.Commit,
-		"build_time", params.BuildTime,
-		"config", app.config.Hotkeys.QuickNote)
-
-	return app, nil
+	return &App{
+		store:    params.Store,
+		window:   params.Window,
+		stopChan: make(chan struct{}),
+		notes:    make(map[string]storage.Note),
+	}, nil
 }
 
-// SetupUI initializes the user interface components in the correct order
-func (a *App) SetupUI() error {
-	a.logger.Debug("Setting up UI components")
+// Start starts the application
+func (a *App) Start() error {
+	// Initialize the window
+	if err := a.initWindow(); err != nil {
+		return fmt.Errorf("failed to initialize window: %w", err)
+	}
 
-	// Set up system tray
-	systray.SetupSystray(a.fyneApp, a.mainWindow, a.quickNote)
+	// Show the window
+	a.window.Show()
 
-	// Show main window if not configured to start hidden
-	if !a.config.UI.MainWindow.StartHidden {
-		a.mainWindow.Show()
+	return nil
+}
+
+// Stop stops the application
+func (a *App) Stop() error {
+	a.stopOnce.Do(func() {
+		close(a.stopChan)
+	})
+
+	if err := a.store.Close(); err != nil {
+		return fmt.Errorf("failed to close store: %w", err)
 	}
 
 	return nil
 }
 
-// Run starts the application
-func (a *App) Run() {
-	a.logger.Info("Starting application",
-		"hotkey_active", a.hotkey != nil,
-		"store_type", fmt.Sprintf("%T", a.store))
-
-	// Set up UI components first
-	if err := a.SetupUI(); err != nil {
-		a.logger.Error("Failed to setup UI", "error", err)
-		return
+// initWindow initializes the main window
+func (a *App) initWindow() error {
+	// Load initial notes
+	notes, err := a.store.List(context.Background())
+	if err != nil {
+		return fmt.Errorf("failed to load notes: %w", err)
 	}
 
-	// Start hotkey manager if available
-	if a.hotkey != nil {
-		if err := a.hotkey.Start(); err != nil {
-			a.logger.Error("Failed to start hotkey manager", "error", err)
+	// Store notes in memory
+	for _, note := range notes {
+		a.notes[note.ID] = note
+	}
+
+	// Create list widget
+	a.list = widget.NewList(
+		func() int { return len(a.notes) },
+		func() fyne.CanvasObject {
+			return container.NewHBox(
+				widget.NewCheck("", nil),
+				widget.NewLabel(""),
+			)
+		},
+		func(id widget.ListItemID, item fyne.CanvasObject) {
+			note := a.getNoteByIndex(id)
+			if note == nil {
+				return
+			}
+
+			box := item.(*fyne.Container)
+			check := box.Objects[0].(*widget.Check)
+			label := box.Objects[1].(*widget.Label)
+
+			check.Checked = note.Completed
+			check.OnChanged = func(checked bool) {
+				note.Completed = checked
+				note.UpdatedAt = time.Now().Unix()
+				a.UpdateNote(context.Background(), *note)
+			}
+
+			label.Text = note.Title
+			label.Refresh()
+		},
+	)
+
+	// Create input field for new notes
+	input := widget.NewEntry()
+	input.SetPlaceHolder("Add a new note...")
+	input.OnSubmitted = func(text string) {
+		if text == "" {
 			return
 		}
-		defer func() {
-			if err := a.hotkey.Stop(); err != nil {
-				a.logger.Error("Failed to stop hotkey manager", "error", err)
-			}
-		}()
-	}
 
-	// Run the application main loop
-	a.fyneApp.Run()
-}
-
-// Cleanup performs cleanup before application exit
-func (a *App) Cleanup() {
-	a.logger.Info("Cleaning up application")
-
-	// Stop hotkey manager if running
-	if a.hotkey != nil {
-		if err := a.hotkey.Stop(); err != nil {
-			a.logger.Error("Failed to stop hotkey manager", "error", err)
+		now := time.Now().Unix()
+		note := storage.Note{
+			ID:        fmt.Sprintf("%d", now),
+			Title:     text,
+			Completed: false,
+			CreatedAt: now,
+			UpdatedAt: now,
 		}
+
+		if err := a.AddNote(context.Background(), note); err != nil {
+			// Handle error (in a real app, show error to user)
+			return
+		}
+
+		input.SetText("")
 	}
 
-	// Finally close the store
-	if err := a.store.Close(); err != nil {
-		a.logger.Error("Failed to close store", "error", err)
+	// Create main content
+	content := container.NewBorder(input, nil, nil, nil, a.list)
+	a.window.SetContent(content)
+
+	return nil
+}
+
+// getNoteByIndex returns a note by its list index
+func (a *App) getNoteByIndex(index int) *storage.Note {
+	i := 0
+	for _, note := range a.notes {
+		if i == index {
+			return &note
+		}
+		i++
 	}
-	a.logger.Info("Store closed successfully")
+	return nil
 }
 
-// Logger returns the application logger
-func (a *App) Logger() logger.Logger {
-	return a.logger
+// AddNote adds a new note
+func (a *App) AddNote(ctx context.Context, note storage.Note) error {
+	if err := a.store.Add(ctx, note); err != nil {
+		return fmt.Errorf("failed to add note: %w", err)
+	}
+
+	// Update in-memory notes
+	a.notes[note.ID] = note
+	a.list.Refresh()
+
+	return nil
 }
 
-// Store returns the task store
-func (a *App) Store() storage.Store {
-	return a.store
+// UpdateNote updates an existing note
+func (a *App) UpdateNote(ctx context.Context, note storage.Note) error {
+	if err := a.store.Update(ctx, note); err != nil {
+		return fmt.Errorf("failed to update note: %w", err)
+	}
+
+	// Update in-memory notes
+	a.notes[note.ID] = note
+	a.list.Refresh()
+
+	return nil
+}
+
+// DeleteNote deletes a note by ID
+func (a *App) DeleteNote(ctx context.Context, id string) error {
+	if err := a.store.Delete(ctx, id); err != nil {
+		return fmt.Errorf("failed to delete note: %w", err)
+	}
+
+	// Update in-memory notes
+	delete(a.notes, id)
+	a.list.Refresh()
+
+	return nil
 }

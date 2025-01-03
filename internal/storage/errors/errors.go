@@ -5,26 +5,28 @@ import "errors"
 
 // Common errors
 var (
-	// ErrTaskNotFound is returned when a task cannot be found
-	ErrTaskNotFound = errors.New("task not found")
-	// ErrDuplicateID is returned when trying to add a task with an ID that already exists
-	ErrDuplicateID = errors.New("task ID already exists")
-	// ErrStoreClosed is returned when attempting to use a closed store
-	ErrStoreClosed = errors.New("store is closed")
-	// ErrEmptyID is returned when an empty task ID is provided
-	ErrEmptyID = errors.New("task ID cannot be empty")
+	// ErrNoteNotFound is returned when a note is not found
+	ErrNoteNotFound = errors.New("note not found")
+	// ErrNoteAlreadyExists is returned when attempting to add a note that already exists
+	ErrNoteAlreadyExists = errors.New("note already exists")
+	// ErrInvalidNoteID is returned when a note ID is invalid
+	ErrInvalidNoteID = errors.New("invalid note ID")
+	// ErrInvalidNoteTitle is returned when a note title is invalid
+	ErrInvalidNoteTitle = errors.New("invalid note title")
+	// ErrTransactionClosed is returned when attempting to use a closed transaction
+	ErrTransactionClosed = errors.New("transaction is closed")
 )
 
-// NotFoundError is returned when a task cannot be found
+// NotFoundError is returned when a note cannot be found
 type NotFoundError struct {
 	ID string
 }
 
 func (e *NotFoundError) Error() string {
-	return "task not found: " + e.ID
+	return "note not found: " + e.ID
 }
 
-// Is implements errors.Is interface to match against ErrTaskNotFound
+// Is implements errors.Is interface to match against ErrNoteNotFound
 func (e *NotFoundError) Is(target error) bool {
-	return target == ErrTaskNotFound
+	return target == ErrNoteNotFound
 }

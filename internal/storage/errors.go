@@ -4,6 +4,8 @@ package storage
 import (
 	"context"
 	"errors"
+
+	"github.com/jonesrussell/godo/internal/storage/types"
 )
 
 // Common errors returned by storage operations
@@ -76,6 +78,6 @@ func (e *TransactionError) Error() string {
 
 // NoteReader is an interface for read-only note operations
 type NoteReader interface {
-	Get(ctx context.Context, id string) (Note, error)
-	List(ctx context.Context) ([]Note, error)
+	Get(ctx context.Context, id string) (types.Note, error)
+	List(ctx context.Context) ([]types.Note, error)
 }

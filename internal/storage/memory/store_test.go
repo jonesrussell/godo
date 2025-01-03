@@ -12,10 +12,10 @@ import (
 )
 
 func TestStore(t *testing.T) {
-	store := New()
 	ctx := context.Background()
 
 	t.Run("Add", func(t *testing.T) {
+		store := New()
 		// Add a note
 		now := time.Now().Unix()
 		note := types.Note{
@@ -44,6 +44,7 @@ func TestStore(t *testing.T) {
 	})
 
 	t.Run("Update", func(t *testing.T) {
+		store := New()
 		// Add a note
 		now := time.Now().Unix()
 		note := types.Note{
@@ -82,6 +83,7 @@ func TestStore(t *testing.T) {
 	})
 
 	t.Run("Delete", func(t *testing.T) {
+		store := New()
 		// Add a note
 		now := time.Now().Unix()
 		note := types.Note{
@@ -109,6 +111,7 @@ func TestStore(t *testing.T) {
 	})
 
 	t.Run("List", func(t *testing.T) {
+		store := New()
 		// Add some notes
 		now := time.Now().Unix()
 		note1 := types.Note{

@@ -6,14 +6,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jonesrussell/godo/internal/storage"
+	"github.com/jonesrussell/godo/internal/storage/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 // StoreSuite provides a suite of tests that can be run against any Store implementation
 type StoreSuite struct {
-	NewStore func() storage.Store
+	NewStore func() types.Store
 }
 
 // Run executes all test cases in the suite
@@ -34,7 +34,7 @@ func (s *StoreSuite) Run(t *testing.T) {
 
 		ctx := context.Background()
 		now := time.Now().Unix()
-		note := storage.Note{
+		note := types.Note{
 			ID:        "test-1",
 			Content:   "Test Note",
 			Completed: false,
@@ -61,7 +61,7 @@ func (s *StoreSuite) Run(t *testing.T) {
 
 		ctx := context.Background()
 		now := time.Now().Unix()
-		note := storage.Note{
+		note := types.Note{
 			ID:        "test-1",
 			Content:   "Original Content",
 			Completed: false,
@@ -91,7 +91,7 @@ func (s *StoreSuite) Run(t *testing.T) {
 
 		ctx := context.Background()
 		now := time.Now().Unix()
-		note := storage.Note{
+		note := types.Note{
 			ID:        "test-1",
 			Content:   "Test Note",
 			CreatedAt: now,

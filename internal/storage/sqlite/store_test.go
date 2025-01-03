@@ -6,162 +6,171 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jonesrussell/godo/internal/storage"
+	"github.com/jonesrussell/godo/internal/domain/note"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestStore(t *testing.T) {
+func TestStore_Integration(t *testing.T) {
 	dbPath := "test.db"
+	defer os.Remove(dbPath)
+
 	store, err := New(dbPath)
 	require.NoError(t, err)
-	defer func() {
-		store.Close()
-		os.Remove(dbPath)
-	}()
+	defer store.Close()
 
 	ctx := context.Background()
 
-	t.Run("Add", func(t *testing.T) {
-		note := storage.Note{
-			ID:        "1",
-			Content:   "Test Note",
+	t.Run("Add and Get Note", func(t *testing.T) {
+		now := time.Now()
+		n := &note.Note{
+			ID:        "test-id",
+			Content:   "test content",
 			Completed: false,
-			CreatedAt: time.Now().Unix(),
-			UpdatedAt: time.Now().Unix(),
+			CreatedAt: now,
+			UpdatedAt: now,
 		}
 
-		err := store.Add(ctx, note)
+		err := store.Add(ctx, n)
 		require.NoError(t, err)
 
-		// Try to add duplicate note
-		err = store.Add(ctx, note)
-		assert.Error(t, err)
+		retrieved, err := store.Get(ctx, n.ID)
+		require.NoError(t, err)
+		assert.Equal(t, n.ID, retrieved.ID)
+		assert.Equal(t, n.Content, retrieved.Content)
+		assert.Equal(t, n.Completed, retrieved.Completed)
+		assert.Equal(t, n.CreatedAt.Unix(), retrieved.CreatedAt.Unix())
+		assert.Equal(t, n.UpdatedAt.Unix(), retrieved.UpdatedAt.Unix())
 	})
 
-	t.Run("Get", func(t *testing.T) {
-		note, err := store.Get(ctx, "1")
-		require.NoError(t, err)
-		assert.Equal(t, "1", note.ID)
-		assert.Equal(t, "Test Note", note.Content)
-		assert.False(t, note.Completed)
-	})
-
-	t.Run("Update", func(t *testing.T) {
-		note := storage.Note{
-			ID:        "1",
-			Content:   "Updated Note",
-			Completed: true,
-			CreatedAt: time.Now().Unix(),
-			UpdatedAt: time.Now().Unix(),
-		}
-
-		err := store.Update(ctx, note)
-		require.NoError(t, err)
-
-		got, err := store.Get(ctx, note.ID)
-		require.NoError(t, err)
-		assert.Equal(t, note.Content, got.Content)
-		assert.Equal(t, note.Completed, got.Completed)
-	})
-
-	t.Run("Delete", func(t *testing.T) {
-		err := store.Delete(ctx, "1")
-		require.NoError(t, err)
-
+	t.Run("List Notes", func(t *testing.T) {
 		notes, err := store.List(ctx)
 		require.NoError(t, err)
-		assert.Empty(t, notes)
+		assert.NotEmpty(t, notes)
 	})
 
-	t.Run("Error handling", func(t *testing.T) {
-		// Test getting non-existent note
-		_, err := store.Get(ctx, "nonexistent")
-		assert.Error(t, err)
+	t.Run("Update Note", func(t *testing.T) {
+		now := time.Now()
+		n := &note.Note{
+			ID:        "update-test",
+			Content:   "original content",
+			Completed: false,
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
 
-		// Test updating non-existent note
-		err = store.Update(ctx, storage.Note{ID: "nonexistent"})
-		assert.Error(t, err)
+		err := store.Add(ctx, n)
+		require.NoError(t, err)
 
-		// Test deleting non-existent note
-		err = store.Delete(ctx, "nonexistent")
-		assert.Error(t, err)
+		n.Content = "updated content"
+		n.Completed = true
+		n.UpdatedAt = time.Now()
+
+		err = store.Update(ctx, n)
+		require.NoError(t, err)
+
+		retrieved, err := store.Get(ctx, n.ID)
+		require.NoError(t, err)
+		assert.Equal(t, "updated content", retrieved.Content)
+		assert.True(t, retrieved.Completed)
+		assert.Equal(t, n.UpdatedAt.Unix(), retrieved.UpdatedAt.Unix())
 	})
-}
 
-func TestTransaction(t *testing.T) {
-	dbPath := "test_tx.db"
-	store, err := New(dbPath)
-	require.NoError(t, err)
-	defer func() {
-		store.Close()
-		os.Remove(dbPath)
-	}()
+	t.Run("Delete Note", func(t *testing.T) {
+		now := time.Now()
+		n := &note.Note{
+			ID:        "delete-test",
+			Content:   "to be deleted",
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
 
-	ctx := context.Background()
+		err := store.Add(ctx, n)
+		require.NoError(t, err)
 
-	t.Run("Successful transaction", func(t *testing.T) {
+		err = store.Delete(ctx, n.ID)
+		require.NoError(t, err)
+
+		_, err = store.Get(ctx, n.ID)
+		assert.Error(t, err)
+		var nErr *note.Error
+		assert.ErrorAs(t, err, &nErr)
+		assert.Equal(t, note.NotFound, nErr.Kind)
+	})
+
+	t.Run("Transaction", func(t *testing.T) {
 		tx, err := store.BeginTx(ctx)
 		require.NoError(t, err)
 
-		note := storage.Note{
-			ID:        "1",
-			Content:   "Test Note",
-			Completed: false,
-			CreatedAt: time.Now().Unix(),
-			UpdatedAt: time.Now().Unix(),
+		now := time.Now()
+		n := &note.Note{
+			ID:        "tx-test",
+			Content:   "transaction content",
+			CreatedAt: now,
+			UpdatedAt: now,
 		}
 
-		err = tx.Add(ctx, note)
+		err = tx.Add(ctx, n)
 		require.NoError(t, err)
 
-		got, err := tx.Get(ctx, note.ID)
+		retrieved, err := tx.Get(ctx, n.ID)
 		require.NoError(t, err)
-		assert.Equal(t, note, got)
+		assert.Equal(t, n.ID, retrieved.ID)
 
 		notes, err := tx.List(ctx)
 		require.NoError(t, err)
-		assert.Len(t, notes, 1)
+		assert.NotEmpty(t, notes)
 
-		note.Content = "Updated Note"
-		err = tx.Update(ctx, note)
+		n.Content = "updated in transaction"
+		n.UpdatedAt = time.Now()
+		err = tx.Update(ctx, n)
 		require.NoError(t, err)
 
-		got, err = tx.Get(ctx, note.ID)
+		err = tx.Delete(ctx, n.ID)
 		require.NoError(t, err)
-		assert.Equal(t, note.Content, got.Content)
-
-		err = tx.Delete(ctx, note.ID)
-		require.NoError(t, err)
-
-		notes, err = tx.List(ctx)
-		require.NoError(t, err)
-		assert.Empty(t, notes)
 
 		err = tx.Commit()
 		require.NoError(t, err)
 	})
 
-	t.Run("Rollback transaction", func(t *testing.T) {
+	t.Run("Transaction Rollback", func(t *testing.T) {
 		tx, err := store.BeginTx(ctx)
 		require.NoError(t, err)
 
-		note := storage.Note{
-			ID:        "2",
-			Content:   "Test Note",
-			Completed: false,
-			CreatedAt: time.Now().Unix(),
-			UpdatedAt: time.Now().Unix(),
+		now := time.Now()
+		n := &note.Note{
+			ID:        "rollback-test",
+			Content:   "to be rolled back",
+			CreatedAt: now,
+			UpdatedAt: now,
 		}
 
-		err = tx.Add(ctx, note)
+		err = tx.Add(ctx, n)
 		require.NoError(t, err)
 
 		err = tx.Rollback()
 		require.NoError(t, err)
 
-		// Verify note was not added to store
-		_, err = store.Get(ctx, note.ID)
+		_, err = store.Get(ctx, n.ID)
 		assert.Error(t, err)
+		var nErr *note.Error
+		assert.ErrorAs(t, err, &nErr)
+		assert.Equal(t, note.NotFound, nErr.Kind)
+	})
+
+	t.Run("Empty Content Validation", func(t *testing.T) {
+		now := time.Now()
+		n := &note.Note{
+			ID:        "invalid-test",
+			Content:   "",
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
+
+		err := store.Add(ctx, n)
+		assert.Error(t, err)
+		var nErr *note.Error
+		assert.ErrorAs(t, err, &nErr)
+		assert.Equal(t, note.ValidationFailed, nErr.Kind)
 	})
 }

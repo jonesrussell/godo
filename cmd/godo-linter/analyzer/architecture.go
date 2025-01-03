@@ -2,41 +2,28 @@ package analyzer
 
 import (
 	"go/ast"
-	"path/filepath"
 	"strings"
 
 	"golang.org/x/tools/go/analysis"
-	"golang.org/x/tools/go/analysis/passes/inspect"
 )
 
-// ArchitectureAnalyzer enforces Godo's architectural patterns
+// ArchitectureAnalyzer checks for architectural pattern compliance
 var ArchitectureAnalyzer = &analysis.Analyzer{
-	Name: "archcheck",
-	Doc:  "enforces Godo's architectural patterns and package structure",
+	Name: "architecture",
+	Doc:  "checks for compliance with architectural patterns",
 	Run:  runArchitectureCheck,
-	Requires: []*analysis.Analyzer{
-		inspect.Analyzer,
-	},
 }
 
 func runArchitectureCheck(pass *analysis.Pass) (interface{}, error) {
 	for _, file := range pass.Files {
-		filePath := pass.Fset.Position(file.Pos()).Filename
-		dir := filepath.Dir(filePath)
-
-		// Check package location rules
-		checkPackageLocation(pass, file, dir)
-
-		// Check dependencies
-		checkDependencyRules(pass, file, dir)
-
-		// Check implementation patterns
 		ast.Inspect(file, func(n ast.Node) bool {
 			switch node := n.(type) {
 			case *ast.TypeSpec:
-				checkTypePatterns(pass, node, dir)
+				checkDomainTypes(pass, node)
+				checkInterfaces(pass, node)
+				checkStorageImplementation(pass, node)
 			case *ast.FuncDecl:
-				checkLayerPatterns(pass, node, dir)
+				checkErrorHandling(pass, node)
 			}
 			return true
 		})
@@ -44,208 +31,112 @@ func runArchitectureCheck(pass *analysis.Pass) (interface{}, error) {
 	return nil, nil
 }
 
-func checkPackageLocation(pass *analysis.Pass, file *ast.File, dir string) {
-	// Enforce package structure rules
-	if strings.Contains(dir, "internal/api") {
-		// API layer rules
-		if strings.Contains(dir, "internal/api/handler") {
-			checkHandlerPackage(pass, file)
-		} else if strings.Contains(dir, "internal/api/middleware") {
-			checkMiddlewarePackage(pass, file)
+func checkDomainTypes(pass *analysis.Pass, ts *ast.TypeSpec) {
+	if isDomainType(ts) {
+		// Domain types should be in domain package
+		if !strings.Contains(pass.Pkg.Path(), "domain") {
+			pass.Reportf(ts.Pos(), "domain type %s should be in domain package", ts.Name.Name)
 		}
-	} else if strings.Contains(dir, "internal/storage") {
-		// Storage layer rules
-		checkStoragePackage(pass, file)
-	} else if strings.Contains(dir, "internal/service") {
-		// Service layer rules
-		checkServicePackage(pass, file)
-	}
-}
 
-func checkHandlerPackage(pass *analysis.Pass, file *ast.File) {
-	for _, decl := range file.Decls {
-		if fn, ok := decl.(*ast.FuncDecl); ok {
-			// Handlers should not import storage directly
-			if hasStorageImport(file) {
-				pass.Reportf(fn.Pos(), "handlers should not import storage directly, use service layer instead")
-			}
-			// Handlers should use service interfaces
-			if !usesServiceInterface(fn) {
-				pass.Reportf(fn.Pos(), "handlers should depend on service interfaces")
-			}
+		// Domain types should have validation methods
+		if !hasValidationMethod(pass, ts.Name.Name) {
+			pass.Reportf(ts.Pos(), "domain type %s should implement Validate() method", ts.Name.Name)
 		}
 	}
 }
 
-func checkMiddlewarePackage(pass *analysis.Pass, file *ast.File) {
-	for _, decl := range file.Decls {
-		if fn, ok := decl.(*ast.FuncDecl); ok {
-			// Middleware should be stateless
-			if hasStateFields(fn) {
-				pass.Reportf(fn.Pos(), "middleware should be stateless")
-			}
-			// Middleware should implement standard interface
-			if !implementsMiddlewareInterface(fn) {
-				pass.Reportf(fn.Pos(), "middleware must implement standard middleware interface")
-			}
+func checkInterfaces(pass *analysis.Pass, ts *ast.TypeSpec) {
+	if iface, ok := ts.Type.(*ast.InterfaceType); ok {
+		// Check interface size
+		if iface.Methods != nil && len(iface.Methods.List) > 5 {
+			pass.Reportf(ts.Pos(), "interface %s has too many methods (max 5)", ts.Name.Name)
+		}
+
+		// Check interface naming
+		if !strings.HasSuffix(ts.Name.Name, "er") && !strings.HasSuffix(ts.Name.Name, "Service") {
+			pass.Reportf(ts.Pos(), "interface %s should end with 'er' or 'Service'", ts.Name.Name)
 		}
 	}
 }
 
-func checkStoragePackage(pass *analysis.Pass, file *ast.File) {
-	for _, decl := range file.Decls {
-		switch node := decl.(type) {
-		case *ast.GenDecl:
-			if node.Tok.String() == "type" {
-				for _, spec := range node.Specs {
-					if ts, ok := spec.(*ast.TypeSpec); ok {
-						// Storage types should implement Store interface
-						if !implementsStoreInterface(ts) {
-							pass.Reportf(ts.Pos(), "storage types must implement Store interface")
-						}
-						// Storage should use transactions
-						if !usesTransactions(ts) {
-							pass.Reportf(ts.Pos(), "storage operations should use transactions")
-						}
-					}
-				}
-			}
+func checkStorageImplementation(pass *analysis.Pass, ts *ast.TypeSpec) {
+	if isStoreImplementation(ts) {
+		// Check error wrapping
+		if !usesCustomErrors(pass, ts) {
+			pass.Reportf(ts.Pos(), "store implementation %s should use domain-specific errors", ts.Name.Name)
+		}
+
+		// Check transaction support
+		if !implementsTransactions(pass, ts) {
+			pass.Reportf(ts.Pos(), "store implementation %s should support transactions", ts.Name.Name)
 		}
 	}
 }
 
-func checkServicePackage(pass *analysis.Pass, file *ast.File) {
-	for _, decl := range file.Decls {
-		switch node := decl.(type) {
-		case *ast.GenDecl:
-			if node.Tok.String() == "type" {
-				for _, spec := range node.Specs {
-					if ts, ok := spec.(*ast.TypeSpec); ok {
-						// Services should use storage interfaces
-						if !usesStorageInterface(ts) {
-							pass.Reportf(ts.Pos(), "services should depend on storage interfaces")
-						}
-						// Services should not expose storage types
-						if exposesStorageTypes(ts) {
-							pass.Reportf(ts.Pos(), "services should not expose storage implementation details")
-						}
-					}
-				}
-			}
-		}
-	}
-}
-
-func checkDependencyRules(pass *analysis.Pass, file *ast.File, dir string) {
-	imports := make(map[string]bool)
-	for _, imp := range file.Imports {
-		path := strings.Trim(imp.Path.Value, "\"")
-		imports[path] = true
-	}
-
-	// Enforce dependency rules based on clean architecture
-	if strings.Contains(dir, "internal/api") {
-		// API layer can only depend on service interfaces
-		for path := range imports {
-			if strings.Contains(path, "internal/storage") {
-				pass.Reportf(file.Pos(), "api layer cannot depend directly on storage layer")
-			}
-		}
-	} else if strings.Contains(dir, "internal/service") {
-		// Service layer can depend on storage interfaces
-		for path := range imports {
-			if strings.Contains(path, "internal/api") {
-				pass.Reportf(file.Pos(), "service layer cannot depend on api layer")
-			}
-		}
-	}
-}
-
-func checkTypePatterns(pass *analysis.Pass, typeSpec *ast.TypeSpec, dir string) {
-	// Check if types follow our patterns based on their layer
-	if strings.Contains(dir, "internal/api") {
-		if st, ok := typeSpec.Type.(*ast.StructType); ok {
-			// API types should not embed storage types
-			for _, field := range st.Fields.List {
-				if sel, ok := field.Type.(*ast.SelectorExpr); ok {
-					if strings.Contains(sel.X.(*ast.Ident).Name, "storage") {
-						pass.Reportf(field.Pos(), "api types should not embed storage types")
-					}
-				}
-			}
-		}
-	}
-}
-
-func checkLayerPatterns(pass *analysis.Pass, fn *ast.FuncDecl, dir string) {
-	// Check layer-specific patterns
-	if strings.Contains(dir, "internal/api") {
-		// API layer should use DTOs
-		if !usesDTOs(fn) {
-			pass.Reportf(fn.Pos(), "api layer should use DTOs for request/response")
-		}
-	} else if strings.Contains(dir, "internal/service") {
-		// Service layer should handle business logic
-		if !hasBusinessLogic(fn) {
-			pass.Reportf(fn.Pos(), "service layer should contain business logic")
-		}
-	}
-}
-
-// Helper functions
-
-func hasStorageImport(file *ast.File) bool {
-	for _, imp := range file.Imports {
-		if strings.Contains(imp.Path.Value, "storage") {
-			return true
-		}
-	}
-	return false
-}
-
-func usesServiceInterface(fn *ast.FuncDecl) bool {
-	var uses bool
+func checkErrorHandling(pass *analysis.Pass, fn *ast.FuncDecl) {
 	ast.Inspect(fn, func(n ast.Node) bool {
-		if sel, ok := n.(*ast.SelectorExpr); ok {
-			if strings.HasSuffix(sel.Sel.Name, "Service") {
-				uses = true
-				return false
+		if ret, ok := n.(*ast.ReturnStmt); ok {
+			for _, expr := range ret.Results {
+				if isErrorReturn(expr) && !usesCustomErrorWrapping(pass, expr) {
+					pass.Reportf(expr.Pos(), "errors should be wrapped with domain-specific error types")
+				}
 			}
 		}
 		return true
 	})
-	return uses
 }
 
-func hasStateFields(fn *ast.FuncDecl) bool {
-	if fn.Recv != nil {
-		if st, ok := fn.Recv.List[0].Type.(*ast.StarExpr); ok {
-			if id, ok := st.X.(*ast.Ident); ok {
-				return id.Obj != nil && id.Obj.Kind == ast.Var
+func isDomainType(ts *ast.TypeSpec) bool {
+	if st, ok := ts.Type.(*ast.StructType); ok {
+		// Check if type has typical domain type fields
+		hasID := false
+		hasTimestamps := false
+		if st.Fields != nil {
+			for _, field := range st.Fields.List {
+				if len(field.Names) > 0 {
+					name := field.Names[0].Name
+					if name == "ID" {
+						hasID = true
+					}
+					if name == "CreatedAt" || name == "UpdatedAt" {
+						hasTimestamps = true
+					}
+				}
+			}
+		}
+		return hasID && hasTimestamps
+	}
+	return false
+}
+
+func hasValidationMethod(pass *analysis.Pass, typeName string) bool {
+	for _, file := range pass.Files {
+		for _, decl := range file.Decls {
+			if fn, ok := decl.(*ast.FuncDecl); ok {
+				if fn.Name.Name == "Validate" && fn.Recv != nil && len(fn.Recv.List) == 1 {
+					if id, ok := fn.Recv.List[0].Type.(*ast.StarExpr); ok {
+						if ident, ok := id.X.(*ast.Ident); ok {
+							if ident.Name == typeName {
+								return true
+							}
+						}
+					}
+				}
 			}
 		}
 	}
 	return false
 }
 
-func implementsMiddlewareInterface(fn *ast.FuncDecl) bool {
-	return fn.Type != nil && fn.Type.Results != nil &&
-		len(fn.Type.Results.List) == 1 &&
-		isHandlerType(fn.Type.Results.List[0].Type)
+func isStoreImplementation(ts *ast.TypeSpec) bool {
+	return strings.HasSuffix(ts.Name.Name, "Store") || strings.HasSuffix(ts.Name.Name, "Repository")
 }
 
-func implementsStoreInterface(ts *ast.TypeSpec) bool {
-	if _, ok := ts.Type.(*ast.InterfaceType); ok {
-		return strings.HasSuffix(ts.Name.Name, "Store")
-	}
-	return false
-}
-
-func usesTransactions(ts *ast.TypeSpec) bool {
+func usesCustomErrors(pass *analysis.Pass, ts *ast.TypeSpec) bool {
 	var uses bool
 	ast.Inspect(ts, func(n ast.Node) bool {
 		if sel, ok := n.(*ast.SelectorExpr); ok {
-			if sel.Sel.Name == "BeginTx" {
+			if sel.Sel.Name == "Error" {
 				uses = true
 				return false
 			}
@@ -255,66 +146,32 @@ func usesTransactions(ts *ast.TypeSpec) bool {
 	return uses
 }
 
-func usesStorageInterface(ts *ast.TypeSpec) bool {
-	if st, ok := ts.Type.(*ast.StructType); ok {
-		for _, field := range st.Fields.List {
-			if sel, ok := field.Type.(*ast.SelectorExpr); ok {
-				if strings.HasSuffix(sel.Sel.Name, "Store") {
-					return true
-				}
-			}
-		}
-	}
-	return false
-}
-
-func exposesStorageTypes(ts *ast.TypeSpec) bool {
-	if st, ok := ts.Type.(*ast.StructType); ok {
-		for _, field := range st.Fields.List {
-			if sel, ok := field.Type.(*ast.SelectorExpr); ok {
-				if x, ok := sel.X.(*ast.Ident); ok {
-					if x.Name == "storage" {
-						return true
-					}
-				}
-			}
-		}
-	}
-	return false
-}
-
-func usesDTOs(fn *ast.FuncDecl) bool {
-	var uses bool
-	ast.Inspect(fn, func(n ast.Node) bool {
-		if ts, ok := n.(*ast.TypeSpec); ok {
-			if strings.HasSuffix(ts.Name.Name, "Request") ||
-				strings.HasSuffix(ts.Name.Name, "Response") {
-				uses = true
+func implementsTransactions(pass *analysis.Pass, ts *ast.TypeSpec) bool {
+	var implements bool
+	ast.Inspect(ts, func(n ast.Node) bool {
+		if fn, ok := n.(*ast.FuncDecl); ok {
+			if fn.Name.Name == "BeginTx" {
+				implements = true
 				return false
 			}
 		}
 		return true
 	})
-	return uses
+	return implements
 }
 
-func hasBusinessLogic(fn *ast.FuncDecl) bool {
-	// This is a simplified check. In reality, we'd look for more specific patterns
-	var hasLogic bool
-	ast.Inspect(fn, func(n ast.Node) bool {
-		switch n.(type) {
-		case *ast.IfStmt, *ast.SwitchStmt, *ast.ForStmt:
-			hasLogic = true
-			return false
+func isErrorReturn(expr ast.Expr) bool {
+	if id, ok := expr.(*ast.Ident); ok {
+		return id.Name == "error" || strings.HasSuffix(id.Name, "Error")
+	}
+	return false
+}
+
+func usesCustomErrorWrapping(pass *analysis.Pass, expr ast.Expr) bool {
+	if call, ok := expr.(*ast.CallExpr); ok {
+		if sel, ok := call.Fun.(*ast.SelectorExpr); ok {
+			return sel.Sel.Name == "Error"
 		}
-		return true
-	})
-	return hasLogic
-}
-
-func isHandlerType(expr ast.Expr) bool {
-	if sel, ok := expr.(*ast.SelectorExpr); ok {
-		return sel.Sel.Name == "HandlerFunc" || sel.Sel.Name == "Handler"
 	}
 	return false
 }

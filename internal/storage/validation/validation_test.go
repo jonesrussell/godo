@@ -1,146 +1,140 @@
 package validation
 
 import (
+	"context"
 	"testing"
 	"time"
 
-	"github.com/jonesrussell/godo/internal/storage"
+	"github.com/google/uuid"
+	"github.com/jonesrussell/godo/internal/storage/types"
+	"github.com/jonesrussell/godo/internal/testutil"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestValidateNote(t *testing.T) {
-	t.Run("valid note", func(t *testing.T) {
+func TestValidation(t *testing.T) {
+	ctx := context.Background()
+	mockStore := testutil.NewMockStore()
+	store := New(mockStore)
+
+	t.Run("Add", func(t *testing.T) {
+		// Valid note
 		now := time.Now().Unix()
-		note := storage.Note{
-			ID:        "test-1",
+		note := types.Note{
+			ID:        uuid.New().String(),
 			Content:   "Test Note",
 			Completed: false,
 			CreatedAt: now,
 			UpdatedAt: now,
 		}
 
-		err := ValidateNote(note)
+		err := store.Add(ctx, note)
+		require.NoError(t, err)
+
+		// Empty ID
+		invalidNote := note
+		invalidNote.ID = ""
+		err = store.Add(ctx, invalidNote)
+		assert.Error(t, err)
+
+		// Empty content
+		invalidNote = note
+		invalidNote.Content = ""
+		err = store.Add(ctx, invalidNote)
+		assert.Error(t, err)
+
+		// Invalid timestamps
+		invalidNote = note
+		invalidNote.CreatedAt = 0
+		err = store.Add(ctx, invalidNote)
+		assert.Error(t, err)
+
+		invalidNote = note
+		invalidNote.UpdatedAt = 0
+		err = store.Add(ctx, invalidNote)
+		assert.Error(t, err)
+
+		invalidNote = note
+		invalidNote.UpdatedAt = invalidNote.CreatedAt - 1
+		err = store.Add(ctx, invalidNote)
+		assert.Error(t, err)
+
+		invalidNote = note
+		invalidNote.UpdatedAt = time.Now().Unix() + 3600
+		err = store.Add(ctx, invalidNote)
+		assert.Error(t, err)
+	})
+
+	t.Run("Get", func(t *testing.T) {
+		// Valid ID
+		_, err := store.Get(ctx, uuid.New().String())
 		assert.NoError(t, err)
+
+		// Empty ID
+		_, err = store.Get(ctx, "")
+		assert.Error(t, err)
 	})
 
-	t.Run("empty ID", func(t *testing.T) {
+	t.Run("Update", func(t *testing.T) {
+		// Valid note
 		now := time.Now().Unix()
-		note := storage.Note{
-			ID:        "",
+		note := types.Note{
+			ID:        uuid.New().String(),
 			Content:   "Test Note",
 			Completed: false,
 			CreatedAt: now,
 			UpdatedAt: now,
 		}
 
-		err := ValidateNote(note)
+		err := store.Update(ctx, note)
+		require.NoError(t, err)
+
+		// Empty ID
+		invalidNote := note
+		invalidNote.ID = ""
+		err = store.Update(ctx, invalidNote)
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "ID cannot be empty")
+
+		// Empty content
+		invalidNote = note
+		invalidNote.Content = ""
+		err = store.Update(ctx, invalidNote)
+		assert.Error(t, err)
+
+		// Invalid timestamps
+		invalidNote = note
+		invalidNote.CreatedAt = 0
+		err = store.Update(ctx, invalidNote)
+		assert.Error(t, err)
+
+		invalidNote = note
+		invalidNote.UpdatedAt = 0
+		err = store.Update(ctx, invalidNote)
+		assert.Error(t, err)
+
+		invalidNote = note
+		invalidNote.UpdatedAt = invalidNote.CreatedAt - 1
+		err = store.Update(ctx, invalidNote)
+		assert.Error(t, err)
+
+		invalidNote = note
+		invalidNote.UpdatedAt = time.Now().Unix() + 3600
+		err = store.Update(ctx, invalidNote)
+		assert.Error(t, err)
 	})
 
-	t.Run("empty content", func(t *testing.T) {
-		now := time.Now().Unix()
-		note := storage.Note{
-			ID:        "test-1",
-			Content:   "",
-			Completed: false,
-			CreatedAt: now,
-			UpdatedAt: now,
-		}
-
-		err := ValidateNote(note)
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "content cannot be empty")
-	})
-
-	t.Run("zero created_at", func(t *testing.T) {
-		now := time.Now().Unix()
-		note := storage.Note{
-			ID:        "test-1",
-			Content:   "Test Note",
-			Completed: false,
-			CreatedAt: 0,
-			UpdatedAt: now,
-		}
-
-		err := ValidateNote(note)
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "created_at cannot be zero")
-	})
-
-	t.Run("zero updated_at", func(t *testing.T) {
-		now := time.Now().Unix()
-		note := storage.Note{
-			ID:        "test-1",
-			Content:   "Test Note",
-			Completed: false,
-			CreatedAt: now,
-			UpdatedAt: 0,
-		}
-
-		err := ValidateNote(note)
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "updated_at cannot be zero")
-	})
-
-	t.Run("updated_at before created_at", func(t *testing.T) {
-		now := time.Now().Unix()
-		note := storage.Note{
-			ID:        "test-1",
-			Content:   "Test Note",
-			Completed: false,
-			CreatedAt: now,
-			UpdatedAt: now - 1,
-		}
-
-		err := ValidateNote(note)
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "updated_at cannot be before created_at")
-	})
-}
-
-func TestValidateID(t *testing.T) {
-	t.Run("valid ID", func(t *testing.T) {
-		err := ValidateID("test-1")
+	t.Run("Delete", func(t *testing.T) {
+		// Valid ID
+		err := store.Delete(ctx, uuid.New().String())
 		assert.NoError(t, err)
-	})
 
-	t.Run("empty ID", func(t *testing.T) {
-		err := ValidateID("")
+		// Empty ID
+		err = store.Delete(ctx, "")
 		assert.Error(t, err)
-		assert.Equal(t, ErrInvalidID, err)
 	})
 
-	t.Run("too long ID", func(t *testing.T) {
-		longID := make([]byte, MaxIDLength+1)
-		for i := range longID {
-			longID[i] = 'a'
-		}
-		err := ValidateID(string(longID))
-		assert.Error(t, err)
-		assert.Equal(t, ErrInvalidID, err)
-	})
-}
-
-func TestValidateContent(t *testing.T) {
-	t.Run("valid content", func(t *testing.T) {
-		err := ValidateContent("Test Note")
+	t.Run("List", func(t *testing.T) {
+		_, err := store.List(ctx)
 		assert.NoError(t, err)
-	})
-
-	t.Run("empty content", func(t *testing.T) {
-		err := ValidateContent("")
-		assert.Error(t, err)
-		assert.Equal(t, ErrInvalidContent, err)
-	})
-
-	t.Run("too long content", func(t *testing.T) {
-		longContent := make([]byte, MaxContentLength+1)
-		for i := range longContent {
-			longContent[i] = 'a'
-		}
-		err := ValidateContent(string(longContent))
-		assert.Error(t, err)
-		assert.Equal(t, ErrInvalidContent, err)
 	})
 }

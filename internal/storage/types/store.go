@@ -3,30 +3,23 @@ package types
 
 import (
 	"context"
-)
 
-// Note represents a stored note
-type Note struct {
-	ID        string `json:"id"`
-	Content   string `json:"content"`
-	Completed bool   `json:"completed"`
-	CreatedAt int64  `json:"created_at"`
-	UpdatedAt int64  `json:"updated_at"`
-}
+	"github.com/jonesrussell/godo/internal/domain/note"
+)
 
 // Store defines the interface for note storage
 type Store interface {
 	// Add adds a new note to the store
-	Add(ctx context.Context, note Note) error
+	Add(ctx context.Context, note *note.Note) error
 
 	// Get retrieves a note by ID
-	Get(ctx context.Context, id string) (Note, error)
+	Get(ctx context.Context, id string) (*note.Note, error)
 
 	// List returns all notes
-	List(ctx context.Context) ([]Note, error)
+	List(ctx context.Context) ([]*note.Note, error)
 
 	// Update updates an existing note
-	Update(ctx context.Context, note Note) error
+	Update(ctx context.Context, note *note.Note) error
 
 	// Delete removes a note by ID
 	Delete(ctx context.Context, id string) error
@@ -41,16 +34,16 @@ type Store interface {
 // Transaction represents a storage transaction
 type Transaction interface {
 	// Add adds a new note in the transaction
-	Add(ctx context.Context, note Note) error
+	Add(ctx context.Context, note *note.Note) error
 
 	// Get retrieves a note by ID in the transaction
-	Get(ctx context.Context, id string) (Note, error)
+	Get(ctx context.Context, id string) (*note.Note, error)
 
 	// List returns all notes in the transaction
-	List(ctx context.Context) ([]Note, error)
+	List(ctx context.Context) ([]*note.Note, error)
 
 	// Update updates an existing note in the transaction
-	Update(ctx context.Context, note Note) error
+	Update(ctx context.Context, note *note.Note) error
 
 	// Delete removes a note by ID in the transaction
 	Delete(ctx context.Context, id string) error

@@ -9,8 +9,7 @@ import (
 )
 
 const (
-	maxStructFields     = 10
-	maxInterfaceMethods = 5
+	maxStructFields = 10
 )
 
 // StandardAnalyzer enforces consistent code patterns and clean code practices

@@ -10,25 +10,25 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/google/uuid"
 	"github.com/jonesrussell/godo/internal/logger"
-	"github.com/jonesrussell/godo/internal/storage"
+	"github.com/jonesrussell/godo/internal/storage/types"
 )
 
 // Window represents the main application window
 type Window struct {
 	fyneWindow fyne.Window
-	store      storage.Store
+	store      types.Store
 	logger     logger.Logger
 	list       *widget.List
-	notes      map[string]storage.Note
+	notes      map[string]types.Note
 }
 
 // New creates a new main window
-func New(win fyne.Window, store storage.Store, log logger.Logger) *Window {
+func New(win fyne.Window, store types.Store, log logger.Logger) *Window {
 	w := &Window{
 		fyneWindow: win,
 		store:      store,
 		logger:     log,
-		notes:      make(map[string]storage.Note),
+		notes:      make(map[string]types.Note),
 	}
 
 	w.setupUI()
@@ -76,7 +76,7 @@ func (w *Window) setupUI() {
 			return
 		}
 
-		note := storage.Note{
+		note := types.Note{
 			ID:        uuid.New().String(),
 			Content:   text,
 			Completed: false,
@@ -114,7 +114,7 @@ func (w *Window) loadNotes() {
 }
 
 // updateNote updates a note in storage
-func (w *Window) updateNote(note storage.Note) {
+func (w *Window) updateNote(note types.Note) {
 	if err := w.store.Update(context.Background(), note); err != nil {
 		w.logger.Error("Failed to update note", "error", err)
 		return
@@ -124,7 +124,7 @@ func (w *Window) updateNote(note storage.Note) {
 }
 
 // getNoteByIndex returns a note by its list index
-func (w *Window) getNoteByIndex(index int) *storage.Note {
+func (w *Window) getNoteByIndex(index int) *types.Note {
 	i := 0
 	for _, note := range w.notes {
 		if i == index {

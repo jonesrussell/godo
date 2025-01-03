@@ -6,14 +6,15 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2/test"
-	"github.com/jonesrussell/godo/internal/storage"
+	"github.com/jonesrussell/godo/internal/storage/types"
+	"github.com/jonesrussell/godo/internal/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestWindow(t *testing.T) {
 	ctx := context.Background()
-	store := storage.NewMockStore()
+	store := testutil.NewMockStore()
 
 	window := test.NewWindow(nil)
 	defer window.Close()
@@ -21,7 +22,7 @@ func TestWindow(t *testing.T) {
 	t.Run("AddNote", func(t *testing.T) {
 		// Add a note
 		now := time.Now().Unix()
-		note := storage.Note{
+		note := types.Note{
 			ID:        "test-1",
 			Content:   "Test Note",
 			Completed: false,
@@ -45,7 +46,7 @@ func TestWindow(t *testing.T) {
 	t.Run("UpdateNote", func(t *testing.T) {
 		// Add a note
 		now := time.Now().Unix()
-		note := storage.Note{
+		note := types.Note{
 			ID:        "test-2",
 			Content:   "Test Note",
 			Completed: false,
@@ -72,7 +73,7 @@ func TestWindow(t *testing.T) {
 	t.Run("DeleteNote", func(t *testing.T) {
 		// Add a note
 		now := time.Now().Unix()
-		note := storage.Note{
+		note := types.Note{
 			ID:        "test-3",
 			Content:   "Test Note",
 			Completed: false,
@@ -95,7 +96,7 @@ func TestWindow(t *testing.T) {
 	t.Run("ListNotes", func(t *testing.T) {
 		// Add some notes
 		now := time.Now().Unix()
-		note1 := storage.Note{
+		note1 := types.Note{
 			ID:        "test-4",
 			Content:   "Test Note 1",
 			Completed: false,
@@ -105,7 +106,7 @@ func TestWindow(t *testing.T) {
 		err := store.Add(ctx, note1)
 		require.NoError(t, err)
 
-		note2 := storage.Note{
+		note2 := types.Note{
 			ID:        "test-5",
 			Content:   "Test Note 2",
 			Completed: false,

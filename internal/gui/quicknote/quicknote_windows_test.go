@@ -8,12 +8,12 @@ import (
 	"fyne.io/fyne/v2/test"
 	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/logger"
-	"github.com/jonesrussell/godo/internal/storage"
+	"github.com/jonesrussell/godo/internal/testutil"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestQuickNoteHotkey(t *testing.T) {
-	store := storage.NewMockStore()
+	store := testutil.NewMockStore()
 	log := logger.NewMockTestLogger(t)
 	app := test.NewApp()
 	cfg := config.WindowConfig{

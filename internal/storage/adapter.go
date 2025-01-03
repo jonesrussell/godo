@@ -3,44 +3,51 @@ package storage
 
 import (
 	"context"
+
+	"github.com/jonesrussell/godo/internal/storage/types"
 )
 
-// LegacyStoreAdapter adapts the new Store interface to the old Store interface
-type LegacyStoreAdapter struct {
-	store Store
+// Adapter provides a way to adapt between different store implementations
+type Adapter struct {
+	store types.Store
 }
 
-// NewLegacyStoreAdapter creates a new adapter
-func NewLegacyStoreAdapter(store Store) *LegacyStoreAdapter {
-	return &LegacyStoreAdapter{store: store}
+// NewAdapter creates a new store adapter
+func NewAdapter(store types.Store) *Adapter {
+	return &Adapter{store: store}
 }
 
-// List returns all notes
-func (a *LegacyStoreAdapter) List() ([]Note, error) {
-	return a.store.List(context.Background())
+// Add adds a note to the store
+func (a *Adapter) Add(ctx context.Context, note types.Note) error {
+	return a.store.Add(ctx, note)
 }
 
-// Add stores a new note
-func (a *LegacyStoreAdapter) Add(note Note) error {
-	return a.store.Add(context.Background(), note)
+// Get retrieves a note from the store
+func (a *Adapter) Get(ctx context.Context, id string) (types.Note, error) {
+	return a.store.Get(ctx, id)
 }
 
-// Update modifies an existing note
-func (a *LegacyStoreAdapter) Update(note Note) error {
-	return a.store.Update(context.Background(), note)
+// List retrieves all notes from the store
+func (a *Adapter) List(ctx context.Context) ([]types.Note, error) {
+	return a.store.List(ctx)
 }
 
-// Delete removes a note by ID
-func (a *LegacyStoreAdapter) Delete(id string) error {
-	return a.store.Delete(context.Background(), id)
+// Update updates a note in the store
+func (a *Adapter) Update(ctx context.Context, note types.Note) error {
+	return a.store.Update(ctx, note)
 }
 
-// Get retrieves a note by its ID
-func (a *LegacyStoreAdapter) Get(id string) (Note, error) {
-	return a.store.Get(context.Background(), id)
+// Delete removes a note from the store
+func (a *Adapter) Delete(ctx context.Context, id string) error {
+	return a.store.Delete(ctx, id)
 }
 
-// Close releases any resources held by the store
-func (a *LegacyStoreAdapter) Close() error {
+// Close closes the store
+func (a *Adapter) Close() error {
 	return a.store.Close()
+}
+
+// BeginTx begins a new transaction
+func (a *Adapter) BeginTx(ctx context.Context) (types.Transaction, error) {
+	return a.store.BeginTx(ctx)
 }

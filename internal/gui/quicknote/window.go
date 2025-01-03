@@ -11,13 +11,13 @@ import (
 	"github.com/google/uuid"
 	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/logger"
-	"github.com/jonesrussell/godo/internal/storage"
+	"github.com/jonesrussell/godo/internal/storage/types"
 )
 
 // Window represents the quick note window
 type Window struct {
 	fyneWindow fyne.Window
-	store      storage.Store
+	store      types.Store
 	logger     logger.Logger
 	config     config.WindowConfig
 	input      *widget.Entry
@@ -25,7 +25,7 @@ type Window struct {
 }
 
 // New creates a new quick note window instance
-func New(app fyne.App, store storage.Store, logger logger.Logger, cfg config.WindowConfig) *Window {
+func New(app fyne.App, store types.Store, logger logger.Logger, cfg config.WindowConfig) *Window {
 	w := &Window{
 		fyneWindow: app.NewWindow("Quick Note"),
 		store:      store,
@@ -66,7 +66,7 @@ func (w *Window) saveNote() {
 		return
 	}
 
-	note := storage.Note{
+	note := types.Note{
 		ID:        uuid.New().String(),
 		Content:   text,
 		Completed: false,

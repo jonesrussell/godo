@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/driver/desktop"
 	"github.com/jonesrussell/godo/internal/api"
 	"github.com/jonesrussell/godo/internal/app/hotkey"
 	"github.com/jonesrussell/godo/internal/common"
@@ -36,6 +37,22 @@ type App struct {
 	config     *config.Config
 	apiServer  *api.Server
 	apiRunner  *api.Runner
+}
+
+// GetFyneApp returns the underlying Fyne application instance
+func (a *App) GetFyneApp() fyne.App {
+	return a.fyneApp
+}
+
+// Quit performs cleanup and quits the application
+func (a *App) Quit() {
+	// First run cleanup
+	a.Cleanup()
+
+	// Then quit the Fyne app
+	if a.fyneApp != nil {
+		a.fyneApp.Quit()
+	}
 }
 
 // Params holds the parameters for creating a new App instance
@@ -86,7 +103,12 @@ func (a *App) SetupUI() error {
 	a.logger.Debug("Setting up UI components")
 
 	// 1. Set up systray first as it's the most visible component
-	systray.SetupSystray(a.fyneApp, a.mainWindow.GetWindow(), a.quickNote)
+	if _, ok := a.fyneApp.(desktop.App); ok {
+		a.logger.Debug("Setting up systray")
+		systray.SetupSystray(a.fyneApp, a.mainWindow.GetWindow(), a.quickNote)
+	} else {
+		a.logger.Warn("Desktop features not available, skipping systray setup")
+	}
 
 	// 2. Show main window if not configured to start hidden
 	if !a.config.UI.MainWindow.StartHidden {

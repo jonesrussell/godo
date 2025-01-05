@@ -21,7 +21,7 @@ type Window struct {
 	window  fyne.Window
 	app     fyne.App
 	config  config.WindowConfig
-	input   *widget.Entry
+	input   *Entry
 	saveBtn *widget.Button
 }
 
@@ -41,27 +41,11 @@ func New(app fyne.App, store storage.TaskStore, logger logger.Logger, config con
 
 // setupUI initializes the window's UI components
 func (w *Window) setupUI() {
-	w.input = widget.NewMultiLineEntry()
+	w.input = NewEntry()
 	w.input.SetPlaceHolder("Enter your quick note...")
+	w.input.SetOnCtrlEnter(w.saveNote)
 
-	w.saveBtn = widget.NewButton("Save", func() {
-		if w.input.Text != "" {
-			now := time.Now()
-			task := storage.Task{
-				ID:        uuid.New().String(),
-				Content:   w.input.Text,
-				Done:      false,
-				CreatedAt: now,
-				UpdatedAt: now,
-			}
-			if err := w.store.Add(context.Background(), task); err != nil {
-				w.logger.Error("Failed to add quick note", "error", err)
-				return
-			}
-			w.input.SetText("")
-			w.Hide()
-		}
-	})
+	w.saveBtn = widget.NewButton("Save", w.saveNote)
 
 	content := container.NewBorder(
 		nil,       // top
@@ -74,6 +58,26 @@ func (w *Window) setupUI() {
 	w.window.SetContent(content)
 	w.window.Resize(fyne.NewSize(float32(w.config.Width), float32(w.config.Height)))
 	w.window.CenterOnScreen()
+}
+
+// saveNote saves the current note
+func (w *Window) saveNote() {
+	if w.input.Text != "" {
+		now := time.Now()
+		task := storage.Task{
+			ID:        uuid.New().String(),
+			Content:   w.input.Text,
+			Done:      false,
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
+		if err := w.store.Add(context.Background(), task); err != nil {
+			w.logger.Error("Failed to add quick note", "error", err)
+			return
+		}
+		w.input.SetText("")
+		w.Hide()
+	}
 }
 
 // Show displays the quick note window

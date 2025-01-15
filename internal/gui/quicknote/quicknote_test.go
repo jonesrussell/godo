@@ -6,21 +6,34 @@ import (
 
 	"fyne.io/fyne/v2/test"
 	"github.com/jonesrussell/godo/internal/config"
+	"github.com/jonesrussell/godo/internal/gui/mainwindow"
+	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
-	"github.com/jonesrussell/godo/internal/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func setupTestWindow(t *testing.T) (*Window, *storage.MockStore) {
-	fixture := testutil.NewTestFixture(t)
-	cfg := config.WindowConfig{
-		Width:       testutil.DefaultQuickNoteWidth,
-		Height:      testutil.DefaultQuickNoteHeight,
+	store := storage.NewMockStore()
+	log := logger.NewTestLogger(t)
+	app := test.NewApp()
+
+	// Create main window first
+	mainWinCfg := config.WindowConfig{
+		Width:       800,
+		Height:      600,
 		StartHidden: false,
 	}
-	window := New(test.NewApp(), fixture.Store, fixture.Logger, cfg)
-	return window, fixture.Store
+	mainWin := mainwindow.New(app, store, log, mainWinCfg)
+
+	// Create quick note window
+	quickNoteCfg := config.WindowConfig{
+		Width:       400,
+		Height:      300,
+		StartHidden: true,
+	}
+	quickNote := New(app, store, log, quickNoteCfg, mainWin)
+	return quickNote, store
 }
 
 func TestWindow(t *testing.T) {

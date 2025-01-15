@@ -41,6 +41,7 @@ var (
 		ProvideMainWindow,
 		ProvideQuickNote,
 		wire.Bind(new(gui.MainWindow), new(*mainwindow.Window)),
+		wire.Bind(new(mainwindow.Interface), new(*mainwindow.Window)),
 		wire.Bind(new(gui.QuickNote), new(*quicknote.Window)),
 	)
 
@@ -363,8 +364,8 @@ func ProvideMainWindow(app fyne.App, store storage.TaskStore, logger logger.Logg
 }
 
 // ProvideQuickNote provides a quick note window instance
-func ProvideQuickNote(app fyne.App, store storage.TaskStore, logger logger.Logger, cfg *config.Config) *quicknote.Window {
-	return quicknote.New(app, store, logger, cfg.UI.QuickNote)
+func ProvideQuickNote(app fyne.App, store storage.TaskStore, logger logger.Logger, cfg *config.Config, mainWindow mainwindow.Interface) *quicknote.Window {
+	return quicknote.New(app, store, logger, cfg.UI.QuickNote, mainWindow)
 }
 
 // ProvideModifierKeys provides the hotkey modifiers from config

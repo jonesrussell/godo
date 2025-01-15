@@ -17,4 +17,5 @@ type MainWindow interface {
 	Resize(size fyne.Size)
 	CenterOnScreen()
 	GetWindow() fyne.Window
+	Refresh()
 }

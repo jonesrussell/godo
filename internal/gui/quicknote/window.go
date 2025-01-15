@@ -10,29 +10,32 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/google/uuid"
 	"github.com/jonesrussell/godo/internal/config"
+	"github.com/jonesrussell/godo/internal/gui/mainwindow"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
 )
 
 // Window implements the quick note window
 type Window struct {
-	store   storage.TaskStore
-	logger  logger.Logger
-	window  fyne.Window
-	app     fyne.App
-	config  config.WindowConfig
-	input   *Entry
-	saveBtn *widget.Button
+	store      storage.TaskStore
+	logger     logger.Logger
+	window     fyne.Window
+	app        fyne.App
+	config     config.WindowConfig
+	input      *Entry
+	saveBtn    *widget.Button
+	mainWindow mainwindow.Interface
 }
 
 // New creates a new quick note window
-func New(app fyne.App, store storage.TaskStore, logger logger.Logger, config config.WindowConfig) *Window {
+func New(app fyne.App, store storage.TaskStore, logger logger.Logger, config config.WindowConfig, mainWindow mainwindow.Interface) *Window {
 	w := &Window{
-		store:  store,
-		logger: logger,
-		app:    app,
-		config: config,
-		window: app.NewWindow("Quick Note"),
+		store:      store,
+		logger:     logger,
+		app:        app,
+		config:     config,
+		window:     app.NewWindow("Quick Note"),
+		mainWindow: mainWindow,
 	}
 
 	w.setupUI()
@@ -77,6 +80,11 @@ func (w *Window) saveNote() {
 		}
 		w.input.SetText("")
 		w.Hide()
+
+		// Refresh the main window
+		if w.mainWindow != nil {
+			w.mainWindow.Refresh()
+		}
 	}
 }
 

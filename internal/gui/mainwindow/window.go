@@ -21,6 +21,7 @@ type Window struct {
 	window fyne.Window
 	app    fyne.App
 	config config.WindowConfig
+	tasks  []storage.Task
 }
 
 // New creates a new main window
@@ -40,13 +41,14 @@ func New(app fyne.App, store storage.TaskStore, logger logger.Logger, config con
 // setupUI initializes the window's UI components
 func (w *Window) setupUI() {
 	// Create task list
-	tasks, err := w.store.List(context.Background())
+	var err error
+	w.tasks, err = w.store.List(context.Background())
 	if err != nil {
 		w.logger.Error("Failed to load tasks", "error", err)
 	}
 
 	taskList := widget.NewList(
-		func() int { return len(tasks) },
+		func() int { return len(w.tasks) },
 		func() fyne.CanvasObject {
 			return container.NewHBox(
 				widget.NewCheck("", nil),
@@ -58,15 +60,15 @@ func (w *Window) setupUI() {
 			check := box.Objects[0].(*widget.Check)
 			label := box.Objects[1].(*widget.Label)
 
-			check.Checked = tasks[id].Done
+			check.Checked = w.tasks[id].Done
 			check.OnChanged = func(done bool) {
-				tasks[id].Done = done
-				tasks[id].UpdatedAt = time.Now()
-				if err := w.store.Update(context.Background(), tasks[id]); err != nil {
+				w.tasks[id].Done = done
+				w.tasks[id].UpdatedAt = time.Now()
+				if err := w.store.Update(context.Background(), w.tasks[id]); err != nil {
 					w.logger.Error("Failed to update task", "error", err)
 				}
 			}
-			label.SetText(tasks[id].Content)
+			label.SetText(w.tasks[id].Content)
 		},
 	)
 
@@ -88,7 +90,7 @@ func (w *Window) setupUI() {
 				w.logger.Error("Failed to add task", "error", err)
 				return
 			}
-			tasks = append(tasks, task)
+			w.tasks = append(w.tasks, task)
 			taskList.Refresh()
 			input.SetText("")
 		}
@@ -136,4 +138,20 @@ func (w *Window) CenterOnScreen() {
 // GetWindow returns the underlying fyne.Window
 func (w *Window) GetWindow() fyne.Window {
 	return w.window
+}
+
+// Refresh reloads and updates the task list
+func (w *Window) Refresh() {
+	tasks, err := w.store.List(context.Background())
+	if err != nil {
+		w.logger.Error("Failed to reload tasks", "error", err)
+		return
+	}
+
+	w.tasks = tasks
+	if content, ok := w.window.Content().(*fyne.Container); ok {
+		if list, ok := content.Objects[0].(*widget.List); ok {
+			list.Refresh()
+		}
+	}
 }

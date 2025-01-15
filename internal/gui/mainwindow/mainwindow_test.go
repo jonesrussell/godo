@@ -5,7 +5,9 @@ import (
 	"testing"
 	"time"
 
+	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/test"
+	"fyne.io/fyne/v2/widget"
 	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
@@ -13,9 +15,19 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func createTestTask(content string) storage.Task {
+	return storage.Task{
+		ID:        "test-id",
+		Content:   content,
+		Done:      false,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+}
+
 func setupTestWindow(t *testing.T) (*Window, *storage.MockStore) {
 	store := storage.NewMockStore()
-	log := logger.NewMockTestLogger(t)
+	log := logger.NewTestLogger(t)
 	app := test.NewApp()
 	cfg := config.WindowConfig{
 		Width:       800,
@@ -23,110 +35,128 @@ func setupTestWindow(t *testing.T) (*Window, *storage.MockStore) {
 		StartHidden: false,
 	}
 	mainWindow := New(app, store, log, cfg)
+	mainWindow.Show()
 	return mainWindow, store
 }
 
-func TestMainWindow(t *testing.T) {
-	mainWindow, store := setupTestWindow(t)
-	require.NotNil(t, mainWindow)
+func TestTaskManager(t *testing.T) {
+	window, store := setupTestWindow(t)
+	tm := window.TaskManager
 	ctx := context.Background()
 
-	t.Run("AddTask", func(t *testing.T) {
-		// Add a task
-		task := storage.Task{
-			ID:        "test-1",
-			Content:   "Test Task",
-			Done:      false,
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
-		}
+	t.Run("LoadTasks", func(t *testing.T) {
+		// Add some tasks to store
+		task := createTestTask("Test Task")
 		err := store.Add(ctx, task)
 		require.NoError(t, err)
 
-		// Get the task to verify it was added
-		addedTask, err := store.GetByID(ctx, task.ID)
+		// Load tasks
+		err = tm.loadTasks()
 		require.NoError(t, err)
-		assert.Equal(t, task.ID, addedTask.ID)
-		assert.Equal(t, task.Content, addedTask.Content)
+		assert.Len(t, tm.tasks, 1)
+		assert.Equal(t, task.Content, tm.tasks[0].Content)
+	})
+
+	t.Run("AddTask", func(t *testing.T) {
+		// Add task
+		err := tm.addTask("New Task")
+		require.NoError(t, err)
+
+		// Verify task was added
+		assert.Len(t, tm.tasks, 2)
+		assert.Equal(t, "New Task", tm.tasks[1].Content)
+		assert.False(t, tm.tasks[1].Done)
+
+		// Verify task is in store
+		tasks, err := store.List(ctx)
+		require.NoError(t, err)
+		assert.Len(t, tasks, 2)
 	})
 
 	t.Run("UpdateTask", func(t *testing.T) {
-		// Add a task
-		task := storage.Task{
-			ID:        "test-2",
-			Content:   "Test Task",
-			Done:      false,
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
-		}
-		err := store.Add(ctx, task)
+		// Update first task
+		err := tm.updateTask(0, true)
 		require.NoError(t, err)
 
-		// Update the task
-		task.Done = true
-		err = store.Update(ctx, task)
+		// Verify task was updated
+		assert.True(t, tm.tasks[0].Done)
+		task, err := store.GetByID(ctx, tm.tasks[0].ID)
 		require.NoError(t, err)
-
-		// Get the task to verify it was updated
-		updatedTask, err := store.GetByID(ctx, task.ID)
-		require.NoError(t, err)
-		assert.True(t, updatedTask.Done)
+		assert.True(t, task.Done)
 	})
 
-	t.Run("DeleteTask", func(t *testing.T) {
-		// Add a task
-		task := storage.Task{
-			ID:        "test-3",
-			Content:   "Test Task",
-			Done:      false,
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
-		}
-		err := store.Add(ctx, task)
+	t.Run("EmptyTask", func(t *testing.T) {
+		initialCount := len(tm.tasks)
+		err := tm.addTask("")
 		require.NoError(t, err)
+		assert.Equal(t, initialCount, len(tm.tasks))
+	})
+}
 
-		// Delete the task
-		err = store.Delete(ctx, task.ID)
-		require.NoError(t, err)
+func TestWindow(t *testing.T) {
+	window, _ := setupTestWindow(t)
+	defer window.Hide()
 
-		// Verify the task is deleted
-		_, err = store.GetByID(ctx, task.ID)
-		assert.Error(t, err)
+	t.Run("InitialState", func(t *testing.T) {
+		assert.NotNil(t, window.TaskManager)
+		assert.NotNil(t, window.window)
+		assert.NotNil(t, window.list)
+		assert.Empty(t, window.tasks)
+
+		// Test window properties
+		assert.Equal(t, "Godo - Task Manager", window.window.Title())
+		// Skip icon test as it's not reliable in test environment
 	})
 
-	t.Run("ListTasks", func(t *testing.T) {
-		// Add some tasks
-		task1 := storage.Task{
-			ID:        "test-4",
-			Content:   "Test Task 1",
-			Done:      false,
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
-		}
-		task2 := storage.Task{
-			ID:        "test-5",
-			Content:   "Test Task 2",
-			Done:      true,
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
-		}
-		err := store.Add(ctx, task1)
-		require.NoError(t, err)
-		err = store.Add(ctx, task2)
-		require.NoError(t, err)
+	t.Run("UIComponents", func(t *testing.T) {
+		// Test input creation
+		input := window.createInput()
+		assert.NotNil(t, input)
+		assert.Equal(t, "Enter a new task...", input.PlaceHolder)
 
-		// List tasks
-		tasks, err := store.List(ctx)
-		require.NoError(t, err)
-		assert.GreaterOrEqual(t, len(tasks), 2)
+		// Test input submission
+		test.Type(input, "Test Task")
+		input.OnSubmitted(input.Text)
+		assert.Empty(t, input.Text)
+		assert.Len(t, window.tasks, 1)
+
+		// Test button creation
+		button := window.createAddButton(input)
+		assert.NotNil(t, button)
+		assert.Equal(t, "Add", button.Text)
+
+		// Test list creation
+		list := window.createTaskList()
+		assert.NotNil(t, list)
+		assert.Equal(t, 1, list.Length()) // Should have the task we added
+
+		// Test task completion visual feedback
+		window.updateTask(0, true)
+		list.Refresh()
+		item := list.CreateItem()
+		list.UpdateItem(0, item)
+		label := item.(*fyne.Container).Objects[1].(*widget.Label)
+		assert.True(t, label.TextStyle.Monospace)
 	})
 
-	t.Run("WindowClose", func(t *testing.T) {
-		// Close the window
-		mainWindow.Hide()
+	t.Run("KeyboardShortcuts", func(t *testing.T) {
+		input := window.createInput()
 
-		// Verify the store is closed
-		err := store.Close()
-		assert.NoError(t, err)
+		// Test Enter key submission
+		test.Type(input, "Task via Enter")
+		input.OnSubmitted(input.Text)
+		assert.Empty(t, input.Text)
+		assert.Contains(t, window.tasks[len(window.tasks)-1].Content, "Task via Enter")
+	})
+
+	t.Run("WindowMethods", func(t *testing.T) {
+		// Test window interface methods
+		assert.NotPanics(t, func() {
+			window.Show()
+			window.Hide()
+			window.CenterOnScreen()
+			window.Resize(fyne.NewSize(100, 100))
+			assert.NotNil(t, window.GetWindow())
+		})
 	})
 }

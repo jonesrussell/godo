@@ -25,12 +25,17 @@ func (m *mockStore) List(_ context.Context) ([]storage.Task, error) {
 	return m.tasks, nil
 }
 
+// Create a new mock logger for testing
+func newMockLogger() *mockLogger {
+	return &mockLogger{}
+}
+
 func TestApp_SetupUI(t *testing.T) {
 	// Create test app
 	testApp := test.NewApp()
 
 	// Create mock logger
-	mockLogger := logger.NewMockTestLogger(t)
+	mockLogger := newMockLogger()
 
 	// Create mock store
 	mockStore := &mockStore{}
@@ -82,13 +87,13 @@ func TestApp_Run(t *testing.T) {
 	// Create test app
 	testApp := test.NewApp()
 
-	// Create mock logger with expectations
-	mockLogger := &mockLogger{}
+	// Create mock logger
+	mockLogger := newMockLogger()
 
 	// Create mock store
 	mockStore := &mockStore{}
 
-	// Create mock hotkey manager with expectations
+	// Create mock hotkey manager
 	mockHotkey := &mockHotkey{}
 
 	// Create test config
@@ -137,8 +142,8 @@ func TestApp_Cleanup(t *testing.T) {
 	// Create test app
 	testApp := test.NewApp()
 
-	// Create mock logger with expectations
-	mockLogger := &mockLogger{}
+	// Create mock logger
+	mockLogger := newMockLogger()
 
 	// Create mock store with cleanup tracking
 	mockStore := &mockStoreWithCleanup{}
@@ -216,6 +221,7 @@ type mockLogger struct {
 
 func (m *mockLogger) Debug(_ string, _ ...interface{}) {}
 func (m *mockLogger) Info(_ string, _ ...interface{})  {}
+func (m *mockLogger) Warn(_ string, _ ...interface{})  {}
 func (m *mockLogger) Error(_ string, _ ...interface{}) {}
 
 type mockHotkey struct {

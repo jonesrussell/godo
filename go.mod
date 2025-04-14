@@ -13,7 +13,7 @@ require (
 	github.com/stretchr/testify v1.10.0
 	go.uber.org/zap v1.27.0
 	golang.design/x/hotkey v0.4.1
-	golang.org/x/tools v0.31.0
+	golang.org/x/tools v0.32.0
 	gopkg.in/yaml.v3 v3.0.1
 	modernc.org/sqlite v1.37.0
 )

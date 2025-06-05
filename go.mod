@@ -1,10 +1,11 @@
 module github.com/jonesrussell/godo
 
-go 1.23
+go 1.23.0
+
 toolchain go1.24.1
 
 require (
-	fyne.io/fyne/v2 v2.6.0
+	fyne.io/fyne/v2 v2.6.1
 	github.com/go-playground/validator/v10 v10.26.0
 	github.com/google/uuid v1.6.0
 	github.com/google/wire v0.6.0

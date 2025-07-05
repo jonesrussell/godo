@@ -12,20 +12,18 @@
         "ui.diagnostic.analyses": {
             "unusedparams": true,
             "shadow": true
-        },
-        "ui.inlayHints": {
-            "parameterNames": true,
-            "compositeLiteralFields": true,
-            "compositeLiteralTypes": true,
-            "functionTypeParameters": true,
-            "rangeVariableTypes": true,
-            "constantValues": true
         }
     },
     "go.diagnostic.vulncheck": "Imports",
     "go.enableCodeLens": {
         "runtest": true
     },
+    "go.inlayHints.parameterNames": true,
+    "go.inlayHints.compositeLiteralFields": true,
+    "go.inlayHints.compositeLiteralTypes": true,
+    "go.inlayHints.functionTypeParameters": true,
+    "go.inlayHints.rangeVariableTypes": true,
+    "go.inlayHints.constantValues": true,
     "[go]": {
         "editor.formatOnSave": true,
         "editor.defaultFormatter": "golang.go",

@@ -204,6 +204,8 @@ tasks:
     deps: [ wire ]
     env:
       CGO_ENABLED: 1
+      LANG: en_US.UTF-8
+      LC_ALL: en_US.UTF-8
     cmds:
     - go run -ldflags "-X main.version={{.VERSION}} -X main.commit={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}}" cmd/godo/main.go
 
@@ -213,6 +215,8 @@ tasks:
     env:
       CGO_ENABLED: 1
       LOG_LEVEL: debug
+      LANG: en_US.UTF-8
+      LC_ALL: en_US.UTF-8
     cmds:
     - go run -ldflags "-X main.version={{.VERSION}} -X main.commit={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}}" cmd/godo/main.go
 

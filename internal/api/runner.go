@@ -34,18 +34,18 @@ func NewRunner(store storage.TaskStore, l logger.Logger, config *common.HTTPConf
 func (r *Runner) Start(port int) {
 	go func() {
 		defer close(r.shutdown)
-		
+
 		// Signal that we're attempting to start
 		r.logger.Info("Starting HTTP server", "port", port)
-		
-		if err := r.server.Start(port); err != nil && err != http.ErrServerClosed {
+
+		if err := r.server.Start(port); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			r.logger.Error("HTTP server error", "error", err)
 			return
 		}
-		
+
 		r.logger.Info("HTTP server stopped")
 	}()
-	
+
 	// Wait a brief moment for server to initialize
 	go func() {
 		time.Sleep(100 * time.Millisecond)
@@ -66,7 +66,7 @@ func (r *Runner) WaitForReady(timeout time.Duration) bool {
 // Shutdown gracefully shuts down the HTTP server
 func (r *Runner) Shutdown(ctx context.Context) error {
 	err := r.server.Shutdown(ctx)
-	
+
 	// Wait for server goroutine to complete
 	select {
 	case <-r.shutdown:
@@ -74,6 +74,6 @@ func (r *Runner) Shutdown(ctx context.Context) error {
 	case <-ctx.Done():
 		r.logger.Warn("Server shutdown timeout")
 	}
-	
+
 	return err
 }

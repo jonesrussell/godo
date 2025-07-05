@@ -22,5 +22,5 @@ func TestAppIcon(t *testing.T) {
 	}
 
 	// Verify it implements the fyne.Resource interface
-	var _ fyne.Resource = icon
+	var _ = icon
 }

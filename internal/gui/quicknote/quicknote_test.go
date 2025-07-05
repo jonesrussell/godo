@@ -43,7 +43,7 @@ func TestWindow(t *testing.T) {
 		window, _ := setupTestWindow(t)
 		require.NotNil(t, window)
 		assert.NotNil(t, window.input, "Input field should be initialized")
-		assert.Equal(t, "", window.input.Text, "Input field should be empty")
+		assert.Empty(t, window.input.Text, "Input field should be empty")
 		assert.NotNil(t, window.window, "Window should be initialized")
 		assert.NotNil(t, window.saveBtn, "Save button should be initialized")
 	})
@@ -60,7 +60,7 @@ func TestWindow(t *testing.T) {
 		// Verify state
 		canvas := window.window.Canvas()
 		assert.Equal(t, window.input, canvas.Focused(), "Input field should have focus")
-		assert.Equal(t, "", window.input.Text, "Input field should be cleared")
+		assert.Empty(t, window.input.Text, "Input field should be cleared")
 	})
 
 	t.Run("Hide", func(t *testing.T) {

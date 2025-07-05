@@ -36,10 +36,10 @@ func TestNewPlatformManager(t *testing.T) {
 	manager := newPlatformManager(mockService, binding)
 	assert.NotNil(t, manager)
 
-	platformMgr, ok := manager.(*platformManager)
+	linuxMgr, ok := manager.(*linuxManager)
 	assert.True(t, ok)
-	assert.Equal(t, mockService, platformMgr.quickNote)
-	assert.Equal(t, binding, platformMgr.binding)
+	assert.Equal(t, mockService, linuxMgr.quickNote)
+	assert.Equal(t, binding, linuxMgr.binding)
 }
 
 func TestRegisterWithValidBinding(t *testing.T) {

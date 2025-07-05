@@ -48,7 +48,7 @@ tasks:
     - choco install mingw
     - choco install make
 
-  download:
+  deps:
     desc: Download and tidy dependencies
     cmds:
     - go mod download
@@ -69,7 +69,7 @@ tasks:
     - golangci-lint run ./...
 
   lint:fix:
-    desc: Run golangci-lint
+    desc: Run golangci-lint with auto-fix
     deps: [ fmt ]
     sources: [ internal/**/*.go, cmd/**/*.go ]
     cmds:
@@ -143,6 +143,7 @@ tasks:
 
   docker:build-all:
     desc: Build both Windows and Linux binaries using Docker
+    parallel: true
     cmds:
     - task: docker:build-linux
     - task: docker:build-windows
@@ -223,10 +224,15 @@ tasks:
   # CI/CD tasks
   ci:
     desc: Run CI checks
+    parallel: true
     cmds:
-    - task: fmt
     - task: lint
     - task: test
+
+  ci:full:
+    desc: Run full CI pipeline including builds
+    deps: [ ci ]
+    cmds:
     - task: docker:build-all
 
   # New tasks for release management
@@ -260,9 +266,22 @@ tasks:
   all:
     desc: Run all main tasks
     cmds:
-    - task: download
+    - task: deps
     - task: fmt
     - task: wire
     - task: lint
     - task: test
     - task: docker:build-all
+
+  dev:
+    desc: Development workflow - format, lint, test
+    parallel: true
+    cmds:
+    - task: lint
+    - task: test
+
+  check:
+    desc: Quick check - format and lint only
+    deps: [ fmt ]
+    cmds:
+    - golangci-lint run ./... --fast

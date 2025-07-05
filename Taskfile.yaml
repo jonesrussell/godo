@@ -48,7 +48,7 @@ tasks:
     - choco install mingw
     - choco install make
 
-  deps:
+  download:
     desc: Download and tidy dependencies
     cmds:
     - go mod download
@@ -57,24 +57,23 @@ tasks:
   fmt:
     desc: Format code
     cmds:
+    - go vet ./...
     - gofmt -s -w .
     - goimports -w .
 
   lint:
     desc: Run all linters
+    deps: [ fmt ]
+    sources: [ internal/**/*.go, cmd/**/*.go ]
     cmds:
-    - golangci-lint run
-    - go run ./cmd/godo-linter ./...
+    - golangci-lint run ./...
 
-  lint:golangci:
+  lint:fix:
     desc: Run golangci-lint
+    deps: [ fmt ]
+    sources: [ internal/**/*.go, cmd/**/*.go ]
     cmds:
-    - golangci-lint run
-
-  lint:custom:
-    desc: Run custom linter
-    cmds:
-    - go run ./cmd/godo-linter ./...
+    - golangci-lint run ./... --fix
 
   test:
     desc: Run basic tests
@@ -261,7 +260,7 @@ tasks:
   all:
     desc: Run all main tasks
     cmds:
-    - task: deps
+    - task: download
     - task: fmt
     - task: wire
     - task: lint

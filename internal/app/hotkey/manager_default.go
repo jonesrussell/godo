@@ -5,7 +5,7 @@ package hotkey
 
 import (
 	"errors"
-	
+
 	"github.com/jonesrussell/godo/internal/common"
 )
 

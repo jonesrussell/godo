@@ -9,6 +9,7 @@ import (
 	fyneapp "fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/theme"
 	"github.com/google/wire"
+
 	"github.com/jonesrussell/godo/internal/api"
 	"github.com/jonesrussell/godo/internal/app"
 	apphotkey "github.com/jonesrussell/godo/internal/app/hotkey"
@@ -378,18 +379,45 @@ func ProvideKeyCode(cfg *config.Config) common.KeyCode {
 
 // ProvideConfig provides the application configuration
 func ProvideConfig() (*config.Config, error) {
-	provider := config.NewProvider(
-		[]string{".", "./configs"},
-		"default",
-		"yaml",
-	)
-
-	cfg, err := provider.Load()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load config: %w", err)
+	// Create a default configuration
+	cfg := &config.Config{
+		App: config.AppConfig{
+			Name:    "Godo",
+			Version: "0.1.0",
+			ID:      "io.github.jonesrussell.godo",
+		},
+		Logger: common.LogConfig{
+			Level:       "info",
+			Console:     true,
+			File:        false,
+			FilePath:    "",
+			Output:      []string{"stdout"},
+			ErrorOutput: []string{"stderr"},
+		},
+		Hotkeys: config.HotkeyConfig{
+			QuickNote: common.HotkeyBinding{
+				Modifiers: []string{"Ctrl", "Shift"},
+				Key:       "N",
+			},
+		},
+		Database: config.DatabaseConfig{
+			Path: "godo.db",
+		},
+		UI: config.UIConfig{
+			MainWindow: config.WindowConfig{
+				Width:       800,
+				Height:      600,
+				StartHidden: false,
+			},
+			QuickNote: config.WindowConfig{
+				Width:       400,
+				Height:      300,
+				StartHidden: true,
+			},
+		},
 	}
 
-	// Validate the loaded configuration
+	// Validate the configuration
 	if err := validateConfig(cfg); err != nil {
 		return nil, fmt.Errorf("invalid configuration: %w", err)
 	}

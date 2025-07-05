@@ -241,7 +241,7 @@ func (s *Server) handleDeleteTask(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	health := map[string]interface{}{
-		"status": "healthy",
+		"status":    "healthy",
 		"timestamp": time.Now().UTC().Format(time.RFC3339),
 	}
 	writeJSON(w, http.StatusOK, health)

@@ -11,6 +11,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/google/uuid"
+
 	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
@@ -45,14 +46,16 @@ func New(app fyne.App, store storage.TaskStore, logger logger.Logger, config con
 		window: app.NewWindow("Godo"),
 	}
 
-	w.loadTasks()
+	if err := w.loadTasks(context.Background()); err != nil {
+		w.logger.Error("Failed to load tasks during initialization", "error", err)
+	}
 	w.setupUI()
 	return w
 }
 
 // loadTasks loads tasks from storage
-func (tm *TaskManager) loadTasks() error {
-	tasks, err := tm.store.List(context.Background())
+func (tm *TaskManager) loadTasks(ctx context.Context) error {
+	tasks, err := tm.store.List(ctx)
 	if err != nil {
 		tm.logger.Error("Failed to load tasks", "error", err)
 		return err
@@ -62,7 +65,7 @@ func (tm *TaskManager) loadTasks() error {
 }
 
 // addTask adds a new task
-func (tm *TaskManager) addTask(content string) error {
+func (tm *TaskManager) addTask(ctx context.Context, content string) error {
 	if content == "" {
 		return nil
 	}
@@ -75,7 +78,7 @@ func (tm *TaskManager) addTask(content string) error {
 		UpdatedAt: time.Now(),
 	}
 
-	if err := tm.store.Add(context.Background(), task); err != nil {
+	if err := tm.store.Add(ctx, task); err != nil {
 		tm.logger.Error("Failed to add task", "error", err)
 		return err
 	}
@@ -85,7 +88,7 @@ func (tm *TaskManager) addTask(content string) error {
 }
 
 // updateTask updates a task's status
-func (tm *TaskManager) updateTask(id int, done bool) error {
+func (tm *TaskManager) updateTask(ctx context.Context, id int, done bool) error {
 	if id < 0 || id >= len(tm.tasks) {
 		return nil
 	}
@@ -93,7 +96,7 @@ func (tm *TaskManager) updateTask(id int, done bool) error {
 	tm.tasks[id].Done = done
 	tm.tasks[id].UpdatedAt = time.Now()
 
-	if err := tm.store.Update(context.Background(), tm.tasks[id]); err != nil {
+	if err := tm.store.Update(ctx, tm.tasks[id]); err != nil {
 		tm.logger.Error("Failed to update task", "error", err)
 		return err
 	}
@@ -131,13 +134,27 @@ func (w *Window) createTaskList() *widget.List {
 			)
 		},
 		func(id widget.ListItemID, item fyne.CanvasObject) {
-			box := item.(*fyne.Container)
-			check := box.Objects[0].(*widget.Check)
-			label := box.Objects[1].(*widget.Label)
+			box, ok := item.(*fyne.Container)
+			if !ok {
+				w.logger.Error("Failed to cast item to container")
+				return
+			}
+			check, ok := box.Objects[0].(*widget.Check)
+			if !ok {
+				w.logger.Error("Failed to cast object to check")
+				return
+			}
+			label, ok := box.Objects[1].(*widget.Label)
+			if !ok {
+				w.logger.Error("Failed to cast object to label")
+				return
+			}
 
 			check.Checked = w.tasks[id].Done
 			check.OnChanged = func(done bool) {
-				w.updateTask(id, done)
+				if err := w.updateTask(context.Background(), id, done); err != nil {
+					w.logger.Error("Failed to update task", "error", err)
+				}
 			}
 			label.SetText(w.tasks[id].Content)
 			// Add visual feedback for completed tasks
@@ -155,7 +172,9 @@ func (w *Window) createInput() *widget.Entry {
 	input.SetPlaceHolder("Enter a new task...")
 	// Add keyboard shortcut for quick task entry
 	input.OnSubmitted = func(text string) {
-		if err := w.addTask(text); err == nil {
+		if err := w.addTask(context.Background(), text); err != nil {
+			w.logger.Error("Failed to add task", "error", err)
+		} else {
 			input.SetText("")
 			w.list.Refresh()
 		}
@@ -165,7 +184,9 @@ func (w *Window) createInput() *widget.Entry {
 
 func (w *Window) createAddButton(input *widget.Entry) *widget.Button {
 	return widget.NewButton("Add", func() {
-		if err := w.addTask(input.Text); err == nil {
+		if err := w.addTask(context.Background(), input.Text); err != nil {
+			w.logger.Error("Failed to add task", "error", err)
+		} else {
 			input.SetText("")
 			w.list.Refresh()
 		}
@@ -195,7 +216,11 @@ func (w *Window) GetWindow() fyne.Window               { return w.window }
 
 // Refresh reloads and updates the task list
 func (w *Window) Refresh() {
-	if err := w.loadTasks(); err == nil && w.list != nil {
+	if err := w.loadTasks(context.Background()); err != nil {
+		w.logger.Error("Failed to load tasks during refresh", "error", err)
+		return
+	}
+	if w.list != nil {
 		w.list.Refresh()
 	}
 }

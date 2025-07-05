@@ -8,11 +8,12 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/jonesrussell/godo/internal/common"
 	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/logger"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestMain(m *testing.M) {
@@ -48,8 +49,8 @@ func TestConfig(t *testing.T) {
 	defer os.Unsetenv(config.EnvTestMode)
 
 	t.Run("Load default config", func(t *testing.T) {
-		cfg, err := provider.Load()
-		require.NoError(t, err)
+		cfg, loadErr := provider.Load()
+		require.NoError(t, loadErr)
 		assert.Equal(t, config.DefaultAppName, cfg.App.Name)
 		assert.Equal(t, config.DefaultAppVersion, cfg.App.Version)
 	})
@@ -62,8 +63,8 @@ func TestConfig(t *testing.T) {
 			os.Unsetenv(config.EnvPrefix + "_DATABASE_PATH")
 		}()
 
-		cfg, err := provider.Load()
-		require.NoError(t, err)
+		cfg, loadErr := provider.Load()
+		require.NoError(t, loadErr)
 		assert.Equal(t, "TestApp", cfg.App.Name)
 		assert.Equal(t, "test.db", cfg.Database.Path)
 	})
@@ -80,11 +81,11 @@ func TestConfig(t *testing.T) {
 		}
 
 		// Test validation
-		err := config.ValidateConfig(cfg)
-		assert.Error(t, err, "should fail validation with empty app name and invalid log level")
+		validationErr := config.ValidateConfig(cfg)
+		assert.Error(t, validationErr, "should fail validation with empty app name and invalid log level")
 
 		// Optional: Check specific validation errors
-		if configErr, ok := err.(*config.Error); ok {
+		if configErr, ok := validationErr.(*config.Error); ok {
 			assert.Contains(t, configErr.Error(), "app name is required")
 			assert.Contains(t, configErr.Error(), "invalid log level")
 		}
@@ -94,17 +95,17 @@ func TestConfig(t *testing.T) {
 		os.Setenv(config.EnvPrefix+"_LOGGER_LEVEL", "invalid")
 		defer os.Unsetenv(config.EnvPrefix + "_LOGGER_LEVEL")
 
-		_, err := provider.Load()
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "invalid log level")
+		_, loadErr := provider.Load()
+		assert.Error(t, loadErr)
+		assert.Contains(t, loadErr.Error(), "invalid log level")
 	})
 
 	t.Run("Path resolution in production mode", func(t *testing.T) {
 		os.Unsetenv(config.EnvTestMode)
 		defer os.Setenv(config.EnvTestMode, "true")
 
-		cfg, err := provider.Load()
-		require.NoError(t, err)
+		cfg, loadErr := provider.Load()
+		require.NoError(t, loadErr)
 		assert.True(t, filepath.IsAbs(cfg.Database.Path))
 		assert.Contains(t, cfg.Database.Path, config.DefaultDBPath)
 	})
@@ -131,8 +132,8 @@ app:
 			config.WithLogger(logger.NewTestLogger(t)),
 		)
 
-		cfg, err := provider.Load()
-		require.NoError(t, err) // Should not error as it falls back to defaults
+		cfg, loadErr := provider.Load()
+		require.NoError(t, loadErr) // Should not error as it falls back to defaults
 		assert.Equal(t, config.DefaultAppName, cfg.App.Name)
 		assert.Equal(t, config.DefaultAppVersion, cfg.App.Version)
 	})
@@ -203,8 +204,8 @@ func TestPathResolution(t *testing.T) {
 			config.WithLogger(log),
 		)
 
-		cfg, err := provider.Load()
-		require.NoError(t, err)
+		cfg, loadErr := provider.Load()
+		require.NoError(t, loadErr)
 
 		// Check if the database path was made absolute
 		assert.True(t, filepath.IsAbs(cfg.Database.Path))
@@ -226,8 +227,8 @@ func TestPathResolution(t *testing.T) {
 			config.WithLogger(log),
 		)
 
-		cfg, err := provider.Load()
-		require.NoError(t, err)
+		cfg, loadErr := provider.Load()
+		require.NoError(t, loadErr)
 		assert.Equal(t, absPath, cfg.Database.Path)
 	})
 }
@@ -270,8 +271,8 @@ func TestEnvironmentVariables(t *testing.T) {
 			config.WithLogger(log),
 		)
 
-		cfg, err := provider.Load()
-		require.NoError(t, err)
+		cfg, loadErr := provider.Load()
+		require.NoError(t, loadErr)
 
 		// Verify all environment variables were properly applied
 		assert.Equal(t, "EnvApp", cfg.App.Name)
@@ -294,9 +295,9 @@ func TestEnvironmentVariables(t *testing.T) {
 			config.WithLogger(log),
 		)
 
-		_, err := provider.Load()
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "invalid log level")
+		_, loadErr := provider.Load()
+		assert.Error(t, loadErr)
+		assert.Contains(t, loadErr.Error(), "invalid log level")
 	})
 }
 
@@ -339,8 +340,8 @@ app:
 			config.WithLogger(log),
 		)
 
-		cfg, err := provider.Load()
-		require.NoError(t, err)
+		cfg, loadErr := provider.Load()
+		require.NoError(t, loadErr)
 		assert.Equal(t, "Primary App", cfg.App.Name)
 		assert.Equal(t, "1.0.0", cfg.App.Version)
 	})
@@ -356,8 +357,8 @@ app:
 			config.WithLogger(log),
 		)
 
-		cfg, err := provider.Load()
-		require.NoError(t, err)
+		cfg, loadErr := provider.Load()
+		require.NoError(t, loadErr)
 		assert.Equal(t, "Fallback App", cfg.App.Name)
 		assert.Equal(t, "0.5.0", cfg.App.Version)
 	})

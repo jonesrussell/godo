@@ -2,8 +2,6 @@ package theme
 
 import (
 	"testing"
-
-	"fyne.io/fyne/v2"
 )
 
 func TestAppIcon(t *testing.T) {
@@ -22,5 +20,5 @@ func TestAppIcon(t *testing.T) {
 	}
 
 	// Verify it implements the fyne.Resource interface
-	var _ = icon
+	_ = icon
 }

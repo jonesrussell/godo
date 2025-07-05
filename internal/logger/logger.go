@@ -55,7 +55,10 @@ func NewLogger(cfg *Config) (*ZapLogger, func(), error) {
 	}
 
 	return &ZapLogger{logger.Sugar()}, func() {
-		_ = logger.Sync()
+		if err := logger.Sync(); err != nil {
+			// Log sync errors but don't fail the application
+			fmt.Printf("Failed to sync logger: %v\n", err)
+		}
 	}, nil
 }
 

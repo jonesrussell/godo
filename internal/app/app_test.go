@@ -7,13 +7,15 @@ import (
 	"testing"
 
 	"fyne.io/fyne/v2/test"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/jonesrussell/godo/internal/app/hotkey"
 	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/gui/mainwindow"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/options"
 	"github.com/jonesrussell/godo/internal/storage"
-	"github.com/stretchr/testify/assert"
 )
 
 type mockStore struct {
@@ -76,7 +78,8 @@ func TestApp_SetupUI(t *testing.T) {
 	}
 
 	// Test SetupUI
-	app.SetupUI()
+	err := app.SetupUI()
+	require.NoError(t, err)
 
 	// Verify expectations
 	assert.True(t, cfg.UI.MainWindow.StartHidden, "Main window should be configured to start hidden")

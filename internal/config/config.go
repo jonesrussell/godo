@@ -7,9 +7,10 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/spf13/viper"
+
 	"github.com/jonesrussell/godo/internal/common"
 	"github.com/jonesrussell/godo/internal/logger"
-	"github.com/spf13/viper"
 )
 
 // Configuration keys and defaults
@@ -124,22 +125,10 @@ func (p *Provider) Load() (*Config, error) {
 
 	// Set defaults
 	cfg := NewDefaultConfig()
-	v.SetDefault(KeyAppName, cfg.App.Name)
-	v.SetDefault(KeyAppVersion, cfg.App.Version)
-	v.SetDefault(KeyAppID, cfg.App.ID)
-	v.SetDefault(KeyDBPath, cfg.Database.Path)
-	v.SetDefault(KeyLogLevel, cfg.Logger.Level)
-	v.SetDefault(KeyLogConsole, cfg.Logger.Console)
-	v.SetDefault("hotkeys.quick_note.modifiers", cfg.Hotkeys.QuickNote.Modifiers)
-	v.SetDefault("hotkeys.quick_note.key", cfg.Hotkeys.QuickNote.Key)
+	p.setDefaults(v, cfg)
 
 	// Configure and read config file
-	v.SetConfigType(p.configType)
-	v.SetConfigName(p.configName)
-	for _, path := range p.paths {
-		v.AddConfigPath(path)
-		p.log.Debug("added config path", "path", path)
-	}
+	p.configureConfigFile(v)
 
 	if err := v.ReadInConfig(); err != nil {
 		p.log.Warn("config file read error", "error", err)
@@ -148,40 +137,8 @@ func (p *Provider) Load() (*Config, error) {
 	}
 
 	// Bind environment variables explicitly
-	envBindings := map[string]string{
-		KeyAppName:                     EnvPrefix + "_APP_NAME",
-		KeyAppVersion:                  EnvPrefix + "_APP_VERSION",
-		KeyAppID:                       EnvPrefix + "_APP_ID",
-		KeyDBPath:                      EnvPrefix + "_DATABASE_PATH",
-		KeyLogLevel:                    EnvPrefix + "_LOGGER_LEVEL",
-		KeyLogConsole:                  EnvPrefix + "_LOGGER_CONSOLE",
-		"hotkeys.quick_note.modifiers": EnvPrefix + "_HOTKEYS_QUICK_NOTE_MODIFIERS",
-		"hotkeys.quick_note.key":       EnvPrefix + "_HOTKEYS_QUICK_NOTE_KEY",
-	}
-
-	for k, env := range envBindings {
-		if err := v.BindEnv(k, env); err != nil {
-			return nil, err
-		}
-		if envVal := os.Getenv(env); envVal != "" {
-			p.log.Debug("environment variable found", "key", env, "value", envVal)
-			// Special handling for modifiers array
-			if k == "hotkeys.quick_note.modifiers" {
-				p.log.Debug("processing modifiers array", "raw_value", envVal)
-				// Remove brackets and quotes, then split by comma
-				trimmed := strings.Trim(envVal, "[]")
-				p.log.Debug("after trim brackets", "value", trimmed)
-				parts := strings.Split(trimmed, ",")
-				p.log.Debug("after split", "parts", parts)
-				modifiers := make([]string, len(parts))
-				for i, part := range parts {
-					modifiers[i] = strings.Trim(part, "\" ")
-					p.log.Debug("processed modifier", "index", i, "raw", part, "cleaned", modifiers[i])
-				}
-				p.log.Debug("setting modifiers", "final_value", modifiers)
-				v.Set(k, modifiers)
-			}
-		}
+	if err := p.bindEnvironmentVariables(v); err != nil {
+		return nil, err
 	}
 
 	p.log.Debug("after env binding",
@@ -217,6 +174,68 @@ func (p *Provider) Load() (*Config, error) {
 		"database.path", cfg.Database.Path)
 
 	return cfg, nil
+}
+
+// setDefaults sets default values for configuration
+func (p *Provider) setDefaults(v *viper.Viper, cfg *Config) {
+	v.SetDefault(KeyAppName, cfg.App.Name)
+	v.SetDefault(KeyAppVersion, cfg.App.Version)
+	v.SetDefault(KeyAppID, cfg.App.ID)
+	v.SetDefault(KeyDBPath, cfg.Database.Path)
+	v.SetDefault(KeyLogLevel, cfg.Logger.Level)
+	v.SetDefault(KeyLogConsole, cfg.Logger.Console)
+	v.SetDefault("hotkeys.quick_note.modifiers", cfg.Hotkeys.QuickNote.Modifiers)
+	v.SetDefault("hotkeys.quick_note.key", cfg.Hotkeys.QuickNote.Key)
+}
+
+// configureConfigFile sets up the config file configuration
+func (p *Provider) configureConfigFile(v *viper.Viper) {
+	v.SetConfigType(p.configType)
+	v.SetConfigName(p.configName)
+	for _, path := range p.paths {
+		v.AddConfigPath(path)
+		p.log.Debug("added config path", "path", path)
+	}
+}
+
+// bindEnvironmentVariables binds environment variables to configuration keys
+func (p *Provider) bindEnvironmentVariables(v *viper.Viper) error {
+	envBindings := map[string]string{
+		KeyAppName:                     EnvPrefix + "_APP_NAME",
+		KeyAppVersion:                  EnvPrefix + "_APP_VERSION",
+		KeyAppID:                       EnvPrefix + "_APP_ID",
+		KeyDBPath:                      EnvPrefix + "_DATABASE_PATH",
+		KeyLogLevel:                    EnvPrefix + "_LOGGER_LEVEL",
+		KeyLogConsole:                  EnvPrefix + "_LOGGER_CONSOLE",
+		"hotkeys.quick_note.modifiers": EnvPrefix + "_HOTKEYS_QUICK_NOTE_MODIFIERS",
+		"hotkeys.quick_note.key":       EnvPrefix + "_HOTKEYS_QUICK_NOTE_KEY",
+	}
+
+	for k, env := range envBindings {
+		if err := v.BindEnv(k, env); err != nil {
+			return err
+		}
+		if envVal := os.Getenv(env); envVal != "" {
+			p.log.Debug("environment variable found", "key", env, "value", envVal)
+			// Special handling for modifiers array
+			if k == "hotkeys.quick_note.modifiers" {
+				p.log.Debug("processing modifiers array", "raw_value", envVal)
+				// Remove brackets and quotes, then split by comma
+				trimmed := strings.Trim(envVal, "[]")
+				p.log.Debug("after trim brackets", "value", trimmed)
+				parts := strings.Split(trimmed, ",")
+				p.log.Debug("after split", "parts", parts)
+				modifiers := make([]string, len(parts))
+				for i, part := range parts {
+					modifiers[i] = strings.Trim(part, "\" ")
+					p.log.Debug("processed modifier", "index", i, "raw", part, "cleaned", modifiers[i])
+				}
+				p.log.Debug("setting modifiers", "final_value", modifiers)
+				v.Set(k, modifiers)
+			}
+		}
+	}
+	return nil
 }
 
 // ResolvePaths resolves relative paths in the config to absolute paths

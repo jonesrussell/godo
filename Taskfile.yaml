@@ -11,8 +11,15 @@ vars:
     sh: git describe --tags --always 2>/dev/null || echo dev
   COMMIT:
     sh: git rev-parse --short HEAD 2>/dev/null || echo unknown
+  # Cross-platform build time
   BUILD_TIME:
-    sh: powershell -Command "(Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')"
+    # Use PowerShell on Windows, date on Linux/macOS
+    sh: |
+      if [ "$(go env GOOS)" = "windows" ]; then
+        powershell -Command "(Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')"
+      else
+        date -u +"%Y-%m-%dT%H:%M:%SZ"
+      fi
 
 tasks:
   default:
@@ -29,9 +36,17 @@ tasks:
 
   setup:linux:
     desc: Install Linux dependencies
+    platforms: [ linux ]
     cmds:
     - sudo apt-get update
     - sudo apt-get install -y xvfb libx11-dev
+
+  setup:windows:
+    desc: Install Windows dependencies
+    platforms: [ windows ]
+    cmds:
+    - choco install mingw
+    - choco install make
 
   deps:
     desc: Download and tidy dependencies
@@ -63,9 +78,9 @@ tasks:
 
   test:
     desc: Run basic tests
-    deps: [ wire:windows ]
+    deps: [ wire ]
     cmds:
-    - go test ./... -tags=wireinject,windows
+    - go test ./... -tags=wireinject
 
   test:race:
     desc: Run tests with race detection
@@ -76,9 +91,8 @@ tasks:
   test:cover:
     desc: Run tests with coverage
     deps: [ wire ]
-    platforms: [ windows ]
     cmds:
-    - powershell New-Item -ItemType Directory -Force -Path {{.COVERAGE_DIR}}
+    - mkdir -p {{.COVERAGE_DIR}}
     - go test -coverprofile={{.COVERAGE_DIR}}/coverage.out -covermode=atomic ./...
     - go tool cover -html={{.COVERAGE_DIR}}/coverage.out -o {{.COVERAGE_DIR}}/coverage.html
 
@@ -131,11 +145,13 @@ tasks:
   docker:build-all:
     desc: Build both Windows and Linux binaries using Docker
     cmds:
-    - powershell -ExecutionPolicy Bypass -File ./build/build.ps1
+    - task: docker:build-linux
+    - task: docker:build-windows
 
   docker:build-linux:
     desc: Build Linux binary using Docker
     deps: [ wire ]
+    platforms: [ linux ]
     cmds:
     - mkdir -p {{.BUILD_DIR}}
     - docker build --target linux-runtime --build-arg VERSION={{.VERSION}} --build-arg COMMIT={{.COMMIT}} --build-arg BUILD_TIME={{.BUILD_TIME}} -t godo-linux -f build/docker/Dockerfile .
@@ -146,6 +162,7 @@ tasks:
   docker:build-windows:
     desc: Build Windows binary using Docker
     deps: [ wire ]
+    platforms: [ windows ]
     cmds:
     - mkdir -p {{.BUILD_DIR}}
     - docker build --target windows-runtime --build-arg VERSION={{.VERSION}} --build-arg COMMIT={{.COMMIT}} --build-arg BUILD_TIME={{.BUILD_TIME}} -t godo-windows -f build/docker/Dockerfile .
@@ -202,7 +219,7 @@ tasks:
   watch:
     desc: Watch for changes and rebuild
     cmds:
-    - watchexec -r -e go "task build && {{if eq OS "windows"}}{{.BUILD_DIR}}/{{.BINARY_NAME}}.exe{{else}}{{.BUILD_DIR}}/{{.BINARY_NAME}}{{end}}"
+    - watchexec -r -e go "task build && {{if eq OS \"windows\"}}{{.BUILD_DIR}}/{{.BINARY_NAME}}.exe{{else}}{{.BUILD_DIR}}/{{.BINARY_NAME}}{{end}}"
 
   # CI/CD tasks
   ci:

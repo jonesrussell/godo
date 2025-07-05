@@ -1,7 +1,5 @@
 # Development environments and editors
-.vscode/
 .idea/
-.devcontainer/
 *.swp
 *.swo
 *~
@@ -31,7 +29,6 @@ coverage/
 .gitlab/
 .circleci/
 qodana.*
-# .golangci.yml
 .codecov.yml
 coverage.txt
 coverage.html

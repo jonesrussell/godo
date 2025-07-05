@@ -1,4 +1,4 @@
-//go:build wireinject && windows
+//go:build wireinject && (windows || linux)
 
 package container
 
@@ -87,7 +87,6 @@ var (
 		ProvideKeyCode,
 		ProvideHotkeyOptions,
 		ProvideHotkeyManager,
-		wire.Bind(new(apphotkey.Manager), new(*apphotkey.WindowsManager)),
 	)
 
 	// AppSet provides application dependencies
@@ -311,7 +310,7 @@ func ProvideSQLiteStore(log logger.Logger, dbPath common.DatabasePath) (*sqlite.
 }
 
 // ProvideHotkeyManager provides a hotkey manager instance
-func ProvideHotkeyManager(log logger.Logger, cfg *config.Config, quickNote *quicknote.Window) (*apphotkey.WindowsManager, error) {
+func ProvideHotkeyManager(log logger.Logger, cfg *config.Config, quickNote *quicknote.Window) (apphotkey.Manager, error) {
 	if log == nil {
 		return nil, fmt.Errorf("logger is required")
 	}
@@ -322,17 +321,16 @@ func ProvideHotkeyManager(log logger.Logger, cfg *config.Config, quickNote *quic
 		return nil, fmt.Errorf("quick note window is required")
 	}
 
-	manager, err := apphotkey.NewWindowsManager(log)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create hotkey manager: %w", err)
-	}
-
 	// Validate hotkey config
 	if err := validateHotkeyConfig(&cfg.Hotkeys.QuickNote); err != nil {
 		return nil, fmt.Errorf("invalid hotkey configuration: %w", err)
 	}
 
-	manager.SetQuickNote(quickNote, &cfg.Hotkeys.QuickNote)
+	manager, err := apphotkey.New(quickNote, &cfg.Hotkeys.QuickNote, log)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create hotkey manager: %w", err)
+	}
+
 	return manager, nil
 }
 

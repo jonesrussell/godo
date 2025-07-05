@@ -70,36 +70,48 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (s *Server) routes() {
 	api := s.router.PathPrefix("/api/v1").Subrouter()
 
-	// Tasks
+	// Health check endpoint (no auth required)
+	api.HandleFunc("/health", Chain(s.handleHealth,
+		WithLogging(s.log),
+		WithErrorHandling(s.log),
+	)).Methods(http.MethodGet)
+
+	// Protected Task endpoints (JWT auth required)
 	api.HandleFunc("/tasks", Chain(s.handleListTasks,
+		WithJWTAuth(s.log),
 		WithLogging(s.log),
 		WithErrorHandling(s.log),
 	)).Methods(http.MethodGet)
 
 	api.HandleFunc("/tasks", Chain(s.handleCreateTask,
+		WithJWTAuth(s.log),
 		WithLogging(s.log),
 		WithErrorHandling(s.log),
 		WithValidation[CreateTaskRequest](s.log),
 	)).Methods(http.MethodPost)
 
 	api.HandleFunc("/tasks/{id}", Chain(s.handleGetTask,
+		WithJWTAuth(s.log),
 		WithLogging(s.log),
 		WithErrorHandling(s.log),
 	)).Methods(http.MethodGet)
 
 	api.HandleFunc("/tasks/{id}", Chain(s.handleUpdateTask,
+		WithJWTAuth(s.log),
 		WithLogging(s.log),
 		WithErrorHandling(s.log),
 		WithValidation[UpdateTaskRequest](s.log),
 	)).Methods(http.MethodPut)
 
 	api.HandleFunc("/tasks/{id}", Chain(s.handlePatchTask,
+		WithJWTAuth(s.log),
 		WithLogging(s.log),
 		WithErrorHandling(s.log),
 		WithValidation[PatchTaskRequest](s.log),
 	)).Methods(http.MethodPatch)
 
 	api.HandleFunc("/tasks/{id}", Chain(s.handleDeleteTask,
+		WithJWTAuth(s.log),
 		WithLogging(s.log),
 		WithErrorHandling(s.log),
 	)).Methods(http.MethodDelete)
@@ -225,6 +237,14 @@ func (s *Server) handleDeleteTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
+	health := map[string]interface{}{
+		"status": "healthy",
+		"timestamp": time.Now().UTC().Format(time.RFC3339),
+	}
+	writeJSON(w, http.StatusOK, health)
 }
 
 // Start starts the server

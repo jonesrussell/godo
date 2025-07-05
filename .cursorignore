@@ -25,7 +25,6 @@ coverage/
 *.cov
 
 # CI/CD and quality tools
-.github/
 .gitlab/
 .circleci/
 qodana.*
@@ -64,4 +63,4 @@ godo.db*
 .env.*
 config.local.yaml
 debug/
-tmp/ 
+tmp/

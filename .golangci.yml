@@ -39,16 +39,6 @@ linters:
   - unparam
   - whitespace
   - wrapcheck
-  # Fx/DI-centric linters are commented out for desktop app simplicity
-  # - cyclop          # Enforces cyclomatic complexity (Fx-centric)
-  # - decorder        # Enforces declaration order (Fx-centric)
-  # - dupl            # Detects code duplication (Fx-centric)
-  # - exhaustive      # Ensures exhaustive type switches (Fx-centric)
-  # - exhaustruct     # Ensures struct initialization (Fx-centric)
-  # - gomodguard      # Controls allowed modules (Fx-centric)
-  # - ireturn         # Ensures concrete types in returns (Fx-centric)
-  # - maintidx        # Maintainability index (Fx-centric)
-  # - wsl_v5          # Strict whitespace rules are optional
 
   settings:
     errcheck:

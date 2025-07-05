@@ -36,12 +36,6 @@ qodana.*
 coverage.txt
 coverage.html
 
-# Task runners and build tools
-Taskfile.yaml
-taskfile.yml
-.task/
-.air.toml
-
 # Docker
 build/docker/
 .docker/

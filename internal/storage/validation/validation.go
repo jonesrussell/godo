@@ -123,19 +123,3 @@ const (
 	// MaxContentLength is the maximum allowed length for task content
 	MaxContentLength = 1000
 )
-
-// ValidateID checks if a task ID is valid
-func ValidateID(id string) error {
-	if len(id) > MaxIDLength {
-		return ErrInvalidID
-	}
-	return nil
-}
-
-// ValidateContent checks if task content is valid
-func ValidateContent(content string) error {
-	if len(content) > MaxContentLength {
-		return ErrInvalidContent
-	}
-	return nil
-}

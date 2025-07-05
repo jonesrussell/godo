@@ -1,4 +1,4 @@
-package common
+package common_test
 
 import (
 	"testing"
@@ -7,6 +7,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
+
+	"github.com/jonesrussell/godo/internal/common"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -29,7 +31,7 @@ logger:
   output: ["stdout"]
   error_output: ["stderr"]
 `
-	var config Config
+	var config common.Config
 	err := yaml.Unmarshal([]byte(yamlConfig), &config)
 	require.NoError(t, err)
 
@@ -54,7 +56,7 @@ logger:
 }
 
 func TestHTTPConfigTimeouts(t *testing.T) {
-	config := HTTPConfig{
+	config := common.HTTPConfig{
 		ReadTimeout:       30,
 		WriteTimeout:      30,
 		ReadHeaderTimeout: 10,
@@ -71,12 +73,12 @@ func TestHTTPConfigTimeouts(t *testing.T) {
 func TestHotkeyBindingValidation(t *testing.T) {
 	testCases := []struct {
 		name      string
-		binding   HotkeyBinding
+		binding   common.HotkeyBinding
 		wantError bool
 	}{
 		{
 			name: "Valid binding",
-			binding: HotkeyBinding{
+			binding: common.HotkeyBinding{
 				Modifiers: []string{"Ctrl", "Alt"},
 				Key:       "G",
 			},
@@ -84,7 +86,7 @@ func TestHotkeyBindingValidation(t *testing.T) {
 		},
 		{
 			name: "Empty modifiers",
-			binding: HotkeyBinding{
+			binding: common.HotkeyBinding{
 				Modifiers: []string{},
 				Key:       "G",
 			},
@@ -92,7 +94,7 @@ func TestHotkeyBindingValidation(t *testing.T) {
 		},
 		{
 			name: "Empty key",
-			binding: HotkeyBinding{
+			binding: common.HotkeyBinding{
 				Modifiers: []string{"Ctrl", "Alt"},
 				Key:       "",
 			},
@@ -100,7 +102,7 @@ func TestHotkeyBindingValidation(t *testing.T) {
 		},
 		{
 			name: "Invalid modifier",
-			binding: HotkeyBinding{
+			binding: common.HotkeyBinding{
 				Modifiers: []string{"Invalid", "Alt"},
 				Key:       "G",
 			},
@@ -123,12 +125,12 @@ func TestHotkeyBindingValidation(t *testing.T) {
 func TestLogConfigValidation(t *testing.T) {
 	testCases := []struct {
 		name      string
-		config    LogConfig
+		config    common.LogConfig
 		wantError bool
 	}{
 		{
 			name: "Valid config",
-			config: LogConfig{
+			config: common.LogConfig{
 				Level:       "info",
 				Output:      []string{"stdout"},
 				ErrorOutput: []string{"stderr"},
@@ -137,7 +139,7 @@ func TestLogConfigValidation(t *testing.T) {
 		},
 		{
 			name: "Invalid level",
-			config: LogConfig{
+			config: common.LogConfig{
 				Level:       "invalid",
 				Output:      []string{"stdout"},
 				ErrorOutput: []string{"stderr"},
@@ -146,7 +148,7 @@ func TestLogConfigValidation(t *testing.T) {
 		},
 		{
 			name: "Empty output",
-			config: LogConfig{
+			config: common.LogConfig{
 				Level:       "info",
 				Output:      []string{},
 				ErrorOutput: []string{"stderr"},
@@ -155,7 +157,7 @@ func TestLogConfigValidation(t *testing.T) {
 		},
 		{
 			name: "Empty error output",
-			config: LogConfig{
+			config: common.LogConfig{
 				Level:       "info",
 				Output:      []string{"stdout"},
 				ErrorOutput: []string{},
@@ -164,7 +166,7 @@ func TestLogConfigValidation(t *testing.T) {
 		},
 		{
 			name: "File enabled without path",
-			config: LogConfig{
+			config: common.LogConfig{
 				Level:       "info",
 				File:        true,
 				FilePath:    "",
@@ -190,12 +192,12 @@ func TestLogConfigValidation(t *testing.T) {
 func TestHTTPConfigValidation(t *testing.T) {
 	testCases := []struct {
 		name      string
-		config    HTTPConfig
+		config    common.HTTPConfig
 		wantError bool
 	}{
 		{
 			name: "Valid config",
-			config: HTTPConfig{
+			config: common.HTTPConfig{
 				Port:              8080,
 				ReadTimeout:       30,
 				WriteTimeout:      30,
@@ -206,7 +208,7 @@ func TestHTTPConfigValidation(t *testing.T) {
 		},
 		{
 			name: "Invalid port",
-			config: HTTPConfig{
+			config: common.HTTPConfig{
 				Port:              0,
 				ReadTimeout:       30,
 				WriteTimeout:      30,
@@ -217,7 +219,7 @@ func TestHTTPConfigValidation(t *testing.T) {
 		},
 		{
 			name: "Invalid read timeout",
-			config: HTTPConfig{
+			config: common.HTTPConfig{
 				Port:              8080,
 				ReadTimeout:       0,
 				WriteTimeout:      30,
@@ -228,7 +230,7 @@ func TestHTTPConfigValidation(t *testing.T) {
 		},
 		{
 			name: "Invalid write timeout",
-			config: HTTPConfig{
+			config: common.HTTPConfig{
 				Port:              8080,
 				ReadTimeout:       30,
 				WriteTimeout:      0,
@@ -239,7 +241,7 @@ func TestHTTPConfigValidation(t *testing.T) {
 		},
 		{
 			name: "Invalid read header timeout",
-			config: HTTPConfig{
+			config: common.HTTPConfig{
 				Port:              8080,
 				ReadTimeout:       30,
 				WriteTimeout:      30,
@@ -250,7 +252,7 @@ func TestHTTPConfigValidation(t *testing.T) {
 		},
 		{
 			name: "Invalid idle timeout",
-			config: HTTPConfig{
+			config: common.HTTPConfig{
 				Port:              8080,
 				ReadTimeout:       30,
 				WriteTimeout:      30,

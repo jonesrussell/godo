@@ -26,7 +26,7 @@ type HotkeyBinding struct {
 }
 
 // String implements the Stringer interface for HotkeyBinding
-func (h HotkeyBinding) String() string {
+func (h *HotkeyBinding) String() string {
 	return strings.Join(append(h.Modifiers, h.Key), "+")
 }
 

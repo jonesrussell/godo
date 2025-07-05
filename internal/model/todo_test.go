@@ -1,4 +1,4 @@
-package model
+package model_test
 
 import (
 	"testing"
@@ -6,18 +6,20 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/jonesrussell/godo/internal/model"
 )
 
 func TestNewTodo(t *testing.T) {
 	tests := []struct {
 		name    string
 		content string
-		want    *Todo
+		want    *model.Todo
 	}{
 		{
 			name:    "creates todo with content",
 			content: "Test todo",
-			want: &Todo{
+			want: &model.Todo{
 				Content: "Test todo",
 				Done:    false,
 			},
@@ -25,7 +27,7 @@ func TestNewTodo(t *testing.T) {
 		{
 			name:    "creates todo with empty content",
 			content: "",
-			want: &Todo{
+			want: &model.Todo{
 				Content: "",
 				Done:    false,
 			},
@@ -34,7 +36,7 @@ func TestNewTodo(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := NewTodo(tt.content)
+			got := model.NewTodo(tt.content)
 
 			// Verify UUID format
 			_, err := uuid.Parse(got.ID)
@@ -60,12 +62,12 @@ func TestNewTodo(t *testing.T) {
 func TestTodo_ToggleDone(t *testing.T) {
 	tests := []struct {
 		name     string
-		todo     *Todo
+		todo     *model.Todo
 		wantDone bool
 	}{
 		{
 			name: "toggles undone to done",
-			todo: &Todo{
+			todo: &model.Todo{
 				ID:        uuid.New().String(),
 				Content:   "Test todo",
 				Done:      false,
@@ -76,7 +78,7 @@ func TestTodo_ToggleDone(t *testing.T) {
 		},
 		{
 			name: "toggles done to undone",
-			todo: &Todo{
+			todo: &model.Todo{
 				ID:        uuid.New().String(),
 				Content:   "Test todo",
 				Done:      true,
@@ -103,13 +105,13 @@ func TestTodo_ToggleDone(t *testing.T) {
 func TestTodo_UpdateContent(t *testing.T) {
 	tests := []struct {
 		name        string
-		todo        *Todo
+		todo        *model.Todo
 		newContent  string
 		wantContent string
 	}{
 		{
 			name: "updates with new content",
-			todo: &Todo{
+			todo: &model.Todo{
 				ID:        uuid.New().String(),
 				Content:   "Original content",
 				CreatedAt: time.Now(),
@@ -120,7 +122,7 @@ func TestTodo_UpdateContent(t *testing.T) {
 		},
 		{
 			name: "updates with empty content",
-			todo: &Todo{
+			todo: &model.Todo{
 				ID:        uuid.New().String(),
 				Content:   "Original content",
 				CreatedAt: time.Now(),

@@ -35,13 +35,6 @@ type HotkeyConfig struct {
 	log       logger.Logger
 }
 
-// NewHotkeyConfig creates a new HotkeyConfig with validation
-func NewHotkeyConfig(log logger.Logger) *HotkeyConfig {
-	return &HotkeyConfig{
-		log: log,
-	}
-}
-
 // Validate checks if the hotkey configuration is valid
 func (c *HotkeyConfig) Validate() error {
 	c.log.Debug("Validating hotkey configuration",

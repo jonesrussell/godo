@@ -1,13 +1,16 @@
 //go:build linux && !windows && !darwin
 // +build linux,!windows,!darwin
 
-package hotkey
+package hotkey_test
 
 import (
 	"testing"
 
-	"github.com/jonesrussell/godo/internal/common"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/jonesrussell/godo/internal/app/hotkey"
+	"github.com/jonesrussell/godo/internal/common"
+	"github.com/jonesrussell/godo/internal/logger"
 )
 
 // mockQuickNoteService implements QuickNoteService for testing
@@ -32,14 +35,11 @@ func TestNewPlatformManager(t *testing.T) {
 		Modifiers: []string{"Ctrl", "Alt"},
 		Key:       "N",
 	}
+	log := logger.NewTestLogger(t)
 
-	manager := newPlatformManager(mockService, binding)
+	manager, err := hotkey.New(mockService, binding, log)
+	assert.NoError(t, err)
 	assert.NotNil(t, manager)
-
-	linuxMgr, ok := manager.(*linuxManager)
-	assert.True(t, ok)
-	assert.Equal(t, mockService, linuxMgr.quickNote)
-	assert.Equal(t, binding, linuxMgr.binding)
 }
 
 func TestRegisterWithValidBinding(t *testing.T) {
@@ -48,9 +48,12 @@ func TestRegisterWithValidBinding(t *testing.T) {
 		Modifiers: []string{"Ctrl", "Alt"},
 		Key:       "N",
 	}
+	log := logger.NewTestLogger(t)
 
-	manager := newPlatformManager(mockService, binding)
-	err := manager.Register()
+	manager, err := hotkey.New(mockService, binding, log)
+	assert.NoError(t, err)
+
+	err = manager.Register()
 	assert.NoError(t, err)
 
 	// Clean up
@@ -64,9 +67,12 @@ func TestRegisterWithInvalidKey(t *testing.T) {
 		Modifiers: []string{"Ctrl", "Alt"},
 		Key:       "InvalidKey",
 	}
+	log := logger.NewTestLogger(t)
 
-	manager := newPlatformManager(mockService, binding)
-	err := manager.Register()
+	manager, err := hotkey.New(mockService, binding, log)
+	assert.NoError(t, err)
+
+	err = manager.Register()
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "unsupported key")
 }
@@ -77,9 +83,12 @@ func TestUnregisterWithoutRegistering(t *testing.T) {
 		Modifiers: []string{"Ctrl", "Alt"},
 		Key:       "N",
 	}
+	log := logger.NewTestLogger(t)
 
-	manager := newPlatformManager(mockService, binding)
-	err := manager.Unregister()
+	manager, err := hotkey.New(mockService, binding, log)
+	assert.NoError(t, err)
+
+	err = manager.Unregister()
 	assert.NoError(t, err)
 }
 
@@ -123,9 +132,12 @@ func TestModifierConversion(t *testing.T) {
 				Modifiers: tc.modifiers,
 				Key:       tc.key,
 			}
+			log := logger.NewTestLogger(t)
 
-			manager := newPlatformManager(mockService, binding)
-			err := manager.Register()
+			manager, err := hotkey.New(mockService, binding, log)
+			assert.NoError(t, err)
+
+			err = manager.Register()
 
 			if tc.wantErr {
 				assert.Error(t, err)

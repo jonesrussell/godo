@@ -16,18 +16,13 @@ import (
 // Configuration keys and defaults
 const (
 	// Environment settings
-	EnvPrefix   = "GODO"
-	EnvTestMode = "GODO_TEST_MODE"
+	EnvPrefix = "GODO"
 
 	// Config paths
 	DefaultConfigDir = "godo"
 
 	// Default values
-	DefaultAppName    = "Godo"
-	DefaultAppVersion = "0.1.0"
-	DefaultAppID      = "io.github.jonesrussell.godo"
-	DefaultDBPath     = "godo.db"
-	DefaultLogLevel   = "info"
+	DefaultAppID = "io.github.jonesrussell.godo"
 
 	// Config keys
 	KeyAppName    = "app.name"
@@ -36,9 +31,8 @@ const (
 	KeyDBPath     = "database.path"
 	KeyLogLevel   = "logger.level"
 	KeyLogConsole = "logger.console"
-	KeyQuickNote  = "hotkeys.quick_note"
 
-	// Default window dimensions
+	// DefaultMainWindowWidth and other default window dimensions
 	DefaultMainWindowWidth  = 800
 	DefaultMainWindowHeight = 600
 	DefaultQuickNoteWidth   = 200
@@ -85,32 +79,6 @@ type Provider struct {
 	configName string
 	configType string
 	log        logger.Logger
-}
-
-// ProviderOption allows for optional configuration of the Provider
-type ProviderOption func(*Provider)
-
-// WithLogger sets a custom logger for the provider
-func WithLogger(log logger.Logger) ProviderOption {
-	return func(p *Provider) {
-		p.log = log
-	}
-}
-
-// NewProvider creates a new configuration provider with options
-func NewProvider(paths []string, configName, configType string, opts ...ProviderOption) *Provider {
-	p := &Provider{
-		paths:      paths,
-		configName: configName,
-		configType: configType,
-		log:        logger.NewNoopLogger(), // Default to no-op logger
-	}
-
-	for _, opt := range opts {
-		opt(p)
-	}
-
-	return p
 }
 
 // Load reads and validates configuration

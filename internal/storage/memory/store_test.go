@@ -1,4 +1,4 @@
-package memory
+package memory_test
 
 import (
 	"context"
@@ -6,21 +6,23 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jonesrussell/godo/internal/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/jonesrussell/godo/internal/storage"
+	"github.com/jonesrussell/godo/internal/storage/memory"
 )
 
 func TestMemoryStore(t *testing.T) {
 	tests := []struct {
 		name     string
-		setup    func(*Store)
-		validate func(*testing.T, *Store)
+		setup    func(*memory.Store)
+		validate func(*testing.T, *memory.Store)
 	}{
 		{
 			name:  "new store is empty",
-			setup: func(_ *Store) {},
-			validate: func(t *testing.T, s *Store) {
+			setup: func(_ *memory.Store) {},
+			validate: func(t *testing.T, s *memory.Store) {
 				tasks, err := s.List(context.Background())
 				assert.NoError(t, err)
 				assert.Empty(t, tasks)
@@ -28,7 +30,7 @@ func TestMemoryStore(t *testing.T) {
 		},
 		{
 			name: "add and retrieve task",
-			setup: func(s *Store) {
+			setup: func(s *memory.Store) {
 				task := storage.Task{
 					ID:        "test-1",
 					Content:   "Test Task",
@@ -39,7 +41,7 @@ func TestMemoryStore(t *testing.T) {
 				err := s.Add(context.Background(), task)
 				require.NoError(t, err)
 			},
-			validate: func(t *testing.T, s *Store) {
+			validate: func(t *testing.T, s *memory.Store) {
 				tasks, err := s.List(context.Background())
 				assert.NoError(t, err)
 				assert.Len(t, tasks, 1)
@@ -50,7 +52,7 @@ func TestMemoryStore(t *testing.T) {
 		},
 		{
 			name: "update existing task",
-			setup: func(s *Store) {
+			setup: func(s *memory.Store) {
 				task := storage.Task{
 					ID:        "test-1",
 					Content:   "Original Content",
@@ -66,7 +68,7 @@ func TestMemoryStore(t *testing.T) {
 				err = s.Update(context.Background(), task)
 				require.NoError(t, err)
 			},
-			validate: func(t *testing.T, s *Store) {
+			validate: func(t *testing.T, s *memory.Store) {
 				task, err := s.GetByID(context.Background(), "test-1")
 				assert.NoError(t, err)
 				assert.Equal(t, "Updated Content", task.Content)
@@ -75,7 +77,7 @@ func TestMemoryStore(t *testing.T) {
 		},
 		{
 			name: "delete task",
-			setup: func(s *Store) {
+			setup: func(s *memory.Store) {
 				task := storage.Task{
 					ID:        "test-1",
 					Content:   "Test Task",
@@ -87,7 +89,7 @@ func TestMemoryStore(t *testing.T) {
 				err = s.Delete(context.Background(), "test-1")
 				require.NoError(t, err)
 			},
-			validate: func(t *testing.T, s *Store) {
+			validate: func(t *testing.T, s *memory.Store) {
 				tasks, err := s.List(context.Background())
 				assert.NoError(t, err)
 				assert.Empty(t, tasks)
@@ -97,7 +99,7 @@ func TestMemoryStore(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			store := New()
+			store := memory.New()
 			tt.setup(store)
 			tt.validate(t, store)
 		})
@@ -107,26 +109,26 @@ func TestMemoryStore(t *testing.T) {
 func TestMemoryStoreEdgeCases(t *testing.T) {
 	tests := []struct {
 		name    string
-		op      func(*Store) error
+		op      func(*memory.Store) error
 		wantErr error
 	}{
 		{
 			name: "update non-existent task",
-			op: func(s *Store) error {
+			op: func(s *memory.Store) error {
 				return s.Update(context.Background(), storage.Task{ID: "nonexistent"})
 			},
 			wantErr: storage.ErrTaskNotFound,
 		},
 		{
 			name: "delete non-existent task",
-			op: func(s *Store) error {
+			op: func(s *memory.Store) error {
 				return s.Delete(context.Background(), "nonexistent")
 			},
 			wantErr: storage.ErrTaskNotFound,
 		},
 		{
 			name: "get non-existent task",
-			op: func(s *Store) error {
+			op: func(s *memory.Store) error {
 				_, err := s.GetByID(context.Background(), "nonexistent")
 				return err
 			},
@@ -136,7 +138,7 @@ func TestMemoryStoreEdgeCases(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			store := New()
+			store := memory.New()
 			err := tt.op(store)
 			assert.ErrorIs(t, err, tt.wantErr)
 		})
@@ -144,7 +146,7 @@ func TestMemoryStoreEdgeCases(t *testing.T) {
 }
 
 func TestMemoryStoreConcurrent(t *testing.T) {
-	store := New()
+	store := memory.New()
 	const numTasks = 100
 
 	// Test concurrent reads and writes
@@ -202,7 +204,7 @@ func TestMemoryStoreConcurrent(t *testing.T) {
 }
 
 func TestMemoryStoreValidation(t *testing.T) {
-	store := New()
+	store := memory.New()
 	ctx := context.Background()
 	now := time.Now()
 
@@ -269,7 +271,7 @@ func TestMemoryStoreValidation(t *testing.T) {
 }
 
 func TestMemoryStoreClose(t *testing.T) {
-	store := New()
+	store := memory.New()
 	ctx := context.Background()
 
 	// Add some tasks

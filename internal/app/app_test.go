@@ -1,6 +1,6 @@
 //go:build !docker
 
-package app
+package app_test
 
 import (
 	"context"
@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/jonesrussell/godo/internal/app"
 	"github.com/jonesrussell/godo/internal/app/hotkey"
 	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/gui/mainwindow"
@@ -25,6 +26,10 @@ type mockStore struct {
 
 func (m *mockStore) List(_ context.Context) ([]storage.Task, error) {
 	return m.tasks, nil
+}
+
+func (m *mockStore) Close() error {
+	return nil
 }
 
 // Create a new mock logger for testing
@@ -59,31 +64,30 @@ func TestApp_SetupUI(t *testing.T) {
 		Name:    "Godo",
 		Version: "1.0.0",
 		ID:      "com.jonesrussell.godo",
+		Core: &options.CoreOptions{
+			Logger: mockLogger,
+			Store:  mockStore,
+			Config: cfg,
+		},
+		GUI: &options.GUIOptions{
+			App:        testApp,
+			MainWindow: mainwindow.New(testApp, mockStore, mockLogger, cfg.UI.MainWindow),
+		},
 	}
-
-	// Create main window
-	mainWin := mainwindow.New(testApp, mockStore, mockLogger, cfg.UI.MainWindow)
 
 	// Create app with all required dependencies
-	app := &App{
-		name:       appOpts.Name,
-		version:    appOpts.Version,
-		id:         appOpts.ID,
-		fyneApp:    testApp,
-		logger:     mockLogger,
-		store:      mockStore,
-		hotkey:     mockHotkey,
-		config:     cfg,
-		mainWindow: mainWin,
-	}
+	appInstance := app.New(&app.Params{
+		Options: appOpts,
+		Hotkey:  mockHotkey,
+	})
 
 	// Test SetupUI
-	err := app.SetupUI()
+	err := appInstance.SetupUI()
 	require.NoError(t, err)
 
 	// Verify expectations
 	assert.True(t, cfg.UI.MainWindow.StartHidden, "Main window should be configured to start hidden")
-	assert.NotNil(t, app.hotkey, "Hotkey manager should be initialized")
+	assert.NotNil(t, appInstance.Logger(), "Logger should be accessible")
 }
 
 func TestApp_Run(t *testing.T) {
@@ -113,32 +117,31 @@ func TestApp_Run(t *testing.T) {
 		Name:    "Godo",
 		Version: "1.0.0",
 		ID:      "com.jonesrussell.godo",
+		Core: &options.CoreOptions{
+			Logger: mockLogger,
+			Store:  mockStore,
+			Config: cfg,
+		},
+		GUI: &options.GUIOptions{
+			App:        testApp,
+			MainWindow: mainwindow.New(testApp, mockStore, mockLogger, cfg.UI.MainWindow),
+		},
 	}
-
-	// Create main window
-	mainWin := mainwindow.New(testApp, mockStore, mockLogger, cfg.UI.MainWindow)
 
 	// Create app with all required dependencies
-	app := &App{
-		name:       appOpts.Name,
-		version:    appOpts.Version,
-		id:         appOpts.ID,
-		fyneApp:    testApp,
-		logger:     mockLogger,
-		store:      mockStore,
-		hotkey:     mockHotkey,
-		config:     cfg,
-		mainWindow: mainWin,
-	}
+	appInstance := app.New(&app.Params{
+		Options: appOpts,
+		Hotkey:  mockHotkey,
+	})
 
 	// Run app in a goroutine since it blocks
-	go app.Run()
+	go appInstance.Run()
 
 	// Give it time to initialize
 	testApp.Quit()
 
 	// Verify the app initialized correctly
-	assert.NotNil(t, app.hotkey, "Hotkey manager should be initialized")
+	assert.NotNil(t, appInstance.Logger(), "Logger should be accessible")
 }
 
 func TestApp_Cleanup(t *testing.T) {
@@ -168,32 +171,29 @@ func TestApp_Cleanup(t *testing.T) {
 		Name:    "Godo",
 		Version: "1.0.0",
 		ID:      "com.jonesrussell.godo",
+		Core: &options.CoreOptions{
+			Logger: mockLogger,
+			Store:  mockStore,
+			Config: cfg,
+		},
+		GUI: &options.GUIOptions{
+			App:        testApp,
+			MainWindow: mainwindow.New(testApp, mockStore, mockLogger, cfg.UI.MainWindow),
+		},
 	}
-
-	// Create main window
-	mainWin := mainwindow.New(testApp, mockStore, mockLogger, cfg.UI.MainWindow)
 
 	// Create app with all required dependencies
-	app := &App{
-		name:       appOpts.Name,
-		version:    appOpts.Version,
-		id:         appOpts.ID,
-		fyneApp:    testApp,
-		logger:     mockLogger,
-		store:      mockStore,
-		hotkey:     mockHotkey,
-		config:     cfg,
-		mainWindow: mainWin,
-	}
+	appInstance := app.New(&app.Params{
+		Options: appOpts,
+		Hotkey:  mockHotkey,
+	})
 
 	// Test cleanup
-	app.Cleanup()
+	appInstance.Cleanup()
 
 	// Verify cleanup was called
-	mockStoreWithCleanup := mockStore
-	mockHotkeyWithCleanup := mockHotkey
-	assert.True(t, mockStoreWithCleanup.cleanupCalled, "Store cleanup should be called")
-	assert.True(t, mockHotkeyWithCleanup.stopCalled, "Hotkey stop should be called")
+	assert.True(t, mockStore.cleanupCalled, "Store cleanup should be called")
+	assert.True(t, mockHotkey.stopCalled, "Hotkey stop should be called")
 }
 
 // Additional mock implementations for cleanup testing
@@ -217,7 +217,6 @@ func (m *mockHotkeyWithCleanup) Stop() error {
 	return nil
 }
 
-// Mock implementations
 type mockLogger struct {
 	logger.Logger
 }

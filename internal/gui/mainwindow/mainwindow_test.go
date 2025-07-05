@@ -90,7 +90,7 @@ func TestTaskManager(t *testing.T) {
 		initialCount := len(tm.tasks)
 		err := tm.addTask(ctx, "")
 		require.NoError(t, err)
-		assert.Equal(t, initialCount, len(tm.tasks))
+		assert.Len(t, tm.tasks, initialCount)
 	})
 }
 

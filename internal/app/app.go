@@ -4,6 +4,7 @@ package app
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/driver/desktop"
@@ -138,9 +139,15 @@ func (a *App) Run() {
 		// Continue running even if hotkey fails
 	}
 
-	// Start API server
+	// Start API server with proper synchronization
 	if a.apiRunner != nil {
-		a.apiRunner.Start(DefaultAPIPort) // Using constant instead of magic number
+		a.apiRunner.Start(DefaultAPIPort)
+		// Wait for server to be ready with a timeout
+		if !a.apiRunner.WaitForReady(5 * time.Second) {
+			a.logger.Warn("API server did not start within timeout")
+		} else {
+			a.logger.Info("API server started successfully")
+		}
 	}
 
 	// Run the application main loop

@@ -8,11 +8,12 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/test"
 	"fyne.io/fyne/v2/widget"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func createTestTask(content string) storage.Task {
@@ -51,7 +52,7 @@ func TestTaskManager(t *testing.T) {
 		require.NoError(t, err)
 
 		// Load tasks
-		err = tm.loadTasks()
+		err = tm.loadTasks(ctx)
 		require.NoError(t, err)
 		assert.Len(t, tm.tasks, 1)
 		assert.Equal(t, task.Content, tm.tasks[0].Content)
@@ -59,7 +60,7 @@ func TestTaskManager(t *testing.T) {
 
 	t.Run("AddTask", func(t *testing.T) {
 		// Add task
-		err := tm.addTask("New Task")
+		err := tm.addTask(ctx, "New Task")
 		require.NoError(t, err)
 
 		// Verify task was added
@@ -75,7 +76,7 @@ func TestTaskManager(t *testing.T) {
 
 	t.Run("UpdateTask", func(t *testing.T) {
 		// Update first task
-		err := tm.updateTask(0, true)
+		err := tm.updateTask(ctx, 0, true)
 		require.NoError(t, err)
 
 		// Verify task was updated
@@ -87,9 +88,9 @@ func TestTaskManager(t *testing.T) {
 
 	t.Run("EmptyTask", func(t *testing.T) {
 		initialCount := len(tm.tasks)
-		err := tm.addTask("")
+		err := tm.addTask(ctx, "")
 		require.NoError(t, err)
-		assert.Equal(t, initialCount, len(tm.tasks))
+		assert.Len(t, tm.tasks, initialCount)
 	})
 }
 
@@ -131,7 +132,7 @@ func TestWindow(t *testing.T) {
 		assert.Equal(t, 1, list.Length()) // Should have the task we added
 
 		// Test task completion visual feedback
-		window.updateTask(0, true)
+		window.updateTask(context.Background(), 0, true)
 		list.Refresh()
 		item := list.CreateItem()
 		list.UpdateItem(0, item)

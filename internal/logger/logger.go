@@ -46,16 +46,19 @@ func NewLogger(cfg *Config) (*ZapLogger, func(), error) {
 	}
 
 	if err := zapCfg.Level.UnmarshalText([]byte(cfg.Level)); err != nil {
-		return nil, nil, fmt.Errorf("could not parse log level: %v", err)
+		return nil, nil, fmt.Errorf("could not parse log level: %w", err)
 	}
 
 	logger, err := zapCfg.Build()
 	if err != nil {
-		return nil, nil, fmt.Errorf("could not build logger: %v", err)
+		return nil, nil, fmt.Errorf("could not build logger: %w", err)
 	}
 
 	return &ZapLogger{logger.Sugar()}, func() {
-		_ = logger.Sync()
+		if err := logger.Sync(); err != nil {
+			// Log sync errors but don't fail the application
+			fmt.Printf("Failed to sync logger: %v\n", err)
+		}
 	}, nil
 }
 

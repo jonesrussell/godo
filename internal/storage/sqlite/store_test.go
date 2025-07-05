@@ -1,4 +1,4 @@
-package sqlite
+package sqlite_test
 
 import (
 	"context"
@@ -6,11 +6,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
 	"github.com/jonesrussell/godo/internal/storage/errors"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"github.com/jonesrussell/godo/internal/storage/sqlite"
 )
 
 func setupTestStore(t *testing.T) (store storage.TaskTxStore, cleanup func()) {
@@ -26,7 +28,7 @@ func setupTestStore(t *testing.T) (store storage.TaskTxStore, cleanup func()) {
 	log := logger.NewTestLogger(t)
 
 	// Create the store
-	store, err = New(dbPath, log)
+	store, err = sqlite.New(dbPath, log)
 	require.NoError(t, err)
 
 	cleanup = func() {

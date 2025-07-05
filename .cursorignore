@@ -1,7 +1,5 @@
 # Development environments and editors
-.vscode/
 .idea/
-.devcontainer/
 *.swp
 *.swo
 *~
@@ -27,20 +25,12 @@ coverage/
 *.cov
 
 # CI/CD and quality tools
-.github/
 .gitlab/
 .circleci/
 qodana.*
-.golangci.yml
 .codecov.yml
 coverage.txt
 coverage.html
-
-# Task runners and build tools
-Taskfile.yaml
-taskfile.yml
-.task/
-.air.toml
 
 # Docker
 build/docker/
@@ -73,4 +63,4 @@ godo.db*
 .env.*
 config.local.yaml
 debug/
-tmp/ 
+tmp/

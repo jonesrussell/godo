@@ -1,42 +1,248 @@
-linters:
-  disable-all: true
-  enable:
-  - gocritic
-  - gofmt
-  - gosimple
-  - govet
-  - ineffassign
-  - misspell
-  - revive
-  - staticcheck
-  - typecheck
-  - unparam
-  - unused
-  - mnd
-  - copyloopvar
-
-linters-settings:
-  gocritic:
-    enabled-tags:
-    - diagnostic
-    - style
-    - performance
-    disabled-checks:
-    - hugeParam
-    - importShadow
-
-issues:
-  exclude-use-default: false
-  max-per-linter: 0
-  max-same-issues: 0
-  exclude-dirs:
-  - build/
-  - coverage/
-
-output:
-  sort-results: true
-  formats:
-  - format: colored-line-number
+# golangci-lint v2 configuration for Go 1.24+ (2025) - Streamlined for Fyne Desktop App
+version: "2"
 
 run:
-  timeout: 5m
+  go: "1.24"
+  modules-download-mode: readonly
+  allow-parallel-runners: true
+
+linters:
+  enable:
+  # Existing linters
+  - bodyclose
+  - contextcheck
+  - errorlint
+  - forcetypeassert
+  - funlen
+  - gocognit
+  - goconst
+  - gocritic
+  - gocyclo
+  - goheader
+  - goprintffuncname
+  # - gosec  # Security linter is advisory for desktop apps
+  - lll
+  - misspell
+  - nakedret
+  - nestif
+  - nilerr
+  - nolintlint
+  - prealloc
+  - predeclared
+  - rowserrcheck
+  - sqlclosecheck
+  # - tagliatelle  # Tag casing linter is optional for this project
+  - testifylint
+  - testpackage
+  - thelper
+  - unconvert
+  - unparam
+  - whitespace
+  - wrapcheck
+
+  settings:
+    errcheck:
+      check-type-assertions: true
+      check-blank: true
+
+    errorlint:
+      errorf: true
+      asserts: true
+      comparison: true
+
+    goconst:
+      min-len: 3
+      min-occurrences: 3
+
+    gocritic:
+      disabled-checks:
+      - ifElseChain
+      - singleCaseSwitch
+      enabled-tags:
+      - diagnostic
+      - style
+      - performance
+      - experimental
+      settings:
+        captLocal:
+          paramsOnly: true
+        elseif:
+          skipBalanced: true
+        hugeParam:
+          sizeThreshold: 80
+        nestingReduce:
+          bodyWidth: 5
+        rangeValCopy:
+          sizeThreshold: 512
+        truncateCmp:
+          skipArchDependent: true
+        underef:
+          skipRecvDeref: true
+
+    gocyclo:
+      min-complexity: 15
+
+    gosec:
+      severity: medium
+      confidence: medium
+      # NOTE: gosec is advisory for desktop apps; not all warnings are blockers
+
+    govet:
+      disable:
+      - fieldalignment # Can be too strict for Fx dependency structs
+      enable-all: true
+      settings:
+        shadow:
+          strict: true
+
+    lll:
+      line-length: 120
+      tab-width: 1
+
+    misspell:
+      locale: US
+
+    nakedret:
+      max-func-lines: 30
+
+    nestif:
+      min-complexity: 4
+
+    nilnil:
+      checked-types:
+      - ptr
+      - func
+      - iface
+      - map
+      - chan
+
+    nolintlint:
+      require-explanation: true
+      require-specific: true
+      allow-unused: false
+
+    paralleltest:
+      ignore-missing: true
+
+    prealloc:
+      simple: true
+      range-loops: true
+      for-loops: false
+
+    reassign:
+      patterns:
+      - '.*'
+
+    staticcheck:
+      checks:
+      - all
+
+    unparam:
+      check-exported: false
+
+    unused:
+      field-writes-are-uses: true
+      post-statements-are-reads: true
+      parameters-are-used: true
+      local-variables-are-used: true
+
+    wrapcheck:
+      ignore-sigs:
+      - .Errorf(
+      - errors.New(
+      - errors.Unwrap(
+      - .Wrap(
+      - .Wrapf(
+      - response.Success(
+      - response.ErrorResponse(
+      - .JSON(
+      - .BuildErrorResponse(
+      - .AJAXError(
+      - .HTMLFormError(
+      - .Redirect(
+
+  exclusions:
+    generated: lax
+    presets:
+    - comments
+    - common-false-positives
+    - legacy
+    - std-error-handling
+    paths:
+    - third_party$
+    - builtin$
+    - examples$
+    - test/integration/
+    - test/mocks/
+    rules:
+    # Exclude complexity/length linters for Fyne UI and main app files
+    - path: internal/ui/.*\.go
+      linters:
+      - funlen
+      - gocyclo
+      - gocognit
+      - cyclop
+      - maintidx
+    - path: cmd/godo/.*\.go
+      linters:
+      - funlen
+      - gocyclo
+      - gocognit
+      - cyclop
+      - maintidx
+    # Exclude wrapcheck and errorlint for UI/event code
+    - path: internal/ui/.*\.go
+      linters:
+      - wrapcheck
+      - errorlint
+    - path: cmd/godo/.*\.go
+      linters:
+      - wrapcheck
+      - errorlint
+    # Exclude funlen for test files (tests can be longer)
+    - path: _test\.go
+      linters:
+      - funlen
+      - gocyclo
+      - cyclop
+      - maintidx
+      - gocognit
+    # Exclude wrapcheck for test files (tests often don't need error wrapping)
+    - path: _test\.go
+      linters:
+      - wrapcheck
+      - errorlint
+    # Exclude certain rules for generated code
+    - path: _templ\.go
+      linters:
+      - gocritic
+      - nolintlint
+      - exhaustruct
+      - varnamelen
+      - wsl
+    # Exclude some rules for integration tests
+    - path: test/integration/
+      linters:
+      - funlen
+      - wrapcheck
+      - gocritic
+      - gocyclo
+      - cyclop
+      - maintidx
+    # Exclude some rules for mock files
+    - path: test/mocks/
+      linters:
+      - funlen
+      - wrapcheck
+      - gocritic
+      - nolintlint
+      - varnamelen
+      - exhaustruct
+
+formatters:
+  exclusions:
+    generated: lax
+    paths:
+    - third_party$
+    - builtin$
+    - examples$

@@ -1,4 +1,4 @@
-package systray
+package systray_test
 
 import (
 	"testing"
@@ -7,6 +7,8 @@ import (
 	"fyne.io/fyne/v2/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+
+	"github.com/jonesrussell/godo/internal/gui/systray"
 )
 
 // mockDesktopApp implements desktop.App
@@ -51,7 +53,7 @@ func TestSetupSystray_QuickNoteMenuItem(t *testing.T) {
 	quickNote.On("Show").Return()
 
 	// Setup systray
-	SetupSystray(app, mainWindow, quickNote)
+	systray.SetupSystray(app, mainWindow, quickNote)
 
 	// Verify menu was set
 	assert.NotNil(t, app.menu, "Systray menu should be set")
@@ -84,7 +86,7 @@ func TestSetupSystray_NonDesktopApp(t *testing.T) {
 	quickNote := &mockQuickNote{}
 
 	// This should not panic
-	SetupSystray(app, mainWindow, quickNote)
+	systray.SetupSystray(app, mainWindow, quickNote)
 
 	// Quick Note should not be called
 	quickNote.AssertNotCalled(t, "Show")

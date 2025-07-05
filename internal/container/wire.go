@@ -1,4 +1,4 @@
-//go:build wireinject && windows
+//go:build wireinject && (windows || linux)
 
 package container
 
@@ -9,6 +9,7 @@ import (
 	fyneapp "fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/theme"
 	"github.com/google/wire"
+
 	"github.com/jonesrussell/godo/internal/api"
 	"github.com/jonesrussell/godo/internal/app"
 	apphotkey "github.com/jonesrussell/godo/internal/app/hotkey"
@@ -87,7 +88,6 @@ var (
 		ProvideKeyCode,
 		ProvideHotkeyOptions,
 		ProvideHotkeyManager,
-		wire.Bind(new(apphotkey.Manager), new(*apphotkey.WindowsManager)),
 	)
 
 	// AppSet provides application dependencies
@@ -311,7 +311,7 @@ func ProvideSQLiteStore(log logger.Logger, dbPath common.DatabasePath) (*sqlite.
 }
 
 // ProvideHotkeyManager provides a hotkey manager instance
-func ProvideHotkeyManager(log logger.Logger, cfg *config.Config, quickNote *quicknote.Window) (*apphotkey.WindowsManager, error) {
+func ProvideHotkeyManager(log logger.Logger, cfg *config.Config, quickNote *quicknote.Window) (apphotkey.Manager, error) {
 	if log == nil {
 		return nil, fmt.Errorf("logger is required")
 	}
@@ -322,17 +322,16 @@ func ProvideHotkeyManager(log logger.Logger, cfg *config.Config, quickNote *quic
 		return nil, fmt.Errorf("quick note window is required")
 	}
 
-	manager, err := apphotkey.NewWindowsManager(log)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create hotkey manager: %w", err)
-	}
-
 	// Validate hotkey config
 	if err := validateHotkeyConfig(&cfg.Hotkeys.QuickNote); err != nil {
 		return nil, fmt.Errorf("invalid hotkey configuration: %w", err)
 	}
 
-	manager.SetQuickNote(quickNote, &cfg.Hotkeys.QuickNote)
+	manager, err := apphotkey.New(quickNote, &cfg.Hotkeys.QuickNote, log)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create hotkey manager: %w", err)
+	}
+
 	return manager, nil
 }
 
@@ -380,18 +379,45 @@ func ProvideKeyCode(cfg *config.Config) common.KeyCode {
 
 // ProvideConfig provides the application configuration
 func ProvideConfig() (*config.Config, error) {
-	provider := config.NewProvider(
-		[]string{".", "./configs"},
-		"default",
-		"yaml",
-	)
-
-	cfg, err := provider.Load()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load config: %w", err)
+	// Create a default configuration
+	cfg := &config.Config{
+		App: config.AppConfig{
+			Name:    "Godo",
+			Version: "0.1.0",
+			ID:      "io.github.jonesrussell.godo",
+		},
+		Logger: common.LogConfig{
+			Level:       "info",
+			Console:     true,
+			File:        false,
+			FilePath:    "",
+			Output:      []string{"stdout"},
+			ErrorOutput: []string{"stderr"},
+		},
+		Hotkeys: config.HotkeyConfig{
+			QuickNote: common.HotkeyBinding{
+				Modifiers: []string{"Ctrl", "Shift"},
+				Key:       "N",
+			},
+		},
+		Database: config.DatabaseConfig{
+			Path: "godo.db",
+		},
+		UI: config.UIConfig{
+			MainWindow: config.WindowConfig{
+				Width:       800,
+				Height:      600,
+				StartHidden: false,
+			},
+			QuickNote: config.WindowConfig{
+				Width:       400,
+				Height:      300,
+				StartHidden: true,
+			},
+		},
 	}
 
-	// Validate the loaded configuration
+	// Validate the configuration
 	if err := validateConfig(cfg); err != nil {
 		return nil, fmt.Errorf("invalid configuration: %w", err)
 	}

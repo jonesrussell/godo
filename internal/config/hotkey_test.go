@@ -1,11 +1,13 @@
 //go:build !ci && !android && !ios && !wasm && !test_web_driver && !docker
 
-package config
+package config_test
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/jonesrussell/godo/internal/config"
 )
 
 func TestHotkeyCombo(t *testing.T) {
@@ -31,7 +33,7 @@ func TestHotkeyCombo(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := NewHotkeyCombo(tt.modifiers, tt.key)
+			got := config.NewHotkeyCombo(tt.modifiers, tt.key)
 			assert.Equal(t, tt.want, got.String())
 		})
 	}
@@ -42,13 +44,13 @@ func TestHotkeyString(t *testing.T) {
 		name      string
 		key       string
 		modifiers []string
-		want      HotkeyString
+		want      config.HotkeyString
 	}{
 		{
 			name:      "simple hotkey",
 			key:       "N",
 			modifiers: []string{"ctrl", "shift"},
-			want: HotkeyString{
+			want: config.HotkeyString{
 				Key:       "N",
 				Modifiers: []string{"ctrl", "shift"},
 			},
@@ -57,7 +59,7 @@ func TestHotkeyString(t *testing.T) {
 			name:      "with alt",
 			key:       "A",
 			modifiers: []string{"ctrl", "alt"},
-			want: HotkeyString{
+			want: config.HotkeyString{
 				Key:       "A",
 				Modifiers: []string{"ctrl", "alt"},
 			},
@@ -66,7 +68,7 @@ func TestHotkeyString(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := HotkeyString{
+			got := config.HotkeyString{
 				Key:       tt.key,
 				Modifiers: tt.modifiers,
 			}

@@ -1,13 +1,15 @@
-package validation
+package validation_test
 
 import (
 	"errors"
 	"testing"
 	"time"
 
-	"github.com/jonesrussell/godo/internal/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/jonesrussell/godo/internal/storage"
+	"github.com/jonesrussell/godo/internal/storage/validation"
 )
 
 type mockTaskReader struct {
@@ -15,7 +17,7 @@ type mockTaskReader struct {
 }
 
 func TestTaskValidator_ValidateTask(t *testing.T) {
-	validator := NewTaskValidator(&mockTaskReader{})
+	validator := validation.NewTaskValidator(&mockTaskReader{})
 
 	tests := []struct {
 		name    string
@@ -137,7 +139,7 @@ func TestValidateConnection(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := ValidateConnection(tt.err)
+			err := validation.ValidateConnection(tt.err)
 			if tt.wantErr {
 				require.Error(t, err)
 				assert.IsType(t, &storage.ConnectionError{}, err)
@@ -168,7 +170,7 @@ func TestValidateTransaction(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := ValidateTransaction(tt.err)
+			err := validation.ValidateTransaction(tt.err)
 			if tt.wantErr {
 				require.Error(t, err)
 				assert.IsType(t, &storage.TransactionError{}, err)

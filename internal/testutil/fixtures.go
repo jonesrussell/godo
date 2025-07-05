@@ -8,6 +8,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/test"
+
 	"github.com/jonesrussell/godo/internal/common"
 	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/logger"
@@ -43,7 +44,7 @@ func NewTestFixture(t *testing.T) *TestFixture {
 	f := &TestFixture{
 		T:       t,
 		Store:   storage.NewMockStore(),
-		Logger:  logger.NewMockTestLogger(t),
+		Logger:  logger.NewTestLogger(t),
 		Context: context.Background(),
 		Config: &config.Config{
 			UI: config.UIConfig{

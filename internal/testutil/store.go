@@ -28,15 +28,15 @@ func (m *MockStore) Add(task storage.Task) error {
 	defer m.mu.Unlock()
 
 	if m.closed {
-		return storage.ErrStoreClosed
+		return fmt.Errorf("store already closed")
 	}
 
 	if task.ID == "" {
-		return storage.ErrEmptyID
+		return fmt.Errorf("empty ID")
 	}
 
 	if _, exists := m.tasks[task.ID]; exists {
-		return storage.ErrDuplicateID
+		return fmt.Errorf("duplicate ID")
 	}
 
 	m.tasks[task.ID] = task
@@ -49,16 +49,16 @@ func (m *MockStore) GetByID(id string) (*storage.Task, error) {
 	defer m.mu.RUnlock()
 
 	if m.closed {
-		return nil, storage.ErrStoreClosed
+		return nil, fmt.Errorf("store already closed")
 	}
 
 	if id == "" {
-		return nil, storage.ErrEmptyID
+		return nil, fmt.Errorf("empty ID")
 	}
 
 	task, exists := m.tasks[id]
 	if !exists {
-		return nil, storage.ErrTaskNotFound
+		return nil, fmt.Errorf("task not found")
 	}
 
 	return &task, nil
@@ -70,15 +70,15 @@ func (m *MockStore) Update(task storage.Task) error {
 	defer m.mu.Unlock()
 
 	if m.closed {
-		return storage.ErrStoreClosed
+		return fmt.Errorf("store already closed")
 	}
 
 	if task.ID == "" {
-		return storage.ErrEmptyID
+		return fmt.Errorf("empty ID")
 	}
 
 	if _, exists := m.tasks[task.ID]; !exists {
-		return storage.ErrTaskNotFound
+		return fmt.Errorf("task not found")
 	}
 
 	task.UpdatedAt = time.Now()
@@ -92,15 +92,15 @@ func (m *MockStore) Delete(id string) error {
 	defer m.mu.Unlock()
 
 	if m.closed {
-		return storage.ErrStoreClosed
+		return fmt.Errorf("store already closed")
 	}
 
 	if id == "" {
-		return storage.ErrEmptyID
+		return fmt.Errorf("empty ID")
 	}
 
 	if _, exists := m.tasks[id]; !exists {
-		return storage.ErrTaskNotFound
+		return fmt.Errorf("task not found")
 	}
 
 	delete(m.tasks, id)
@@ -113,7 +113,7 @@ func (m *MockStore) List() ([]storage.Task, error) {
 	defer m.mu.RUnlock()
 
 	if m.closed {
-		return nil, storage.ErrStoreClosed
+		return nil, fmt.Errorf("store already closed")
 	}
 
 	tasks := make([]storage.Task, 0, len(m.tasks))

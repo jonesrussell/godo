@@ -66,31 +66,31 @@ func getEncoderConfig() zapcore.EncoderConfig {
 
 // Implement the interface methods
 func (l *zapLogger) Debug(msg string, keysAndValues ...interface{}) {
-	l.SugaredLogger.Debugw(msg, keysAndValues...)
+	l.Debugw(msg, keysAndValues...)
 }
 
 func (l *zapLogger) Info(msg string, keysAndValues ...interface{}) {
-	l.SugaredLogger.Infow(msg, keysAndValues...)
+	l.Infow(msg, keysAndValues...)
 }
 
 func (l *zapLogger) Warn(msg string, keysAndValues ...interface{}) {
-	l.SugaredLogger.Warnw(msg, keysAndValues...)
+	l.Warnw(msg, keysAndValues...)
 }
 
 func (l *zapLogger) Error(msg string, keysAndValues ...interface{}) {
-	l.SugaredLogger.Errorw(msg, keysAndValues...)
+	l.Errorw(msg, keysAndValues...)
 }
 
 func (l *zapLogger) Fatal(msg string, keysAndValues ...interface{}) {
-	l.SugaredLogger.Fatalw(msg, keysAndValues...)
+	l.Fatalw(msg, keysAndValues...)
 }
 
 func (l *zapLogger) WithError(err error) Logger {
-	return &zapLogger{l.SugaredLogger.With("error", err)}
+	return &zapLogger{l.With("error", err)}
 }
 
 func (l *zapLogger) WithField(key string, value interface{}) Logger {
-	return &zapLogger{l.SugaredLogger.With(key, value)}
+	return &zapLogger{l.With(key, value)}
 }
 
 func (l *zapLogger) WithFields(fields map[string]interface{}) Logger {
@@ -101,5 +101,5 @@ func (l *zapLogger) WithFields(fields map[string]interface{}) Logger {
 	for k, v := range fields {
 		args = append(args, k, v)
 	}
-	return &zapLogger{l.SugaredLogger.With(args...)}
+	return &zapLogger{l.With(args...)}
 }

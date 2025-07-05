@@ -1,4 +1,4 @@
-package gui
+package gui_test
 
 import (
 	"context"
@@ -7,9 +7,11 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/test"
-	"github.com/jonesrussell/godo/internal/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/jonesrussell/godo/internal/gui"
+	"github.com/jonesrussell/godo/internal/storage"
 )
 
 func TestMockWindow(t *testing.T) {
@@ -32,7 +34,7 @@ func TestMockWindow(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create mock window
-			win := &MockMainWindow{
+			win := &gui.MockMainWindow{
 				Window: testWindow,
 			}
 
@@ -73,7 +75,7 @@ func TestMockWindowWithTasks(t *testing.T) {
 	ctx := context.Background()
 
 	// Create mock window
-	win := &MockMainWindow{
+	win := &gui.MockMainWindow{
 		Window: testWindow,
 	}
 

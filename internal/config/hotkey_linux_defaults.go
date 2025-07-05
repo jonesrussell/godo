@@ -5,15 +5,6 @@ package config
 
 import (
 	"strings"
-
-	"golang.design/x/hotkey"
-)
-
-// Modifier constants for hotkeys on Linux
-const (
-	ModCtrl  = hotkey.ModCtrl  // Control key
-	ModShift = hotkey.ModShift // Shift key
-	ModAlt   = hotkey.Mod1     // Alt key (Mod1 on X11)
 )
 
 // GetDefaultQuickNoteKey returns the default key for quick note hotkey

@@ -44,6 +44,22 @@ func NewWindowsManager(log logger.Logger) (*WindowsManager, error) {
 	}, nil
 }
 
+// newPlatformManager creates a platform-specific manager for Windows
+func newPlatformManager(quickNote QuickNoteService, binding *common.HotkeyBinding) Manager {
+	manager := &WindowsManager{
+		log:       logger.NewNoopLogger(), // Default logger, should be set via injection
+		quickNote: quickNote,
+		binding:   binding,
+		stopChan:  make(chan struct{}),
+	}
+	return manager
+}
+
+// SetLogger sets the logger for this manager
+func (m *WindowsManager) SetLogger(log logger.Logger) {
+	m.log = log
+}
+
 // SetQuickNote sets the quick note service and hotkey binding for this manager.
 // Both the service and binding are required for the hotkey to function.
 func (m *WindowsManager) SetQuickNote(quickNote QuickNoteService, binding *common.HotkeyBinding) {

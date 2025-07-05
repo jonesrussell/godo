@@ -4,7 +4,6 @@ package sqlite
 import (
 	"context"
 	"database/sql"
-	"time"
 
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
@@ -65,7 +64,7 @@ func (s *Store) GetByID(ctx context.Context, id string) (storage.Task, error) {
 func (s *Store) Update(ctx context.Context, task storage.Task) error {
 	result, err := s.db.ExecContext(ctx,
 		"UPDATE tasks SET content = ?, done = ?, updated_at = ? WHERE id = ?",
-		task.Content, task.Done, time.Now(), task.ID,
+		task.Content, task.Done, task.UpdatedAt, task.ID,
 	)
 	if err != nil {
 		return err
@@ -201,7 +200,7 @@ func (t *Transaction) GetByID(ctx context.Context, id string) (storage.Task, err
 func (t *Transaction) Update(ctx context.Context, task storage.Task) error {
 	result, err := t.tx.ExecContext(ctx,
 		"UPDATE tasks SET content = ?, done = ?, updated_at = ? WHERE id = ?",
-		task.Content, task.Done, time.Now(), task.ID,
+		task.Content, task.Done, task.UpdatedAt, task.ID,
 	)
 	if err != nil {
 		return err

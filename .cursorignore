@@ -31,7 +31,7 @@ coverage/
 .gitlab/
 .circleci/
 qodana.*
-.golangci.yml
+# .golangci.yml
 .codecov.yml
 coverage.txt
 coverage.html

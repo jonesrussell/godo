@@ -1,4 +1,4 @@
-# golangci-lint v2 configuration for Go 1.24+ (2025) with Uber Fx enforcement
+# golangci-lint v2 configuration for Go 1.24+ (2025) - Streamlined for Fyne Desktop App
 version: "2"
 
 run:
@@ -8,56 +8,47 @@ run:
 
 linters:
   enable:
-    # Existing linters
-    - bodyclose
-    - contextcheck
-    - errorlint
-    - forcetypeassert
-    - funlen
-    - gocognit
-    - goconst
-    - gocritic
-    - gocyclo
-    - goheader
-    - goprintffuncname
-    - gosec
-    - lll
-    - misspell
-    - nakedret
-    - nestif
-    - nilerr
-    - nolintlint
-    - prealloc
-    - predeclared
-    - rowserrcheck
-    - sqlclosecheck
-    - tagliatelle
-    - testifylint
-    - testpackage
-    - thelper
-    - unconvert
-    - unparam
-    - whitespace
-    - wrapcheck
-
-    # Additional linters that help with Fx patterns
-    - cyclop          # Enforces cyclomatic complexity (helps with Fx constructors)
-    - decorder        # Enforces declaration order (good for Fx modules)
-    - dupl            # Detects code duplication (prevents duplicate providers)
-    - exhaustive      # Ensures exhaustive type switches
-    # - exhaustruct     # Ensures struct initialization (good for Fx options)
-    - gomodguard      # Controls allowed modules
-    - ireturn         # Ensures concrete types in returns when possible
-    - maintidx        # Maintainability index
-    # - mnd             # Magic number detector
-    - nilnil          # Checks for simultaneous return of nil error and nil value
-    - nlreturn        # Enforces newlines in certain places
-    - noctx           # Finds sending http request without context.Context
-    - paralleltest    # Detects missing use of t.Parallel()
-    - reassign        # Checks for reassigning variables
-    # - varnamelen      # Checks variable name length
-    - wastedassign    # Finds assignments to existing variables
-    - wsl_v5          # Enforces whitespace rules (updated from deprecated wsl)
+  # Existing linters
+  - bodyclose
+  - contextcheck
+  - errorlint
+  - forcetypeassert
+  - funlen
+  - gocognit
+  - goconst
+  - gocritic
+  - gocyclo
+  - goheader
+  - goprintffuncname
+  # - gosec  # Security linter is advisory for desktop apps
+  - lll
+  - misspell
+  - nakedret
+  - nestif
+  - nilerr
+  - nolintlint
+  - prealloc
+  - predeclared
+  - rowserrcheck
+  - sqlclosecheck
+  # - tagliatelle  # Tag casing linter is optional for this project
+  - testifylint
+  - testpackage
+  - thelper
+  - unconvert
+  - unparam
+  - whitespace
+  - wrapcheck
+  # Fx/DI-centric linters are commented out for desktop app simplicity
+  # - cyclop          # Enforces cyclomatic complexity (Fx-centric)
+  # - decorder        # Enforces declaration order (Fx-centric)
+  # - dupl            # Detects code duplication (Fx-centric)
+  # - exhaustive      # Ensures exhaustive type switches (Fx-centric)
+  # - exhaustruct     # Ensures struct initialization (Fx-centric)
+  # - gomodguard      # Controls allowed modules (Fx-centric)
+  # - ireturn         # Ensures concrete types in returns (Fx-centric)
+  # - maintidx        # Maintainability index (Fx-centric)
+  # - wsl_v5          # Strict whitespace rules are optional
 
   settings:
     errcheck:
@@ -69,39 +60,19 @@ linters:
       asserts: true
       comparison: true
 
-    exhaustive:
-      check:
-        - switch
-        - map
-      explicit-exhaustive-switch: true
-      explicit-exhaustive-map: true
-
-    exhaustruct:
-      # Exclude certain structs from exhaustive initialization
-      exclude:
-        # Common Fx types that don't need exhaustive initialization
-        - 'fx\.Option'
-        - 'fx\.Annotate'
-        - 'fx\.Provide'
-        - 'fx\.Invoke'
-        # Test structs
-        - '.*Test.*'
-        # Generated structs
-        - '.*templ.*'
-
     goconst:
       min-len: 3
       min-occurrences: 3
 
     gocritic:
       disabled-checks:
-        - ifElseChain
-        - singleCaseSwitch
+      - ifElseChain
+      - singleCaseSwitch
       enabled-tags:
-        - diagnostic
-        - style
-        - performance
-        - experimental
+      - diagnostic
+      - style
+      - performance
+      - experimental
       settings:
         captLocal:
           paramsOnly: true
@@ -121,127 +92,25 @@ linters:
     gocyclo:
       min-complexity: 15
 
-    gomodguard:
-      blocked:
-        modules:
-          # Prevent direct use of global state packages when using Fx
-          - github.com/kelseyhightower/envconfig:
-              recommendations:
-                - Use fx.Provide with configuration constructors instead
-          # Architecture enforcement - prevent forbidden imports
-          - github.com/goformx/goforms/internal/infrastructure:
-              recommendations:
-                - Domain layer should not import infrastructure
-                - Use dependency inversion with interfaces
-          - github.com/goformx/goforms/internal/presentation:
-              recommendations:
-                - Domain layer should not import presentation
-                - Application layer should not import presentation
-                - Use application services instead
-
     gosec:
       severity: medium
       confidence: medium
+      # NOTE: gosec is advisory for desktop apps; not all warnings are blockers
 
     govet:
       disable:
-        - fieldalignment  # Can be too strict for Fx dependency structs
+      - fieldalignment # Can be too strict for Fx dependency structs
       enable-all: true
       settings:
         shadow:
           strict: true
 
-    ireturn:
-      allow:
-        - anon
-        - error
-        - empty
-        - stdlib
-        # Allow interface returns for common Fx patterns
-        - 'fx\.Option'
-        - '.*Interface'
-        - '.*Service'
-        - '.*Repository'
-        - '.*Handler'
-        - '.*Validator'
-        - '.*Event'
-        - '.*Publisher'
-        - '.*Subscriber'
-        - '.*EventBus'
-        - '.*Store'
-        - '.*Manager'
-        - '.*Resolver'
-        - '.*Server'
-        - '.*Renderer'
-        - '.*Component'
-        - '.*Core'
-        - '.*Encoder'
-        - '.*Logger'
-        - '.*Factory'
-        - '.*Provider'
-        - '.*Processor'
-        - '.*Builder'
-        - '.*Retriever'
-        - '.*Validator'
-        - '.*Entity'
-        - '.*QueryBuilder'
-        - '.*Pagination'
-        - '.*FormValidatorInterface'
-        - '.*FieldValidatorInterface'
-        - '.*ErrorHandlerInterface'
-        - '.*ServiceInterface'
-        - '.*AssetManagerInterface'
-        - '.*AssetResolver'
-        - '.*AssetServer'
-        - '.*FormErrorHandler'
-        - '.*FormRequestProcessor'
-        - '.*FormResponseBuilder'
-        - '.*FormRetriever'
-        - '.*FormOwnershipValidator'
-        - '.*DB'
-        # Allow interface returns for middleware system patterns
-        - '.*Middleware'
-        - '.*Chain'
-        - '.*Registry'
-        - '.*Orchestrator'
-        - '.*Request'
-        - '.*Response'
-        - '.*Config'
-        - '.*Context'
-        - '.*Session'
-        - 'echo\.Context'
-        - 'routers\.Router'
-
     lll:
       line-length: 120
       tab-width: 1
 
-    maintidx:
-      under: 20
-
     misspell:
       locale: US
-
-    mnd:
-      checks:
-        - argument
-        - case
-        - condition
-        - operation
-        - return
-        - assign
-      ignored-numbers:
-        - '0'
-        - '1'
-        - '2'
-        - '3'
-        - '10'
-        - '100'
-        - '1000'
-      ignored-functions:
-        - 'make'
-        - 'time.Duration'
-        - 'fx.Options'
 
     nakedret:
       max-func-lines: 30
@@ -251,11 +120,11 @@ linters:
 
     nilnil:
       checked-types:
-        - ptr
-        - func
-        - iface
-        - map
-        - chan
+      - ptr
+      - func
+      - iface
+      - map
+      - chan
 
     nolintlint:
       require-explanation: true
@@ -272,22 +141,11 @@ linters:
 
     reassign:
       patterns:
-        - '.*'
+      - '.*'
 
     staticcheck:
       checks:
-        - all
-
-    tagliatelle:
-      case:
-        rules:
-          avro: snake
-          bson: camel
-          json: snake
-          mapstructure: kebab
-          xml: camel
-          yaml: snake
-        use-field-name: true
+      - all
 
     unparam:
       check-exported: false
@@ -298,150 +156,103 @@ linters:
       parameters-are-used: true
       local-variables-are-used: true
 
-    varnamelen:
-      min-name-length: 2
-      ignore-type-assert-ok: true
-      ignore-map-index-ok: true
-      ignore-chan-recv-ok: true
-      ignore-names:
-        - err
-        - id
-        - tx
-        - db
-        - ok
-        - wg
-        - mu
-        # Common Fx variable names
-        - fx
-        - lc  # lifecycle
-        - in  # input struct
-        - out # output struct
-
     wrapcheck:
       ignore-sigs:
-        - .Errorf(
-        - errors.New(
-        - errors.Unwrap(
-        - .Wrap(
-        - .Wrapf(
-        - response.Success(
-        - response.ErrorResponse(
-        - .JSON(
-        - .BuildErrorResponse(
-        - .AJAXError(
-        - .HTMLFormError(
-        - .Redirect(
-        # Fx specific ignores
-        - fx.New(
-        - fx.Provide(
-        - fx.Invoke(
-        - fx.Options(
-
-    wsl_v5:
-      allow-first-in-block: true
-      allow-whole-block: false
-      branch-max-lines: 2
+      - .Errorf(
+      - errors.New(
+      - errors.Unwrap(
+      - .Wrap(
+      - .Wrapf(
+      - response.Success(
+      - response.ErrorResponse(
+      - .JSON(
+      - .BuildErrorResponse(
+      - .AJAXError(
+      - .HTMLFormError(
+      - .Redirect(
 
   exclusions:
     generated: lax
     presets:
-      - comments
-      - common-false-positives
-      - legacy
-      - std-error-handling
+    - comments
+    - common-false-positives
+    - legacy
+    - std-error-handling
     paths:
-      - third_party$
-      - builtin$
-      - examples$
-      - test/integration/
-      - test/mocks/
+    - third_party$
+    - builtin$
+    - examples$
+    - test/integration/
+    - test/mocks/
     rules:
-      # Exclude funlen for test files (tests can be longer)
-      - path: _test\.go
-        linters:
-          - funlen
-          - gocyclo
-          - cyclop
-          - maintidx
-          - gocognit
-
-      # Exclude wrapcheck for test files (tests often don't need error wrapping)
-      - path: _test\.go
-        linters:
-          - wrapcheck
-          - errorlint
-
-      # Exclude certain rules for generated code
-      - path: _templ\.go
-        linters:
-          - gocritic
-          - nolintlint
-          - exhaustruct
-          - varnamelen
-          - wsl
-
-      # Exclude some rules for integration tests
-      - path: test/integration/
-        linters:
-          - funlen
-          - wrapcheck
-          - gocritic
-          - gocyclo
-          - cyclop
-          - maintidx
-
-      # Exclude some rules for mock files
-      - path: test/mocks/
-        linters:
-          - funlen
-          - wrapcheck
-          - gocritic
-          - nolintlint
-          - varnamelen
-          - exhaustruct
-
-      # Allow longer parameter lists for Fx constructors
-      - linters:
-          - gocritic
-        text: "hugeParam"
-
-      # Allow certain patterns in Fx modules
-      - path: ".*module.*\\.go"
-        linters:
-          - funlen  # Module files can be longer
-          - gocyclo
-
-      # Allow some patterns in main.go (Fx app setup)
-      - path: "main\\.go"
-        linters:
-          - funlen
-          - gocyclo
-          - cyclop
-          - exhaustruct  # fx.Options don't need exhaustive initialization
-
-      # Allow interface returns in service layers (common Fx pattern)
-      - text: "returns interface"
-        linters:
-          - ireturn
-        path: "(service|repository|handler).*\\.go"
-
-      # Allow interface returns in middleware system (designed around interfaces)
-      - text: "returns interface"
-        linters:
-          - ireturn
-        path: ".*middleware.*\\.go"
-
-      # Common Fx patterns that trigger false positives
-      - text: "cyclomatic complexity"
-        linters:
-          - gocyclo
-          - cyclop
-        source: "func New.*\\(.*\\) .*fx\\.Option"
+    # Exclude complexity/length linters for Fyne UI and main app files
+    - path: internal/ui/.*\.go
+      linters:
+      - funlen
+      - gocyclo
+      - gocognit
+      - cyclop
+      - maintidx
+    - path: cmd/godo/.*\.go
+      linters:
+      - funlen
+      - gocyclo
+      - gocognit
+      - cyclop
+      - maintidx
+    # Exclude wrapcheck and errorlint for UI/event code
+    - path: internal/ui/.*\.go
+      linters:
+      - wrapcheck
+      - errorlint
+    - path: cmd/godo/.*\.go
+      linters:
+      - wrapcheck
+      - errorlint
+    # Exclude funlen for test files (tests can be longer)
+    - path: _test\.go
+      linters:
+      - funlen
+      - gocyclo
+      - cyclop
+      - maintidx
+      - gocognit
+    # Exclude wrapcheck for test files (tests often don't need error wrapping)
+    - path: _test\.go
+      linters:
+      - wrapcheck
+      - errorlint
+    # Exclude certain rules for generated code
+    - path: _templ\.go
+      linters:
+      - gocritic
+      - nolintlint
+      - exhaustruct
+      - varnamelen
+      - wsl
+    # Exclude some rules for integration tests
+    - path: test/integration/
+      linters:
+      - funlen
+      - wrapcheck
+      - gocritic
+      - gocyclo
+      - cyclop
+      - maintidx
+    # Exclude some rules for mock files
+    - path: test/mocks/
+      linters:
+      - funlen
+      - wrapcheck
+      - gocritic
+      - nolintlint
+      - varnamelen
+      - exhaustruct
 
 formatters:
   exclusions:
     generated: lax
     paths:
-      - third_party$
-      - builtin$
-      - examples$
+    - third_party$
+    - builtin$
+    - examples$

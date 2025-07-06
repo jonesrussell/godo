@@ -12,7 +12,10 @@
         "ui.diagnostic.analyses": {
             "unusedparams": true,
             "shadow": true
-        }
+        },
+        "buildFlags": [
+            "-tags=wireinject,windows,linux"
+        ]
     },
     "go.diagnostic.vulncheck": "Imports",
     "go.enableCodeLens": {

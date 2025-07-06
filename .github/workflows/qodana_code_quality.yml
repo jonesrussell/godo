@@ -14,6 +14,8 @@ on:
 
 jobs:
   qodana:
+    # Temporarily disable Qodana workflow by uncommenting the line below
+    # if: false
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -25,7 +27,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
       - name: 'Qodana Scan'
-        uses: JetBrains/qodana-action@v2025.2
+        uses: JetBrains/qodana-action@v2025.1.1
         env:
           QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
         with:

@@ -7,9 +7,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/gorilla/mux"
+
 	"github.com/jonesrussell/godo/internal/logger"
+	"github.com/jonesrussell/godo/internal/service"
 	"github.com/jonesrussell/godo/internal/storage"
 )
 
@@ -44,18 +45,20 @@ func NewServerConfig() *ServerConfig {
 
 // Server represents the HTTP server
 type Server struct {
-	store  storage.TaskStore
-	log    logger.Logger
-	router *mux.Router
-	srv    *http.Server
+	store   storage.TaskStore
+	service service.TaskService
+	log     logger.Logger
+	router  *mux.Router
+	srv     *http.Server
 }
 
 // NewServer creates a new Server instance
-func NewServer(store storage.TaskStore, log logger.Logger) *Server {
+func NewServer(store storage.TaskStore, taskService service.TaskService, log logger.Logger) *Server {
 	s := &Server{
-		store:  store,
-		log:    log,
-		router: mux.NewRouter(),
+		store:   store,
+		service: taskService,
+		log:     log,
+		router:  mux.NewRouter(),
 	}
 	s.routes()
 	return s
@@ -118,14 +121,20 @@ func (s *Server) routes() {
 }
 
 func (s *Server) handleListTasks(w http.ResponseWriter, r *http.Request) {
-	tasks, err := s.store.List(r.Context())
+	tasks, err := s.service.ListTasks(r.Context(), nil)
 	if err != nil {
 		status, code, msg := mapError(err)
 		writeError(w, status, code, msg)
 		return
 	}
 
-	writeJSON(w, http.StatusOK, NewTaskListResponse(tasks))
+	// Convert service tasks back to storage tasks for response
+	storageTasks := make([]storage.Task, len(tasks))
+	for i, task := range tasks {
+		storageTasks[i] = *task
+	}
+
+	writeJSON(w, http.StatusOK, NewTaskListResponse(storageTasks))
 }
 
 func (s *Server) handleCreateTask(w http.ResponseWriter, r *http.Request) {
@@ -135,35 +144,28 @@ func (s *Server) handleCreateTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	task := storage.Task{
-		ID:        uuid.New().String(),
-		Content:   req.Content,
-		Done:      false,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-	}
-
-	if err := s.store.Add(r.Context(), task); err != nil {
-		status, code, msg := mapError(err)
-		writeError(w, status, code, msg)
-		return
-	}
-
-	writeJSON(w, http.StatusCreated, NewTaskResponse(task))
-}
-
-func (s *Server) handleGetTask(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id := vars["id"]
-
-	task, err := s.store.GetByID(r.Context(), id)
+	task, err := s.service.CreateTask(r.Context(), req.Content)
 	if err != nil {
 		status, code, msg := mapError(err)
 		writeError(w, status, code, msg)
 		return
 	}
 
-	writeJSON(w, http.StatusOK, NewTaskResponse(task))
+	writeJSON(w, http.StatusCreated, NewTaskResponse(*task))
+}
+
+func (s *Server) handleGetTask(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	task, err := s.service.GetTask(r.Context(), id)
+	if err != nil {
+		status, code, msg := mapError(err)
+		writeError(w, status, code, msg)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, NewTaskResponse(*task))
 }
 
 func (s *Server) handleUpdateTask(w http.ResponseWriter, r *http.Request) {
@@ -176,20 +178,19 @@ func (s *Server) handleUpdateTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	task := storage.Task{
-		ID:        id,
-		Content:   req.Content,
-		Done:      req.Done,
-		UpdatedAt: time.Now(),
+	updates := service.TaskUpdateRequest{
+		Content: &req.Content,
+		Done:    &req.Done,
 	}
 
-	if err := s.store.Update(r.Context(), task); err != nil {
+	task, err := s.service.UpdateTask(r.Context(), id, updates)
+	if err != nil {
 		status, code, msg := mapError(err)
 		writeError(w, status, code, msg)
 		return
 	}
 
-	writeJSON(w, http.StatusOK, NewTaskResponse(task))
+	writeJSON(w, http.StatusOK, NewTaskResponse(*task))
 }
 
 func (s *Server) handlePatchTask(w http.ResponseWriter, r *http.Request) {
@@ -202,35 +203,26 @@ func (s *Server) handlePatchTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	task, err := s.store.GetByID(r.Context(), id)
+	updates := service.TaskUpdateRequest{
+		Content: req.Content,
+		Done:    req.Done,
+	}
+
+	task, err := s.service.UpdateTask(r.Context(), id, updates)
 	if err != nil {
 		status, code, msg := mapError(err)
 		writeError(w, status, code, msg)
 		return
 	}
 
-	if req.Content != nil {
-		task.Content = *req.Content
-	}
-	if req.Done != nil {
-		task.Done = *req.Done
-	}
-	task.UpdatedAt = time.Now()
-
-	if err := s.store.Update(r.Context(), task); err != nil {
-		status, code, msg := mapError(err)
-		writeError(w, status, code, msg)
-		return
-	}
-
-	writeJSON(w, http.StatusOK, NewTaskResponse(task))
+	writeJSON(w, http.StatusOK, NewTaskResponse(*task))
 }
 
 func (s *Server) handleDeleteTask(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 
-	if err := s.store.Delete(r.Context(), id); err != nil {
+	if err := s.service.DeleteTask(r.Context(), id); err != nil {
 		status, code, msg := mapError(err)
 		writeError(w, status, code, msg)
 		return

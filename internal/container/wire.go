@@ -20,6 +20,7 @@ import (
 	"github.com/jonesrussell/godo/internal/gui/quicknote"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/options"
+	"github.com/jonesrussell/godo/internal/service"
 	"github.com/jonesrussell/godo/internal/storage"
 	"github.com/jonesrussell/godo/internal/storage/sqlite"
 )
@@ -31,6 +32,7 @@ var (
 		BaseSet,
 		LoggingSet,
 		StorageSet,
+		ServiceSet,
 		ConfigSet,
 		ProvideCoreOptions,
 	)
@@ -75,6 +77,11 @@ var (
 		ProvideDatabasePath,
 		ProvideSQLiteStore,
 		wire.Bind(new(storage.TaskStore), new(*sqlite.Store)),
+	)
+
+	// ServiceSet provides business logic services
+	ServiceSet = wire.NewSet(
+		ProvideTaskService,
 	)
 
 	// ConfigSet provides configuration dependencies
@@ -459,16 +466,21 @@ func ProvideAPIConfig() *api.ServerConfig {
 	return api.NewServerConfig()
 }
 
-func ProvideAPIServer(store storage.TaskStore, log logger.Logger) *api.Server {
-	return api.NewServer(store, log)
+func ProvideAPIServer(store storage.TaskStore, taskService service.TaskService, log logger.Logger) *api.Server {
+	return api.NewServer(store, taskService, log)
 }
 
-func ProvideAPIRunner(store storage.TaskStore, log logger.Logger, cfg *api.ServerConfig) *api.Runner {
-	return api.NewRunner(store, log, &common.HTTPConfig{
+func ProvideAPIRunner(store storage.TaskStore, taskService service.TaskService, log logger.Logger, cfg *api.ServerConfig) *api.Runner {
+	return api.NewRunner(store, taskService, log, &common.HTTPConfig{
 		Port:              8080, // TODO: Get from config
 		ReadTimeout:       int(cfg.ReadTimeout.Seconds()),
 		WriteTimeout:      int(cfg.WriteTimeout.Seconds()),
 		ReadHeaderTimeout: int(cfg.ReadHeaderTimeout.Seconds()),
 		IdleTimeout:       int(cfg.IdleTimeout.Seconds()),
 	})
+}
+
+// ProvideTaskService provides a TaskService instance
+func ProvideTaskService(store storage.TaskStore, log logger.Logger) service.TaskService {
+	return service.NewTaskService(store, log)
 }

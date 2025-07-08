@@ -1,0 +1,38 @@
+version: '3'
+
+vars:
+  BINARY_NAME: godo
+  BUILD_DIR: dist
+
+tasks:
+  default:
+    cmds:
+    - task --list-all
+    silent: true
+
+  wire:linux:
+    desc: Generate wire code for Linux
+    cmds:
+    - cd internal/container && wire gen -tags linux
+
+  wire:windows:
+    desc: Generate wire code for Windows
+    cmds:
+    - cd internal/container && wire gen -tags windows
+
+  build:cross-windows:
+    desc: Cross-compile for Windows from Linux/WSL2
+    deps: [ wire:windows ]
+    env:
+      CGO_ENABLED: 0
+      GOOS: windows
+      GOARCH: amd64
+    cmds:
+    - mkdir -p {{.BUILD_DIR}}
+    - go build -tags windows -o {{.BUILD_DIR}}/{{.BINARY_NAME}}.exe cmd/godo/main.go
+
+  clean:
+    desc: Clean up generated files
+    cmds:
+    - rm -rf {{.BUILD_DIR}}
+    - rm -rf internal/container/*_wire_gen.go

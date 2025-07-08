@@ -2,6 +2,7 @@
 package model
 
 import (
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
@@ -78,3 +79,5 @@ type ValidationError struct {
 func (e *ValidationError) Error() string {
 	return "validation error: " + e.Field + ": " + e.Message
 }
+
+var ErrTaskNotFound = errors.New("task not found")

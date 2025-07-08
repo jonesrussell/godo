@@ -100,21 +100,11 @@ func (m *LinuxManager) checkX11Availability() error {
 // It will attempt to register the hotkey multiple times in case of failure.
 // Returns an error if registration fails after all attempts or if X11 is unavailable.
 func (m *LinuxManager) Register() error {
-	if m.binding == nil {
-		m.log.Error("Hotkey binding not set")
-		return fmt.Errorf("hotkey binding not set")
+	if bindErr := m.validateBindingAndX11(); bindErr != nil {
+		return bindErr
 	}
-
-	// Check X11 availability first
-	if err := m.checkX11Availability(); err != nil {
-		m.log.Error("X11 server not available", "error", err)
-		return fmt.Errorf("X11 server not available: %w", err)
-	}
-
-	// Check if already registered
-	if m.hk != nil && m.hk.IsRegistered() {
-		m.log.Error("Hotkey already registered")
-		return fmt.Errorf("hotkey already registered")
+	if regCheckErr := m.checkAlreadyRegistered(); regCheckErr != nil {
+		return regCheckErr
 	}
 
 	m.log.Info("Starting hotkey registration",
@@ -125,7 +115,54 @@ func (m *LinuxManager) Register() error {
 		"pid", os.Getpid(),
 		"display", os.Getenv("DISPLAY"))
 
-	// Convert string modifiers to hotkey.Modifier
+	mods, modErr := m.convertModifiers()
+	if modErr != nil {
+		return modErr
+	}
+
+	key, keyErr := m.convertKey()
+	if keyErr != nil {
+		return keyErr
+	}
+
+	m.createHotkeyIfNeeded(mods, key)
+
+	if regErr := m.registerWithRetries(mods, key); regErr != nil {
+		return regErr
+	}
+
+	m.log.Info("Successfully registered hotkey",
+		"modifiers", strings.Join(m.binding.Modifiers, "+"),
+		"key", m.binding.Key,
+		"os", runtime.GOOS,
+		"arch", runtime.GOARCH,
+		"pid", os.Getpid(),
+		"display", os.Getenv("DISPLAY"))
+
+	return nil
+}
+
+func (m *LinuxManager) validateBindingAndX11() error {
+	if m.binding == nil {
+		m.log.Error("Hotkey binding not set")
+		return fmt.Errorf("hotkey binding not set")
+	}
+	if x11Err := m.checkX11Availability(); x11Err != nil {
+		m.log.Error("X11 server not available", "error", x11Err)
+		return fmt.Errorf("X11 server not available: %w", x11Err)
+	}
+	return nil
+}
+
+func (m *LinuxManager) checkAlreadyRegistered() error {
+	if m.hk != nil && m.hk.IsRegistered() {
+		m.log.Error("Hotkey already registered")
+		return fmt.Errorf("hotkey already registered")
+	}
+	return nil
+}
+
+func (m *LinuxManager) convertModifiers() ([]hotkey.Modifier, error) {
 	var mods []hotkey.Modifier
 	m.log.Info("Converting modifiers", "raw_modifiers", m.binding.Modifiers)
 	for _, mod := range m.binding.Modifiers {
@@ -141,65 +178,53 @@ func (m *LinuxManager) Register() error {
 			mods = append(mods, hotkey.Mod1)
 		default:
 			m.log.Error("Unknown modifier", "modifier", mod)
-			return fmt.Errorf("unknown modifier: %s", mod)
+			return nil, fmt.Errorf("unknown modifier: %s", mod)
 		}
 	}
 	m.log.Info("Converted modifiers", "count", len(mods))
+	return mods, nil
+}
 
-	// Convert key string to hotkey.Key
-	var key hotkey.Key
+func (m *LinuxManager) convertKey() (hotkey.Key, error) {
 	m.log.Info("Converting key", "raw_key", m.binding.Key)
 	switch m.binding.Key {
 	case "G":
-		key = hotkey.KeyG
 		m.log.Info("Using key G", "key_code", hotkey.KeyG)
+		return hotkey.KeyG, nil
 	case "N":
-		key = hotkey.KeyN
 		m.log.Info("Using key N", "key_code", hotkey.KeyN)
+		return hotkey.KeyN, nil
 	default:
 		m.log.Error("Unsupported key", "key", m.binding.Key,
 			"supported_keys", []string{"G", "N"})
-		return fmt.Errorf("unsupported key: %s", m.binding.Key)
+		return 0, fmt.Errorf("unsupported key: %s", m.binding.Key)
 	}
+}
 
-	// Create and register the hotkey
+func (m *LinuxManager) createHotkeyIfNeeded(mods []hotkey.Modifier, key hotkey.Key) {
 	m.log.Info("Creating hotkey instance",
 		"modifiers_count", len(mods),
 		"key", key)
-
-	// If we don't have a hotkey instance yet, create one
 	if m.hk == nil {
 		m.hk = newHotkeyWrapper(mods, key)
 	}
+}
 
-	// Try registration with retries
-	var err error
+func (m *LinuxManager) registerWithRetries(mods []hotkey.Modifier, key hotkey.Key) error {
+	var regErr error
 	for i := 0; i < maxRetries; i++ {
 		m.log.Info("Attempting to register hotkey with system", "attempt", i+1)
-		if err = m.hk.Register(); err == nil {
-			break
+		if regErr = m.hk.Register(); regErr == nil {
+			return nil
 		}
 		m.log.Error("Failed to register hotkey",
-			"error", err,
+			"error", regErr,
 			"attempt", i+1,
 			"modifiers", mods,
 			"key", key)
 		time.Sleep(retryDelay)
 	}
-
-	if err != nil {
-		return fmt.Errorf("failed to register hotkey after %d attempts: %w", maxRetries, err)
-	}
-
-	m.log.Info("Successfully registered hotkey",
-		"modifiers", strings.Join(m.binding.Modifiers, "+"),
-		"key", m.binding.Key,
-		"os", runtime.GOOS,
-		"arch", runtime.GOARCH,
-		"pid", os.Getpid(),
-		"display", os.Getenv("DISPLAY"))
-
-	return nil
+	return fmt.Errorf("failed to register hotkey after %d attempts: %w", maxRetries, regErr)
 }
 
 // Unregister removes the hotkey registration from the Linux system.

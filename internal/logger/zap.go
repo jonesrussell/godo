@@ -27,15 +27,15 @@ func New(config *common.LogConfig) (Logger, error) {
 	// Ensure log file directory exists if file logging is enabled
 	if config.File && config.FilePath != "" {
 		dir := filepath.Dir(config.FilePath)
-		if err := os.MkdirAll(dir, 0o755); err != nil {
-			fmt.Printf("Failed to create log directory: %v\n", err)
+		if mkdirErr := os.MkdirAll(dir, 0o755); mkdirErr != nil {
+			fmt.Printf("Failed to create log directory: %v\n", mkdirErr)
 		}
 		// Also create error log directory if error output is set
 		for _, out := range config.ErrorOutput {
 			if out != "stderr" && out != "stdout" {
 				errDir := filepath.Dir(out)
-				if err := os.MkdirAll(errDir, 0o755); err != nil {
-					fmt.Printf("Failed to create error log directory: %v\n", err)
+				if mkdirErr := os.MkdirAll(errDir, 0o755); mkdirErr != nil {
+					fmt.Printf("Failed to create error log directory: %v\n", mkdirErr)
 				}
 			}
 		}

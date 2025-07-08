@@ -55,6 +55,7 @@ tasks:
       - go.sum
       - configs/**/*.yaml
       - internal/container/wire_gen.go
+      - Taskfile.build.yml
     env:
       CGO_ENABLED: 1
       GOOS: windows
@@ -63,7 +64,7 @@ tasks:
       CXX: x86_64-w64-mingw32-g++
     cmds:
     - mkdir -p {{.BUILD_DIR}}
-    - go build -ldflags "-X main.version={{.VERSION}} -X main.commit={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}} -s -w -H windowsgui" -tags windows -o {{.BUILD_DIR}}/{{.BINARY_NAME}}.exe cmd/godo/main.go
+    - go build -ldflags "-X main.version={{.VERSION}} -X main.commit={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}} -s -w" -tags windows -o {{.BUILD_DIR}}/{{.BINARY_NAME}}.exe cmd/godo/main.go
 
   cross-linux:
     desc: Cross-compile for Linux from Windows
@@ -76,6 +77,7 @@ tasks:
       - go.sum
       - configs/**/*.yaml
       - internal/container/wire_gen.go
+      - Taskfile.build.yml
     env:
       CGO_ENABLED: 0
       GOOS: linux
@@ -95,6 +97,7 @@ tasks:
       - go.sum
       - configs/**/*.yaml
       - internal/container/wire_gen.go
+      - Taskfile.build.yml
     env:
       CGO_ENABLED: 1
       GOOS: linux
@@ -114,13 +117,14 @@ tasks:
       - go.sum
       - configs/**/*.yaml
       - internal/container/wire_gen.go
+      - Taskfile.build.yml
     env:
       CGO_ENABLED: 1
       GOOS: windows
       GOARCH: amd64
     cmds:
     - mkdir -p {{.BUILD_DIR}}
-    - go build -ldflags "-X main.version={{.VERSION}} -X main.commit={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}} -s -w -H windowsgui" -tags windows -o {{.BUILD_DIR}}/{{.BINARY_NAME}}.exe cmd/godo/main.go
+    - go build -ldflags "-X main.version={{.VERSION}} -X main.commit={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}} -s -w" -tags windows -o {{.BUILD_DIR}}/{{.BINARY_NAME}}.exe cmd/godo/main.go
 
   native:
     desc: Build for current platform (native)

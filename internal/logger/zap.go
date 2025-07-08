@@ -2,11 +2,14 @@ package logger
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 
-	"github.com/jonesrussell/godo/internal/common"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+
+	"github.com/jonesrussell/godo/internal/common"
 )
 
 type zapLogger struct {
@@ -19,6 +22,23 @@ func New(config *common.LogConfig) (Logger, error) {
 	level, err := parseLogLevel(config.Level)
 	if err != nil {
 		return nil, fmt.Errorf("invalid log level %q: %w", config.Level, err)
+	}
+
+	// Ensure log file directory exists if file logging is enabled
+	if config.File && config.FilePath != "" {
+		dir := filepath.Dir(config.FilePath)
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			fmt.Printf("Failed to create log directory: %v\n", err)
+		}
+		// Also create error log directory if error output is set
+		for _, out := range config.ErrorOutput {
+			if out != "stderr" && out != "stdout" {
+				errDir := filepath.Dir(out)
+				if err := os.MkdirAll(errDir, 0o755); err != nil {
+					fmt.Printf("Failed to create error log directory: %v\n", err)
+				}
+			}
+		}
 	}
 
 	// Create Zap logger configuration

@@ -8,6 +8,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/driver/desktop"
+
 	"github.com/jonesrussell/godo/internal/api"
 	"github.com/jonesrussell/godo/internal/app/hotkey"
 	"github.com/jonesrussell/godo/internal/common"
@@ -106,7 +107,17 @@ func (a *App) SetupUI() error {
 	// 1. Set up systray first as it's the most visible component
 	if _, ok := a.fyneApp.(desktop.App); ok {
 		a.logger.Debug("Setting up systray")
-		systray.SetupSystray(a.fyneApp, a.mainWindow.GetWindow(), a.quickNote)
+		// Get log file paths from config
+		logPath := "logs/godo.log"
+		errorLogPath := "logs/godo-error.log"
+		if a.config.Logger.FilePath != "" {
+			logPath = a.config.Logger.FilePath
+		}
+		// For error log, use the same directory as main log but with error suffix
+		if a.config.Logger.FilePath != "" {
+			errorLogPath = a.config.Logger.FilePath + "-error"
+		}
+		systray.SetupSystray(a.fyneApp, a.mainWindow.GetWindow(), a.quickNote, logPath, errorLogPath)
 	} else {
 		a.logger.Warn("Desktop features not available, skipping systray setup")
 	}

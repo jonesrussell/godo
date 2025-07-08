@@ -7,8 +7,12 @@ app:
 logger:
   level: "debug"
   console: true
+  file: true
+  file_path: "logs/godo.log"
   development: true
   encoding: "console"
+  output: ["stdout", "logs/godo.log"]
+  error_output: ["stderr", "logs/godo-error.log"]
   encoderConfig:
     timeKey: "time"
     levelKey: "level"

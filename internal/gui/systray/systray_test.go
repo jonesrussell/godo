@@ -53,7 +53,7 @@ func TestSetupSystray_QuickNoteMenuItem(t *testing.T) {
 	quickNote.On("Show").Return()
 
 	// Setup systray
-	systray.SetupSystray(app, mainWindow, quickNote)
+	systray.SetupSystray(app, mainWindow, quickNote, "test.log", "test-error.log")
 
 	// Verify menu was set
 	assert.NotNil(t, app.menu, "Systray menu should be set")
@@ -79,6 +79,38 @@ func TestSetupSystray_QuickNoteMenuItem(t *testing.T) {
 	quickNote.AssertCalled(t, "Show")
 }
 
+func TestSetupSystray_ViewLogsMenuItem(t *testing.T) {
+	// Create mocks
+	app := &mockDesktopApp{
+		App: test.NewApp(),
+	}
+	mainWindow := test.NewWindow(nil)
+	quickNote := &mockQuickNote{}
+
+	// Set expectations
+	app.On("SetSystemTrayIcon", mock.Anything).Return()
+	app.On("SetSystemTrayMenu", mock.Anything).Return()
+
+	// Setup systray
+	systray.SetupSystray(app, mainWindow, quickNote, "test.log", "test-error.log")
+
+	// Verify menu was set
+	assert.NotNil(t, app.menu, "Systray menu should be set")
+
+	// Find View Logs menu item
+	var viewLogsItem *fyne.MenuItem
+	for _, item := range app.menu.Items {
+		if item.Label == "View Logs" {
+			viewLogsItem = item
+			break
+		}
+	}
+
+	// Verify View Logs menu item exists
+	assert.NotNil(t, viewLogsItem, "View Logs menu item should exist")
+	assert.NotNil(t, viewLogsItem.Action, "View Logs menu item should have an action")
+}
+
 func TestSetupSystray_NonDesktopApp(t *testing.T) {
 	// Test with non-desktop app
 	app := test.NewApp()
@@ -86,7 +118,7 @@ func TestSetupSystray_NonDesktopApp(t *testing.T) {
 	quickNote := &mockQuickNote{}
 
 	// This should not panic
-	systray.SetupSystray(app, mainWindow, quickNote)
+	systray.SetupSystray(app, mainWindow, quickNote, "test.log", "test-error.log")
 
 	// Quick Note should not be called
 	quickNote.AssertNotCalled(t, "Show")

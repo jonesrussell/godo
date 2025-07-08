@@ -19,3 +19,5 @@ godo.db-wal
 godo-linter.exe
 
 .task/
+
+test/mocks/

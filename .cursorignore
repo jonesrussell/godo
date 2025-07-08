@@ -27,7 +27,7 @@ coverage/
 # CI/CD and quality tools
 .gitlab/
 .circleci/
-qodana.*
+
 .codecov.yml
 coverage.txt
 coverage.html

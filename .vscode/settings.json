@@ -14,7 +14,7 @@
             "shadow": true
         },
         "buildFlags": [
-            "-tags=wireinject,windows,linux"
+            "-tags=wireinject,linux"
         ]
     },
     "go.diagnostic.vulncheck": "Imports",

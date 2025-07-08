@@ -9,7 +9,6 @@ import (
 	"github.com/jonesrussell/godo/internal/common"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/service"
-	"github.com/jonesrussell/godo/internal/storage"
 )
 
 // Runner manages the HTTP server lifecycle
@@ -23,13 +22,12 @@ type Runner struct {
 
 // NewRunner creates a new HTTP server runner
 func NewRunner(
-	store storage.TaskStore,
 	taskService service.TaskService,
 	l logger.Logger,
 	config *common.HTTPConfig,
 ) *Runner {
 	return &Runner{
-		server:   NewServer(store, taskService, l),
+		server:   NewServer(taskService, l),
 		logger:   l,
 		config:   config,
 		ready:    make(chan struct{}),

@@ -367,26 +367,19 @@ func ProvideHotkeyOptions(cfg *config.Config) (*options.HotkeyOptions, error) {
 
 // API server provider
 func ProvideAPIServer(
-	store storage.TaskStore,
 	taskService service.TaskService,
 	log logger.Logger,
 ) *api.Server {
-	return api.NewServer(store, taskService, log)
+	return api.NewServer(taskService, log)
 }
 
 // API runner provider
 func ProvideAPIRunner(
-	store storage.TaskStore,
 	taskService service.TaskService,
 	log logger.Logger,
+	cfg *config.Config,
 ) *api.Runner {
-	return api.NewRunner(store, taskService, log, &common.HTTPConfig{
-		Port:              8080, // TODO: Get from config
-		ReadTimeout:       30,
-		WriteTimeout:      30,
-		ReadHeaderTimeout: 10,
-		IdleTimeout:       60,
-	})
+	return api.NewRunner(taskService, log, &cfg.HTTP)
 }
 
 // Validation functions

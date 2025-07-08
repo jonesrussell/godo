@@ -41,11 +41,12 @@ const (
 
 // Config holds all application configuration
 type Config struct {
-	App      AppConfig        `mapstructure:"app"`
-	Logger   common.LogConfig `mapstructure:"logger"`
-	Hotkeys  HotkeyConfig     `mapstructure:"hotkeys"`
-	Database DatabaseConfig   `mapstructure:"database"`
-	UI       UIConfig         `mapstructure:"ui"`
+	App      AppConfig         `mapstructure:"app"`
+	Logger   common.LogConfig  `mapstructure:"logger"`
+	Hotkeys  HotkeyConfig      `mapstructure:"hotkeys"`
+	Database DatabaseConfig    `mapstructure:"database"`
+	UI       UIConfig          `mapstructure:"ui"`
+	HTTP     common.HTTPConfig `mapstructure:"http"`
 }
 
 // AppConfig holds application-specific configuration
@@ -289,6 +290,13 @@ func NewDefaultConfig() *Config {
 				Height:      DefaultQuickNoteHeight,
 				StartHidden: false,
 			},
+		},
+		HTTP: common.HTTPConfig{
+			Port:              8080,
+			ReadTimeout:       30,
+			WriteTimeout:      30,
+			ReadHeaderTimeout: 10,
+			IdleTimeout:       120,
 		},
 	}
 }

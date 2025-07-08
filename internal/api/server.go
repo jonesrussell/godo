@@ -12,7 +12,6 @@ import (
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/model"
 	"github.com/jonesrussell/godo/internal/service"
-	"github.com/jonesrussell/godo/internal/storage"
 )
 
 const (
@@ -46,7 +45,6 @@ func NewServerConfig() *ServerConfig {
 
 // Server represents the HTTP server
 type Server struct {
-	store   storage.TaskStore
 	service service.TaskService
 	log     logger.Logger
 	router  *mux.Router
@@ -54,9 +52,8 @@ type Server struct {
 }
 
 // NewServer creates a new Server instance
-func NewServer(store storage.TaskStore, taskService service.TaskService, log logger.Logger) *Server {
+func NewServer(taskService service.TaskService, log logger.Logger) *Server {
 	s := &Server{
-		store:   store,
 		service: taskService,
 		log:     log,
 		router:  mux.NewRouter(),

@@ -80,4 +80,7 @@ func (e *ValidationError) Error() string {
 	return "validation error: " + e.Field + ": " + e.Message
 }
 
-var ErrTaskNotFound = errors.New("task not found")
+var (
+	ErrTaskNotFound = errors.New("task not found")
+	ErrDuplicateID  = errors.New("task ID already exists")
+)

@@ -12,7 +12,7 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 
 	"github.com/jonesrussell/godo/internal/logger"
-	"github.com/jonesrussell/godo/internal/storage"
+	"github.com/jonesrussell/godo/internal/model"
 )
 
 const internalServerErrorMsg = "Internal server error"
@@ -92,7 +92,7 @@ func WithErrorHandling(log logger.Logger) Middleware {
 
 					switch e := err.(type) {
 					case error:
-						if errors.Is(e, storage.ErrTaskNotFound) {
+						if errors.Is(e, model.ErrTaskNotFound) {
 							status = http.StatusNotFound
 							code = "task_not_found"
 							msg = "Task not found"
@@ -146,9 +146,9 @@ func writeValidationError(w http.ResponseWriter, fields map[string]string) {
 // mapError maps an error to an HTTP status code and error message
 func mapError(err error) (code int, msg, details string) {
 	switch {
-	case errors.Is(err, storage.ErrTaskNotFound):
+	case errors.Is(err, model.ErrTaskNotFound):
 		return http.StatusNotFound, "Task not found", err.Error()
-	case errors.Is(err, storage.ErrDuplicateID):
+	case errors.Is(err, model.ErrDuplicateID):
 		return http.StatusConflict, "Task ID already exists", err.Error()
 	default:
 		return http.StatusInternalServerError, internalServerErrorMsg, err.Error()

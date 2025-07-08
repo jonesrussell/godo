@@ -275,20 +275,34 @@ func ProvideHotkeyBinding() *common.HotkeyBinding {
 }
 
 // ProvideLogger provides a zap logger instance using options
-func ProvideLogger(opts *options.LoggerOptions) (*logger.ZapLogger, func(), error) {
+func ProvideLogger(opts *options.LoggerOptions) (logger.Logger, func(), error) {
 	if opts == nil {
 		return nil, nil, fmt.Errorf("logger options are required")
 	}
 
-	cfg := &logger.Config{
+	// Create a LogConfig that supports file logging
+	logConfig := &common.LogConfig{
 		Level:       string(opts.Level),
-		Development: true,
-		Encoding:    "console",
+		Console:     true,
+		File:        true,
+		FilePath:    "logs/godo.log",
+		Output:      opts.Output.Slice(),
+		ErrorOutput: opts.ErrorOutput.Slice(),
 	}
 
-	log, cleanup, err := logger.NewLogger(cfg)
+	log, err := logger.New(logConfig)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create logger: %w", err)
+	}
+
+	// Return a cleanup function that syncs the logger
+	cleanup := func() {
+		if zapLogger, ok := log.(*logger.ZapLogger); ok {
+			if err := zapLogger.Sync(); err != nil {
+				// Log sync errors but don't fail the application
+				fmt.Printf("Failed to sync logger: %v\n", err)
+			}
+		}
 	}
 
 	return log, cleanup, nil
@@ -453,12 +467,12 @@ func validateConfig(cfg *config.Config) error {
 
 // ProvideLogOutputPaths provides the default log output paths
 func ProvideLogOutputPaths() common.LogOutputPaths {
-	return common.LogOutputPaths{"stdout"}
+	return common.LogOutputPaths{"stdout", "logs/godo.log"}
 }
 
 // ProvideErrorOutputPaths provides the default error output paths
 func ProvideErrorOutputPaths() common.ErrorOutputPaths {
-	return common.ErrorOutputPaths{"stderr"}
+	return common.ErrorOutputPaths{"stderr", "logs/godo-error.log"}
 }
 
 // Provider functions for API components

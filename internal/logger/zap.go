@@ -12,7 +12,23 @@ import (
 	"github.com/jonesrussell/godo/internal/common"
 )
 
-type zapLogger struct {
+// fieldMultiplier is used to calculate the capacity for key-value pairs
+const fieldMultiplier = 2
+
+// Logger defines the logging interface
+// Moved from logger.go
+type Logger interface {
+	Debug(msg string, keysAndValues ...interface{})
+	Info(msg string, keysAndValues ...interface{})
+	Warn(msg string, keysAndValues ...interface{})
+	Error(msg string, keysAndValues ...interface{})
+	Fatal(msg string, keysAndValues ...interface{})
+	WithError(err error) Logger
+	WithField(key string, value interface{}) Logger
+	WithFields(fields map[string]interface{}) Logger
+}
+
+type ZapLogger struct {
 	*zap.SugaredLogger
 }
 
@@ -57,7 +73,7 @@ func New(config *common.LogConfig) (Logger, error) {
 		return nil, fmt.Errorf("failed to build logger: %w", err)
 	}
 
-	return &zapLogger{baseLogger.Sugar()}, nil
+	return &ZapLogger{baseLogger.Sugar()}, nil
 }
 
 func parseLogLevel(level string) (zapcore.Level, error) {
@@ -85,35 +101,35 @@ func getEncoderConfig() zapcore.EncoderConfig {
 }
 
 // Implement the interface methods
-func (l *zapLogger) Debug(msg string, keysAndValues ...interface{}) {
+func (l *ZapLogger) Debug(msg string, keysAndValues ...interface{}) {
 	l.Debugw(msg, keysAndValues...)
 }
 
-func (l *zapLogger) Info(msg string, keysAndValues ...interface{}) {
+func (l *ZapLogger) Info(msg string, keysAndValues ...interface{}) {
 	l.Infow(msg, keysAndValues...)
 }
 
-func (l *zapLogger) Warn(msg string, keysAndValues ...interface{}) {
+func (l *ZapLogger) Warn(msg string, keysAndValues ...interface{}) {
 	l.Warnw(msg, keysAndValues...)
 }
 
-func (l *zapLogger) Error(msg string, keysAndValues ...interface{}) {
+func (l *ZapLogger) Error(msg string, keysAndValues ...interface{}) {
 	l.Errorw(msg, keysAndValues...)
 }
 
-func (l *zapLogger) Fatal(msg string, keysAndValues ...interface{}) {
+func (l *ZapLogger) Fatal(msg string, keysAndValues ...interface{}) {
 	l.Fatalw(msg, keysAndValues...)
 }
 
-func (l *zapLogger) WithError(err error) Logger {
-	return &zapLogger{l.With("error", err)}
+func (l *ZapLogger) WithError(err error) Logger {
+	return &ZapLogger{l.With("error", err)}
 }
 
-func (l *zapLogger) WithField(key string, value interface{}) Logger {
-	return &zapLogger{l.With(key, value)}
+func (l *ZapLogger) WithField(key string, value interface{}) Logger {
+	return &ZapLogger{l.With(key, value)}
 }
 
-func (l *zapLogger) WithFields(fields map[string]interface{}) Logger {
+func (l *ZapLogger) WithFields(fields map[string]interface{}) Logger {
 	if len(fields) == 0 {
 		return l
 	}
@@ -121,5 +137,5 @@ func (l *zapLogger) WithFields(fields map[string]interface{}) Logger {
 	for k, v := range fields {
 		args = append(args, k, v)
 	}
-	return &zapLogger{l.With(args...)}
+	return &ZapLogger{l.With(args...)}
 }

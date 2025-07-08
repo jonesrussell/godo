@@ -95,7 +95,12 @@ jobs:
           GOOS: ${{ matrix.os }}
           GOARCH: ${{ matrix.arch }}
           CC: ${{ matrix.cc }}
-        run: task build:${{ matrix.os }}
+        run: |
+          if [ "${{ matrix.os }}" = "windows" ]; then
+            task build:cross-windows
+          else
+            task build:native:linux
+          fi
 
       # Add versioning based on git tags
       - name: Get version
@@ -109,4 +114,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: godo-${{ steps.get_version.outputs.version }}-${{ matrix.os }}-${{ matrix.arch }}
-          path: bin/${{ matrix.artifact }}
+          path: dist/${{ matrix.artifact }}

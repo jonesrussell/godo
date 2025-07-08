@@ -90,19 +90,13 @@ tasks:
     cmds:
     - task: native:linux
 
-  wsl2:setup:
-    desc: Setup WSL2 environment for development
-    platforms: [ linux ]
-    cmds:
-    - echo "Setting up WSL2 environment"
-
   wsl2:build-windows:
     desc: Build Windows executable from WSL2
-    deps: [ wsl2:setup, wire:windows ]
+    deps: [ wire:windows ]
     platforms: [ linux ]
     cmds:
     - echo "Building Windows executable from WSL2"
-    - task cross-windows
+    - task build:cross-windows
     - echo "Windows executable created"
 
   wsl2:copy-to-windows:
@@ -118,7 +112,6 @@ tasks:
   wsl2:all:
     desc: Complete WSL2 workflow - setup, build, and copy to Windows
     cmds:
-    - task: wsl2:setup
     - task: wsl2:build-windows
     - task: wsl2:copy-to-windows
 

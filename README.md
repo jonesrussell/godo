@@ -98,14 +98,20 @@ http DELETE :8080/api/v1/tasks/{id}
 
 - Go 1.23 or higher
 - SQLite3
-- MinGW-w64 GCC (for Windows users)
-  - Recommended version: [MinGW-w64 GCC 14.2.0 or later](https://github.com/niXman/mingw-builds-binaries/releases)
-  - Choose the appropriate version based on your system architecture (x86_64 or i686)
-  - Installation steps:
-    1. Download the appropriate version (e.g., x86_64-14.2.0-release-posix-seh-ucrt-rt_v12-rev0.7z)
-    2. Extract to C:\mingw64 (or your preferred location)
-    3. Add C:\mingw64\bin to your system's PATH environment variable
-    4. Verify installation by running `gcc --version` in Command Prompt
+- MinGW-w64 GCC (required for Windows builds)
+  - **Ubuntu/WSL2:**
+    ```bash
+    sudo apt update
+    sudo apt install -y mingw-w64
+    ```
+  - **Windows:**
+    - Recommended version: [MinGW-w64 GCC 14.2.0 or later](https://github.com/niXman/mingw-builds-binaries/releases)
+    - Choose the appropriate version based on your system architecture (x86_64 or i686)
+    - Installation steps:
+      1. Download the appropriate version (e.g., x86_64-14.2.0-release-posix-seh-ucrt-rt_v12-rev0.7z)
+      2. Extract to C:\mingw64 (or your preferred location)
+      3. Add C:\mingw64\bin to your system's PATH environment variable
+      4. Verify installation by running `gcc --version` in Command Prompt
 - Task (task runner)
   ```powershell
   # Install using Chocolatey

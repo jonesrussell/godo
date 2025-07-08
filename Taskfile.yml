@@ -203,7 +203,7 @@ tasks:
   build:
     desc: Build for current platform (native)
     cmds:
-    - task: build:build
+    - task: build:native
 
   check:
     desc: Quick check - format and lint only

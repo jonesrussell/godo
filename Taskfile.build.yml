@@ -28,34 +28,13 @@ tasks:
 
   wire:
     desc: Generate wire code for current platform
-    cmds:
-    - task: wire:{{.GOOS}}
-
-  build:linux:
-    desc: Build for Linux (native)
-    deps: [ wire:linux ]
     platforms: [ linux ]
-    env:
-      CGO_ENABLED: 1
-      GOOS: linux
-      GOARCH: amd64
     cmds:
-    - mkdir -p {{.BUILD_DIR}}
-    - go build -ldflags "-X main.version={{.VERSION}} -X main.commit={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}} -s -w" -tags linux -o {{.BUILD_DIR}}/{{.BINARY_NAME}} cmd/godo/main.go
+    - task: wire:linux
 
-  build:windows:
-    desc: Build for Windows (native)
-    deps: [ wire:windows ]
-    platforms: [ windows ]
-    env:
-      CGO_ENABLED: 1
-      GOOS: windows
-      GOARCH: amd64
-    cmds:
-    - mkdir -p {{.BUILD_DIR}}
-    - go build -ldflags "-X main.version={{.VERSION}} -X main.commit={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}} -s -w" -tags windows -o {{.BUILD_DIR}}/{{.BINARY_NAME}}.exe cmd/godo/main.go
 
-  build:cross-windows:
+
+  cross-windows:
     desc: Cross-compile for Windows from Linux/WSL2
     deps: [ wire:windows ]
     platforms: [ linux ]
@@ -67,7 +46,7 @@ tasks:
     - mkdir -p {{.BUILD_DIR}}
     - go build -ldflags "-X main.version={{.VERSION}} -X main.commit={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}} -s -w" -tags windows -o {{.BUILD_DIR}}/{{.BINARY_NAME}}.exe cmd/godo/main.go
 
-  build:cross-linux:
+  cross-linux:
     desc: Cross-compile for Linux from Windows
     deps: [ wire:linux ]
     platforms: [ windows ]
@@ -79,10 +58,35 @@ tasks:
     - mkdir -p {{.BUILD_DIR}}
     - go build -ldflags "-X main.version={{.VERSION}} -X main.commit={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}} -s -w" -tags linux -o {{.BUILD_DIR}}/{{.BINARY_NAME}} cmd/godo/main.go
 
-  build:
-    desc: Build for current platform (native)
+  native:linux:
+    desc: Build for Linux (native)
+    deps: [ wire:linux ]
+    platforms: [ linux ]
+    env:
+      CGO_ENABLED: 1
+      GOOS: linux
+      GOARCH: amd64
     cmds:
-    - task: build:{{.GOOS}}
+    - mkdir -p {{.BUILD_DIR}}
+    - go build -ldflags "-X main.version={{.VERSION}} -X main.commit={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}} -s -w" -tags linux -o {{.BUILD_DIR}}/{{.BINARY_NAME}} cmd/godo/main.go
+
+  native:windows:
+    desc: Build for Windows (native)
+    deps: [ wire:windows ]
+    platforms: [ windows ]
+    env:
+      CGO_ENABLED: 1
+      GOOS: windows
+      GOARCH: amd64
+    cmds:
+    - mkdir -p {{.BUILD_DIR}}
+    - go build -ldflags "-X main.version={{.VERSION}} -X main.commit={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}} -s -w" -tags windows -o {{.BUILD_DIR}}/{{.BINARY_NAME}}.exe cmd/godo/main.go
+
+  native:
+    desc: Build for current platform (native)
+    platforms: [ linux ]
+    cmds:
+    - task: native:linux
 
   wsl2:setup:
     desc: Setup WSL2 environment for development
@@ -96,7 +100,7 @@ tasks:
     platforms: [ linux ]
     cmds:
     - echo "Building Windows executable from WSL2"
-    - task build:cross-windows
+    - task cross-windows
     - echo "Windows executable created"
 
   wsl2:copy-to-windows:
@@ -158,5 +162,5 @@ tasks:
   all:
     desc: Build all platforms
     cmds:
-    - task: build:cross-windows
-    - task: build:cross-linux
+    - task: cross-windows
+    - task: cross-linux

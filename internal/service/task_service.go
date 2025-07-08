@@ -234,9 +234,7 @@ func (s *taskService) ListTasks(ctx context.Context, filter *TaskFilter) ([]*mod
 	}
 
 	// Apply filters if provided
-	if filter != nil {
-		taskPtrs = s.applyFilters(taskPtrs, filter)
-	}
+	taskPtrs = s.applyFilters(taskPtrs, filter)
 
 	s.logger.Info("Tasks retrieved successfully", "count", len(taskPtrs))
 	return taskPtrs, nil
@@ -248,35 +246,48 @@ func (s *taskService) applyFilters(tasks []*model.Task, filter *TaskFilter) []*m
 		return tasks
 	}
 
+	filtered := s.filterByCriteria(tasks, filter)
+	return s.applyPagination(filtered, filter)
+}
+
+// filterByCriteria applies content and date filters
+func (s *taskService) filterByCriteria(tasks []*model.Task, filter *TaskFilter) []*model.Task {
 	var filtered []*model.Task
 	for _, task := range tasks {
 		if s.matchesFilter(task, filter) {
 			filtered = append(filtered, task)
 		}
 	}
+	return filtered
+}
 
-	// Apply limit and offset
-	if filter.Limit != nil && *filter.Limit > 0 {
-		limit := *filter.Limit
-		if filter.Offset != nil && *filter.Offset > 0 {
-			offset := *filter.Offset
-			if offset < len(filtered) {
-				if offset+limit > len(filtered) {
-					limit = len(filtered) - offset
-				}
-				filtered = filtered[offset : offset+limit]
-			} else {
-				filtered = filtered[:0]
-			}
-		} else {
-			if limit > len(filtered) {
-				limit = len(filtered)
-			}
-			filtered = filtered[:limit]
-		}
+// applyPagination applies limit and offset to the filtered results
+func (s *taskService) applyPagination(tasks []*model.Task, filter *TaskFilter) []*model.Task {
+	if filter.Limit == nil || *filter.Limit <= 0 {
+		return tasks
 	}
 
-	return filtered
+	limit := *filter.Limit
+	offset := 0
+	if filter.Offset != nil && *filter.Offset > 0 {
+		offset = *filter.Offset
+	}
+
+	return s.sliceWithBounds(tasks, offset, limit)
+}
+
+// sliceWithBounds safely slices the tasks array with offset and limit
+func (s *taskService) sliceWithBounds(tasks []*model.Task, offset, limit int) []*model.Task {
+	if offset >= len(tasks) {
+		return []*model.Task{}
+	}
+
+	end := offset + limit
+	if end > len(tasks) {
+		end = len(tasks)
+	}
+
+	return tasks[offset:end]
 }
 
 // matchesFilter checks if a task matches the given filter criteria

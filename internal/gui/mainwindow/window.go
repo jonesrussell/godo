@@ -32,6 +32,7 @@ type Window struct {
 	addButton   *widget.Button
 	refreshBtn  *widget.Button
 	searchEntry *widget.Entry
+	toolbar     *fyne.Container // Added for the new createMainLayout
 }
 
 // New creates a new main window
@@ -72,7 +73,13 @@ func (w *Window) SetContent(content fyne.CanvasObject) {
 
 // setupUI initializes the user interface
 func (w *Window) setupUI() {
-	// Create task list
+	w.createTaskList()
+	w.createToolbar()
+	w.createMainLayout()
+}
+
+// createTaskList creates the task list widget
+func (w *Window) createTaskList() {
 	w.taskList = widget.NewList(
 		func() int { return len(w.tasks) },
 		func() fyne.CanvasObject {
@@ -85,34 +92,57 @@ func (w *Window) setupUI() {
 			)
 		},
 		func(id widget.ListItemID, obj fyne.CanvasObject) {
-			box := obj.(*fyne.Container)
+			box, ok := obj.(*fyne.Container)
+			if !ok {
+				w.log.Error("Failed to cast object to container")
+				return
+			}
 			task := w.tasks[id]
 
 			// Update check box
-			check := box.Objects[0].(*widget.Check)
+			check, ok := box.Objects[0].(*widget.Check)
+			if !ok {
+				w.log.Error("Failed to cast object to check")
+				return
+			}
 			check.Checked = task.Done
 			check.OnChanged = func(checked bool) {
 				w.toggleTask(id, checked)
 			}
 
 			// Update label
-			label := box.Objects[1].(*widget.Label)
+			label, ok := box.Objects[1].(*widget.Label)
+			if !ok {
+				w.log.Error("Failed to cast object to label")
+				return
+			}
 			label.SetText(task.Content)
 
 			// Update edit button
-			editBtn := box.Objects[3].(*widget.Button)
+			editBtn, ok := box.Objects[3].(*widget.Button)
+			if !ok {
+				w.log.Error("Failed to cast object to edit button")
+				return
+			}
 			editBtn.OnTapped = func() {
 				w.editTask(id)
 			}
 
 			// Update delete button
-			deleteBtn := box.Objects[4].(*widget.Button)
+			deleteBtn, ok := box.Objects[4].(*widget.Button)
+			if !ok {
+				w.log.Error("Failed to cast object to delete button")
+				return
+			}
 			deleteBtn.OnTapped = func() {
 				w.deleteTask(id)
 			}
 		},
 	)
+}
 
+// createToolbar creates the toolbar with buttons and search
+func (w *Window) createToolbar() {
 	// Create add button
 	w.addButton = widget.NewButtonWithIcon("Add Task", theme.ContentAddIcon(), w.addTask)
 
@@ -125,16 +155,19 @@ func (w *Window) setupUI() {
 	w.searchEntry.OnChanged = w.filterTasks
 
 	// Create toolbar
-	toolbar := container.NewHBox(
+	w.toolbar = container.NewHBox(
 		w.addButton,
 		w.refreshBtn,
 		layout.NewSpacer(),
 		w.searchEntry,
 	)
+}
 
+// createMainLayout creates the main window layout
+func (w *Window) createMainLayout() {
 	// Create main container
 	content := container.NewBorder(
-		toolbar,
+		w.toolbar,
 		nil,
 		nil,
 		nil,

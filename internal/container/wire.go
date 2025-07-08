@@ -357,9 +357,9 @@ func validateHotkeyConfig(binding *common.HotkeyBinding) error {
 }
 
 // ProvideFyneApp provides a Fyne application instance
-func ProvideFyneApp() fyne.App {
+func ProvideFyneApp(cfg *config.Config) fyne.App {
 	fmt.Println("Creating Fyne application...")
-	app := fyneapp.New()
+	app := fyneapp.NewWithID(string(cfg.App.ID))
 	app.Settings().SetTheme(theme.DefaultTheme())
 	return app
 }

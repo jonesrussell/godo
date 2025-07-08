@@ -34,20 +34,6 @@ tasks:
     - go install golang.org/x/tools/cmd/goimports@latest
     - go install github.com/google/wire/cmd/wire@latest
 
-  setup:linux:
-    desc: Install Linux dependencies
-    platforms: [ linux ]
-    cmds:
-    - sudo apt-get update
-    - sudo apt-get install -y xvfb libx11-dev
-
-  setup:windows:
-    desc: Install Windows dependencies
-    platforms: [ windows ]
-    cmds:
-    - choco install mingw
-    - choco install make
-
   deps:
     desc: Download and tidy dependencies
     cmds:
@@ -77,19 +63,16 @@ tasks:
 
   test:
     desc: Run basic tests
-    deps: [ wire ]
     cmds:
     - go test ./... -tags=wireinject
 
   test:race:
     desc: Run tests with race detection
-    deps: [ wire ]
     cmds:
     - go test -race ./...
 
   test:cover:
     desc: Run tests with coverage
-    deps: [ wire ]
     cmds:
     - mkdir -p {{.COVERAGE_DIR}}
     - go test -coverprofile={{.COVERAGE_DIR}}/coverage.out -covermode=atomic ./...
@@ -97,7 +80,6 @@ tasks:
 
   test:linux:
     desc: Run tests on Linux with virtual display
-    deps: [ wire ]
     platforms: [ linux ]
     cmds:
     - mkdir -p {{.COVERAGE_DIR}}
@@ -113,7 +95,6 @@ tasks:
 
   test:wsl2:
     desc: Run tests in WSL2 environment with X11 forwarding
-    deps: [ wire ]
     platforms: [ linux ]
     cmds:
     - mkdir -p {{.COVERAGE_DIR}}
@@ -123,121 +104,8 @@ tasks:
     - DISPLAY={{.DISPLAY}} FYNE_RENDERER=software go test -race -coverprofile={{.COVERAGE_DIR}}/coverage.out -covermode=atomic ./...
     - go tool cover -html={{.COVERAGE_DIR}}/coverage.out -o {{.COVERAGE_DIR}}/coverage.html
 
-  clean:
-    desc: Clean up generated files
-    cmds:
-    - rm -rf {{.BUILD_DIR}}
-    - rm -rf {{.COVERAGE_DIR}}
-    - rm -rf internal/container/*_wire_gen.go
-
-  wire:windows:
-    desc: Generate wire code for Windows
-    platforms: [ windows ]
-    cmds:
-    - cd internal/container; wire gen -tags windows
-
-  wire:linux:
-    desc: Generate wire code for Linux
-    platforms: [ linux ]
-    cmds:
-    - cd internal/container; wire gen -tags linux
-
-  wire:
-    desc: Generate wire code for current platform
-    cmds:
-    - task: wire:{{.GOOS}}
-
-  # Docker-based builds with improved caching and parallel builds
-  docker:build-image:
-    desc: Build the Docker builder image
-    cmds:
-    - docker build --build-arg VERSION={{.VERSION}} --build-arg COMMIT={{.COMMIT}} --build-arg BUILD_TIME={{.BUILD_TIME}} -t godo-builder -f build/docker/Dockerfile .
-
-  docker:build-all:
-    desc: Build both Windows and Linux binaries using Docker
-    cmds:
-    - task: docker:build-linux
-    - task: docker:build-windows
-
-  docker:build-linux:
-    desc: Build Linux binary using Docker
-    deps: [ wire ]
-    platforms: [ linux ]
-    cmds:
-    - mkdir -p {{.BUILD_DIR}}
-    - docker build --target linux-runtime --build-arg VERSION={{.VERSION}} --build-arg COMMIT={{.COMMIT}} --build-arg BUILD_TIME={{.BUILD_TIME}} -t godo-linux -f build/docker/Dockerfile .
-    - docker create --name godo-linux-temp godo-linux
-    - docker cp godo-linux-temp:/app/godo {{.BUILD_DIR}}/godo
-    - docker rm godo-linux-temp
-
-  docker:build-windows:
-    desc: Build Windows binary using Docker
-    deps: [ wire ]
-    platforms: [ windows ]
-    cmds:
-    - mkdir -p {{.BUILD_DIR}}
-    - docker build --target windows-runtime --build-arg VERSION={{.VERSION}} --build-arg COMMIT={{.COMMIT}} --build-arg BUILD_TIME={{.BUILD_TIME}} -t godo-windows -f build/docker/Dockerfile .
-    - docker create --name godo-windows-temp godo-windows
-    - docker cp godo-windows-temp:/godo.exe {{.BUILD_DIR}}/godo.exe
-    - docker rm godo-windows-temp
-
-  # Native builds (for development)
-  build:windows:
-    desc: Build for Windows (native)
-    deps: [ wire:windows ]
-    platforms: [ windows ]
-    env:
-      CGO_ENABLED: 1
-      GOOS: windows
-      GOARCH: amd64
-    cmds:
-    - go build -ldflags "-X main.version={{.VERSION}} -X main.commit={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}} -s -w" -tags windows -o {{.BUILD_DIR}}/{{.BINARY_NAME}}.exe cmd/godo/main.go
-
-  build:linux:
-    desc: Build for Linux (native)
-    deps: [ wire:linux ]
-    platforms: [ linux ]
-    env:
-      CGO_ENABLED: 1
-      GOOS: linux
-      GOARCH: amd64
-    cmds:
-    - mkdir -p {{.BUILD_DIR}}
-    - go build -ldflags "-X main.version={{.VERSION}} -X main.commit={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}} -s -w" -tags linux -o {{.BUILD_DIR}}/{{.BINARY_NAME}} cmd/godo/main.go
-
-  # Cross-compilation builds (from WSL2 to Windows)
-  build:cross-windows:
-    desc: Cross-compile for Windows from Linux/WSL2
-    deps: [ wire:windows ]
-    platforms: [ linux ]
-    env:
-      CGO_ENABLED: 0
-      GOOS: windows
-      GOARCH: amd64
-    cmds:
-    - mkdir -p {{.BUILD_DIR}}
-    - go build -ldflags "-X main.version={{.VERSION}} -X main.commit={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}} -s -w" -tags windows -o {{.BUILD_DIR}}/{{.BINARY_NAME}}.exe cmd/godo/main.go
-
-  build:cross-linux:
-    desc: Cross-compile for Linux from Windows
-    deps: [ wire:linux ]
-    platforms: [ windows ]
-    env:
-      CGO_ENABLED: 0
-      GOOS: linux
-      GOARCH: amd64
-    cmds:
-    - mkdir -p {{.BUILD_DIR}}
-    - go build -ldflags "-X main.version={{.VERSION}} -X main.commit={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}} -s -w" -tags linux -o {{.BUILD_DIR}}/{{.BINARY_NAME}} cmd/godo/main.go
-
-  build:
-    desc: Build for current platform (native)
-    cmds:
-    - task: build:{{.GOOS}}
-
   run:
     desc: Run the application
-    deps: [ wire ]
     env:
       CGO_ENABLED: 1
       LANG: en_US.UTF-8
@@ -247,7 +115,6 @@ tasks:
 
   run-debug:
     desc: Run the application with debug output
-    deps: [ wire ]
     env:
       CGO_ENABLED: 1
       LOG_LEVEL: debug
@@ -259,7 +126,7 @@ tasks:
   watch:
     desc: Watch for changes and rebuild
     cmds:
-    - watchexec -r -e go "task build && {{if eq .GOOS \"windows\"}}{{.BUILD_DIR}}/{{.BINARY_NAME}}.exe{{else}}{{.BUILD_DIR}}/{{.BINARY_NAME}}{{end}}"
+    - watchexec -r -e go "task --taskfile Taskfile.build.yml build && {{if eq .GOOS \"windows\"}}{{.BUILD_DIR}}/{{.BINARY_NAME}}.exe{{else}}{{.BUILD_DIR}}/{{.BINARY_NAME}}{{end}}"
 
   # CI/CD tasks
   ci:
@@ -272,17 +139,17 @@ tasks:
     desc: Run full CI pipeline including builds
     deps: [ ci ]
     cmds:
-    - task: docker:build-all
+    - task --taskfile Taskfile.build.yml docker:build-all
 
   # New tasks for release management
   release:prepare:
     desc: Prepare a new release
     cmds:
-    - task: clean
+    - task --taskfile Taskfile.build.yml clean
     - task: fmt
     - task: lint
     - task: test
-    - task: docker:build-all
+    - task --taskfile Taskfile.build.yml docker:build-all
 
   release:tag:
     desc: Create and push a new release tag
@@ -307,21 +174,9 @@ tasks:
     cmds:
     - task: deps
     - task: fmt
-    - task: wire
     - task: lint
     - task: test
-    - task: docker:build-all
-
-  wsl2:all:
-    desc: Complete WSL2 workflow - setup, build, test, and copy to Windows
-    cmds:
-    - task: wsl2:setup
-    - task: deps
-    - task: fmt
-    - task: lint
-    - task: test
-    - task: wsl2:build-windows
-    - task: wsl2:copy-to-windows
+    - task --taskfile Taskfile.build.yml all
 
   dev:
     desc: Development workflow - format, lint, test
@@ -341,44 +196,23 @@ tasks:
     cmds:
     - golangci-lint run ./... --fast
 
-  # WSL2-specific tasks
-  wsl2:setup:
-    desc: Setup WSL2 environment for development
+  setup:linux:
+    desc: Install Linux dependencies
     platforms: [ linux ]
     cmds:
-    - echo "Setting up WSL2 environment..."
-    - echo "DISPLAY: {{.DISPLAY}}"
-    - echo "Checking X11 availability..."
-    - xdpyinfo > /dev/null 2>&1 && echo "X11 is available" || echo "X11 not available - install VcXsrv or similar on Windows"
-    - echo "Checking for WSL2..."
-    - uname -a | grep -i microsoft && echo "Running in WSL2" || echo "Not running in WSL2"
+    - sudo apt-get update
+    - sudo apt-get install -y xvfb libx11-dev
 
-  wsl2:build-windows:
-    desc: Build Windows executable from WSL2
-    deps: [ wsl2:setup, wire:windows ]
-    platforms: [ linux ]
+  setup:windows:
+    desc: Install Windows dependencies
+    platforms: [ windows ]
     cmds:
-    - echo "Building Windows executable from WSL2..."
-    - task: build:cross-windows
-    - echo "Windows executable created: {{.BUILD_DIR}}/{{.BINARY_NAME}}.exe"
-    - echo "You can copy this to Windows and run it natively"
+    - choco install mingw
+    - choco install make
 
   wsl2:test-gui:
     desc: Test GUI components in WSL2 with X11
-    deps: [ wire ]
     platforms: [ linux ]
     cmds:
-    - echo "Testing GUI in WSL2 environment..."
-    - echo "DISPLAY: {{.DISPLAY}}"
-    - DISPLAY={{.DISPLAY}} FYNE_RENDERER=software go test -v ./internal/gui/...
-
-  wsl2:copy-to-windows:
-    desc: Copy Windows executable to Windows-accessible location
-    deps: [ wsl2:build-windows ]
-    platforms: [ linux ]
-    cmds:
-    - echo "Copying Windows executable to Windows-accessible location..."
-    - mkdir -p /mnt/c/Users/{{.USER}}/Desktop/godo-windows
-    - cp {{.BUILD_DIR}}/{{.BINARY_NAME}}.exe /mnt/c/Users/{{.USER}}/Desktop/godo-windows/
-    - echo "Windows executable copied to: C:\Users\{{.USER}}\Desktop\godo-windows\{{.BINARY_NAME}}.exe"
-    - echo "You can now run this executable directly on Windows"
+    - echo "Testing GUI in WSL2 environment"
+    - go test -v ./internal/gui/...

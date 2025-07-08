@@ -3,6 +3,12 @@ version: '3'
 vars:
   BINARY_NAME: godo
   BUILD_DIR: dist
+  VERSION:
+    sh: git describe --tags --always 2>/dev/null || echo dev
+  COMMIT:
+    sh: git rev-parse --short HEAD 2>/dev/null || echo unknown
+  BUILD_TIME:
+    sh: date -u +"%Y-%m-%dT%H:%M:%SZ"
 
 tasks:
   default:
@@ -20,19 +26,137 @@ tasks:
     cmds:
     - cd internal/container && wire gen -tags windows
 
+  wire:
+    desc: Generate wire code for current platform
+    cmds:
+    - task: wire:{{.GOOS}}
+
+  build:linux:
+    desc: Build for Linux (native)
+    deps: [ wire:linux ]
+    platforms: [ linux ]
+    env:
+      CGO_ENABLED: 1
+      GOOS: linux
+      GOARCH: amd64
+    cmds:
+    - mkdir -p {{.BUILD_DIR}}
+    - go build -ldflags "-X main.version={{.VERSION}} -X main.commit={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}} -s -w" -tags linux -o {{.BUILD_DIR}}/{{.BINARY_NAME}} cmd/godo/main.go
+
+  build:windows:
+    desc: Build for Windows (native)
+    deps: [ wire:windows ]
+    platforms: [ windows ]
+    env:
+      CGO_ENABLED: 1
+      GOOS: windows
+      GOARCH: amd64
+    cmds:
+    - mkdir -p {{.BUILD_DIR}}
+    - go build -ldflags "-X main.version={{.VERSION}} -X main.commit={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}} -s -w" -tags windows -o {{.BUILD_DIR}}/{{.BINARY_NAME}}.exe cmd/godo/main.go
+
   build:cross-windows:
     desc: Cross-compile for Windows from Linux/WSL2
     deps: [ wire:windows ]
+    platforms: [ linux ]
     env:
       CGO_ENABLED: 0
       GOOS: windows
       GOARCH: amd64
     cmds:
     - mkdir -p {{.BUILD_DIR}}
-    - go build -tags windows -o {{.BUILD_DIR}}/{{.BINARY_NAME}}.exe cmd/godo/main.go
+    - go build -ldflags "-X main.version={{.VERSION}} -X main.commit={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}} -s -w" -tags windows -o {{.BUILD_DIR}}/{{.BINARY_NAME}}.exe cmd/godo/main.go
+
+  build:cross-linux:
+    desc: Cross-compile for Linux from Windows
+    deps: [ wire:linux ]
+    platforms: [ windows ]
+    env:
+      CGO_ENABLED: 0
+      GOOS: linux
+      GOARCH: amd64
+    cmds:
+    - mkdir -p {{.BUILD_DIR}}
+    - go build -ldflags "-X main.version={{.VERSION}} -X main.commit={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}} -s -w" -tags linux -o {{.BUILD_DIR}}/{{.BINARY_NAME}} cmd/godo/main.go
+
+  build:
+    desc: Build for current platform (native)
+    cmds:
+    - task: build:{{.GOOS}}
+
+  wsl2:setup:
+    desc: Setup WSL2 environment for development
+    platforms: [ linux ]
+    cmds:
+    - echo "Setting up WSL2 environment"
+
+  wsl2:build-windows:
+    desc: Build Windows executable from WSL2
+    deps: [ wsl2:setup, wire:windows ]
+    platforms: [ linux ]
+    cmds:
+    - echo "Building Windows executable from WSL2"
+    - task build:cross-windows
+    - echo "Windows executable created"
+
+  wsl2:copy-to-windows:
+    desc: Copy Windows executable to Windows-accessible location
+    deps: [ wsl2:build-windows ]
+    platforms: [ linux ]
+    cmds:
+    - echo "Copying Windows executable"
+    - mkdir -p /mnt/c/Users/{{.USER}}/Desktop/godo-windows
+    - cp {{.BUILD_DIR}}/{{.BINARY_NAME}}.exe /mnt/c/Users/{{.USER}}/Desktop/godo-windows/
+    - echo "Windows executable copied to Windows Desktop"
+
+  wsl2:all:
+    desc: Complete WSL2 workflow - setup, build, and copy to Windows
+    cmds:
+    - task: wsl2:setup
+    - task: wsl2:build-windows
+    - task: wsl2:copy-to-windows
+
+  docker:build-image:
+    desc: Build the Docker builder image
+    cmds:
+    - docker build --build-arg VERSION={{.VERSION}} --build-arg COMMIT={{.COMMIT}} --build-arg BUILD_TIME={{.BUILD_TIME}} -t godo-builder -f build/docker/Dockerfile .
+
+  docker:build-all:
+    desc: Build both Windows and Linux binaries using Docker
+    cmds:
+    - task: docker:build-linux
+    - task: docker:build-windows
+
+  docker:build-linux:
+    desc: Build Linux binary using Docker
+    deps: [ wire:linux ]
+    platforms: [ linux ]
+    cmds:
+    - mkdir -p {{.BUILD_DIR}}
+    - docker build --target linux-runtime --build-arg VERSION={{.VERSION}} --build-arg COMMIT={{.COMMIT}} --build-arg BUILD_TIME={{.BUILD_TIME}} -t godo-linux -f build/docker/Dockerfile .
+    - docker create --name godo-linux-temp godo-linux
+    - docker cp godo-linux-temp:/app/godo {{.BUILD_DIR}}/godo
+    - docker rm godo-linux-temp
+
+  docker:build-windows:
+    desc: Build Windows binary using Docker
+    deps: [ wire:windows ]
+    platforms: [ windows ]
+    cmds:
+    - mkdir -p {{.BUILD_DIR}}
+    - docker build --target windows-runtime --build-arg VERSION={{.VERSION}} --build-arg COMMIT={{.COMMIT}} --build-arg BUILD_TIME={{.BUILD_TIME}} -t godo-windows -f build/docker/Dockerfile .
+    - docker create --name godo-windows-temp godo-windows
+    - docker cp godo-windows-temp:/godo.exe {{.BUILD_DIR}}/godo.exe
+    - docker rm godo-windows-temp
 
   clean:
     desc: Clean up generated files
     cmds:
     - rm -rf {{.BUILD_DIR}}
     - rm -rf internal/container/*_wire_gen.go
+
+  all:
+    desc: Build all platforms
+    cmds:
+    - task: build:cross-windows
+    - task: build:cross-linux

@@ -27,7 +27,7 @@ func NewTaskValidator(store storage.TaskReader) *TaskValidator {
 }
 
 // ValidateTask validates a task for creation or update
-func (v *TaskValidator) ValidateTask(task storage.Task) error {
+func (v *TaskValidator) ValidateTask(task *storage.Task) error {
 	if err := v.ValidateID(task.ID); err != nil {
 		return &storage.ValidationError{
 			Field:   "id",

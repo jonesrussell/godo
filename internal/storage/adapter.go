@@ -20,13 +20,13 @@ func (a *StoreAdapter) List() ([]Task, error) {
 }
 
 // Add stores a new task
-func (a *StoreAdapter) Add(task Task) error {
-	return a.store.Add(context.Background(), &task)
+func (a *StoreAdapter) Add(task *Task) error {
+	return a.store.Add(context.Background(), task)
 }
 
 // Update modifies an existing task
-func (a *StoreAdapter) Update(task Task) error {
-	return a.store.Update(context.Background(), &task)
+func (a *StoreAdapter) Update(task *Task) error {
+	return a.store.Update(context.Background(), task)
 }
 
 // Delete removes a task by ID

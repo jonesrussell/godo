@@ -54,10 +54,10 @@ type Store interface {
 	List() ([]Task, error)
 
 	// Add stores a new task
-	Add(task Task) error
+	Add(task *Task) error
 
 	// Update modifies an existing task
-	Update(task Task) error
+	Update(task *Task) error
 
 	// Delete removes a task by ID
 	Delete(id string) error

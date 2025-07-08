@@ -151,7 +151,7 @@ func (s *Server) handleCreateTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, NewTaskResponse(*task))
+	writeJSON(w, http.StatusCreated, NewTaskResponse(task))
 }
 
 func (s *Server) handleGetTask(w http.ResponseWriter, r *http.Request) {
@@ -165,7 +165,7 @@ func (s *Server) handleGetTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, NewTaskResponse(*task))
+	writeJSON(w, http.StatusOK, NewTaskResponse(task))
 }
 
 func (s *Server) handleUpdateTask(w http.ResponseWriter, r *http.Request) {
@@ -190,7 +190,7 @@ func (s *Server) handleUpdateTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, NewTaskResponse(*task))
+	writeJSON(w, http.StatusOK, NewTaskResponse(task))
 }
 
 func (s *Server) handlePatchTask(w http.ResponseWriter, r *http.Request) {
@@ -215,7 +215,7 @@ func (s *Server) handlePatchTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, NewTaskResponse(*task))
+	writeJSON(w, http.StatusOK, NewTaskResponse(task))
 }
 
 func (s *Server) handleDeleteTask(w http.ResponseWriter, r *http.Request) {

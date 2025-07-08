@@ -72,7 +72,7 @@ func NewTaskListResponse(tasks []storage.Task) TaskListResponse {
 		Tasks: make([]TaskResponse, len(tasks)),
 	}
 	for i, task := range tasks {
-		response.Tasks[i] = NewTaskResponse(task)
+		response.Tasks[i] = NewTaskResponse(&task)
 	}
 	return response
 }

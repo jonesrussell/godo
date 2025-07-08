@@ -130,7 +130,7 @@ func ProvideConfig() (*config.Config, error) {
 		Hotkeys: config.HotkeyConfig{
 			QuickNote: common.HotkeyBinding{
 				Modifiers: []string{"Ctrl", "Shift"},
-				Key:       "N",
+				Key:       "G",
 			},
 		},
 		Database: config.DatabaseConfig{

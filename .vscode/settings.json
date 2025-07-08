@@ -13,9 +13,10 @@
             "unusedparams": true,
             "shadow": true
         },
-        "buildFlags": [
-            "-tags=wireinject,linux"
-        ]
+        "buildFlags": ["-tags=wireinject"],
+        "env": {
+            "GOOS": "linux"
+        }
     },
     "go.diagnostic.vulncheck": "Imports",
     "go.enableCodeLens": {
@@ -33,8 +34,5 @@
         "editor.codeActionsOnSave": {
             "source.organizeImports": "always"
         }
-    },
-    "editor.codeActionsOnSave": {
-        "source.organizeImports": "always"
     }
-} 
+}

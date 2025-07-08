@@ -240,6 +240,21 @@ linters:
       - varnamelen
       - exhaustruct
       - wsl
+    # Exclude generated wire code
+    - path: wire_gen\.go
+      linters:
+      - funlen
+      - gocyclo
+      - gocognit
+      - cyclop
+      - maintidx
+      - wrapcheck
+      - errorlint
+      - gocritic
+      - nolintlint
+      - varnamelen
+      - exhaustruct
+      - wsl
     # Exclude mock files
     - path: mocks\.go
       linters:

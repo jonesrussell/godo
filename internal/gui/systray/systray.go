@@ -28,7 +28,9 @@ func SetupSystray(app fyne.App, mainWindow fyne.Window, quickNote gui.QuickNote,
 				if err := utils.OpenLogFile(logPath); err != nil {
 					// If main log fails, try error log
 					if logErr := utils.OpenErrorLogFile(errorLogPath); logErr != nil {
-						// Could show a dialog here, but for now just ignore
+						// Both log files failed to open - this is a non-critical error
+						// since it's just a convenience feature for viewing logs
+						_ = logErr // explicitly ignore the error
 					}
 				}
 			}),

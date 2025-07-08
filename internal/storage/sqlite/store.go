@@ -30,9 +30,9 @@ func New(path string, log logger.Logger) (*Store, error) {
 		logger: log,
 	}
 
-	if err := RunMigrations(db); err != nil {
+	if migErr := RunMigrations(db); migErr != nil {
 		db.Close()
-		return nil, err
+		return nil, migErr
 	}
 
 	return store, nil
@@ -113,9 +113,9 @@ func (s *Store) List(ctx context.Context) ([]storage.Task, error) {
 	var tasks []storage.Task
 	for rows.Next() {
 		var task storage.Task
-		err := rows.Scan(&task.ID, &task.Content, &task.Done, &task.CreatedAt, &task.UpdatedAt)
-		if err != nil {
-			return nil, err
+		scanErr := rows.Scan(&task.ID, &task.Content, &task.Done, &task.CreatedAt, &task.UpdatedAt)
+		if scanErr != nil {
+			return nil, scanErr
 		}
 		tasks = append(tasks, task)
 	}
@@ -161,14 +161,14 @@ func (t *Transaction) List(ctx context.Context) ([]storage.Task, error) {
 	var tasks []storage.Task
 	for rows.Next() {
 		var task storage.Task
-		if err := rows.Scan(
+		if scanErr := rows.Scan(
 			&task.ID,
 			&task.Content,
 			&task.Done,
 			&task.CreatedAt,
 			&task.UpdatedAt,
-		); err != nil {
-			return nil, err
+		); scanErr != nil {
+			return nil, scanErr
 		}
 		tasks = append(tasks, task)
 	}

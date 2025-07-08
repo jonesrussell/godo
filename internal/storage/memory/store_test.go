@@ -23,6 +23,7 @@ func TestMemoryStore(t *testing.T) {
 			name:  "new store is empty",
 			setup: func(_ *memory.Store) {},
 			validate: func(t *testing.T, s *memory.Store) {
+				t.Helper()
 				tasks, err := s.List(context.Background())
 				assert.NoError(t, err)
 				assert.Empty(t, tasks)
@@ -42,6 +43,7 @@ func TestMemoryStore(t *testing.T) {
 				require.NoError(t, err)
 			},
 			validate: func(t *testing.T, s *memory.Store) {
+				t.Helper()
 				tasks, err := s.List(context.Background())
 				assert.NoError(t, err)
 				assert.Len(t, tasks, 1)
@@ -69,6 +71,7 @@ func TestMemoryStore(t *testing.T) {
 				require.NoError(t, err)
 			},
 			validate: func(t *testing.T, s *memory.Store) {
+				t.Helper()
 				task, err := s.GetByID(context.Background(), "test-1")
 				assert.NoError(t, err)
 				assert.Equal(t, "Updated Content", task.Content)

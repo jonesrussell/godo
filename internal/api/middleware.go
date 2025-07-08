@@ -10,9 +10,12 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/golang-jwt/jwt/v4"
+
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
 )
+
+const internalServerErrorMsg = "Internal server error"
 
 // Middleware represents a function that wraps an http.HandlerFunc
 type Middleware func(http.HandlerFunc) http.HandlerFunc
@@ -96,12 +99,12 @@ func WithErrorHandling(log logger.Logger) Middleware {
 						} else {
 							status = http.StatusInternalServerError
 							code = "internal_error"
-							msg = "Internal server error"
+							msg = internalServerErrorMsg
 						}
 					default:
 						status = http.StatusInternalServerError
 						code = "internal_error"
-						msg = "Internal server error"
+						msg = internalServerErrorMsg
 					}
 
 					writeError(w, status, code, msg)
@@ -148,7 +151,7 @@ func mapError(err error) (code int, msg, details string) {
 	case errors.Is(err, storage.ErrDuplicateID):
 		return http.StatusConflict, "Task ID already exists", err.Error()
 	default:
-		return http.StatusInternalServerError, "Internal server error", err.Error()
+		return http.StatusInternalServerError, internalServerErrorMsg, err.Error()
 	}
 }
 
@@ -208,7 +211,6 @@ func WithJWTAuth(log logger.Logger) Middleware {
 				}
 				return []byte(jwtSecret), nil
 			})
-
 			if err != nil {
 				log.Error("JWT token validation failed", "error", err)
 				writeError(w, http.StatusUnauthorized, "invalid_token", "Invalid or expired token")

@@ -8,6 +8,7 @@ import (
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/storage"
 	"github.com/jonesrussell/godo/internal/storage/errors"
+
 	_ "modernc.org/sqlite" // SQLite driver
 )
 
@@ -18,7 +19,7 @@ type Store struct {
 }
 
 // New creates a new SQLite store
-func New(path string, logger logger.Logger) (*Store, error) {
+func New(path string, log logger.Logger) (*Store, error) {
 	db, err := sql.Open("sqlite", path)
 	if err != nil {
 		return nil, err
@@ -26,7 +27,7 @@ func New(path string, logger logger.Logger) (*Store, error) {
 
 	store := &Store{
 		db:     db,
-		logger: logger,
+		logger: log,
 	}
 
 	if err := RunMigrations(db); err != nil {

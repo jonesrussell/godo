@@ -54,10 +54,10 @@ type taskService struct {
 }
 
 // NewTaskService creates a new TaskService instance
-func NewTaskService(store storage.TaskStore, logger logger.Logger) TaskService {
+func NewTaskService(store storage.TaskStore, log logger.Logger) TaskService {
 	return &taskService{
 		store:  store,
-		logger: logger,
+		logger: log,
 	}
 }
 

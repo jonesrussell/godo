@@ -9,6 +9,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 	"github.com/google/uuid"
+
 	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/gui/mainwindow"
 	"github.com/jonesrussell/godo/internal/logger"
@@ -28,12 +29,18 @@ type Window struct {
 }
 
 // New creates a new quick note window
-func New(app fyne.App, store storage.TaskStore, logger logger.Logger, config config.WindowConfig, mainWindow mainwindow.Interface) *Window {
+func New(
+	app fyne.App,
+	store storage.TaskStore,
+	log logger.Logger,
+	cfg config.WindowConfig,
+	mainWindow mainwindow.Interface,
+) *Window {
 	w := &Window{
 		store:      store,
-		logger:     logger,
+		logger:     log,
 		app:        app,
-		config:     config,
+		config:     cfg,
 		window:     app.NewWindow("Quick Note"),
 		mainWindow: mainWindow,
 	}

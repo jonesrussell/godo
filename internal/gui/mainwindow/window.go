@@ -34,15 +34,15 @@ type Window struct {
 }
 
 // New creates a new main window
-func New(app fyne.App, store storage.TaskStore, logger logger.Logger, config config.WindowConfig) *Window {
+func New(app fyne.App, store storage.TaskStore, log logger.Logger, cfg config.WindowConfig) *Window {
 	w := &Window{
 		TaskManager: &TaskManager{
 			store:  store,
-			logger: logger,
+			logger: log,
 			tasks:  make([]storage.Task, 0),
 		},
 		app:    app,
-		config: config,
+		config: cfg,
 		window: app.NewWindow("Godo"),
 	}
 

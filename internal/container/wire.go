@@ -20,6 +20,7 @@ import (
 	"github.com/jonesrussell/godo/internal/gui/quicknote"
 	"github.com/jonesrussell/godo/internal/logger"
 	"github.com/jonesrussell/godo/internal/options"
+	"github.com/jonesrussell/godo/internal/repository"
 	"github.com/jonesrussell/godo/internal/service"
 	"github.com/jonesrussell/godo/internal/storage"
 	"github.com/jonesrussell/godo/internal/storage/sqlite"
@@ -64,6 +65,7 @@ var (
 
 	// ServiceSet provides business logic
 	ServiceSet = wire.NewSet(
+		ProvideTaskRepository,
 		ProvideTaskService,
 	)
 
@@ -278,9 +280,14 @@ func ProvideSQLiteStore(log logger.Logger, cfg *config.Config) (*sqlite.Store, f
 	return store, cleanup, nil
 }
 
-// Task service provider
-func ProvideTaskService(store storage.TaskStore, log logger.Logger) service.TaskService {
-	return service.NewTaskService(store, log)
+// Task repository provider
+func ProvideTaskRepository(store storage.TaskStore) repository.TaskRepository {
+	return repository.NewTaskRepository(store)
+}
+
+// Task service provider (now uses repository)
+func ProvideTaskService(repo repository.TaskRepository, log logger.Logger) service.TaskService {
+	return service.NewTaskService(repo, log)
 }
 
 // Fyne app provider

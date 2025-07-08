@@ -39,9 +39,11 @@ tasks:
     deps: [ wire:windows ]
     platforms: [ linux ]
     env:
-      CGO_ENABLED: 0
+      CGO_ENABLED: 1
       GOOS: windows
       GOARCH: amd64
+      CC: x86_64-w64-mingw32-gcc
+      CXX: x86_64-w64-mingw32-g++
     cmds:
     - mkdir -p {{.BUILD_DIR}}
     - go build -ldflags "-X main.version={{.VERSION}} -X main.commit={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}} -s -w" -tags windows -o {{.BUILD_DIR}}/{{.BINARY_NAME}}.exe cmd/godo/main.go

@@ -306,9 +306,8 @@ func ProvideQuickNote(
 	store storage.TaskStore,
 	log logger.Logger,
 	cfg *config.Config,
-	mainWindow mainwindow.Interface,
 ) *quicknote.Window {
-	return quicknote.New(app, store, log, cfg.UI.QuickNote, mainWindow)
+	return quicknote.New(app, store, log, cfg.UI.QuickNote)
 }
 
 // Hotkey manager provider

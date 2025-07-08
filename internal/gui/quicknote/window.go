@@ -1,4 +1,4 @@
-// Package quicknote implements the quick note window functionality
+// Package quicknote provides a quick note window for rapid task entry
 package quicknote
 
 import (
@@ -7,25 +7,30 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/google/uuid"
 
 	"github.com/jonesrussell/godo/internal/config"
-	"github.com/jonesrussell/godo/internal/gui/mainwindow"
 	"github.com/jonesrussell/godo/internal/logger"
+	"github.com/jonesrussell/godo/internal/model"
 	"github.com/jonesrussell/godo/internal/storage"
 )
 
-// Window implements the quick note window
+// Window represents a quick note window for rapid task entry
 type Window struct {
-	store      storage.TaskStore
-	logger     logger.Logger
-	window     fyne.Window
-	app        fyne.App
-	config     config.WindowConfig
-	input      *Entry
-	saveBtn    *widget.Button
-	mainWindow mainwindow.Interface
+	app    fyne.App
+	window fyne.Window
+	store  storage.TaskStore
+	log    logger.Logger
+	cfg    config.WindowConfig
+
+	// UI components
+	entry      *widget.Entry
+	addButton  *widget.Button
+	clearBtn   *widget.Button
+	statusText *widget.Label
 }
 
 // New creates a new quick note window
@@ -34,75 +39,118 @@ func New(
 	store storage.TaskStore,
 	log logger.Logger,
 	cfg config.WindowConfig,
-	mainWindow mainwindow.Interface,
 ) *Window {
 	w := &Window{
-		store:      store,
-		logger:     log,
-		app:        app,
-		config:     cfg,
-		window:     app.NewWindow("Quick Note"),
-		mainWindow: mainWindow,
+		app:    app,
+		store:  store,
+		log:    log,
+		cfg:    cfg,
+		window: app.NewWindow("Quick Note"),
 	}
 
 	w.setupUI()
 	return w
 }
 
-// setupUI initializes the window's UI components
-func (w *Window) setupUI() {
-	w.input = NewEntry()
-	w.input.SetPlaceHolder("Enter your quick note...")
-	w.input.SetOnCtrlEnter(w.saveNote)
-
-	w.saveBtn = widget.NewButton("Save", w.saveNote)
-
-	content := container.NewBorder(
-		nil,       // top
-		w.saveBtn, // bottom
-		nil,       // left
-		nil,       // right
-		w.input,   // center
-	)
-
-	w.window.SetContent(content)
-	w.window.Resize(fyne.NewSize(float32(w.config.Width), float32(w.config.Height)))
-	w.window.CenterOnScreen()
-}
-
-// saveNote saves the current note
-func (w *Window) saveNote() {
-	if w.input.Text != "" {
-		now := time.Now()
-		task := storage.Task{
-			ID:        uuid.New().String(),
-			Content:   w.input.Text,
-			Done:      false,
-			CreatedAt: now,
-			UpdatedAt: now,
-		}
-		if err := w.store.Add(context.Background(), &task); err != nil {
-			w.logger.Error("Failed to add quick note", "error", err)
-			return
-		}
-		w.input.SetText("")
-		w.Hide()
-
-		// Refresh the main window
-		if w.mainWindow != nil {
-			w.mainWindow.Refresh()
-		}
-	}
-}
-
 // Show displays the quick note window
 func (w *Window) Show() {
-	w.input.SetText("")
 	w.window.Show()
-	w.window.Canvas().Focus(w.input)
+	w.window.CenterOnScreen()
+	w.entry.FocusGained()
 }
 
 // Hide hides the quick note window
 func (w *Window) Hide() {
 	w.window.Hide()
+}
+
+// setupUI initializes the user interface
+func (w *Window) setupUI() {
+	// Create entry field
+	w.entry = widget.NewEntry()
+	w.entry.SetPlaceHolder("Enter your task here...")
+	w.entry.OnSubmitted = func(text string) {
+		w.addTask()
+	}
+
+	// Create add button
+	w.addButton = widget.NewButtonWithIcon("Add", theme.ContentAddIcon(), w.addTask)
+
+	// Create clear button
+	w.clearBtn = widget.NewButtonWithIcon("Clear", theme.ContentClearIcon(), w.clearEntry)
+
+	// Create status text
+	w.statusText = widget.NewLabel("")
+	w.statusText.Hide()
+
+	// Create button container
+	buttons := container.NewHBox(
+		w.addButton,
+		w.clearBtn,
+		layout.NewSpacer(),
+	)
+
+	// Create main container
+	content := container.NewVBox(
+		w.entry,
+		buttons,
+		w.statusText,
+	)
+
+	w.window.SetContent(content)
+	w.window.Resize(fyne.NewSize(400, 150))
+	w.window.CenterOnScreen()
+
+	// Set window properties
+	w.window.SetCloseIntercept(func() {
+		w.Hide()
+	})
+}
+
+// addTask adds a new task from the entry field
+func (w *Window) addTask() {
+	content := w.entry.Text
+	if content == "" {
+		return
+	}
+
+	// Create new task
+	task := model.Task{
+		ID:        uuid.New().String(),
+		Content:   content,
+		Done:      false,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+
+	// Store the task
+	ctx := context.Background()
+	if err := w.store.Add(ctx, &task); err != nil {
+		w.log.Error("Failed to add task", "error", err)
+		w.showStatus("Failed to add task", false)
+		return
+	}
+
+	w.log.Info("Task added successfully", "task_id", task.ID)
+	w.showStatus("Task added successfully!", true)
+	w.clearEntry()
+}
+
+// clearEntry clears the entry field
+func (w *Window) clearEntry() {
+	w.entry.SetText("")
+	w.statusText.Hide()
+	w.entry.FocusGained()
+}
+
+// showStatus shows a status message
+func (w *Window) showStatus(message string, success bool) {
+	w.statusText.SetText(message)
+	w.statusText.Show()
+
+	// Auto-hide after 2 seconds
+	go func() {
+		time.Sleep(2 * time.Second)
+		w.statusText.Hide()
+	}()
 }

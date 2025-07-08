@@ -1,4 +1,4 @@
-// Package mainwindow implements the main application window
+// Package mainwindow provides the main application window
 package mainwindow
 
 import (
@@ -14,213 +14,276 @@ import (
 
 	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/logger"
+	"github.com/jonesrussell/godo/internal/model"
 	"github.com/jonesrussell/godo/internal/storage"
 )
 
-// TaskManager handles task-related operations
-type TaskManager struct {
-	store  storage.TaskStore
-	logger logger.Logger
-	tasks  []storage.Task
-}
-
-// Window implements the main window functionality
+// Window represents the main application window
 type Window struct {
-	*TaskManager
-	window fyne.Window
 	app    fyne.App
-	config config.WindowConfig
-	list   *widget.List
+	window fyne.Window
+	store  storage.TaskStore
+	log    logger.Logger
+	tasks  []model.Task
+	cfg    config.WindowConfig
+
+	// UI components
+	taskList    *widget.List
+	addButton   *widget.Button
+	refreshBtn  *widget.Button
+	searchEntry *widget.Entry
 }
 
 // New creates a new main window
 func New(app fyne.App, store storage.TaskStore, log logger.Logger, cfg config.WindowConfig) *Window {
 	w := &Window{
-		TaskManager: &TaskManager{
-			store:  store,
-			logger: log,
-			tasks:  make([]storage.Task, 0),
-		},
 		app:    app,
-		config: cfg,
-		window: app.NewWindow("Godo"),
+		store:  store,
+		log:    log,
+		cfg:    cfg,
+		tasks:  make([]model.Task, 0),
+		window: app.NewWindow("Godo - Task Manager"),
 	}
 
-	if err := w.loadTasks(context.Background()); err != nil {
-		w.logger.Error("Failed to load tasks during initialization", "error", err)
-	}
 	w.setupUI()
+	w.loadTasks()
 	return w
 }
 
-// loadTasks loads tasks from storage
-func (tm *TaskManager) loadTasks(ctx context.Context) error {
-	tasks, err := tm.store.List(ctx)
-	if err != nil {
-		tm.logger.Error("Failed to load tasks", "error", err)
-		return err
-	}
-	tm.tasks = tasks
-	return nil
+// Show displays the main window
+func (w *Window) Show() {
+	w.window.Show()
 }
 
-// addTask adds a new task
-func (tm *TaskManager) addTask(ctx context.Context, content string) error {
-	if content == "" {
-		return nil
-	}
-
-	task := storage.Task{
-		ID:        uuid.New().String(),
-		Content:   content,
-		Done:      false,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-	}
-
-	if err := tm.store.Add(ctx, &task); err != nil {
-		tm.logger.Error("Failed to add task", "error", err)
-		return err
-	}
-
-	tm.tasks = append(tm.tasks, task)
-	return nil
+// Hide hides the main window
+func (w *Window) Hide() {
+	w.window.Hide()
 }
 
-// updateTask updates a task's status
-func (tm *TaskManager) updateTask(ctx context.Context, id int, done bool) error {
-	if id < 0 || id >= len(tm.tasks) {
-		return nil
-	}
-
-	tm.tasks[id].Done = done
-	tm.tasks[id].UpdatedAt = time.Now()
-
-	if err := tm.store.Update(ctx, &tm.tasks[id]); err != nil {
-		tm.logger.Error("Failed to update task", "error", err)
-		return err
-	}
-	return nil
+// GetWindow returns the underlying Fyne window
+func (w *Window) GetWindow() fyne.Window {
+	return w.window
 }
 
-// setupUI initializes the window's UI components
-func (w *Window) setupUI() {
-	w.list = w.createTaskList()
-	input := w.createInput()
-	addButton := w.createAddButton(input)
-	content := w.createLayout(input, addButton)
-
+// SetContent sets the content of the main window
+func (w *Window) SetContent(content fyne.CanvasObject) {
 	w.window.SetContent(content)
-	w.window.Resize(fyne.NewSize(float32(w.config.Width), float32(w.config.Height)))
-	w.window.CenterOnScreen()
-
-	// Set window title and icon
-	w.window.SetTitle("Godo - Task Manager")
-	icon := theme.ListIcon()
-	w.window.SetIcon(icon)
-
-	// Focus input by default for better UX
-	w.window.Canvas().Focus(input)
 }
 
-func (w *Window) createTaskList() *widget.List {
-	return widget.NewList(
+// setupUI initializes the user interface
+func (w *Window) setupUI() {
+	// Create task list
+	w.taskList = widget.NewList(
 		func() int { return len(w.tasks) },
 		func() fyne.CanvasObject {
 			return container.NewHBox(
 				widget.NewCheck("", nil),
-				widget.NewLabel(""),
+				widget.NewLabel("Task content"),
 				layout.NewSpacer(),
+				widget.NewButton("Edit", nil),
+				widget.NewButton("Delete", nil),
 			)
 		},
-		func(id widget.ListItemID, item fyne.CanvasObject) {
-			box, ok := item.(*fyne.Container)
-			if !ok {
-				w.logger.Error("Failed to cast item to container")
-				return
-			}
-			check, ok := box.Objects[0].(*widget.Check)
-			if !ok {
-				w.logger.Error("Failed to cast object to check")
-				return
-			}
-			label, ok := box.Objects[1].(*widget.Label)
-			if !ok {
-				w.logger.Error("Failed to cast object to label")
-				return
+		func(id widget.ListItemID, obj fyne.CanvasObject) {
+			box := obj.(*fyne.Container)
+			task := w.tasks[id]
+
+			// Update check box
+			check := box.Objects[0].(*widget.Check)
+			check.Checked = task.Done
+			check.OnChanged = func(checked bool) {
+				w.toggleTask(id, checked)
 			}
 
-			check.Checked = w.tasks[id].Done
-			check.OnChanged = func(done bool) {
-				if err := w.updateTask(context.Background(), id, done); err != nil {
-					w.logger.Error("Failed to update task", "error", err)
-				}
+			// Update label
+			label := box.Objects[1].(*widget.Label)
+			label.SetText(task.Content)
+
+			// Update edit button
+			editBtn := box.Objects[3].(*widget.Button)
+			editBtn.OnTapped = func() {
+				w.editTask(id)
 			}
-			label.SetText(w.tasks[id].Content)
-			// Add visual feedback for completed tasks
-			if w.tasks[id].Done {
-				label.TextStyle = fyne.TextStyle{Monospace: true}
-			} else {
-				label.TextStyle = fyne.TextStyle{}
+
+			// Update delete button
+			deleteBtn := box.Objects[4].(*widget.Button)
+			deleteBtn.OnTapped = func() {
+				w.deleteTask(id)
 			}
 		},
 	)
-}
 
-func (w *Window) createInput() *widget.Entry {
-	input := widget.NewEntry()
-	input.SetPlaceHolder("Enter a new task...")
-	// Add keyboard shortcut for quick task entry
-	input.OnSubmitted = func(text string) {
-		if err := w.addTask(context.Background(), text); err != nil {
-			w.logger.Error("Failed to add task", "error", err)
-		} else {
-			input.SetText("")
-			w.list.Refresh()
-		}
-	}
-	return input
-}
+	// Create add button
+	w.addButton = widget.NewButtonWithIcon("Add Task", theme.ContentAddIcon(), w.addTask)
 
-func (w *Window) createAddButton(input *widget.Entry) *widget.Button {
-	return widget.NewButton("Add", func() {
-		if err := w.addTask(context.Background(), input.Text); err != nil {
-			w.logger.Error("Failed to add task", "error", err)
-		} else {
-			input.SetText("")
-			w.list.Refresh()
-		}
-	})
-}
+	// Create refresh button
+	w.refreshBtn = widget.NewButtonWithIcon("Refresh", theme.ViewRefreshIcon(), w.loadTasks)
 
-func (w *Window) createLayout(input *widget.Entry, addButton *widget.Button) fyne.CanvasObject {
-	// Create a more structured layout with padding
-	inputContainer := container.NewBorder(nil, nil, nil, addButton, input)
-	content := container.NewBorder(
-		container.NewPadded(inputContainer), // Add padding around input
-		nil,
-		nil,
-		nil,
-		container.NewPadded(w.list), // Add padding around list
+	// Create search entry
+	w.searchEntry = widget.NewEntry()
+	w.searchEntry.SetPlaceHolder("Search tasks...")
+	w.searchEntry.OnChanged = w.filterTasks
+
+	// Create toolbar
+	toolbar := container.NewHBox(
+		w.addButton,
+		w.refreshBtn,
+		layout.NewSpacer(),
+		w.searchEntry,
 	)
-	return content
+
+	// Create main container
+	content := container.NewBorder(
+		toolbar,
+		nil,
+		nil,
+		nil,
+		w.taskList,
+	)
+
+	w.window.SetContent(content)
+	w.window.Resize(fyne.NewSize(600, 400))
 }
 
-// Window interface methods
-func (w *Window) Show()                                { w.window.Show() }
-func (w *Window) Hide()                                { w.window.Hide() }
-func (w *Window) SetContent(content fyne.CanvasObject) { w.window.SetContent(content) }
-func (w *Window) Resize(size fyne.Size)                { w.window.Resize(size) }
-func (w *Window) CenterOnScreen()                      { w.window.CenterOnScreen() }
-func (w *Window) GetWindow() fyne.Window               { return w.window }
+// loadTasks loads all tasks from storage
+func (w *Window) loadTasks() {
+	ctx := context.Background()
+	tasks, err := w.store.List(ctx)
+	if err != nil {
+		w.log.Error("Failed to load tasks", "error", err)
+		return
+	}
+
+	w.tasks = tasks
+	w.taskList.Refresh()
+	w.log.Info("Tasks loaded", "count", len(tasks))
+}
+
+// addTask adds a new task
+func (w *Window) addTask() {
+	content := widget.NewEntry()
+	content.SetPlaceHolder("Enter task content...")
+
+	dialog := widget.NewForm(
+		widget.NewFormItem("Task", content),
+	)
+
+	dialog.OnSubmit = func() {
+		if content.Text == "" {
+			return
+		}
+
+		task := model.Task{
+			ID:        uuid.New().String(),
+			Content:   content.Text,
+			Done:      false,
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		}
+
+		ctx := context.Background()
+		if err := w.store.Add(ctx, &task); err != nil {
+			w.log.Error("Failed to add task", "error", err)
+			return
+		}
+
+		w.loadTasks()
+		dialog.Hide()
+	}
+
+	dialog.Show()
+}
+
+// toggleTask toggles the done status of a task
+func (w *Window) toggleTask(id widget.ListItemID, done bool) {
+	if id >= len(w.tasks) {
+		return
+	}
+
+	task := w.tasks[id]
+	task.Done = done
+	task.UpdatedAt = time.Now()
+
+	ctx := context.Background()
+	if err := w.store.Update(ctx, &task); err != nil {
+		w.log.Error("Failed to update task", "task_id", task.ID, "error", err)
+		return
+	}
+
+	w.tasks[id] = task
+	w.taskList.Refresh()
+}
+
+// editTask opens a dialog to edit a task
+func (w *Window) editTask(id widget.ListItemID) {
+	if id >= len(w.tasks) {
+		return
+	}
+
+	task := w.tasks[id]
+	content := widget.NewEntry()
+	content.SetText(task.Content)
+
+	dialog := widget.NewForm(
+		widget.NewFormItem("Task", content),
+	)
+
+	dialog.OnSubmit = func() {
+		if content.Text == "" {
+			return
+		}
+
+		task.Content = content.Text
+		task.UpdatedAt = time.Now()
+
+		ctx := context.Background()
+		if err := w.store.Update(ctx, &task); err != nil {
+			w.log.Error("Failed to update task", "task_id", task.ID, "error", err)
+			return
+		}
+
+		w.tasks[id] = task
+		w.taskList.Refresh()
+		dialog.Hide()
+	}
+
+	dialog.Show()
+}
+
+// deleteTask deletes a task
+func (w *Window) deleteTask(id widget.ListItemID) {
+	if id >= len(w.tasks) {
+		return
+	}
+
+	task := w.tasks[id]
+	ctx := context.Background()
+	if err := w.store.Delete(ctx, task.ID); err != nil {
+		w.log.Error("Failed to delete task", "task_id", task.ID, "error", err)
+		return
+	}
+
+	w.loadTasks()
+}
+
+// filterTasks filters the task list based on search text
+func (w *Window) filterTasks(searchText string) {
+	// For now, just reload all tasks
+	// In a real implementation, you might want to implement client-side filtering
+	w.loadTasks()
+}
+
+// CenterOnScreen centers the main window on the screen
+func (w *Window) CenterOnScreen() {
+	w.window.CenterOnScreen()
+}
 
 // Refresh reloads and updates the task list
 func (w *Window) Refresh() {
-	if err := w.loadTasks(context.Background()); err != nil {
-		w.logger.Error("Failed to load tasks during refresh", "error", err)
-		return
-	}
-	if w.list != nil {
-		w.list.Refresh()
-	}
+	w.loadTasks()
+}
+
+// Resize resizes the main window
+func (w *Window) Resize(size fyne.Size) {
+	w.window.Resize(size)
 }

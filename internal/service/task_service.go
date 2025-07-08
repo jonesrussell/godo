@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/jonesrussell/godo/internal/logger"
+	"github.com/jonesrussell/godo/internal/model"
 	"github.com/jonesrussell/godo/internal/storage"
 )
 
@@ -34,19 +35,19 @@ type TaskUpdateRequest struct {
 // TaskService defines the interface for task business logic operations
 type TaskService interface {
 	// CreateTask creates a new task with validation and business rules
-	CreateTask(ctx context.Context, content string) (*storage.Task, error)
+	CreateTask(ctx context.Context, content string) (*model.Task, error)
 
 	// GetTask retrieves a task by ID with proper error handling
-	GetTask(ctx context.Context, id string) (*storage.Task, error)
+	GetTask(ctx context.Context, id string) (*model.Task, error)
 
 	// UpdateTask updates a task with validation and business rules
-	UpdateTask(ctx context.Context, id string, updates TaskUpdateRequest) (*storage.Task, error)
+	UpdateTask(ctx context.Context, id string, updates TaskUpdateRequest) (*model.Task, error)
 
 	// DeleteTask deletes a task with proper cleanup
 	DeleteTask(ctx context.Context, id string) error
 
 	// ListTasks retrieves tasks with optional filtering
-	ListTasks(ctx context.Context, filter *TaskFilter) ([]*storage.Task, error)
+	ListTasks(ctx context.Context, filter *TaskFilter) ([]*model.Task, error)
 }
 
 // taskService implements TaskService
@@ -66,14 +67,14 @@ func NewTaskService(store storage.TaskStore, log logger.Logger) TaskService {
 // validateTaskContent validates task content according to business rules
 func (s *taskService) validateTaskContent(content string) error {
 	if strings.TrimSpace(content) == "" {
-		return &storage.ValidationError{
+		return &model.ValidationError{
 			Field:   "content",
 			Message: "task content cannot be empty",
 		}
 	}
 
 	if len(content) > 1000 {
-		return &storage.ValidationError{
+		return &model.ValidationError{
 			Field:   "content",
 			Message: "task content cannot exceed 1000 characters",
 		}
@@ -85,7 +86,7 @@ func (s *taskService) validateTaskContent(content string) error {
 // validateTaskID validates task ID format
 func (s *taskService) validateTaskID(id string) error {
 	if strings.TrimSpace(id) == "" {
-		return &storage.ValidationError{
+		return &model.ValidationError{
 			Field:   "id",
 			Message: "task ID cannot be empty",
 		}
@@ -93,7 +94,7 @@ func (s *taskService) validateTaskID(id string) error {
 
 	// Validate UUID format
 	if _, err := uuid.Parse(id); err != nil {
-		return &storage.ValidationError{
+		return &model.ValidationError{
 			Field:   "id",
 			Message: "invalid task ID format",
 		}
@@ -103,7 +104,7 @@ func (s *taskService) validateTaskID(id string) error {
 }
 
 // CreateTask creates a new task with validation and business rules
-func (s *taskService) CreateTask(ctx context.Context, content string) (*storage.Task, error) {
+func (s *taskService) CreateTask(ctx context.Context, content string) (*model.Task, error) {
 	s.logger.Info("Creating new task", "content_length", len(content))
 
 	// Validate content
@@ -113,7 +114,7 @@ func (s *taskService) CreateTask(ctx context.Context, content string) (*storage.
 	}
 
 	// Create task with generated ID and timestamps
-	task := storage.Task{
+	task := model.Task{
 		ID:        uuid.New().String(),
 		Content:   strings.TrimSpace(content),
 		Done:      false,
@@ -132,7 +133,7 @@ func (s *taskService) CreateTask(ctx context.Context, content string) (*storage.
 }
 
 // GetTask retrieves a task by ID with proper error handling
-func (s *taskService) GetTask(ctx context.Context, id string) (*storage.Task, error) {
+func (s *taskService) GetTask(ctx context.Context, id string) (*model.Task, error) {
 	s.logger.Info("Retrieving task", "task_id", id)
 
 	// Validate ID
@@ -153,7 +154,7 @@ func (s *taskService) GetTask(ctx context.Context, id string) (*storage.Task, er
 }
 
 // UpdateTask updates a task with validation and business rules
-func (s *taskService) UpdateTask(ctx context.Context, id string, updates TaskUpdateRequest) (*storage.Task, error) {
+func (s *taskService) UpdateTask(ctx context.Context, id string, updates TaskUpdateRequest) (*model.Task, error) {
 	s.logger.Info("Updating task", "task_id", id, "updates", updates)
 
 	// Validate ID
@@ -205,13 +206,7 @@ func (s *taskService) DeleteTask(ctx context.Context, id string) error {
 		return fmt.Errorf("validation failed: %w", err)
 	}
 
-	// Check if task exists before deleting
-	if _, err := s.store.GetByID(ctx, id); err != nil {
-		s.logger.Error("Failed to retrieve task for deletion", "task_id", id, "error", err)
-		return fmt.Errorf("failed to retrieve task: %w", err)
-	}
-
-	// Delete the task
+	// Delete task from storage
 	if err := s.store.Delete(ctx, id); err != nil {
 		s.logger.Error("Failed to delete task", "task_id", id, "error", err)
 		return fmt.Errorf("failed to delete task: %w", err)
@@ -222,8 +217,8 @@ func (s *taskService) DeleteTask(ctx context.Context, id string) error {
 }
 
 // ListTasks retrieves tasks with optional filtering
-func (s *taskService) ListTasks(ctx context.Context, filter *TaskFilter) ([]*storage.Task, error) {
-	s.logger.Info("Listing tasks", "filter", filter)
+func (s *taskService) ListTasks(ctx context.Context, filter *TaskFilter) ([]*model.Task, error) {
+	s.logger.Info("Retrieving tasks", "filter", filter)
 
 	// Get all tasks from storage
 	tasks, err := s.store.List(ctx)
@@ -232,8 +227,8 @@ func (s *taskService) ListTasks(ctx context.Context, filter *TaskFilter) ([]*sto
 		return nil, fmt.Errorf("failed to retrieve tasks: %w", err)
 	}
 
-	// Convert to pointers for consistency
-	taskPtrs := make([]*storage.Task, len(tasks))
+	// Convert to pointers for filtering
+	taskPtrs := make([]*model.Task, len(tasks))
 	for i := range tasks {
 		taskPtrs[i] = &tasks[i]
 	}
@@ -243,46 +238,49 @@ func (s *taskService) ListTasks(ctx context.Context, filter *TaskFilter) ([]*sto
 		taskPtrs = s.applyFilters(taskPtrs, filter)
 	}
 
-	s.logger.Info("Tasks listed successfully", "count", len(taskPtrs))
+	s.logger.Info("Tasks retrieved successfully", "count", len(taskPtrs))
 	return taskPtrs, nil
 }
 
 // applyFilters applies the given filters to the task list
-func (s *taskService) applyFilters(tasks []*storage.Task, filter *TaskFilter) []*storage.Task {
-	var filtered []*storage.Task
+func (s *taskService) applyFilters(tasks []*model.Task, filter *TaskFilter) []*model.Task {
+	if filter == nil {
+		return tasks
+	}
 
+	var filtered []*model.Task
 	for _, task := range tasks {
 		if s.matchesFilter(task, filter) {
 			filtered = append(filtered, task)
 		}
 	}
 
-	// Apply pagination
-	if filter.Limit != nil || filter.Offset != nil {
-		offset := 0
-		if filter.Offset != nil {
-			offset = *filter.Offset
-		}
-
-		limit := len(filtered)
-		if filter.Limit != nil {
-			limit = *filter.Limit
-		}
-
-		if offset >= len(filtered) {
-			filtered = []*storage.Task{}
-		} else if offset+limit > len(filtered) {
-			filtered = filtered[offset:]
+	// Apply limit and offset
+	if filter.Limit != nil && *filter.Limit > 0 {
+		limit := *filter.Limit
+		if filter.Offset != nil && *filter.Offset > 0 {
+			offset := *filter.Offset
+			if offset < len(filtered) {
+				if offset+limit > len(filtered) {
+					limit = len(filtered) - offset
+				}
+				filtered = filtered[offset : offset+limit]
+			} else {
+				filtered = filtered[:0]
+			}
 		} else {
-			filtered = filtered[offset : offset+limit]
+			if limit > len(filtered) {
+				limit = len(filtered)
+			}
+			filtered = filtered[:limit]
 		}
 	}
 
 	return filtered
 }
 
-// matchesFilter checks if a task matches the given filter
-func (s *taskService) matchesFilter(task *storage.Task, filter *TaskFilter) bool {
+// matchesFilter checks if a task matches the given filter criteria
+func (s *taskService) matchesFilter(task *model.Task, filter *TaskFilter) bool {
 	if filter.Done != nil && task.Done != *filter.Done {
 		return false
 	}

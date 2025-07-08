@@ -10,6 +10,7 @@ import (
 	"github.com/gorilla/mux"
 
 	"github.com/jonesrussell/godo/internal/logger"
+	"github.com/jonesrussell/godo/internal/model"
 	"github.com/jonesrussell/godo/internal/service"
 	"github.com/jonesrussell/godo/internal/storage"
 )
@@ -128,13 +129,13 @@ func (s *Server) handleListTasks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Convert service tasks back to storage tasks for response
-	storageTasks := make([]storage.Task, len(tasks))
+	// Convert service tasks to model tasks for response
+	modelTasks := make([]model.Task, len(tasks))
 	for i, task := range tasks {
-		storageTasks[i] = *task
+		modelTasks[i] = *task
 	}
 
-	writeJSON(w, http.StatusOK, NewTaskListResponse(storageTasks))
+	writeJSON(w, http.StatusOK, NewTaskListResponse(modelTasks))
 }
 
 func (s *Server) handleCreateTask(w http.ResponseWriter, r *http.Request) {
@@ -228,18 +229,18 @@ func (s *Server) handleDeleteTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	writeJSON(w, http.StatusNoContent, nil)
 }
 
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
-	health := map[string]interface{}{
-		"status":    "healthy",
-		"timestamp": time.Now().UTC().Format(time.RFC3339),
+	response := map[string]string{
+		"status": "healthy",
+		"time":   time.Now().Format(time.RFC3339),
 	}
-	writeJSON(w, http.StatusOK, health)
+	writeJSON(w, http.StatusOK, response)
 }
 
-// Start starts the server
+// Start starts the HTTP server
 func (s *Server) Start(port int) error {
 	s.srv = &http.Server{
 		Addr:              fmt.Sprintf(":%d", port),
@@ -250,13 +251,14 @@ func (s *Server) Start(port int) error {
 		IdleTimeout:       DefaultIdleTimeout,
 	}
 
-	s.log.Info("starting server", "port", port)
+	s.log.Info("Starting HTTP server", "port", port)
 	return s.srv.ListenAndServe()
 }
 
-// Shutdown gracefully shuts down the HTTP server
+// Shutdown gracefully shuts down the server
 func (s *Server) Shutdown(ctx context.Context) error {
 	if s.srv != nil {
+		s.log.Info("Shutting down HTTP server")
 		return s.srv.Shutdown(ctx)
 	}
 	return nil

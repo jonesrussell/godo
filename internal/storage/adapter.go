@@ -2,6 +2,8 @@ package storage
 
 import (
 	"context"
+
+	"github.com/jonesrussell/godo/internal/model"
 )
 
 // StoreAdapter adapts the new TaskStore interface to the old Store interface
@@ -15,17 +17,17 @@ func NewStoreAdapter(store TaskStore) *StoreAdapter {
 }
 
 // List returns all tasks
-func (a *StoreAdapter) List() ([]Task, error) {
+func (a *StoreAdapter) List() ([]model.Task, error) {
 	return a.store.List(context.Background())
 }
 
 // Add stores a new task
-func (a *StoreAdapter) Add(task *Task) error {
+func (a *StoreAdapter) Add(task *model.Task) error {
 	return a.store.Add(context.Background(), task)
 }
 
 // Update modifies an existing task
-func (a *StoreAdapter) Update(task *Task) error {
+func (a *StoreAdapter) Update(task *model.Task) error {
 	return a.store.Update(context.Background(), task)
 }
 
@@ -35,7 +37,7 @@ func (a *StoreAdapter) Delete(id string) error {
 }
 
 // GetByID retrieves a task by its ID
-func (a *StoreAdapter) GetByID(id string) (*Task, error) {
+func (a *StoreAdapter) GetByID(id string) (*model.Task, error) {
 	task, err := a.store.GetByID(context.Background(), id)
 	if err != nil {
 		return nil, err

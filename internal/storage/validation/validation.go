@@ -1,125 +1,118 @@
-// Package validation provides validation functions for storage operations
+// Package validation provides validation utilities for storage operations
 package validation
 
 import (
 	"errors"
-	"fmt"
 	"time"
 
+	"github.com/jonesrussell/godo/internal/model"
 	"github.com/jonesrussell/godo/internal/storage"
 )
 
-var (
-	// ErrInvalidID indicates that the task ID is invalid
-	ErrInvalidID = errors.New("invalid task ID")
-	// ErrInvalidContent indicates that the task content is invalid
-	ErrInvalidContent = errors.New("invalid task content")
-)
-
-// TaskValidator provides validation for task operations
+// TaskValidator validates task data
 type TaskValidator struct {
 	store storage.TaskReader // For uniqueness checks
 }
 
-// NewTaskValidator creates a new TaskValidator
+// NewTaskValidator creates a new task validator
 func NewTaskValidator(store storage.TaskReader) *TaskValidator {
-	return &TaskValidator{store: store}
+	return &TaskValidator{
+		store: store,
+	}
 }
 
-// ValidateTask validates a task for creation or update
-func (v *TaskValidator) ValidateTask(task *storage.Task) error {
-	if err := v.ValidateID(task.ID); err != nil {
-		return &storage.ValidationError{
-			Field:   "id",
-			Message: err.Error(),
-		}
-	}
-
+// ValidateTask validates a task
+func (v *TaskValidator) ValidateTask(task *model.Task) error {
 	if err := v.validateContent(task.Content); err != nil {
-		return &storage.ValidationError{
-			Field:   "content",
-			Message: err.Error(),
-		}
+		return err
 	}
 
-	if err := v.validateTimestamps(task.CreatedAt, task.UpdatedAt); err != nil {
-		return &storage.ValidationError{
-			Field:   "timestamps",
-			Message: err.Error(),
-		}
+	if err := v.validateTimestamps(task); err != nil {
+		return err
 	}
 
 	return nil
 }
 
-// ValidateID validates the task ID
-func (v *TaskValidator) ValidateID(id string) error {
-	if id == "" {
-		return fmt.Errorf("task ID cannot be empty")
-	}
-
-	if len(id) > MaxIDLength {
-		return fmt.Errorf("task ID too long (max %d characters)", MaxIDLength)
-	}
-
-	return nil
-}
-
-// validateContent validates the task content
+// validateContent validates task content
 func (v *TaskValidator) validateContent(content string) error {
 	if content == "" {
-		return fmt.Errorf("task content cannot be empty")
+		return &model.ValidationError{
+			Field:   "content",
+			Message: "task content cannot be empty",
+		}
 	}
 
-	if len(content) > MaxContentLength {
-		return fmt.Errorf("task content too long (max %d characters)", MaxContentLength)
+	if len(content) > 1000 {
+		return &model.ValidationError{
+			Field:   "content",
+			Message: "task content cannot exceed 1000 characters",
+		}
 	}
 
 	return nil
 }
 
 // validateTimestamps validates task timestamps
-func (v *TaskValidator) validateTimestamps(createdAt, updatedAt time.Time) error {
-	if createdAt.IsZero() {
-		return fmt.Errorf("created_at timestamp cannot be zero")
-	}
+func (v *TaskValidator) validateTimestamps(task *model.Task) error {
+	now := time.Now()
 
-	if updatedAt.IsZero() {
-		return fmt.Errorf("updated_at timestamp cannot be zero")
-	}
-
-	if updatedAt.Before(createdAt) {
-		return fmt.Errorf("updated_at cannot be before created_at")
-	}
-
-	return nil
-}
-
-// ValidateConnection validates the database connection state
-func ValidateConnection(err error) error {
-	if err != nil {
-		return &storage.ConnectionError{
-			Operation: "validate connection",
-			Err:       err,
+	// Check if created_at is in the future
+	if task.CreatedAt.After(now) {
+		return &model.ValidationError{
+			Field:   "created_at",
+			Message: "created_at cannot be in the future",
 		}
 	}
-	return nil
-}
 
-// ValidateTransaction validates transaction state
-func ValidateTransaction(err error) error {
-	if err != nil {
-		return &storage.TransactionError{
-			Operation: "validate transaction",
-			Err:       err,
+	// Check if updated_at is in the future
+	if task.UpdatedAt.After(now) {
+		return &model.ValidationError{
+			Field:   "updated_at",
+			Message: "updated_at cannot be in the future",
 		}
 	}
+
+	// Check if updated_at is before created_at
+	if task.UpdatedAt.Before(task.CreatedAt) {
+		return &model.ValidationError{
+			Field:   "updated_at",
+			Message: "updated_at cannot be before created_at",
+		}
+	}
+
 	return nil
 }
 
-const (
-	// MaxIDLength is the maximum allowed length for task IDs
-	MaxIDLength = 100
-	// MaxContentLength is the maximum allowed length for task content
-	MaxContentLength = 1000
+// ValidateTaskUpdate validates task update operations
+func (v *TaskValidator) ValidateTaskUpdate(original, updated *model.Task) error {
+	// Validate the updated task
+	if err := v.ValidateTask(updated); err != nil {
+		return err
+	}
+
+	// Check if ID changed
+	if original.ID != updated.ID {
+		return &model.ValidationError{
+			Field:   "id",
+			Message: "task ID cannot be changed",
+		}
+	}
+
+	// Check if created_at changed
+	if !original.CreatedAt.Equal(updated.CreatedAt) {
+		return &model.ValidationError{
+			Field:   "created_at",
+			Message: "created_at cannot be modified",
+		}
+	}
+
+	return nil
+}
+
+// Common validation errors
+var (
+	ErrEmptyContent     = errors.New("task content cannot be empty")
+	ErrContentTooLong   = errors.New("task content cannot exceed 1000 characters")
+	ErrInvalidTimestamp = errors.New("invalid timestamp")
 )

@@ -5,24 +5,25 @@ import (
 	"context"
 	"sync"
 
+	"github.com/jonesrussell/godo/internal/model"
 	"github.com/jonesrussell/godo/internal/storage"
 )
 
 // Store implements storage.TaskStore interface using in-memory storage
 type Store struct {
-	tasks map[string]storage.Task
+	tasks map[string]model.Task
 	mu    sync.RWMutex
 }
 
 // New creates a new memory store
 func New() *Store {
 	return &Store{
-		tasks: make(map[string]storage.Task),
+		tasks: make(map[string]model.Task),
 	}
 }
 
 // Add adds a new task to the store
-func (s *Store) Add(_ context.Context, task *storage.Task) error {
+func (s *Store) Add(_ context.Context, task *model.Task) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -35,24 +36,24 @@ func (s *Store) Add(_ context.Context, task *storage.Task) error {
 }
 
 // GetByID retrieves a task by its ID
-func (s *Store) GetByID(_ context.Context, id string) (storage.Task, error) {
+func (s *Store) GetByID(_ context.Context, id string) (model.Task, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
 	task, exists := s.tasks[id]
 	if !exists {
-		return storage.Task{}, storage.ErrTaskNotFound
+		return model.Task{}, storage.ErrTaskNotFound
 	}
 
 	return task, nil
 }
 
 // List returns all tasks in the store
-func (s *Store) List(_ context.Context) ([]storage.Task, error) {
+func (s *Store) List(_ context.Context) ([]model.Task, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	tasks := make([]storage.Task, 0, len(s.tasks))
+	tasks := make([]model.Task, 0, len(s.tasks))
 	for _, task := range s.tasks {
 		tasks = append(tasks, task)
 	}
@@ -61,7 +62,7 @@ func (s *Store) List(_ context.Context) ([]storage.Task, error) {
 }
 
 // Update updates an existing task
-func (s *Store) Update(_ context.Context, task *storage.Task) error {
+func (s *Store) Update(_ context.Context, task *model.Task) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -91,6 +92,6 @@ func (s *Store) Close() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.tasks = make(map[string]storage.Task)
+	s.tasks = make(map[string]model.Task)
 	return nil
 }

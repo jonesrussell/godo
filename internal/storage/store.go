@@ -4,29 +4,21 @@ package storage
 import (
 	"context"
 	"fmt"
-	"time"
+
+	"github.com/jonesrussell/godo/internal/model"
 )
 
 //go:generate mockgen -destination=../../test/mocks/mock_taskstore.go -package=mocks github.com/jonesrussell/godo/internal/storage TaskStore
 //go:generate mockgen -destination=../../test/mocks/mock_tasktx.go -package=mocks github.com/jonesrussell/godo/internal/storage TaskTx
 //go:generate mockgen -destination=../../test/mocks/mock_taskreader.go -package=mocks github.com/jonesrussell/godo/internal/storage TaskReader
 
-// Task represents a todo item
-type Task struct {
-	ID        string    `json:"id"`
-	Content   string    `json:"content"`
-	Done      bool      `json:"done"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-}
-
 // TaskStore defines the interface for task storage operations
 type TaskStore interface {
-	Add(ctx context.Context, task *Task) error
-	GetByID(ctx context.Context, id string) (Task, error)
-	Update(ctx context.Context, task *Task) error
+	Add(ctx context.Context, task *model.Task) error
+	GetByID(ctx context.Context, id string) (model.Task, error)
+	Update(ctx context.Context, task *model.Task) error
 	Delete(ctx context.Context, id string) error
-	List(ctx context.Context) ([]Task, error)
+	List(ctx context.Context) ([]model.Task, error)
 	Close() error
 }
 
@@ -38,11 +30,11 @@ type TaskTxStore interface {
 
 // TaskTx defines the interface for task operations within a transaction
 type TaskTx interface {
-	Add(ctx context.Context, task *Task) error
-	GetByID(ctx context.Context, id string) (Task, error)
-	Update(ctx context.Context, task *Task) error
+	Add(ctx context.Context, task *model.Task) error
+	GetByID(ctx context.Context, id string) (model.Task, error)
+	Update(ctx context.Context, task *model.Task) error
 	Delete(ctx context.Context, id string) error
-	List(ctx context.Context) ([]Task, error)
+	List(ctx context.Context) ([]model.Task, error)
 	Commit() error
 	Rollback() error
 }
@@ -51,19 +43,19 @@ type TaskTx interface {
 // Kept for backward compatibility during migration
 type Store interface {
 	// List returns all stored tasks
-	List() ([]Task, error)
+	List() ([]model.Task, error)
 
 	// Add stores a new task
-	Add(task *Task) error
+	Add(task *model.Task) error
 
 	// Update modifies an existing task
-	Update(task *Task) error
+	Update(task *model.Task) error
 
 	// Delete removes a task by ID
 	Delete(id string) error
 
 	// GetByID retrieves a task by its ID
-	GetByID(id string) (*Task, error)
+	GetByID(id string) (*model.Task, error)
 
 	// Close releases any resources held by the store
 	Close() error
@@ -71,8 +63,8 @@ type Store interface {
 
 // TaskReader defines the read-only interface for task storage operations
 type TaskReader interface {
-	GetByID(ctx context.Context, id string) (Task, error)
-	List(ctx context.Context) ([]Task, error)
+	GetByID(ctx context.Context, id string) (model.Task, error)
+	List(ctx context.Context) ([]model.Task, error)
 }
 
 // ValidationError represents a validation error

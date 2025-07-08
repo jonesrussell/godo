@@ -6,6 +6,7 @@ import (
 	"database/sql"
 
 	"github.com/jonesrussell/godo/internal/logger"
+	"github.com/jonesrussell/godo/internal/model"
 	"github.com/jonesrussell/godo/internal/storage"
 	"github.com/jonesrussell/godo/internal/storage/errors"
 
@@ -39,7 +40,7 @@ func New(path string, log logger.Logger) (*Store, error) {
 }
 
 // Add creates a new task in the store
-func (s *Store) Add(ctx context.Context, task *storage.Task) error {
+func (s *Store) Add(ctx context.Context, task *model.Task) error {
 	_, err := s.db.ExecContext(ctx,
 		"INSERT INTO tasks (id, content, done, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
 		task.ID, task.Content, task.Done, task.CreatedAt, task.UpdatedAt,
@@ -48,21 +49,21 @@ func (s *Store) Add(ctx context.Context, task *storage.Task) error {
 }
 
 // GetByID retrieves a task by its ID
-func (s *Store) GetByID(ctx context.Context, id string) (storage.Task, error) {
-	var task storage.Task
+func (s *Store) GetByID(ctx context.Context, id string) (model.Task, error) {
+	var task model.Task
 	err := s.db.QueryRowContext(ctx,
 		"SELECT id, content, done, created_at, updated_at FROM tasks WHERE id = ?",
 		id,
 	).Scan(&task.ID, &task.Content, &task.Done, &task.CreatedAt, &task.UpdatedAt)
 
 	if err == sql.ErrNoRows {
-		return storage.Task{}, &errors.NotFoundError{ID: id}
+		return model.Task{}, &errors.NotFoundError{ID: id}
 	}
 	return task, err
 }
 
 // Update modifies an existing task
-func (s *Store) Update(ctx context.Context, task *storage.Task) error {
+func (s *Store) Update(ctx context.Context, task *model.Task) error {
 	result, err := s.db.ExecContext(ctx,
 		"UPDATE tasks SET content = ?, done = ?, updated_at = ? WHERE id = ?",
 		task.Content, task.Done, task.UpdatedAt, task.ID,
@@ -101,7 +102,7 @@ func (s *Store) Delete(ctx context.Context, id string) error {
 }
 
 // List returns all tasks
-func (s *Store) List(ctx context.Context) ([]storage.Task, error) {
+func (s *Store) List(ctx context.Context) ([]model.Task, error) {
 	rows, err := s.db.QueryContext(ctx,
 		"SELECT id, content, done, created_at, updated_at FROM tasks ORDER BY created_at DESC",
 	)
@@ -110,9 +111,9 @@ func (s *Store) List(ctx context.Context) ([]storage.Task, error) {
 	}
 	defer rows.Close()
 
-	var tasks []storage.Task
+	var tasks []model.Task
 	for rows.Next() {
-		var task storage.Task
+		var task model.Task
 		scanErr := rows.Scan(&task.ID, &task.Content, &task.Done, &task.CreatedAt, &task.UpdatedAt)
 		if scanErr != nil {
 			return nil, scanErr
@@ -142,7 +143,7 @@ type Transaction struct {
 }
 
 // Add creates a new task in the transaction
-func (t *Transaction) Add(ctx context.Context, task *storage.Task) error {
+func (t *Transaction) Add(ctx context.Context, task *model.Task) error {
 	_, err := t.tx.ExecContext(ctx,
 		"INSERT INTO tasks (id, content, done, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
 		task.ID, task.Content, task.Done, task.CreatedAt, task.UpdatedAt,
@@ -151,16 +152,16 @@ func (t *Transaction) Add(ctx context.Context, task *storage.Task) error {
 }
 
 // List returns all tasks in the transaction
-func (t *Transaction) List(ctx context.Context) ([]storage.Task, error) {
+func (t *Transaction) List(ctx context.Context) ([]model.Task, error) {
 	rows, err := t.tx.QueryContext(ctx, "SELECT id, content, done, created_at, updated_at FROM tasks")
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var tasks []storage.Task
+	var tasks []model.Task
 	for rows.Next() {
-		var task storage.Task
+		var task model.Task
 		if scanErr := rows.Scan(
 			&task.ID,
 			&task.Content,
@@ -176,8 +177,8 @@ func (t *Transaction) List(ctx context.Context) ([]storage.Task, error) {
 }
 
 // GetByID returns a task by its ID in the transaction
-func (t *Transaction) GetByID(ctx context.Context, id string) (storage.Task, error) {
-	var task storage.Task
+func (t *Transaction) GetByID(ctx context.Context, id string) (model.Task, error) {
+	var task model.Task
 	err := t.tx.QueryRowContext(ctx,
 		"SELECT id, content, done, created_at, updated_at FROM tasks WHERE id = ?",
 		id,
@@ -189,16 +190,16 @@ func (t *Transaction) GetByID(ctx context.Context, id string) (storage.Task, err
 		&task.UpdatedAt,
 	)
 	if err == sql.ErrNoRows {
-		return storage.Task{}, &errors.NotFoundError{ID: id}
+		return model.Task{}, &errors.NotFoundError{ID: id}
 	}
 	if err != nil {
-		return storage.Task{}, err
+		return model.Task{}, err
 	}
 	return task, nil
 }
 
 // Update modifies an existing task in the transaction
-func (t *Transaction) Update(ctx context.Context, task *storage.Task) error {
+func (t *Transaction) Update(ctx context.Context, task *model.Task) error {
 	result, err := t.tx.ExecContext(ctx,
 		"UPDATE tasks SET content = ?, done = ?, updated_at = ? WHERE id = ?",
 		task.Content, task.Done, task.UpdatedAt, task.ID,

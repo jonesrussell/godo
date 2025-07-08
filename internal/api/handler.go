@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/jonesrussell/godo/internal/storage"
+	"github.com/jonesrussell/godo/internal/model"
 )
 
 // TaskHandler defines the interface for task-related HTTP handlers
@@ -50,8 +50,8 @@ type TaskResponse struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// NewTaskResponse creates a TaskResponse from a storage.Task
-func NewTaskResponse(task *storage.Task) TaskResponse {
+// NewTaskResponse creates a TaskResponse from a model.Task
+func NewTaskResponse(task *model.Task) TaskResponse {
 	return TaskResponse{
 		ID:        task.ID,
 		Content:   task.Content,
@@ -66,8 +66,8 @@ type TaskListResponse struct {
 	Tasks []TaskResponse `json:"tasks"`
 }
 
-// NewTaskListResponse creates a TaskListResponse from a slice of storage.Tasks
-func NewTaskListResponse(tasks []storage.Task) TaskListResponse {
+// NewTaskListResponse creates a TaskListResponse from a slice of model.Tasks
+func NewTaskListResponse(tasks []model.Task) TaskListResponse {
 	response := TaskListResponse{
 		Tasks: make([]TaskResponse, len(tasks)),
 	}

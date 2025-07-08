@@ -54,14 +54,18 @@ func New(
 
 // Show displays the quick note window
 func (w *Window) Show() {
-	w.window.Show()
-	w.window.CenterOnScreen()
-	w.entry.FocusGained()
+	fyne.Do(func() {
+		w.window.Show()
+		w.window.CenterOnScreen()
+		w.entry.FocusGained()
+	})
 }
 
 // Hide hides the quick note window
 func (w *Window) Hide() {
-	w.window.Hide()
+	fyne.Do(func() {
+		w.window.Hide()
+	})
 }
 
 // setupUI initializes the user interface
@@ -145,12 +149,16 @@ func (w *Window) clearEntry() {
 
 // showStatus shows a status message
 func (w *Window) showStatus(message string, success bool) {
-	w.statusText.SetText(message)
-	w.statusText.Show()
+	fyne.Do(func() {
+		w.statusText.SetText(message)
+		w.statusText.Show()
+	})
 
 	// Auto-hide after 2 seconds
 	go func() {
 		time.Sleep(2 * time.Second)
-		w.statusText.Hide()
+		fyne.Do(func() {
+			w.statusText.Hide()
+		})
 	}()
 }

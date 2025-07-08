@@ -16,6 +16,7 @@ import (
 )
 
 func setupTestWindow(t *testing.T) (*quicknote.Window, *storage.MockStore) {
+	t.Helper()
 	store := storage.NewMockStore()
 	log := logger.NewTestLogger(t)
 	app := test.NewApp()

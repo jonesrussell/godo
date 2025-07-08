@@ -198,6 +198,45 @@ tasks:
   wire:
     desc: Generate wire code for current platform
     cmds:
+
+  mocks:
+    desc: Generate all mocks using mockgen
+    cmds:
+    - task: mocks:storage
+    - task: mocks:logger
+    - task: mocks:service
+    - task: mocks:gui
+    - task: mocks:app
+
+  mocks:storage:
+    desc: Generate storage interface mocks
+    cmds:
+    - go generate ./internal/storage/...
+
+  mocks:logger:
+    desc: Generate logger interface mocks
+    cmds:
+    - go generate ./internal/logger/...
+
+  mocks:service:
+    desc: Generate service interface mocks
+    cmds:
+    - go generate ./internal/service/...
+
+  mocks:gui:
+    desc: Generate GUI interface mocks
+    cmds:
+    - go generate ./internal/gui/...
+
+  mocks:app:
+    desc: Generate app interface mocks
+    cmds:
+    - go generate ./internal/app/...
+
+  mocks:clean:
+    desc: Clean generated mocks
+    cmds:
+    - rm -rf test/mocks/*.go
     - task: build:wire
 
   build:

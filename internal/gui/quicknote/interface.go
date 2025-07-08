@@ -2,8 +2,11 @@ package quicknote
 
 import (
 	"fyne.io/fyne/v2"
+
 	"github.com/jonesrussell/godo/internal/logger"
 )
+
+//go:generate mockgen -destination=../../../test/mocks/mock_quicknote.go -package=mocks github.com/jonesrussell/godo/internal/gui/quicknote Interface
 
 // Interface defines the behavior of a quick note window
 type Interface interface {

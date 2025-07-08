@@ -2,6 +2,8 @@ package app
 
 import "fyne.io/fyne/v2"
 
+//go:generate mockgen -destination=../../test/mocks/mock_app.go -package=mocks github.com/jonesrussell/godo/internal/app UI,Application
+
 // UI defines the user interface operations
 type UI interface {
 	Show()

@@ -12,6 +12,8 @@ import (
 	"github.com/jonesrussell/godo/internal/common"
 )
 
+//go:generate mockgen -destination=../../test/mocks/mock_logger.go -package=mocks github.com/jonesrussell/godo/internal/logger Logger
+
 // fieldMultiplier is used to calculate the capacity for key-value pairs
 const fieldMultiplier = 2
 

@@ -27,6 +27,7 @@ func createTestTask(content string) storage.Task {
 }
 
 func setupTestWindow(t *testing.T) (*Window, *storage.MockStore) {
+	t.Helper()
 	store := storage.NewMockStore()
 	log := logger.NewTestLogger(t)
 	app := test.NewApp()

@@ -13,6 +13,8 @@ import (
 	"github.com/jonesrussell/godo/internal/storage"
 )
 
+//go:generate mockgen -destination=../../test/mocks/mock_taskservice.go -package=mocks github.com/jonesrussell/godo/internal/service TaskService
+
 // TaskFilter represents filtering options for task queries
 type TaskFilter struct {
 	Done          *bool      `json:"done,omitempty"`

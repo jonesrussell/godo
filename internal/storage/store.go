@@ -7,6 +7,10 @@ import (
 	"time"
 )
 
+//go:generate mockgen -destination=../../test/mocks/mock_taskstore.go -package=mocks github.com/jonesrussell/godo/internal/storage TaskStore
+//go:generate mockgen -destination=../../test/mocks/mock_tasktx.go -package=mocks github.com/jonesrussell/godo/internal/storage TaskTx
+//go:generate mockgen -destination=../../test/mocks/mock_taskreader.go -package=mocks github.com/jonesrussell/godo/internal/storage TaskReader
+
 // Task represents a todo item
 type Task struct {
 	ID        string    `json:"id"`

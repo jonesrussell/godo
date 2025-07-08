@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -249,7 +250,17 @@ func (s *Server) Start(port int) error {
 	}
 
 	s.log.Info("Starting HTTP server", "port", port)
-	return s.srv.ListenAndServe()
+
+	err := s.srv.ListenAndServe()
+	if err != nil && err != http.ErrServerClosed {
+		// Provide a clearer error message for port conflicts
+		if strings.Contains(err.Error(), "address already in use") {
+			return fmt.Errorf("HTTP server failed to start: port %d is already in use. Please configure a different port via environment variable GODO_HTTP_PORT, config file, or CLI flag", port)
+		}
+		return fmt.Errorf("HTTP server failed to start: %w", err)
+	}
+
+	return err
 }
 
 // Shutdown gracefully shuts down the server

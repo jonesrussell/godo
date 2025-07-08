@@ -40,11 +40,12 @@ func (r *Runner) Start(port int) {
 	go func() {
 		defer close(r.shutdown)
 
-		// Signal that we're attempting to start
-		r.logger.Info("Starting HTTP server", "port", port)
-
-		if err := r.server.Start(port); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			r.logger.Error("HTTP server error", "error", err)
+		err := r.server.Start(port)
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			r.logger.Error("HTTP server failed to start",
+				"port", port,
+				"error", err.Error(),
+				"hint", "Check if another process is using this port or configure a different port")
 			return
 		}
 

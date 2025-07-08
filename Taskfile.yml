@@ -1,5 +1,10 @@
 version: '3'
 
+includes:
+  build:
+    taskfile: ./Taskfile.build.yml
+    optional: true
+
 vars:
   BINARY_NAME: godo
   BUILD_DIR: dist
@@ -189,6 +194,16 @@ tasks:
     cmds:
     - task: lint
     - task: test:wsl2
+
+  wire:
+    desc: Generate wire code for current platform
+    cmds:
+    - task: build:wire
+
+  build:
+    desc: Build for current platform (native)
+    cmds:
+    - task: build:build
 
   check:
     desc: Quick check - format and lint only

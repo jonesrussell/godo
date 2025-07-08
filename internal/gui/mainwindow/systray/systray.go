@@ -7,6 +7,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/driver/desktop"
+
 	"github.com/jonesrussell/godo/internal/logger"
 )
 
@@ -46,7 +47,7 @@ func New(app fyne.App, log logger.Logger) *Systray {
 		)
 
 		// Test system tray capabilities
-		if dt, ok := desk.(interface{ SystemTraySupported() bool }); ok {
+		if dt, dtOk := desk.(interface{ SystemTraySupported() bool }); dtOk {
 			supported := dt.SystemTraySupported()
 			s.log.Debug("System tray support explicitly checked", "supported", supported)
 		} else {

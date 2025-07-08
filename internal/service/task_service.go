@@ -171,9 +171,9 @@ func (s *taskService) UpdateTask(ctx context.Context, id string, updates TaskUpd
 
 	// Apply updates
 	if updates.Content != nil {
-		if err := s.validateTaskContent(*updates.Content); err != nil {
-			s.logger.Error("Task content validation failed", "task_id", id, "error", err)
-			return nil, fmt.Errorf("validation failed: %w", err)
+		if validErr := s.validateTaskContent(*updates.Content); validErr != nil {
+			s.logger.Error("Task content validation failed", "task_id", id, "error", validErr)
+			return nil, fmt.Errorf("validation failed: %w", validErr)
 		}
 		existingTask.Content = strings.TrimSpace(*updates.Content)
 	}
@@ -186,9 +186,9 @@ func (s *taskService) UpdateTask(ctx context.Context, id string, updates TaskUpd
 	existingTask.UpdatedAt = time.Now()
 
 	// Store updated task
-	if err := s.store.Update(ctx, &existingTask); err != nil {
-		s.logger.Error("Failed to update task", "task_id", id, "error", err)
-		return nil, fmt.Errorf("failed to update task: %w", err)
+	if updateErr := s.store.Update(ctx, &existingTask); updateErr != nil {
+		s.logger.Error("Failed to update task", "task_id", id, "error", updateErr)
+		return nil, fmt.Errorf("failed to update task: %w", updateErr)
 	}
 
 	s.logger.Info("Task updated successfully", "task_id", id)

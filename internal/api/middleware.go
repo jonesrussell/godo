@@ -226,8 +226,8 @@ func WithJWTAuth(log logger.Logger) Middleware {
 					return
 				}
 
-				userID, ok := userIDInterface.(string)
-				if !ok {
+				userID, userOk := userIDInterface.(string)
+				if !userOk {
 					writeError(w, http.StatusUnauthorized, "invalid_token_claims", "Invalid user_id claim type")
 					return
 				}

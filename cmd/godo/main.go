@@ -8,8 +8,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/jonesrussell/godo/internal/app"
-	"github.com/jonesrussell/godo/internal/container"
+	"github.com/jonesrussell/godo/internal/application/app"
+	"github.com/jonesrussell/godo/internal/application/container"
 )
 
 const (

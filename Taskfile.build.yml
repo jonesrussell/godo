@@ -19,24 +19,24 @@ tasks:
   wire:linux:
     desc: Generate wire code for Linux
     sources:
-      - internal/container/wire.go
-      - internal/container/providers.go
-      - internal/container/wire_gen.go
+      - internal/application/container/wire.go
+      - internal/application/container/providers.go
+      - internal/application/container/wire_gen.go
     generates:
-      - internal/container/wire_gen.go
+      - internal/application/container/wire_gen.go
     cmds:
-    - cd internal/container && wire gen -tags linux
+    - cd internal/application/container && wire gen -tags linux
 
   wire:windows:
     desc: Generate wire code for Windows
     sources:
-      - internal/container/wire.go
-      - internal/container/providers.go
-      - internal/container/wire_gen.go
+      - internal/application/container/wire.go
+      - internal/application/container/providers.go
+      - internal/application/container/wire_gen.go
     generates:
-      - internal/container/wire_gen.go
+      - internal/application/container/wire_gen.go
     cmds:
-    - cd internal/container && wire gen -tags windows
+    - cd internal/application/container && wire gen -tags windows
 
   wire:
     desc: Generate wire code for current platform
@@ -54,7 +54,7 @@ tasks:
       - go.mod
       - go.sum
       - configs/**/*.yaml
-      - internal/container/wire_gen.go
+      - internal/application/container/wire_gen.go
       - Taskfile.build.yml
     env:
       CGO_ENABLED: 1
@@ -76,7 +76,7 @@ tasks:
       - go.mod
       - go.sum
       - configs/**/*.yaml
-      - internal/container/wire_gen.go
+      - internal/application/container/wire_gen.go
       - Taskfile.build.yml
     env:
       CGO_ENABLED: 0
@@ -96,7 +96,7 @@ tasks:
       - go.mod
       - go.sum
       - configs/**/*.yaml
-      - internal/container/wire_gen.go
+      - internal/application/container/wire_gen.go
       - Taskfile.build.yml
     env:
       CGO_ENABLED: 1
@@ -116,7 +116,7 @@ tasks:
       - go.mod
       - go.sum
       - configs/**/*.yaml
-      - internal/container/wire_gen.go
+      - internal/application/container/wire_gen.go
       - Taskfile.build.yml
     env:
       CGO_ENABLED: 1
@@ -194,7 +194,7 @@ tasks:
     desc: Clean up generated files
     cmds:
     - rm -rf {{.BUILD_DIR}}
-    - rm -rf internal/container/*_wire_gen.go
+    - rm -rf internal/application/container/*_wire_gen.go
 
   all:
     desc: Build all platforms

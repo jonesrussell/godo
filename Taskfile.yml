@@ -198,7 +198,7 @@ tasks:
   wire:
     desc: Generate wire code for current platform
     cmds:
-    - wire ./internal/container
+    - wire ./internal/application/container
 
   mocks:
     desc: Generate all mocks using mockgen

@@ -39,7 +39,7 @@ func New(path string, log logger.Logger) (*Store, error) {
 }
 
 // Add creates a new task in the store
-func (s *Store) Add(ctx context.Context, task storage.Task) error {
+func (s *Store) Add(ctx context.Context, task *storage.Task) error {
 	_, err := s.db.ExecContext(ctx,
 		"INSERT INTO tasks (id, content, done, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
 		task.ID, task.Content, task.Done, task.CreatedAt, task.UpdatedAt,
@@ -62,7 +62,7 @@ func (s *Store) GetByID(ctx context.Context, id string) (storage.Task, error) {
 }
 
 // Update modifies an existing task
-func (s *Store) Update(ctx context.Context, task storage.Task) error {
+func (s *Store) Update(ctx context.Context, task *storage.Task) error {
 	result, err := s.db.ExecContext(ctx,
 		"UPDATE tasks SET content = ?, done = ?, updated_at = ? WHERE id = ?",
 		task.Content, task.Done, task.UpdatedAt, task.ID,
@@ -142,7 +142,7 @@ type Transaction struct {
 }
 
 // Add creates a new task in the transaction
-func (t *Transaction) Add(ctx context.Context, task storage.Task) error {
+func (t *Transaction) Add(ctx context.Context, task *storage.Task) error {
 	_, err := t.tx.ExecContext(ctx,
 		"INSERT INTO tasks (id, content, done, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
 		task.ID, task.Content, task.Done, task.CreatedAt, task.UpdatedAt,
@@ -198,7 +198,7 @@ func (t *Transaction) GetByID(ctx context.Context, id string) (storage.Task, err
 }
 
 // Update modifies an existing task in the transaction
-func (t *Transaction) Update(ctx context.Context, task storage.Task) error {
+func (t *Transaction) Update(ctx context.Context, task *storage.Task) error {
 	result, err := t.tx.ExecContext(ctx,
 		"UPDATE tasks SET content = ?, done = ?, updated_at = ? WHERE id = ?",
 		task.Content, task.Done, task.UpdatedAt, task.ID,

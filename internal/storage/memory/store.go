@@ -22,7 +22,7 @@ func New() *Store {
 }
 
 // Add adds a new task to the store
-func (s *Store) Add(_ context.Context, task storage.Task) error {
+func (s *Store) Add(_ context.Context, task *storage.Task) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -30,21 +30,21 @@ func (s *Store) Add(_ context.Context, task storage.Task) error {
 		return storage.ErrDuplicateID
 	}
 
-	s.tasks[task.ID] = task
+	s.tasks[task.ID] = *task
 	return nil
 }
 
 // GetByID retrieves a task by its ID
-func (s *Store) GetByID(_ context.Context, id string) (*storage.Task, error) {
+func (s *Store) GetByID(_ context.Context, id string) (storage.Task, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
 	task, exists := s.tasks[id]
 	if !exists {
-		return nil, storage.ErrTaskNotFound
+		return storage.Task{}, storage.ErrTaskNotFound
 	}
 
-	return &task, nil
+	return task, nil
 }
 
 // List returns all tasks in the store
@@ -61,7 +61,7 @@ func (s *Store) List(_ context.Context) ([]storage.Task, error) {
 }
 
 // Update updates an existing task
-func (s *Store) Update(_ context.Context, task storage.Task) error {
+func (s *Store) Update(_ context.Context, task *storage.Task) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -69,7 +69,7 @@ func (s *Store) Update(_ context.Context, task storage.Task) error {
 		return storage.ErrTaskNotFound
 	}
 
-	s.tasks[task.ID] = task
+	s.tasks[task.ID] = *task
 	return nil
 }
 

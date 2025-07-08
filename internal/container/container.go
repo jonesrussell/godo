@@ -28,7 +28,11 @@ func New() (*Container, error) {
 	}()
 
 	// Get logger and store from the app
-	godoApp := app.(*godoapp.App)
+	godoApp, ok := app.(*godoapp.App)
+	if !ok {
+		cleanup()
+		return nil, fmt.Errorf("failed to cast app to *godoapp.App: unexpected type %T", app)
+	}
 	return &Container{
 		App:    app,
 		Logger: godoApp.Logger(),

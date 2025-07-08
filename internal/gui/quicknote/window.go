@@ -81,7 +81,7 @@ func (w *Window) saveNote() {
 			CreatedAt: now,
 			UpdatedAt: now,
 		}
-		if err := w.store.Add(context.Background(), task); err != nil {
+		if err := w.store.Add(context.Background(), &task); err != nil {
 			w.logger.Error("Failed to add quick note", "error", err)
 			return
 		}

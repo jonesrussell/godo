@@ -51,7 +51,7 @@ type TaskResponse struct {
 }
 
 // NewTaskResponse creates a TaskResponse from a storage.Task
-func NewTaskResponse(task storage.Task) TaskResponse {
+func NewTaskResponse(task *storage.Task) TaskResponse {
 	return TaskResponse{
 		ID:        task.ID,
 		Content:   task.Content,

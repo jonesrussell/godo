@@ -122,7 +122,7 @@ func (s *taskService) CreateTask(ctx context.Context, content string) (*storage.
 	}
 
 	// Store the task
-	if err := s.store.Add(ctx, task); err != nil {
+	if err := s.store.Add(ctx, &task); err != nil {
 		s.logger.Error("Failed to store task", "task_id", task.ID, "error", err)
 		return nil, fmt.Errorf("failed to create task: %w", err)
 	}
@@ -186,7 +186,7 @@ func (s *taskService) UpdateTask(ctx context.Context, id string, updates TaskUpd
 	existingTask.UpdatedAt = time.Now()
 
 	// Store updated task
-	if err := s.store.Update(ctx, existingTask); err != nil {
+	if err := s.store.Update(ctx, &existingTask); err != nil {
 		s.logger.Error("Failed to update task", "task_id", id, "error", err)
 		return nil, fmt.Errorf("failed to update task: %w", err)
 	}

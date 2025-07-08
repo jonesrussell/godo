@@ -78,7 +78,7 @@ func (tm *TaskManager) addTask(ctx context.Context, content string) error {
 		UpdatedAt: time.Now(),
 	}
 
-	if err := tm.store.Add(ctx, task); err != nil {
+	if err := tm.store.Add(ctx, &task); err != nil {
 		tm.logger.Error("Failed to add task", "error", err)
 		return err
 	}
@@ -96,7 +96,7 @@ func (tm *TaskManager) updateTask(ctx context.Context, id int, done bool) error 
 	tm.tasks[id].Done = done
 	tm.tasks[id].UpdatedAt = time.Now()
 
-	if err := tm.store.Update(ctx, tm.tasks[id]); err != nil {
+	if err := tm.store.Update(ctx, &tm.tasks[id]); err != nil {
 		tm.logger.Error("Failed to update task", "error", err)
 		return err
 	}

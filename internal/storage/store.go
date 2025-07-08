@@ -22,9 +22,9 @@ type Task struct {
 
 // TaskStore defines the interface for task storage operations
 type TaskStore interface {
-	Add(ctx context.Context, task Task) error
+	Add(ctx context.Context, task *Task) error
 	GetByID(ctx context.Context, id string) (Task, error)
-	Update(ctx context.Context, task Task) error
+	Update(ctx context.Context, task *Task) error
 	Delete(ctx context.Context, id string) error
 	List(ctx context.Context) ([]Task, error)
 	Close() error
@@ -38,9 +38,9 @@ type TaskTxStore interface {
 
 // TaskTx defines the interface for task operations within a transaction
 type TaskTx interface {
-	Add(ctx context.Context, task Task) error
+	Add(ctx context.Context, task *Task) error
 	GetByID(ctx context.Context, id string) (Task, error)
-	Update(ctx context.Context, task Task) error
+	Update(ctx context.Context, task *Task) error
 	Delete(ctx context.Context, id string) error
 	List(ctx context.Context) ([]Task, error)
 	Commit() error

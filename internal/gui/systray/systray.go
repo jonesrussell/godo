@@ -2,7 +2,10 @@
 package systray
 
 import (
+	"fmt"
+
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/driver/desktop"
 
 	"github.com/jonesrussell/godo/internal/gui"
@@ -28,9 +31,14 @@ func SetupSystray(app fyne.App, mainWindow fyne.Window, quickNote gui.QuickNote,
 				if err := utils.OpenLogFile(logPath); err != nil {
 					// If main log fails, try error log
 					if logErr := utils.OpenErrorLogFile(errorLogPath); logErr != nil {
-						// Both log files failed to open - this is a non-critical error
-						// since it's just a convenience feature for viewing logs
-						_ = logErr // explicitly ignore the error
+						// Both log files failed to open - notify user
+						errorMsg := fmt.Sprintf("Failed to open log files:\nMain log: %v\nError log: %v", err, logErr)
+
+						// Show error dialog to user
+						dialog.ShowError(fmt.Errorf("log viewing failed: %s", errorMsg), mainWindow)
+
+						// Also log the failure for debugging
+						fmt.Printf("View Logs failed - main log error: %v, error log error: %v\n", err, logErr)
 					}
 				}
 			}),

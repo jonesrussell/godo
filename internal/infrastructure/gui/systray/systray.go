@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/dialog"
@@ -13,36 +12,40 @@ import (
 
 	"github.com/jonesrussell/godo/internal/infrastructure/gui"
 	"github.com/jonesrussell/godo/internal/infrastructure/gui/theme"
+	"github.com/jonesrussell/godo/internal/infrastructure/platform"
 	"github.com/jonesrussell/godo/internal/shared/utils"
 )
 
 // SetupSystray configures the system tray icon and menu
-func SetupSystray(app fyne.App, mainWindow fyne.Window, quickNote gui.QuickNote, logPath, errorLogPath string) {
-	if desk, ok := app.(desktop.App); ok {
-		// Set up systray with retry logic for icon
-		setupSystrayWithRetry(desk, app, mainWindow, quickNote, logPath, errorLogPath)
+func SetupSystray(app fyne.App, mainWindow fyne.Window, quickNote gui.QuickNote, logPath, errorLogPath string) error {
+	// Check if systray is supported in this environment
+	if !platform.SupportsGUI() {
+		if platform.IsWSL2() {
+			fmt.Println("Systray not supported in WSL2 environment - skipping setup")
+		} else if platform.IsHeadless() {
+			fmt.Println("Systray not supported in headless environment - skipping setup")
+		}
+		return nil // This is expected, not an error
 	}
-}
 
-// setupSystrayWithRetry sets up the systray with retry logic for icon availability
-func setupSystrayWithRetry(
-	desk desktop.App,
-	app fyne.App,
-	mainWindow fyne.Window,
-	quickNote gui.QuickNote,
-	logPath, errorLogPath string,
-) {
-	// Create menu first
+	desktopApp, ok := app.(desktop.App)
+	if !ok {
+		return fmt.Errorf("desktop features not available")
+	}
+
+	// Create and set the menu
 	menu := createSystrayMenu(app, mainWindow, quickNote, logPath, errorLogPath)
+	desktopApp.SetSystemTrayMenu(menu)
 
-	// Set menu immediately
-	desk.SetSystemTrayMenu(menu)
+	// Set the icon
+	icon := theme.AppIcon()
+	if icon == nil {
+		fmt.Println("Warning: AppIcon() returned nil - systray will have no icon")
+		return nil // Continue without icon
+	}
 
-	// Set icon with a short delay to ensure the tray is ready
-	go func() {
-		time.Sleep(100 * time.Millisecond)
-		desk.SetSystemTrayIcon(theme.AppIcon())
-	}()
+	desktopApp.SetSystemTrayIcon(icon)
+	return nil
 }
 
 // createSystrayMenu creates the systray menu with enhanced View Logs functionality

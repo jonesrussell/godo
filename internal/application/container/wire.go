@@ -11,10 +11,8 @@ import (
 	"github.com/google/wire"
 
 	"github.com/jonesrussell/godo/internal/application/app"
-	apphotkey "github.com/jonesrussell/godo/internal/application/app/hotkey"
 	"github.com/jonesrussell/godo/internal/domain/repository"
 	"github.com/jonesrussell/godo/internal/domain/service"
-	"github.com/jonesrussell/godo/internal/infrastructure/api"
 	"github.com/jonesrussell/godo/internal/infrastructure/gui"
 	"github.com/jonesrussell/godo/internal/infrastructure/gui/mainwindow"
 	"github.com/jonesrussell/godo/internal/infrastructure/gui/quicknote"
@@ -23,7 +21,6 @@ import (
 	"github.com/jonesrussell/godo/internal/infrastructure/storage/sqlite"
 	"github.com/jonesrussell/godo/internal/shared/common"
 	"github.com/jonesrussell/godo/internal/shared/config"
-	"github.com/jonesrussell/godo/internal/shared/options"
 )
 
 // Application constants
@@ -41,15 +38,6 @@ var (
 	// ConfigSet provides the single source of truth for configuration
 	ConfigSet = wire.NewSet(
 		ProvideConfig,
-	)
-
-	// CoreSet provides essential services
-	CoreSet = wire.NewSet(
-		ConfigSet,
-		LoggingSet,
-		StorageSet,
-		ServiceSet,
-		ProvideCoreOptions,
 	)
 
 	// LoggingSet provides logging infrastructure
@@ -74,28 +62,21 @@ var (
 		ProvideFyneApp,
 		ProvideMainWindow,
 		ProvideQuickNote,
-		ProvideGUIOptions,
 		wire.Bind(new(gui.MainWindow), new(*mainwindow.Window)),
 		wire.Bind(new(mainwindow.Interface), new(*mainwindow.Window)),
 		wire.Bind(new(gui.QuickNote), new(*quicknote.Window)),
 	)
 
-	// HotkeySet provides hotkey functionality
-	HotkeySet = wire.NewSet(
-		ProvideHotkeyManager,
-		ProvideHotkeyOptions,
-	)
-
-	// APISet provides HTTP API server
-	APISet = wire.NewSet(
-		ProvideAPIServer,
-		ProvideAPIRunner,
+	// CoreSet provides essential services
+	CoreSet = wire.NewSet(
+		ConfigSet,
+		LoggingSet,
+		StorageSet,
+		ServiceSet,
 	)
 
 	// AppSet provides the main application
 	AppSet = wire.NewSet(
-		ProvideAppOptions,
-		wire.Struct(new(app.Params), "*"),
 		app.New,
 		wire.Bind(new(app.Application), new(*app.App)),
 	)
@@ -104,11 +85,9 @@ var (
 // InitializeApp initializes the application with all dependencies
 func InitializeApp() (app.Application, func(), error) {
 	wire.Build(
-		CoreSet,   // Configuration and core services
-		UISet,     // User interface
-		HotkeySet, // Platform-specific features
-		APISet,    // API server
-		AppSet,    // Main application
+		CoreSet, // Configuration and core services
+		UISet,   // User interface
+		AppSet,  // Main application
 	)
 	return nil, nil, nil
 }
@@ -150,6 +129,9 @@ func ProvideConfig() (*config.Config, error) {
 				StartHidden: true,
 			},
 		},
+		HTTP: common.HTTPConfig{
+			Port: 8080,
+		},
 	}
 
 	if err := validateConfig(cfg); err != nil {
@@ -157,73 +139,6 @@ func ProvideConfig() (*config.Config, error) {
 	}
 
 	return cfg, nil
-}
-
-// Core options provider
-func ProvideCoreOptions(
-	logger logger.Logger,
-	store storage.TaskStore,
-	cfg *config.Config,
-) (*options.CoreOptions, error) {
-	if logger == nil {
-		return nil, fmt.Errorf("logger is required")
-	}
-	if store == nil {
-		return nil, fmt.Errorf("store is required")
-	}
-	if cfg == nil {
-		return nil, fmt.Errorf("config is required")
-	}
-
-	return &options.CoreOptions{
-		Logger: logger,
-		Store:  store,
-		Config: cfg,
-	}, nil
-}
-
-// GUI options provider
-func ProvideGUIOptions(
-	app fyne.App,
-	mainWindow *mainwindow.Window,
-	quickNote *quicknote.Window,
-) (*options.GUIOptions, error) {
-	if app == nil {
-		return nil, fmt.Errorf("fyne app is required")
-	}
-	if mainWindow == nil {
-		return nil, fmt.Errorf("main window is required")
-	}
-	if quickNote == nil {
-		return nil, fmt.Errorf("quick note window is required")
-	}
-
-	return &options.GUIOptions{
-		App:        app,
-		MainWindow: mainWindow,
-		QuickNote:  quickNote,
-	}, nil
-}
-
-// App options provider
-func ProvideAppOptions(
-	core *options.CoreOptions,
-	gui *options.GUIOptions,
-) (*options.AppOptions, error) {
-	if core == nil {
-		return nil, fmt.Errorf("core options are required")
-	}
-	if gui == nil {
-		return nil, fmt.Errorf("GUI options are required")
-	}
-
-	return &options.AppOptions{
-		Core:    core,
-		GUI:     gui,
-		Name:    common.AppName(core.Config.App.Name),
-		Version: common.AppVersion(core.Config.App.Version),
-		ID:      common.AppID(core.Config.App.ID),
-	}, nil
 }
 
 // Logger provider
@@ -315,71 +230,6 @@ func ProvideQuickNote(
 	cfg *config.Config,
 ) *quicknote.Window {
 	return quicknote.New(app, store, log, cfg.UI.QuickNote)
-}
-
-// Hotkey manager provider
-func ProvideHotkeyManager(
-	log logger.Logger,
-	cfg *config.Config,
-	quickNote *quicknote.Window,
-) (apphotkey.Manager, error) {
-	if log == nil {
-		return nil, fmt.Errorf("logger is required")
-	}
-	if cfg == nil {
-		return nil, fmt.Errorf("config is required")
-	}
-	if quickNote == nil {
-		return nil, fmt.Errorf("quick note window is required")
-	}
-
-	if err := validateHotkeyConfig(&cfg.Hotkeys.QuickNote); err != nil {
-		return nil, fmt.Errorf("invalid hotkey configuration: %w", err)
-	}
-
-	manager, err := apphotkey.New(quickNote, &cfg.Hotkeys.QuickNote, log)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create hotkey manager: %w", err)
-	}
-
-	return manager, nil
-}
-
-// Hotkey options provider
-func ProvideHotkeyOptions(cfg *config.Config) (*options.HotkeyOptions, error) {
-	if cfg == nil {
-		return nil, fmt.Errorf("config is required")
-	}
-
-	binding := &cfg.Hotkeys.QuickNote
-	if len(binding.Modifiers) == 0 {
-		return nil, fmt.Errorf("at least one modifier key is required")
-	}
-	if binding.Key == "" {
-		return nil, fmt.Errorf("key is required")
-	}
-
-	return &options.HotkeyOptions{
-		Modifiers: common.ModifierKeys(binding.Modifiers),
-		Key:       common.KeyCode(binding.Key),
-	}, nil
-}
-
-// API server provider
-func ProvideAPIServer(
-	taskService service.TaskService,
-	log logger.Logger,
-) *api.Server {
-	return api.NewServer(taskService, log)
-}
-
-// API runner provider
-func ProvideAPIRunner(
-	taskService service.TaskService,
-	log logger.Logger,
-	cfg *config.Config,
-) *api.Runner {
-	return api.NewRunner(taskService, log, &cfg.HTTP)
 }
 
 // Validation functions

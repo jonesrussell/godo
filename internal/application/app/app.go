@@ -92,8 +92,13 @@ func (a *App) setupSystray() error {
 	}
 
 	logPath, errorLogPath := a.getLogPaths()
-	systray.SetupSystray(a.fyneApp, a.mainWindow.GetWindow(), a.quickNote, logPath, errorLogPath)
-	return nil
+	return systray.SetupSystray(
+		a.fyneApp,
+		a.mainWindow.GetWindow(),
+		a.quickNote,
+		logPath,
+		errorLogPath,
+	)
 }
 
 // setupHotkey sets up the global hotkey

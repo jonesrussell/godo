@@ -53,7 +53,7 @@ func New(
 	fyneApp := app.New()
 
 	var hotkeyManager hotkey.Manager
-	if hkm, err := hotkey.NewLinuxManager(log); err != nil {
+	if hkm, err := hotkey.NewUnifiedManager(log); err != nil {
 		log.Warn("Failed to create hotkey manager, continuing without hotkeys", "error", err)
 		hotkeyManager = nil
 	} else {

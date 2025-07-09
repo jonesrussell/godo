@@ -2,28 +2,57 @@
 
 This project uses Fyne v2.6.1 for cross-platform GUI development with specific patterns for thread safety and window management.
 
-## Thread Safety
+## Thread Safety (Fyne v2.6.0+)
+
+### Single Goroutine Model
+- **Since Fyne v2.6.0**: All Fyne events and callbacks happen on the same goroutine
+- This provides higher performance and better thread safety than previous versions
+- Applications using goroutines need explicit handling for UI updates
 
 ### UI Thread Operations
 - **ALWAYS** wrap UI operations in `fyne.Do()` or `fyne.DoAndWait()`
-- Use `fyne.Do()` when already on UI thread
-- Use `fyne.DoAndWait()` when called from background threads (e.g., hotkeys)
+- Use `fyne.Do()` for background updates (non-blocking, up to 15ms delay)
+- Use `fyne.DoAndWait()` when you need to wait for UI update completion
 - Never call Fyne UI methods directly from background goroutines
+
+### When to Use Each Function
+
+#### `fyne.Do()` - Non-blocking Updates
+```go
+// For background updates (e.g., timers, network responses)
+go func() {
+    ticker := time.NewTicker(time.Second)
+    for range ticker.C {
+        fyne.Do(func() {
+            output.Text = time.Now().Format(time.TimeOnly)
+            output.Refresh()
+        })
+    }
+}()
+```
+
+#### `fyne.DoAndWait()` - Blocking Updates
+```go
+// When you need to wait for UI update completion
+// Useful for avoiding concurrent access to shared resources
+fyne.DoAndWait(func() {
+    window := app.NewWindow("Title")
+    window.SetContent(content)
+    window.Show()
+})
+// Code here runs after UI update is complete
+```
 
 ### Window Creation Pattern
 ```go
 // For background thread calls (e.g., hotkey handlers)
 func createWindowFromBackground() {
     var window fyne.Window
-    done := make(chan struct{})
-    go func() {
-        fyne.DoAndWait(func() {
-            window = app.NewWindow("Title")
-            // ... setup window
-        })
-        close(done)
-    }()
-    <-done
+    fyne.DoAndWait(func() {
+        window = app.NewWindow("Title")
+        // ... setup window
+    })
+    // Window is now ready to use
 }
 
 // For UI thread calls (e.g., systray menu)
@@ -104,6 +133,11 @@ func (e *CustomEntry) Focus() {
 - Handle window close events
 - Clean up event handlers
 
+### Performance Considerations
+- `fyne.Do()` has up to 15ms delay before execution
+- Use `fyne.DoAndWait()` when you need immediate completion
+- Avoid blocking the UI thread with heavy operations
+
 ## Common Issues and Solutions
 
 ### "Not Responding" Windows
@@ -121,16 +155,18 @@ func (e *CustomEntry) Focus() {
 - Use explicit thread context detection
 - Implement timeout mechanisms
 
+### Performance Issues
+- Don't use `fyne.DoAndWait()` for frequent updates
+- Use `fyne.Do()` for background updates
+- Batch UI updates when possible
+
 ## Testing
 - Test window creation from different thread contexts
 - Verify focus behavior
 - Test window lifecycle (create, show, hide, close)
 - Test thread safety with concurrent operations
+- Test performance with frequent UI updates
 description:
 globs: ["**/gui/**/*.go", "**/quicknote/**/*.go", "**/mainwindow/**/*.go"]
-alwaysApply: false
----
-description:
-globs:
 alwaysApply: false
 ---

@@ -1,0 +1,136 @@
+# Fyne GUI Development
+
+This project uses Fyne v2.6.1 for cross-platform GUI development with specific patterns for thread safety and window management.
+
+## Thread Safety
+
+### UI Thread Operations
+- **ALWAYS** wrap UI operations in `fyne.Do()` or `fyne.DoAndWait()`
+- Use `fyne.Do()` when already on UI thread
+- Use `fyne.DoAndWait()` when called from background threads (e.g., hotkeys)
+- Never call Fyne UI methods directly from background goroutines
+
+### Window Creation Pattern
+```go
+// For background thread calls (e.g., hotkey handlers)
+func createWindowFromBackground() {
+    var window fyne.Window
+    done := make(chan struct{})
+    go func() {
+        fyne.DoAndWait(func() {
+            window = app.NewWindow("Title")
+            // ... setup window
+        })
+        close(done)
+    }()
+    <-done
+}
+
+// For UI thread calls (e.g., systray menu)
+func createWindowFromUI() {
+    fyne.Do(func() {
+        window := app.NewWindow("Title")
+        // ... setup window
+    })
+}
+```
+
+## Window Management
+
+### Quick Note Window Pattern
+- Use singleton pattern with mutex protection
+- Implement proper lifecycle management
+- Handle window recreation after close
+- Use factory pattern for on-demand creation
+
+### Window Focus
+- **widget.Entry does NOT have a Focus() method** in Fyne API
+- Use canvas.Focus() for programmatic focus:
+```go
+canvas := fyne.CurrentApp().Driver().CanvasForObject(entry)
+if canvas != nil {
+    canvas.Focus(entry)
+}
+```
+
+## Custom Widget Development
+
+### Embedding Fyne Widgets
+- Always embed pointer types: `*widget.Entry`, not `widget.Entry`
+- Explicitly forward methods that don't auto-promote:
+```go
+type CustomEntry struct {
+    *widget.Entry
+    // custom fields
+}
+
+// Forward methods that don't auto-promote
+func (e *CustomEntry) Focus() {
+    e.Entry.Focus() // Only if Entry has Focus method
+}
+```
+
+### Widget Initialization
+- Use `ExtendBaseWidget()` for custom widgets
+- Set up event handlers in constructor
+- Initialize embedded widgets properly
+
+## Error Handling
+
+### Thread Safety Errors
+- Watch for "Error in Fyne call thread" messages
+- Ensure all UI operations are on main thread
+- Use proper synchronization for window creation
+
+### Focus Issues
+- Don't call `FocusGained()` manually (causes UI hangs)
+- Use `canvas.Focus()` for programmatic focus
+- Handle cases where canvas is nil
+
+## Best Practices
+
+### Window Creation
+- Create windows on UI thread when possible
+- Use explicit thread context parameters
+- Implement proper cleanup and lifecycle
+
+### Event Handling
+- Keep event handlers lightweight
+- Use goroutines for long-running operations
+- Update UI state through `fyne.Do()`
+
+### Resource Management
+- Properly close windows and resources
+- Handle window close events
+- Clean up event handlers
+
+## Common Issues and Solutions
+
+### "Not Responding" Windows
+- Caused by UI operations on wrong thread
+- Fix: Wrap in `fyne.Do()` or `fyne.DoAndWait()`
+- Check for manual `FocusGained()` calls
+
+### Missing Methods
+- `widget.Entry` doesn't have `Focus()` method
+- Use `canvas.Focus()` instead
+- Check Fyne API documentation for available methods
+
+### Thread Deadlocks
+- Avoid calling `fyne.DoAndWait()` from UI thread
+- Use explicit thread context detection
+- Implement timeout mechanisms
+
+## Testing
+- Test window creation from different thread contexts
+- Verify focus behavior
+- Test window lifecycle (create, show, hide, close)
+- Test thread safety with concurrent operations
+description:
+globs: ["**/gui/**/*.go", "**/quicknote/**/*.go", "**/mainwindow/**/*.go"]
+alwaysApply: false
+---
+description:
+globs:
+alwaysApply: false
+---

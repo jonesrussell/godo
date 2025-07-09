@@ -21,7 +21,7 @@ builds:
   hooks:
     pre:
     - cmd: go install github.com/google/wire/cmd/wire@latest
-    - cmd: cd internal/application/container && wire gen -tags windows
+    - cmd: sh -c "cd internal/application/container && wire gen -tags windows"
 
 - id: linux
   main: ./main.go
@@ -38,7 +38,7 @@ builds:
   hooks:
     pre:
     - cmd: go install github.com/google/wire/cmd/wire@latest
-    - cmd: cd internal/application/container && wire gen -tags linux
+    - cmd: sh -c "cd internal/application/container && wire gen -tags linux"
 
 archives:
 - id: windows

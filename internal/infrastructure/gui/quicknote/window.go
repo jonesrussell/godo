@@ -27,7 +27,7 @@ type Window struct {
 	cfg    config.WindowConfig
 
 	// UI components
-	entry      *widget.Entry
+	entry      *Entry
 	addButton  *widget.Button
 	clearBtn   *widget.Button
 	statusText *widget.Label
@@ -54,6 +54,13 @@ func New(
 	return w
 }
 
+// Initialize sets up the window with the given app and logger
+func (w *Window) Initialize(app fyne.App, log logger.Logger) {
+	w.app = app
+	w.log = log
+	w.log.Debug("Quick note window initialized")
+}
+
 // Show displays the quick note window
 func (w *Window) Show() {
 	w.log.Debug("Quick note window Show() called")
@@ -65,8 +72,13 @@ func (w *Window) Show() {
 		w.log.Debug("Window Show() called")
 		w.window.CenterOnScreen()
 		w.log.Debug("Window centered")
-		w.entry.FocusGained()
-		w.log.Debug("Entry focused")
+		canvas := fyne.CurrentApp().Driver().CanvasForObject(w.entry)
+		if canvas != nil {
+			canvas.Focus(w.entry)
+			w.log.Debug("Entry focused via canvas.Focus")
+		} else {
+			w.log.Warn("Could not get canvas for entry to focus")
+		}
 		w.log.Debug("Quick note window shown and focused")
 	})
 	w.log.Debug("Outside fyne.Do - Show() method completed")
@@ -84,7 +96,7 @@ func (w *Window) setupUI() {
 	w.log.Debug("Setting up quick note UI")
 
 	// Create entry field
-	w.entry = widget.NewEntry()
+	w.entry = NewEntry()
 	w.entry.SetPlaceHolder("Enter your task here...")
 	w.entry.OnSubmitted = func(text string) {
 		w.addTask()
@@ -159,7 +171,13 @@ func (w *Window) addTask() {
 func (w *Window) clearEntry() {
 	w.entry.SetText("")
 	w.statusText.Hide()
-	w.entry.FocusGained()
+	canvas := fyne.CurrentApp().Driver().CanvasForObject(w.entry)
+	if canvas != nil {
+		canvas.Focus(w.entry)
+		w.log.Debug("Entry focused via canvas.Focus (clearEntry)")
+	} else {
+		w.log.Warn("Could not get canvas for entry to focus (clearEntry)")
+	}
 }
 
 // showStatus shows a status message

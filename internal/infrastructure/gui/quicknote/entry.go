@@ -8,13 +8,13 @@ import (
 
 // Entry is a custom entry widget for quick notes
 type Entry struct {
-	widget.Entry
+	*widget.Entry
 	onCtrlEnter func()
 }
 
 // NewEntry creates a new quick note entry widget
 func NewEntry() *Entry {
-	entry := &Entry{}
+	entry := &Entry{Entry: widget.NewEntry()}
 	entry.MultiLine = true
 	entry.ExtendBaseWidget(entry)
 	return entry

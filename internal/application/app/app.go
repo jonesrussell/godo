@@ -12,13 +12,13 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/driver/desktop"
-	"fyne.io/fyne/v2/widget"
 
 	"github.com/jonesrussell/godo/internal/application/app/hotkey"
 	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/domain/service"
 	"github.com/jonesrussell/godo/internal/infrastructure/api"
 	"github.com/jonesrussell/godo/internal/infrastructure/gui"
+	"github.com/jonesrussell/godo/internal/infrastructure/gui/quicknote"
 	"github.com/jonesrussell/godo/internal/infrastructure/gui/systray"
 	"github.com/jonesrussell/godo/internal/infrastructure/logger"
 	"github.com/jonesrussell/godo/internal/infrastructure/platform"
@@ -37,9 +37,9 @@ type App struct {
 	taskService service.TaskService
 	store       storage.TaskStore
 
-	// Unified window management
-	testWindow *testWindow
-	windowMu   sync.Mutex
+	// Quick note window management
+	quickNoteWindow quicknote.Interface
+	quickNoteMu     sync.Mutex
 }
 
 // New creates a new application instance
@@ -77,9 +77,9 @@ func New(
 
 		// Create a factory function for the quick note window
 		quickNoteFactory := func() hotkey.QuickNoteService {
-			log.Debug("Creating test window via factory")
-			// Use the unified window management
-			return app.getOrCreateTestWindow()
+			log.Debug("Creating quick note window via factory")
+			// Hotkey is always background thread
+			return app.getOrCreateQuickNoteWindow(false)
 		}
 
 		app.hotkey.SetQuickNoteFactory(quickNoteFactory, &cfg.Hotkeys.QuickNote)
@@ -123,87 +123,36 @@ func (a *App) setupSystray() error {
 	)
 }
 
-// testWindow is a simple test window for debugging
-type testWindow struct {
-	window fyne.Window
-	log    logger.Logger
-	closed bool
-}
-
-func (t *testWindow) Show() {
-	t.log.Debug("testWindow.Show() called")
-
-	// Check if window was closed and needs to be recreated
-	if t.closed || t.window == nil {
-		t.log.Debug("testWindow.Show() - window was closed, cannot show")
-		return
-	}
-
-	// Window is already shown during creation, no additional operations needed
-	t.log.Debug("testWindow.Show() - window already visible")
-	t.log.Debug("testWindow.Show() - completed")
-}
-
-func (t *testWindow) Hide() {
-	if t.window != nil && !t.closed {
-		fyne.Do(func() {
-			t.window.Hide()
-		})
-	}
-}
-
-// Close marks the window as closed
-func (t *testWindow) Close() {
-	t.closed = true
-	if t.window != nil {
-		fyne.Do(func() {
-			t.window.Close()
-		})
-	}
-}
-
 // quickNoteWrapper wraps the quick note creation to handle on-demand creation
 type quickNoteWrapper struct {
-	app    *App // Changed to *App to access App instance
-	store  storage.TaskStore
-	log    logger.Logger
-	config config.WindowConfig
-	window gui.QuickNote
+	app *App // Changed to *App to access App instance
+	log logger.Logger
 }
 
 func (w *quickNoteWrapper) Show() {
 	w.log.Debug("quickNoteWrapper.Show() called")
 
-	if w.window == nil {
-		w.log.Debug("Creating test window for systray")
-		// Use the unified window management with error handling
-		defer func() {
-			if r := recover(); r != nil {
-				w.log.Error("Panic in window creation", "error", r)
-			}
-		}()
-
-		w.window = w.app.getOrCreateTestWindow()
-		if w.window == nil {
-			w.log.Error("Failed to create test window for systray")
-			return
+	// Use the unified quick note window management with error handling
+	defer func() {
+		if r := recover(); r != nil {
+			w.log.Error("Panic in quick note window creation", "error", r)
 		}
-		w.log.Debug("Systray window creation completed")
+	}()
+
+	quickNoteWindow := w.app.getOrCreateQuickNoteWindow(true)
+	if quickNoteWindow == nil {
+		w.log.Error("Failed to create quick note window for systray")
+		return
 	}
 
-	// Check if window is valid before trying to show it
-	if w.window != nil {
-		w.log.Debug("Systray window already visible")
-	} else {
-		w.log.Error("Systray window is nil after creation")
-	}
+	quickNoteWindow.Show()
+	w.log.Debug("Systray quick note window shown")
 }
 
 func (w *quickNoteWrapper) Hide() {
-	if w.window != nil {
-		fyne.Do(func() {
-			w.window.Hide()
-		})
+	quickNoteWindow := w.app.getOrCreateQuickNoteWindow(true)
+	if quickNoteWindow != nil {
+		quickNoteWindow.Hide()
 	}
 }
 
@@ -365,104 +314,66 @@ func (a *App) ForceKillTimeout() time.Duration {
 	return time.Duration(a.config.App.ForceKillTimeout) * time.Second
 }
 
-// getOrCreateTestWindow ensures a single test window instance
-func (a *App) getOrCreateTestWindow() *testWindow {
-	a.windowMu.Lock()
-	defer a.windowMu.Unlock()
+// getOrCreateQuickNoteWindow ensures a single quick note window instance
+func (a *App) getOrCreateQuickNoteWindow(isUIThread bool) quicknote.Interface {
+	a.quickNoteMu.Lock()
+	defer a.quickNoteMu.Unlock()
 
-	// Check if window exists and is not closed
-	if a.testWindow != nil && !a.testWindow.closed && a.testWindow.window != nil {
-		a.logger.Debug("Reusing existing test window")
-		return a.testWindow
+	if a.quickNoteWindow != nil {
+		a.logger.Debug("Reusing existing quick note window")
+		return a.quickNoteWindow
 	}
 
-	// Window doesn't exist or was closed, create a new one
-	a.logger.Debug("Creating unified test window")
+	a.logger.Debug("Creating new quick note window (thread-safe)")
 
-	// Create window following Fyne best practices from latest documentation
-	var window fyne.Window
+	windowConfig := config.WindowConfig{
+		Width:  a.config.UI.QuickNote.Width,
+		Height: a.config.UI.QuickNote.Height,
+	}
+
+	var quickNoteWindow quicknote.Interface
 	var createErr error
 
-	defer func() {
-		if r := recover(); r != nil {
-			a.logger.Error("Panic during window creation", "error", r)
-			createErr = fmt.Errorf("panic during window creation: %v", r)
-		}
-	}()
+	create := func() {
+		w := quicknote.New(a.fyneApp, a.store, a.logger, windowConfig)
+		w.Initialize(a.fyneApp, a.logger)
+		quickNoteWindow = w
+	}
 
-	// Always use fyne.DoAndWait() but handle the case where we're already on the UI thread
-	// by using a timeout to detect if we're already on the main thread
-	done := make(chan bool, 1)
-
-	go func() {
-		fyne.DoAndWait(func() {
-			a.logger.Debug("Inside fyne.DoAndWait - creating window")
-			window = a.fyneApp.NewWindow("Test Window - Unified")
-			if window == nil {
-				a.logger.Error("NewWindow returned nil")
-				createErr = fmt.Errorf("NewWindow returned nil")
-				return
+	if isUIThread {
+		// Safe to create directly
+		defer func() {
+			if r := recover(); r != nil {
+				a.logger.Error("Panic during quick note window creation (UI thread)", "error", r)
+				createErr = fmt.Errorf("panic during quick note window creation: %v", r)
 			}
-
-			label := widget.NewLabel("Test Window - Unified Works!")
-			window.SetContent(label)
-
-			// Set size before showing (as per latest Fyne docs)
-			window.Resize(fyne.NewSize(300, 200))
-
-			// Show the window (as per latest Fyne docs)
-			window.Show()
-			a.logger.Debug("Window created and shown successfully")
-		})
-		done <- true
-	}()
-
-	// Wait for window creation with timeout
-	select {
-	case <-done:
-		a.logger.Debug("Window creation completed")
-	case <-time.After(100 * time.Millisecond):
-		a.logger.Debug("Window creation timed out, likely already on UI thread")
-		// If we timeout, we're probably already on the UI thread, so create directly
-		window = a.fyneApp.NewWindow("Test Window - Unified")
-		if window == nil {
-			a.logger.Error("NewWindow returned nil")
-			createErr = fmt.Errorf("NewWindow returned nil")
-		} else {
-			label := widget.NewLabel("Test Window - Unified Works!")
-			window.SetContent(label)
-			window.Resize(fyne.NewSize(300, 200))
-			window.Show()
-			a.logger.Debug("Window created and shown successfully (direct)")
-		}
+		}()
+		create()
+	} else {
+		done := make(chan struct{})
+		go func() {
+			defer func() {
+				if r := recover(); r != nil {
+					a.logger.Error("Panic during quick note window creation (background)", "error", r)
+					createErr = fmt.Errorf("panic during quick note window creation: %v", r)
+				}
+				close(done)
+			}()
+			fyne.DoAndWait(create)
+		}()
+		<-done
 	}
 
 	if createErr != nil {
-		a.logger.Error("Failed to create window", "error", createErr)
+		a.logger.Error("Failed to create quick note window", "error", createErr)
+		return nil
+	}
+	if quickNoteWindow == nil {
+		a.logger.Error("Quick note window is nil after creation")
 		return nil
 	}
 
-	if window == nil {
-		a.logger.Error("Window is nil after creation")
-		return nil
-	}
-
-	a.testWindow = &testWindow{
-		window: window,
-		log:    a.logger,
-		closed: false,
-	}
-
-	// Set up close handler to mark window as closed when user closes it
-	fyne.Do(func() {
-		window.SetCloseIntercept(func() {
-			a.logger.Debug("Test window close intercepted")
-			a.testWindow.closed = true
-			window.Hide() // Hide instead of close to prevent crashes
-		})
-	})
-
-	a.logger.Debug("Unified test window created successfully")
-
-	return a.testWindow
+	a.quickNoteWindow = quickNoteWindow
+	a.logger.Debug("Quick note window created successfully (thread-safe)")
+	return a.quickNoteWindow
 }

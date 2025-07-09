@@ -76,7 +76,7 @@ func New(
 	app.quickNoteWindow.Initialize(fyneApp, log)
 	log.Debug("Quick note window created during initialization")
 
-	// Now set up hotkey manager with factory that can access the App instance
+	// Now set up hotkey manager with the simplified interface
 	log.Info("Creating hotkey manager", "config", fmt.Sprintf("%+v", cfg.Hotkeys))
 	if hkm, err := hotkey.NewManager(log, &cfg.Hotkeys); err != nil {
 		log.Warn("Failed to create hotkey manager, continuing without hotkeys", "error", err)
@@ -85,13 +85,8 @@ func New(
 		log.Info("Hotkey manager created successfully")
 		app.hotkey = hkm
 
-		// Create a factory function for the quick note window that just returns the existing instance
-		quickNoteFactory := func() hotkey.QuickNoteService {
-			log.Debug("Returning existing quick note window via factory")
-			return app.quickNoteWindow
-		}
-
-		app.hotkey.SetQuickNoteFactory(quickNoteFactory, &cfg.Hotkeys.QuickNote)
+		// Use the simplified interface - pass the quick note service directly
+		app.hotkey.SetQuickNote(app.quickNoteWindow, &cfg.Hotkeys.QuickNote)
 	}
 
 	return app

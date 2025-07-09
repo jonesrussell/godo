@@ -134,7 +134,7 @@ func (w *Window) updateTaskListItem(id widget.ListItemID, obj fyne.CanvasObject)
 	task := w.tasks[id]
 
 	// Update check box
-	if check, ok := box.Objects[0].(*widget.Check); ok {
+	if check, okCheck := box.Objects[0].(*widget.Check); okCheck {
 		check.Checked = task.Done
 		check.OnChanged = func(checked bool) {
 			w.toggleTask(id, checked)
@@ -142,19 +142,19 @@ func (w *Window) updateTaskListItem(id widget.ListItemID, obj fyne.CanvasObject)
 	}
 
 	// Update label
-	if label, ok := box.Objects[1].(*widget.Label); ok {
+	if label, okLabel := box.Objects[1].(*widget.Label); okLabel {
 		label.SetText(task.Content)
 	}
 
 	// Update edit button
-	if editBtn, ok := box.Objects[3].(*widget.Button); ok {
+	if editBtn, okEdit := box.Objects[3].(*widget.Button); okEdit {
 		editBtn.OnTapped = func() {
 			w.editTask(id)
 		}
 	}
 
 	// Update delete button
-	if deleteBtn, ok := box.Objects[4].(*widget.Button); ok {
+	if deleteBtn, okDelete := box.Objects[4].(*widget.Button); okDelete {
 		deleteBtn.OnTapped = func() {
 			w.deleteTask(id)
 		}

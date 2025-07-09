@@ -9,7 +9,7 @@ Website = "https://github.com/jonesrussell/godo"
 
 [Source]
   Repo = "https://github.com/jonesrussell/godo"
-  Dir = "cmd/godo"
+  Dir = "."
 
 [Development]
   HelperText = "Development build with debug symbols"

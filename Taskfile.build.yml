@@ -49,7 +49,7 @@ tasks:
     deps: [ wire:windows ]
     platforms: [ linux ]
     sources:
-      - cmd/**/*.go
+      - main.go
       - internal/**/*.go
       - go.mod
       - go.sum
@@ -64,14 +64,14 @@ tasks:
       CXX: x86_64-w64-mingw32-g++
     cmds:
     - mkdir -p {{.BUILD_DIR}}
-    - go build -ldflags "-X main.version={{.VERSION}} -X main.commit={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}} -s -w" -tags windows -o {{.BUILD_DIR}}/{{.BINARY_NAME}}.exe cmd/godo/main.go
+    - go build -ldflags "-X main.version={{.VERSION}} -X main.commit={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}} -s -w" -tags windows -o {{.BUILD_DIR}}/{{.BINARY_NAME}}.exe main.go
 
   cross-linux:
     desc: Cross-compile for Linux from Windows
     deps: [ wire:linux ]
     platforms: [ windows ]
     sources:
-      - cmd/**/*.go
+      - main.go
       - internal/**/*.go
       - go.mod
       - go.sum
@@ -84,14 +84,14 @@ tasks:
       GOARCH: amd64
     cmds:
     - mkdir -p {{.BUILD_DIR}}
-    - go build -ldflags "-X main.version={{.VERSION}} -X main.commit={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}} -s -w" -tags linux -o {{.BUILD_DIR}}/{{.BINARY_NAME}} cmd/godo/main.go
+    - go build -ldflags "-X main.version={{.VERSION}} -X main.commit={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}} -s -w" -tags linux -o {{.BUILD_DIR}}/{{.BINARY_NAME}} main.go
 
   native:linux:
     desc: Build for Linux (native)
     deps: [ wire:linux ]
     platforms: [ linux ]
     sources:
-      - cmd/**/*.go
+      - main.go
       - internal/**/*.go
       - go.mod
       - go.sum
@@ -104,14 +104,14 @@ tasks:
       GOARCH: amd64
     cmds:
     - mkdir -p {{.BUILD_DIR}}
-    - go build -ldflags "-X main.version={{.VERSION}} -X main.commit={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}} -s -w" -tags linux -o {{.BUILD_DIR}}/{{.BINARY_NAME}} cmd/godo/main.go
+    - go build -ldflags "-X main.version={{.VERSION}} -X main.commit={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}} -s -w" -tags linux -o {{.BUILD_DIR}}/{{.BINARY_NAME}} main.go
 
   native:windows:
     desc: Build for Windows (native)
     deps: [ wire:windows ]
     platforms: [ windows ]
     sources:
-      - cmd/**/*.go
+      - main.go
       - internal/**/*.go
       - go.mod
       - go.sum
@@ -124,7 +124,7 @@ tasks:
       GOARCH: amd64
     cmds:
     - mkdir -p {{.BUILD_DIR}}
-    - go build -ldflags "-X main.version={{.VERSION}} -X main.commit={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}} -s -w" -tags windows -o {{.BUILD_DIR}}/{{.BINARY_NAME}}.exe cmd/godo/main.go
+    - go build -ldflags "-X main.version={{.VERSION}} -X main.commit={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}} -s -w" -tags windows -o {{.BUILD_DIR}}/{{.BINARY_NAME}}.exe main.go
 
   native:
     desc: Build for current platform (native)

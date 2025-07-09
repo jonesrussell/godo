@@ -183,7 +183,7 @@ linters:
       - gocognit
       - cyclop
       - maintidx
-    - path: cmd/godo/.*\.go
+    - path: main\.go
       linters:
       - funlen
       - gocyclo
@@ -195,7 +195,7 @@ linters:
       linters:
       - wrapcheck
       - errorlint
-    - path: cmd/godo/.*\.go
+    - path: main\.go
       linters:
       - wrapcheck
       - errorlint

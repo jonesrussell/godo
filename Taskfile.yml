@@ -116,7 +116,7 @@ tasks:
       LANG: en_US.UTF-8
       LC_ALL: en_US.UTF-8
     cmds:
-    - go run -ldflags "-X main.version={{.VERSION}} -X main.commit={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}}" cmd/godo/main.go
+    - go run -ldflags "-X main.version={{.VERSION}} -X main.commit={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}}" main.go
 
   run-debug:
     desc: Run the application with debug output
@@ -126,7 +126,7 @@ tasks:
       LANG: en_US.UTF-8
       LC_ALL: en_US.UTF-8
     cmds:
-    - go run -ldflags "-X main.version={{.VERSION}} -X main.commit={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}}" cmd/godo/main.go
+    - go run -ldflags "-X main.version={{.VERSION}} -X main.commit={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}}" main.go
 
   watch:
     desc: Watch for changes and rebuild

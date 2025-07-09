@@ -90,8 +90,11 @@ func New(
 
 // setupSystray initializes the system tray
 func (a *App) setupSystray() error {
+	a.logger.Debug("Setting up systray")
+
 	_, ok := a.fyneApp.(desktop.App)
 	if !ok {
+		a.logger.Error("Desktop features not available for systray")
 		return ErrDesktopFeaturesNotAvailable
 	}
 
@@ -104,8 +107,11 @@ func (a *App) setupSystray() error {
 
 	// Create a wrapper for the quick note that creates it on demand
 	quickNoteWrapper := &quickNoteWrapper{
-		app: a, // Pass the App instance instead of just fyneApp
+		app: a,        // Pass the App instance instead of just fyneApp
+		log: a.logger, // Make sure logger is set
 	}
+
+	a.logger.Debug("Quick note wrapper created for systray")
 
 	return systray.SetupSystray(
 		a.fyneApp,
@@ -121,19 +127,39 @@ func (a *App) setupSystray() error {
 type testWindow struct {
 	window fyne.Window
 	log    logger.Logger
+	closed bool
 }
 
 func (t *testWindow) Show() {
 	t.log.Debug("testWindow.Show() called")
+
+	// Check if window was closed and needs to be recreated
+	if t.closed || t.window == nil {
+		t.log.Debug("testWindow.Show() - window was closed, cannot show")
+		return
+	}
+
 	// Window is already shown during creation, no additional operations needed
 	t.log.Debug("testWindow.Show() - window already visible")
 	t.log.Debug("testWindow.Show() - completed")
 }
 
 func (t *testWindow) Hide() {
-	fyne.Do(func() {
-		t.window.Hide()
-	})
+	if t.window != nil && !t.closed {
+		fyne.Do(func() {
+			t.window.Hide()
+		})
+	}
+}
+
+// Close marks the window as closed
+func (t *testWindow) Close() {
+	t.closed = true
+	if t.window != nil {
+		fyne.Do(func() {
+			t.window.Close()
+		})
+	}
 }
 
 // quickNoteWrapper wraps the quick note creation to handle on-demand creation
@@ -146,14 +172,31 @@ type quickNoteWrapper struct {
 }
 
 func (w *quickNoteWrapper) Show() {
+	w.log.Debug("quickNoteWrapper.Show() called")
+
 	if w.window == nil {
 		w.log.Debug("Creating test window for systray")
-		// Use the unified window management
+		// Use the unified window management with error handling
+		defer func() {
+			if r := recover(); r != nil {
+				w.log.Error("Panic in window creation", "error", r)
+			}
+		}()
+
 		w.window = w.app.getOrCreateTestWindow()
+		if w.window == nil {
+			w.log.Error("Failed to create test window for systray")
+			return
+		}
 		w.log.Debug("Systray window creation completed")
 	}
-	// Window is already shown during creation, no need to call Show() again
-	w.log.Debug("Systray window already visible")
+
+	// Check if window is valid before trying to show it
+	if w.window != nil {
+		w.log.Debug("Systray window already visible")
+	} else {
+		w.log.Error("Systray window is nil after creation")
+	}
 }
 
 func (w *quickNoteWrapper) Hide() {
@@ -327,14 +370,40 @@ func (a *App) getOrCreateTestWindow() *testWindow {
 	a.windowMu.Lock()
 	defer a.windowMu.Unlock()
 
-	if a.testWindow == nil {
-		a.logger.Debug("Creating unified test window")
+	// Check if window exists and is not closed
+	if a.testWindow != nil && !a.testWindow.closed && a.testWindow.window != nil {
+		a.logger.Debug("Reusing existing test window")
+		return a.testWindow
+	}
 
-		// Create window following Fyne best practices from latest documentation
-		// All UI operations must be wrapped in fyne.DoAndWait() when called from background threads
-		var window fyne.Window
+	// Window doesn't exist or was closed, create a new one
+	a.logger.Debug("Creating unified test window")
+
+	// Create window following Fyne best practices from latest documentation
+	var window fyne.Window
+	var createErr error
+
+	defer func() {
+		if r := recover(); r != nil {
+			a.logger.Error("Panic during window creation", "error", r)
+			createErr = fmt.Errorf("panic during window creation: %v", r)
+		}
+	}()
+
+	// Always use fyne.DoAndWait() but handle the case where we're already on the UI thread
+	// by using a timeout to detect if we're already on the main thread
+	done := make(chan bool, 1)
+
+	go func() {
 		fyne.DoAndWait(func() {
+			a.logger.Debug("Inside fyne.DoAndWait - creating window")
 			window = a.fyneApp.NewWindow("Test Window - Unified")
+			if window == nil {
+				a.logger.Error("NewWindow returned nil")
+				createErr = fmt.Errorf("NewWindow returned nil")
+				return
+			}
+
 			label := widget.NewLabel("Test Window - Unified Works!")
 			window.SetContent(label)
 
@@ -343,14 +412,57 @@ func (a *App) getOrCreateTestWindow() *testWindow {
 
 			// Show the window (as per latest Fyne docs)
 			window.Show()
+			a.logger.Debug("Window created and shown successfully")
 		})
+		done <- true
+	}()
 
-		a.testWindow = &testWindow{
-			window: window,
-			log:    a.logger,
+	// Wait for window creation with timeout
+	select {
+	case <-done:
+		a.logger.Debug("Window creation completed")
+	case <-time.After(100 * time.Millisecond):
+		a.logger.Debug("Window creation timed out, likely already on UI thread")
+		// If we timeout, we're probably already on the UI thread, so create directly
+		window = a.fyneApp.NewWindow("Test Window - Unified")
+		if window == nil {
+			a.logger.Error("NewWindow returned nil")
+			createErr = fmt.Errorf("NewWindow returned nil")
+		} else {
+			label := widget.NewLabel("Test Window - Unified Works!")
+			window.SetContent(label)
+			window.Resize(fyne.NewSize(300, 200))
+			window.Show()
+			a.logger.Debug("Window created and shown successfully (direct)")
 		}
-		a.logger.Debug("Unified test window created")
 	}
+
+	if createErr != nil {
+		a.logger.Error("Failed to create window", "error", createErr)
+		return nil
+	}
+
+	if window == nil {
+		a.logger.Error("Window is nil after creation")
+		return nil
+	}
+
+	a.testWindow = &testWindow{
+		window: window,
+		log:    a.logger,
+		closed: false,
+	}
+
+	// Set up close handler to mark window as closed when user closes it
+	fyne.Do(func() {
+		window.SetCloseIntercept(func() {
+			a.logger.Debug("Test window close intercepted")
+			a.testWindow.closed = true
+			window.Hide() // Hide instead of close to prevent crashes
+		})
+	})
+
+	a.logger.Debug("Unified test window created successfully")
 
 	return a.testWindow
 }

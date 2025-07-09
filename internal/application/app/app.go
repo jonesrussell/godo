@@ -49,10 +49,12 @@ func New(
 	fyneApp := app.New()
 
 	var hotkeyManager hotkey.Manager
+	log.Info("Creating hotkey manager", "config", fmt.Sprintf("%+v", cfg.Hotkeys))
 	if hkm, err := hotkey.NewUnifiedManager(log, &cfg.Hotkeys); err != nil {
 		log.Warn("Failed to create hotkey manager, continuing without hotkeys", "error", err)
 		hotkeyManager = nil
 	} else {
+		log.Info("Hotkey manager created successfully")
 		hotkeyManager = hkm
 		hotkeyManager.SetQuickNote(quickNote, &cfg.Hotkeys.QuickNote)
 	}

@@ -38,4 +38,4 @@ ui:
 hotkeys:
   quick_note:
     modifiers: [ "Ctrl", "Shift" ]
-    key: "G"
+    key: "1"

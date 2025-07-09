@@ -105,7 +105,7 @@ func (m *UnifiedManager) Register() error {
 		return err
 	}
 
-	m.log.Debug("Starting hotkey registration",
+	m.log.Info("Starting hotkey registration",
 		"modifiers", strings.Join(m.binding.Modifiers, "+"),
 		"key", m.binding.Key,
 		"os", runtime.GOOS,
@@ -130,7 +130,7 @@ func (m *UnifiedManager) Register() error {
 		return regErr
 	}
 
-	m.log.Debug("Successfully registered hotkey",
+	m.log.Info("Successfully registered hotkey",
 		"modifiers", strings.Join(m.binding.Modifiers, "+"),
 		"key", m.binding.Key,
 		"os", runtime.GOOS,

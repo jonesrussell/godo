@@ -200,7 +200,7 @@ func (a *App) Cleanup() {
 	// Stop hotkey manager with timeout
 	if a.hotkey != nil {
 		a.logger.Info("Stopping hotkey manager")
-		hotkeyCtx, hotkeyCancel := context.WithTimeout(context.Background(), 2*time.Second)
+		hotkeyCtx, hotkeyCancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
 		defer hotkeyCancel()
 
 		// Use a goroutine to stop hotkey with timeout

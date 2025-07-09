@@ -142,14 +142,15 @@ tasks:
     - echo "Windows executable created"
 
   wsl2:copy-to-windows:
-    desc: Copy Windows executable to Windows-accessible location
+    desc: Copy Windows executable and config to Windows-accessible location
     deps: [ wsl2:build-windows ]
     platforms: [ linux ]
     cmds:
-    - echo "Copying Windows executable"
+    - echo "Copying Windows executable and config"
     - mkdir -p /mnt/c/Users/{{.USER}}/OneDrive/Desktop/godo-windows
     - cp {{.BUILD_DIR}}/{{.BINARY_NAME}}.exe /mnt/c/Users/{{.USER}}/OneDrive/Desktop/godo-windows/
-    - echo "Windows executable copied to Windows Desktop"
+    - cp config.yaml /mnt/c/Users/{{.USER}}/OneDrive/Desktop/godo-windows/ 2>/dev/null || echo "config.yaml not found, skipping"
+    - echo "Windows executable and config copied to Windows Desktop"
 
   wsl2:all:
     desc: Complete WSL2 workflow - setup, build, and copy to Windows

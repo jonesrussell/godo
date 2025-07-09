@@ -11,6 +11,7 @@ import (
 	fyneapp "fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/theme"
 	"github.com/google/wire"
+	"github.com/spf13/viper"
 
 	"github.com/jonesrussell/godo/internal/application/app"
 	"github.com/jonesrussell/godo/internal/config"
@@ -85,8 +86,28 @@ func InitializeApp() (app.Application, func(), error) {
 
 // Configuration provider - uses actual config system
 func ProvideConfig() (*config.Config, error) {
-	// Use the proper config system's default configuration
+	// Start with default config
 	cfg := config.NewDefaultConfig()
+
+	// Try to load config.yaml from current directory
+	v := viper.New()
+	v.SetConfigName("config")
+	v.SetConfigType("yaml")
+	v.AddConfigPath(".")
+
+	if err := v.ReadInConfig(); err == nil {
+		// Config file found, unmarshal into our config
+		if configErr := v.Unmarshal(cfg); configErr != nil {
+			// If unmarshaling fails, keep defaults
+			fmt.Printf("Failed to parse config file, using defaults: %v\n", configErr)
+		} else {
+			fmt.Printf("Config file loaded: %s\n", v.ConfigFileUsed())
+		}
+	} else {
+		// No config file found, using defaults
+		fmt.Printf("No config file found, using defaults: %v\n", err)
+	}
+
 	return cfg, nil
 }
 

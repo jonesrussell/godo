@@ -39,3 +39,8 @@ hotkeys:
   quick_note:
     modifiers: [ "Ctrl", "Shift" ]
     key: "1"
+
+http:
+  port: 8080
+  startup_timeout: 5
+  shutdown_timeout: 1

@@ -153,7 +153,8 @@ func (p *Provider) Load() (*Config, error) {
 	p.log.Debug("after env binding",
 		"app.name", v.GetString(KeyAppName),
 		"database.path", v.GetString(KeyDBPath),
-		"hotkeys.quick_note.modifiers", v.GetStringSlice("hotkeys.quick_note.modifiers"))
+		"hotkeys.quick_note.modifiers", v.GetStringSlice("hotkeys.quick_note.modifiers"),
+		"hotkeys.quick_note.key", v.GetString("hotkeys.quick_note.key"))
 
 	// Unmarshal into struct
 	cfg = &Config{}
@@ -164,7 +165,9 @@ func (p *Provider) Load() (*Config, error) {
 
 	p.log.Debug("after unmarshal",
 		"app.name", cfg.App.Name,
-		"database.path", cfg.Database.Path)
+		"database.path", cfg.Database.Path,
+		"hotkeys.quick_note.modifiers", cfg.Hotkeys.QuickNote.Modifiers,
+		"hotkeys.quick_note.key", cfg.Hotkeys.QuickNote.Key)
 
 	// Validate and resolve paths
 	if err := ValidateConfig(cfg); err != nil {
@@ -334,8 +337,8 @@ func NewDefaultConfig() *Config {
 		},
 		Hotkeys: HotkeyConfig{
 			QuickNote: HotkeyBinding{
-				Modifiers: []string{"Ctrl", "Shift"},
-				Key:       "G",
+				Modifiers: []string{}, // Let config file or environment set this
+				Key:       "",         // Let config file or environment set this
 			},
 			RetryDelayMs: 100,
 			MaxRetries:   3,

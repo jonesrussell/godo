@@ -3,6 +3,8 @@ package hotkey
 
 import (
 	"golang.design/x/hotkey"
+
+	"github.com/jonesrussell/godo/internal/shared/common"
 )
 
 // Manager defines the interface for hotkey management
@@ -15,6 +17,8 @@ type Manager interface {
 	Start() error
 	// Stop ends the hotkey listening and unregisters the hotkey
 	Stop() error
+	// SetQuickNote configures the quick note service and hotkey binding
+	SetQuickNote(quickNote QuickNoteService, binding *common.HotkeyBinding)
 }
 
 // DefaultManager implements Manager using golang.design/x/hotkey
@@ -48,6 +52,13 @@ func (m *DefaultManager) Start() error {
 // Stop ends the hotkey listening and unregisters the hotkey
 func (m *DefaultManager) Stop() error {
 	return m.hk.Unregister()
+}
+
+// SetQuickNote configures the quick note service and hotkey binding
+// This is a no-op for DefaultManager since it doesn't use QuickNote
+func (m *DefaultManager) SetQuickNote(quickNote QuickNoteService, binding *common.HotkeyBinding) {
+	// DefaultManager doesn't need this configuration
+	// This method exists to satisfy the Manager interface
 }
 
 // GetHotkey returns the underlying hotkey instance

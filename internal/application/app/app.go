@@ -3,126 +3,131 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/driver/desktop"
 
 	"github.com/jonesrussell/godo/internal/application/app/hotkey"
+	"github.com/jonesrussell/godo/internal/domain/service"
 	"github.com/jonesrussell/godo/internal/infrastructure/api"
 	"github.com/jonesrussell/godo/internal/infrastructure/gui"
 	"github.com/jonesrussell/godo/internal/infrastructure/gui/systray"
 	"github.com/jonesrussell/godo/internal/infrastructure/logger"
 	"github.com/jonesrussell/godo/internal/infrastructure/storage"
-	"github.com/jonesrussell/godo/internal/shared/common"
 	"github.com/jonesrussell/godo/internal/shared/config"
-	"github.com/jonesrussell/godo/internal/shared/options"
 )
 
+// Constants for configuration values
 const (
-	// DefaultAPIPort is the default port for the API server
-	DefaultAPIPort = 8080
+	DefaultAPIPort     = 8080
+	APIStartupTimeout  = 5 * time.Second
+	APIShutdownTimeout = 5 * time.Second
 )
 
-// App implements the Application interface
+// App represents the main application
 type App struct {
-	name       common.AppName
-	version    common.AppVersion
-	id         common.AppID
-	mainWindow gui.MainWindow
-	quickNote  gui.QuickNote
-	hotkey     hotkey.Manager
-	logger     logger.Logger
-	store      storage.TaskStore
-	fyneApp    fyne.App
-	config     *config.Config
-	apiServer  *api.Server
-	apiRunner  *api.Runner
+	fyneApp     fyne.App
+	mainWindow  gui.MainWindow
+	quickNote   gui.QuickNote
+	hotkey      hotkey.Manager
+	apiRunner   *api.Runner
+	config      *config.Config
+	logger      logger.Logger
+	taskService service.TaskService
+	store       storage.TaskStore
 }
 
-// GetFyneApp returns the underlying Fyne application instance
-func (a *App) GetFyneApp() fyne.App {
-	return a.fyneApp
-}
+// New creates a new application instance
+func New(
+	cfg *config.Config,
+	log logger.Logger,
+	taskService service.TaskService,
+	mainWindow gui.MainWindow,
+	quickNote gui.QuickNote,
+	store storage.TaskStore,
+) *App {
+	fyneApp := app.New()
 
-// Quit performs cleanup and quits the application
-func (a *App) Quit() {
-	// First run cleanup
-	a.Cleanup()
-
-	// Then quit the Fyne app
-	if a.fyneApp != nil {
-		a.fyneApp.Quit()
+	var hotkeyManager hotkey.Manager
+	if hkm, err := hotkey.NewLinuxManager(log); err != nil {
+		log.Warn("Failed to create hotkey manager, continuing without hotkeys", "error", err)
+		hotkeyManager = nil
+	} else {
+		hotkeyManager = hkm
+		hotkeyManager.SetQuickNote(quickNote, &cfg.Hotkeys.QuickNote)
 	}
-}
 
-// Params holds the parameters for creating a new App instance
-type Params struct {
-	Options   *options.AppOptions
-	Hotkey    hotkey.Manager
-	APIServer *api.Server
-	APIRunner *api.Runner
-}
+	apiRunner := api.NewRunner(taskService, log, &cfg.HTTP)
 
-// New creates a new application instance using the options pattern
-func New(params *Params) *App {
 	return &App{
-		name:       params.Options.Name,
-		version:    params.Options.Version,
-		id:         params.Options.ID,
-		mainWindow: params.Options.GUI.MainWindow,
-		quickNote:  params.Options.GUI.QuickNote,
-		hotkey:     params.Hotkey,
-		logger:     params.Options.Core.Logger,
-		store:      params.Options.Core.Store,
-		fyneApp:    params.Options.GUI.App,
-		config:     params.Options.Core.Config,
-		apiServer:  params.APIServer,
-		apiRunner:  params.APIRunner,
+		fyneApp:     fyneApp,
+		mainWindow:  mainWindow,
+		quickNote:   quickNote,
+		hotkey:      hotkeyManager,
+		apiRunner:   apiRunner,
+		config:      cfg,
+		logger:      log,
+		taskService: taskService,
+		store:       store,
 	}
 }
 
-// setupHotkey initializes and starts the global hotkey system
-func (a *App) setupHotkey() error {
-	a.logger.Debug("Setting up global hotkey system",
-		"config", a.config.Hotkeys.QuickNote)
+// getLogPaths returns the configured log file paths
+func (a *App) getLogPaths() (string, string) {
+	if a.config.Logger.FilePath == "" {
+		return "logs/godo.log", "logs/godo-error.log"
+	}
+	return a.config.Logger.FilePath, a.config.Logger.FilePath + "-error"
+}
 
-	if err := a.hotkey.Register(); err != nil {
-		return fmt.Errorf("failed to register hotkey: %w", err)
+// setupSystray initializes the system tray
+func (a *App) setupSystray() error {
+	_, ok := a.fyneApp.(desktop.App)
+	if !ok {
+		return ErrDesktopFeaturesNotAvailable
 	}
 
-	if err := a.hotkey.Start(); err != nil {
-		return fmt.Errorf("failed to start hotkey listener: %w", err)
-	}
-
-	a.logger.Info("Hotkey system initialized successfully")
+	logPath, errorLogPath := a.getLogPaths()
+	systray.SetupSystray(a.fyneApp, a.mainWindow.GetWindow(), a.quickNote, logPath, errorLogPath)
 	return nil
 }
 
-// SetupUI initializes the user interface components in the correct order
+// setupHotkey sets up the global hotkey
+func (a *App) setupHotkey() error {
+	if a.hotkey == nil {
+		a.logger.Warn("No hotkey manager available")
+		return nil
+	}
+
+	if err := a.hotkey.Register(); err != nil {
+		if errors.Is(err, hotkey.ErrWSL2NotSupported) {
+			a.logger.Warn("Hotkey system not available in WSL2 environment")
+			return nil
+		}
+		return fmt.Errorf("failed to setup hotkey system: %w", err)
+	}
+	return nil
+}
+
+// SetupUI initializes the user interface components
 func (a *App) SetupUI() error {
 	a.logger.Debug("Setting up UI components")
 
-	// 1. Set up systray first as it's the most visible component
-	if _, ok := a.fyneApp.(desktop.App); ok {
-		a.logger.Debug("Setting up systray")
-		// Get log file paths from config
-		logPath := "logs/godo.log"
-		errorLogPath := "logs/godo-error.log"
-		if a.config.Logger.FilePath != "" {
-			logPath = a.config.Logger.FilePath
+	// Set up systray
+	if err := a.setupSystray(); err != nil {
+		if errors.Is(err, ErrDesktopFeaturesNotAvailable) {
+			a.logger.Warn("Desktop features not available, skipping systray setup")
+		} else {
+			a.logger.Warn("Failed to setup systray", "error", err)
 		}
-		// For error log, use the same directory as main log but with error suffix
-		if a.config.Logger.FilePath != "" {
-			errorLogPath = a.config.Logger.FilePath + "-error"
-		}
-		systray.SetupSystray(a.fyneApp, a.mainWindow.GetWindow(), a.quickNote, logPath, errorLogPath)
-	} else {
-		a.logger.Warn("Desktop features not available, skipping systray setup")
+		// Continue without systray
 	}
 
-	// 2. Show main window if not configured to start hidden
+	// Show main window if not configured to start hidden
 	if !a.config.UI.MainWindow.StartHidden {
 		a.mainWindow.Show()
 	}
@@ -132,67 +137,55 @@ func (a *App) SetupUI() error {
 
 // Run starts the application
 func (a *App) Run() {
-	a.logger.Info("Starting application",
-		"name", a.name,
-		"version", a.version,
-		"id", a.id,
-	)
+	a.logger.Info("Starting Godo application")
 
-	// Set up UI components first
+	// Start API server
+	a.apiRunner.Start(DefaultAPIPort)
+
+	// Wait for API to be ready
+	if !a.apiRunner.WaitForReady(APIStartupTimeout) {
+		a.logger.Error("API server failed to start within timeout")
+		return
+	}
+
+	// Setup UI
 	if err := a.SetupUI(); err != nil {
 		a.logger.Error("Failed to setup UI", "error", err)
 		return
 	}
 
-	// Set up hotkey system
+	// Setup hotkey
 	if err := a.setupHotkey(); err != nil {
-		a.logger.Error("Failed to setup hotkey system", "error", err)
+		a.logger.Error("Failed to setup hotkey", "error", err)
 		// Continue running even if hotkey fails
 	}
 
-	// Start API server with proper synchronization
-	if a.apiRunner != nil {
-		a.apiRunner.Start(DefaultAPIPort)
-		// Wait for server to be ready with a timeout
-		if !a.apiRunner.WaitForReady(5 * time.Second) {
-			a.logger.Warn("API server did not start within timeout")
-		} else {
-			a.logger.Info("API server started successfully")
-		}
-	}
-
-	// Run the application main loop
+	// Run the application (this blocks until quit)
 	a.fyneApp.Run()
+
+	// When we get here, the app was quit via GUI
+	a.logger.Info("Application shutting down")
 }
 
-// Cleanup performs cleanup before application exit
+// Cleanup performs cleanup operations before shutdown
 func (a *App) Cleanup() {
 	a.logger.Info("Cleaning up application")
 
-	// First stop the API server
-	if a.apiRunner != nil {
-		if err := a.apiRunner.Shutdown(context.Background()); err != nil {
-			a.logger.Error("Failed to stop API server", "error", err)
-		} else {
-			a.logger.Info("API server stopped successfully")
-		}
-	}
+	// Stop API server with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), APIShutdownTimeout)
+	defer cancel()
 
-	// Then stop the hotkey manager
-	if err := a.hotkey.Stop(); err != nil {
-		a.logger.Error("Failed to stop hotkey manager", "error", err)
-	} else {
-		a.logger.Info("Hotkey manager stopped successfully")
+	if err := a.apiRunner.Shutdown(ctx); err != nil {
+		a.logger.Error("Failed to stop API server", "error", err)
 	}
+}
 
-	// Finally close the store
-	if err := a.store.Close(); err != nil {
-		a.logger.Error("Failed to close store", "error", err)
-	} else {
-		a.logger.Info("Store closed successfully")
+// Quit performs cleanup and quits the application
+func (a *App) Quit() {
+	a.Cleanup()
+	if a.fyneApp != nil {
+		a.fyneApp.Quit()
 	}
-
-	a.logger.Info("Cleanup completed")
 }
 
 // Logger returns the application logger

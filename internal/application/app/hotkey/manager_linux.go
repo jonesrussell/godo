@@ -14,6 +14,7 @@ import (
 	"golang.design/x/hotkey"
 
 	"github.com/jonesrussell/godo/internal/infrastructure/logger"
+	"github.com/jonesrussell/godo/internal/infrastructure/platform"
 	"github.com/jonesrussell/godo/internal/shared/common"
 )
 
@@ -82,15 +83,8 @@ func (m *LinuxManager) SetHotkey(hk hotkeyInterface) {
 
 // checkX11Availability checks if X11 server is available
 func (m *LinuxManager) checkX11Availability() error {
-	display := os.Getenv("DISPLAY")
-	if display == "" {
-		return fmt.Errorf("DISPLAY environment variable not set - X11 server not available")
-	}
-
-	// Additional check for WSL2 or headless environments
-	if strings.Contains(display, "WSL") || display == ":0" {
-		m.log.Warn("Running in WSL2 or headless environment - hotkeys may not work",
-			"display", display)
+	if platform.IsHeadless() {
+		return ErrX11NotAvailable
 	}
 
 	return nil
@@ -105,6 +99,11 @@ func (m *LinuxManager) Register() error {
 	}
 	if regCheckErr := m.checkAlreadyRegistered(); regCheckErr != nil {
 		return regCheckErr
+	}
+
+	// Check if we're in WSL2 environment and skip registration
+	if platform.IsWSL2() {
+		return ErrWSL2NotSupported
 	}
 
 	m.log.Info("Starting hotkey registration",

@@ -38,7 +38,7 @@ type UnifiedManager struct {
 
 // NewUnifiedManager creates a new UnifiedManager instance
 func NewUnifiedManager(log logger.Logger) (*UnifiedManager, error) {
-	log.Info("Creating unified hotkey manager",
+	log.Debug("Creating unified hotkey manager",
 		"os", runtime.GOOS,
 		"arch", runtime.GOARCH,
 		"pid", os.Getpid(),
@@ -67,7 +67,7 @@ func (m *UnifiedManager) SetLogger(log logger.Logger) {
 
 // SetQuickNote sets the quick note service and hotkey binding
 func (m *UnifiedManager) SetQuickNote(quickNote QuickNoteService, binding *config.HotkeyBinding) {
-	m.log.Info("Setting quick note service and binding",
+	m.log.Debug("Setting quick note service and binding",
 		"binding", fmt.Sprintf("%+v", binding),
 		"quicknote_nil", quickNote == nil)
 	m.quickNote = quickNote
@@ -110,7 +110,7 @@ func (m *UnifiedManager) Register() error {
 		return err
 	}
 
-	m.log.Info("Starting hotkey registration",
+	m.log.Debug("Starting hotkey registration",
 		"modifiers", strings.Join(m.binding.Modifiers, "+"),
 		"key", m.binding.Key,
 		"os", runtime.GOOS,
@@ -135,7 +135,7 @@ func (m *UnifiedManager) Register() error {
 		return regErr
 	}
 
-	m.log.Info("Successfully registered hotkey",
+	m.log.Debug("Successfully registered hotkey",
 		"modifiers", strings.Join(m.binding.Modifiers, "+"),
 		"key", m.binding.Key,
 		"os", runtime.GOOS,
@@ -148,7 +148,7 @@ func (m *UnifiedManager) Register() error {
 
 func (m *UnifiedManager) convertModifiers() ([]hotkey.Modifier, error) {
 	var mods []hotkey.Modifier
-	m.log.Info("Converting modifiers", "raw_modifiers", m.binding.Modifiers)
+	m.log.Debug("Converting modifiers", "raw_modifiers", m.binding.Modifiers)
 	for _, mod := range m.binding.Modifiers {
 		switch mod {
 		case "Ctrl":
@@ -174,18 +174,18 @@ func (m *UnifiedManager) convertModifiers() ([]hotkey.Modifier, error) {
 			return nil, fmt.Errorf("unknown modifier: %s", mod)
 		}
 	}
-	m.log.Info("Converted modifiers", "count", len(mods))
+	m.log.Debug("Converted modifiers", "count", len(mods))
 	return mods, nil
 }
 
 func (m *UnifiedManager) convertKey() (hotkey.Key, error) {
-	m.log.Info("Converting key", "raw_key", m.binding.Key)
+	m.log.Debug("Converting key", "raw_key", m.binding.Key)
 	switch m.binding.Key {
 	case "G":
-		m.log.Info("Using key G", "key_code", hotkey.KeyG)
+		m.log.Debug("Using key G", "key_code", hotkey.KeyG)
 		return hotkey.KeyG, nil
 	case "N":
-		m.log.Info("Using key N", "key_code", hotkey.KeyN)
+		m.log.Debug("Using key N", "key_code", hotkey.KeyN)
 		return hotkey.KeyN, nil
 	default:
 		m.log.Error("Unsupported key", "key", m.binding.Key,
@@ -197,7 +197,7 @@ func (m *UnifiedManager) convertKey() (hotkey.Key, error) {
 func (m *UnifiedManager) registerWithRetries() error {
 	var err error
 	for i := 0; i < maxRetries; i++ {
-		m.log.Info("Attempting to register hotkey with system", "attempt", i+1)
+		m.log.Debug("Attempting to register hotkey with system", "attempt", i+1)
 		if err = m.hk.Register(); err == nil {
 			break
 		}
@@ -234,7 +234,7 @@ func (m *UnifiedManager) Unregister() error {
 
 // Start begins listening for hotkey events
 func (m *UnifiedManager) Start() error {
-	m.log.Info("Starting hotkey manager",
+	m.log.Debug("Starting hotkey manager",
 		"hotkey_nil", m.hk == nil,
 		"quicknote_nil", m.quickNote == nil)
 
@@ -257,7 +257,7 @@ func (m *UnifiedManager) Start() error {
 	m.running = true
 	m.mu.Unlock()
 
-	m.log.Info("Hotkey manager started successfully")
+	m.log.Debug("Hotkey manager started successfully")
 
 	// Start listening for hotkey events in a goroutine
 	go func() {

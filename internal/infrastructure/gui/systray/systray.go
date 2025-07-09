@@ -52,7 +52,7 @@ func SetupSystray(
 	}
 
 	// Try to set the icon, but don't fail if it doesn't work
-	log.Info("Setting systray icon",
+	log.Debug("Setting systray icon",
 		"icon_name", icon.Name(),
 		"icon_size_bytes", len(icon.Content()))
 	desktopApp.SetSystemTrayIcon(icon)

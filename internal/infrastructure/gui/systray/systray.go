@@ -12,18 +12,25 @@ import (
 
 	"github.com/jonesrussell/godo/internal/infrastructure/gui"
 	"github.com/jonesrussell/godo/internal/infrastructure/gui/theme"
+	"github.com/jonesrussell/godo/internal/infrastructure/logger"
 	"github.com/jonesrussell/godo/internal/infrastructure/platform"
 	"github.com/jonesrussell/godo/internal/shared/utils"
 )
 
 // SetupSystray configures the system tray icon and menu
-func SetupSystray(app fyne.App, mainWindow fyne.Window, quickNote gui.QuickNote, logPath, errorLogPath string) error {
+func SetupSystray(
+	app fyne.App,
+	mainWindow fyne.Window,
+	quickNote gui.QuickNote,
+	logPath, errorLogPath string,
+	log logger.Logger,
+) error {
 	// Check if systray is supported in this environment
 	if !platform.SupportsGUI() {
 		if platform.IsWSL2() {
-			fmt.Println("Systray not supported in WSL2 environment - skipping setup")
+			log.Warn("Systray not supported in WSL2 environment - skipping setup")
 		} else if platform.IsHeadless() {
-			fmt.Println("Systray not supported in headless environment - skipping setup")
+			log.Warn("Systray not supported in headless environment - skipping setup")
 		}
 		return nil // This is expected, not an error
 	}
@@ -37,14 +44,22 @@ func SetupSystray(app fyne.App, mainWindow fyne.Window, quickNote gui.QuickNote,
 	menu := createSystrayMenu(app, mainWindow, quickNote, logPath, errorLogPath)
 	desktopApp.SetSystemTrayMenu(menu)
 
-	// Set the icon
-	icon := theme.AppIcon()
+	// Set the icon with error handling
+	icon := theme.SystrayIcon()
 	if icon == nil {
-		fmt.Println("Warning: AppIcon() returned nil - systray will have no icon")
+		log.Warn("SystrayIcon() returned nil - systray will have no icon")
 		return nil // Continue without icon
 	}
 
+	// Try to set the icon, but don't fail if it doesn't work
+	log.Info("Setting systray icon",
+		"icon_name", icon.Name(),
+		"icon_size_bytes", len(icon.Content()))
 	desktopApp.SetSystemTrayIcon(icon)
+
+	// Note: We can't easily catch the Fyne error here as it's logged internally
+	// But we can continue and the systray will work without an icon if needed
+	log.Info("Systray setup completed")
 	return nil
 }
 

@@ -5,6 +5,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"runtime"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -18,6 +20,7 @@ import (
 	"github.com/jonesrussell/godo/internal/infrastructure/gui"
 	"github.com/jonesrussell/godo/internal/infrastructure/gui/systray"
 	"github.com/jonesrussell/godo/internal/infrastructure/logger"
+	"github.com/jonesrussell/godo/internal/infrastructure/platform"
 	"github.com/jonesrussell/godo/internal/infrastructure/storage"
 )
 
@@ -96,6 +99,7 @@ func (a *App) setupSystray() error {
 		a.quickNote,
 		logPath,
 		errorLogPath,
+		a.logger,
 	)
 }
 
@@ -113,6 +117,14 @@ func (a *App) setupHotkey() error {
 		}
 		return fmt.Errorf("failed to setup hotkey system: %w", err)
 	}
+
+	// Start the hotkey manager to begin listening for events
+	if err := a.hotkey.Start(); err != nil {
+		a.logger.Error("Failed to start hotkey manager", "error", err)
+		return fmt.Errorf("failed to start hotkey manager: %w", err)
+	}
+
+	a.logger.Info("Hotkey system started successfully")
 	return nil
 }
 
@@ -141,6 +153,18 @@ func (a *App) SetupUI() error {
 // Run starts the application
 func (a *App) Run() {
 	a.logger.Info("Starting Godo application")
+
+	// Debug information for troubleshooting
+	a.logger.Info("Environment details",
+		"os", runtime.GOOS,
+		"arch", runtime.GOARCH,
+		"pid", os.Getpid(),
+		"display", os.Getenv("DISPLAY"),
+		"username", os.Getenv("USERNAME"),
+		"sessionname", os.Getenv("SESSIONNAME"),
+		"headless", platform.IsHeadless(),
+		"wsl2", platform.IsWSL2(),
+		"supports_gui", platform.SupportsGUI())
 
 	// Start API server
 	a.apiRunner.Start(DefaultAPIPort)
@@ -173,6 +197,30 @@ func (a *App) Run() {
 // Cleanup performs cleanup operations before shutdown
 func (a *App) Cleanup() {
 	a.logger.Info("Cleaning up application")
+
+	// Stop hotkey manager with timeout
+	if a.hotkey != nil {
+		a.logger.Info("Stopping hotkey manager")
+		hotkeyCtx, hotkeyCancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer hotkeyCancel()
+
+		// Use a goroutine to stop hotkey with timeout
+		done := make(chan error, 1)
+		go func() {
+			done <- a.hotkey.Stop()
+		}()
+
+		select {
+		case err := <-done:
+			if err != nil {
+				a.logger.Error("Failed to stop hotkey manager", "error", err)
+			} else {
+				a.logger.Info("Hotkey manager stopped")
+			}
+		case <-hotkeyCtx.Done():
+			a.logger.Warn("Hotkey manager stop timed out, forcing cleanup")
+		}
+	}
 
 	// Stop API server with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), APIShutdownTimeout)

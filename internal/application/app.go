@@ -1,5 +1,5 @@
 // Package app implements the main application logic for Godo.
-package app
+package application
 
 import (
 	"context"

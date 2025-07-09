@@ -3,7 +3,7 @@ package container
 import (
 	"fmt"
 
-	godoapp "github.com/jonesrussell/godo/internal/application/app"
+	godoapp "github.com/jonesrussell/godo/internal/application"
 	"github.com/jonesrussell/godo/internal/infrastructure/logger"
 	"github.com/jonesrussell/godo/internal/infrastructure/storage"
 )

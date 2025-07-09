@@ -8,13 +8,13 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/jonesrussell/godo/internal/application/app"
+	"github.com/jonesrussell/godo/internal/application"
 	"github.com/jonesrussell/godo/internal/application/container"
 )
 
 func main() {
 	// Initialize the application with all dependencies
-	application, cleanup, err := container.InitializeApp()
+	myapp, cleanup, err := container.InitializeApp()
 	if err != nil {
 		fmt.Printf("Failed to initialize application: %v\n", err)
 		os.Exit(1)
@@ -30,14 +30,14 @@ func main() {
 		fmt.Println("\nReceived interrupt signal. Cleaning up...")
 
 		// Get the concrete App type
-		if godoApp, ok := application.(*app.App); ok {
+		if godoApp, ok := myapp.(*application.App); ok {
 			// Quit the application
 			godoApp.Quit()
 		}
 
 		// Force kill after a delay if we're still running
 		go func() {
-			forceKillTimeout := application.ForceKillTimeout()
+			forceKillTimeout := myapp.ForceKillTimeout()
 			if forceKillTimeout == 0 {
 				forceKillTimeout = 2 * time.Second
 			}
@@ -48,7 +48,7 @@ func main() {
 	}()
 
 	// Run the application
-	application.Run()
+	myapp.Run()
 
 	// Run cleanup on normal exit
 	cleanup()

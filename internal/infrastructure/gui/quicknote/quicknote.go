@@ -84,7 +84,11 @@ func (w *Window) Show() {
 		w.log.Debug("Inside fyne.Do - showing window")
 		w.window.Show()
 		w.log.Debug("Window Show() called")
-		w.log.Debug("Quick note window shown")
+
+		// Focus the entry field so user can immediately start typing
+		w.window.Canvas().Focus(w.entry)
+
+		w.log.Debug("Quick note window shown and entry focused")
 	})
 	w.log.Debug("Outside fyne.Do - Show() method completed")
 }

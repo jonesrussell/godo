@@ -76,14 +76,6 @@ func New(
 	}
 }
 
-// getLogPaths returns the configured log file paths
-func (a *App) getLogPaths() (string, string) {
-	if a.config.Logger.FilePath == "" {
-		return "logs/godo.log", "logs/godo-error.log"
-	}
-	return a.config.Logger.FilePath, a.config.Logger.FilePath + "-error"
-}
-
 // setupSystray initializes the system tray
 func (a *App) setupSystray() error {
 	_, ok := a.fyneApp.(desktop.App)
@@ -91,13 +83,12 @@ func (a *App) setupSystray() error {
 		return ErrDesktopFeaturesNotAvailable
 	}
 
-	logPath, errorLogPath := a.getLogPaths()
 	return systray.SetupSystray(
 		a.fyneApp,
 		a.mainWindow.GetWindow(),
 		a.quickNote,
-		logPath,
-		errorLogPath,
+		a.config.Logger.FilePath,
+		a.config.Logger.FilePath+"-error",
 	)
 }
 

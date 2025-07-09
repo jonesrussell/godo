@@ -255,7 +255,9 @@ func (s *Server) Start(port int) error {
 	if err != nil && err != http.ErrServerClosed {
 		// Provide a clearer error message for port conflicts
 		if strings.Contains(err.Error(), "address already in use") {
-			return fmt.Errorf("HTTP server failed to start: port %d is already in use. Please configure a different port via environment variable GODO_HTTP_PORT, config file, or CLI flag", port)
+			return fmt.Errorf("HTTP server failed to start: port %d is already in use. "+
+				"Please configure a different port via environment variable GODO_HTTP_PORT, "+
+				"config file, or CLI flag", port)
 		}
 		return fmt.Errorf("HTTP server failed to start: %w", err)
 	}

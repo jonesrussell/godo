@@ -14,6 +14,7 @@ import (
 
 	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/domain/model"
+	"github.com/jonesrussell/godo/internal/infrastructure/gui/windowmanager"
 	"github.com/jonesrussell/godo/internal/infrastructure/logger"
 	"github.com/jonesrussell/godo/internal/infrastructure/storage"
 )
@@ -27,10 +28,14 @@ type Window struct {
 	cfg    config.WindowConfig
 
 	// UI components
-	entry      *Entry
-	addButton  *widget.Button
-	clearBtn   *widget.Button
-	statusText *widget.Label
+	entry           *Entry
+	addButton       *widget.Button
+	clearBtn        *widget.Button
+	statusText      *widget.Label
+	buttonContainer *fyne.Container
+
+	// Focus management
+	focusManager *windowmanager.FocusManager
 }
 
 // New creates a new quick note window
@@ -49,7 +54,9 @@ func New(
 		window: app.NewWindow("Quick Note"),
 	}
 
+	w.focusManager = windowmanager.NewFocusManager(w.window, log)
 	w.setupUI()
+	w.setupKeyboardShortcuts()
 	log.Debug("Quick note window created and UI setup completed")
 	return w
 }
@@ -72,13 +79,7 @@ func (w *Window) Show() {
 		w.log.Debug("Window Show() called")
 		w.window.CenterOnScreen()
 		w.log.Debug("Window centered")
-		canvas := fyne.CurrentApp().Driver().CanvasForObject(w.entry)
-		if canvas != nil {
-			canvas.Focus(w.entry)
-			w.log.Debug("Entry focused via canvas.Focus")
-		} else {
-			w.log.Warn("Could not get canvas for entry to focus")
-		}
+		w.ensureFocus()
 		w.log.Debug("Quick note window shown and focused")
 	})
 	w.log.Debug("Outside fyne.Do - Show() method completed")
@@ -98,22 +99,22 @@ func (w *Window) setupUI() {
 	// Create entry field
 	w.entry = NewEntry()
 	w.entry.SetPlaceHolder("Enter your task here...")
-	w.entry.OnSubmitted = func(text string) {
-		w.addTask()
-	}
+	w.focusManager.AddToFocusQueue(w.entry)
 
 	// Create add button
 	w.addButton = widget.NewButtonWithIcon("Add", theme.ContentAddIcon(), w.addTask)
+	w.focusManager.AddToFocusQueue(w.addButton)
 
 	// Create clear button
 	w.clearBtn = widget.NewButtonWithIcon("Clear", theme.ContentClearIcon(), w.clearEntry)
+	w.focusManager.AddToFocusQueue(w.clearBtn)
 
 	// Create status text
 	w.statusText = widget.NewLabel("")
 	w.statusText.Hide()
 
 	// Create button container
-	buttons := container.NewHBox(
+	w.buttonContainer = container.NewHBox(
 		w.addButton,
 		w.clearBtn,
 		layout.NewSpacer(),
@@ -122,7 +123,7 @@ func (w *Window) setupUI() {
 	// Create main container
 	content := container.NewVBox(
 		w.entry,
-		buttons,
+		w.buttonContainer,
 		w.statusText,
 	)
 
@@ -135,7 +136,19 @@ func (w *Window) setupUI() {
 		w.Hide()
 	})
 
+	w.buildFocusQueue()
 	w.log.Debug("Quick note UI setup completed")
+}
+
+// setupKeyboardShortcuts sets up keyboard shortcuts
+func (w *Window) setupKeyboardShortcuts() {
+	w.entry.SetOnCtrlEnter(w.addTask)
+	w.entry.SetOnEscape(w.Hide)
+}
+
+// buildFocusQueue builds the focus queue for keyboard navigation
+func (w *Window) buildFocusQueue() {
+	w.focusManager.BuildFocusQueue()
 }
 
 // addTask adds a new task from the entry field
@@ -154,42 +167,53 @@ func (w *Window) addTask() {
 		UpdatedAt: time.Now(),
 	}
 
-	// Store the task
-	ctx := context.Background()
+	// Save task to store
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
 	if err := w.store.Add(ctx, &task); err != nil {
-		w.log.Error("Failed to add task", "error", err)
-		w.showStatus("Failed to add task")
+		w.log.Error("Failed to create task", "error", err)
+		w.showStatus("Failed to create task", true)
 		return
 	}
 
-	w.log.Info("Task added successfully", "task_id", task.ID)
-	w.showStatus("Task added successfully!")
-	w.clearEntry()
+	// Clear entry and show success message
+	w.entry.SetText("")
+	w.showStatus("Task added successfully", false)
+	w.log.Debug("Task added successfully", "content", content)
 }
 
 // clearEntry clears the entry field
 func (w *Window) clearEntry() {
 	w.entry.SetText("")
-	w.statusText.Hide()
-	canvas := fyne.CurrentApp().Driver().CanvasForObject(w.entry)
-	if canvas != nil {
-		canvas.Focus(w.entry)
-		w.log.Debug("Entry focused via canvas.Focus (clearEntry)")
-	} else {
-		w.log.Warn("Could not get canvas for entry to focus (clearEntry)")
-	}
+	w.entry.FocusGained()
+}
+
+// ensureFocus ensures the entry field has focus
+func (w *Window) ensureFocus() {
+	w.log.Debug("Ensuring focus on entry field")
+	fyne.Do(func() {
+		w.entry.FocusGained()
+		w.log.Debug("Focus set on entry field")
+	})
 }
 
 // showStatus shows a status message
-func (w *Window) showStatus(message string) {
+func (w *Window) showStatus(message string, isError bool) {
 	fyne.Do(func() {
 		w.statusText.SetText(message)
 		w.statusText.Show()
+
+		if isError {
+			w.statusText.TextStyle = fyne.TextStyle{Bold: true}
+		} else {
+			w.statusText.TextStyle = fyne.TextStyle{}
+		}
 	})
 
-	// Auto-hide after 2 seconds
+	// Hide status after 3 seconds
 	go func() {
-		time.Sleep(2 * time.Second)
+		time.Sleep(3 * time.Second)
 		fyne.Do(func() {
 			w.statusText.Hide()
 		})

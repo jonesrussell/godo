@@ -25,16 +25,29 @@ This project uses Google's Wire framework for dependency injection with clean ar
 - Include cleanup functions for resources
 - Follow the pattern in [internal/application/container/wire.go](mdc:internal/application/container/wire.go)
 
+### 5. Configuration Injection
+- Use simplified config from [internal/config/config.go](mdc:internal/config/config.go)
+- Avoid circular dependencies between config and other packages
+- Inject specific config sections rather than entire config when possible
+
 ## Anti-patterns to Avoid
 - Service Locator pattern
 - Static dependencies
 - Global state
 - Tight coupling between layers
+- Shared directories that create circular dependencies
+- Over-engineering with unnecessary abstractions
 
 ## Testing Requirements
 - Create mock providers for testing
 - Use interface bindings for test doubles
 - Implement proper test isolation
+
+## Recent Improvements
+- Eliminated shared/config and shared/common anti-patterns
+- Simplified configuration management
+- Removed circular dependencies
+- Consolidated platform-specific implementations
 description:
 globs:
 alwaysApply: false

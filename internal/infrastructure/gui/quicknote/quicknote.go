@@ -84,17 +84,7 @@ func (w *Window) Show() {
 		w.log.Debug("Inside fyne.Do - showing window")
 		w.window.Show()
 		w.log.Debug("Window Show() called")
-		w.window.CenterOnScreen()
-		w.window.RequestFocus()
-		w.log.Debug("Window focused")
-
-		// Focus the entry field
-		if w.entry != nil {
-			w.entry.FocusGained()
-			w.log.Debug("Entry field focused")
-		}
-
-		w.log.Debug("Quick note window shown and focused")
+		w.log.Debug("Quick note window shown")
 	})
 	w.log.Debug("Outside fyne.Do - Show() method completed")
 }

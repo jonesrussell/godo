@@ -16,21 +16,8 @@ func AppIcon() fyne.Resource {
 	return fyne.NewStaticResource("icon.png", iconData)
 }
 
-// SystrayIcon returns the appropriate icon for the system tray
-// Using PNG format for better compatibility across platforms
-func SystrayIcon() fyne.Resource {
-	// Use PNG for all platforms for better compatibility
-	return fyne.NewStaticResource("icon.png", iconData)
-}
-
 // Deprecated: Use AppIcon() instead
 // GetAppIconResource returns the application icon resource
 func GetAppIconResource() fyne.Resource {
 	return AppIcon()
-}
-
-// Deprecated: Use SystrayIcon() instead
-// GetSystrayIconResource returns the system tray icon resource
-func GetSystrayIconResource() fyne.Resource {
-	return SystrayIcon()
 }

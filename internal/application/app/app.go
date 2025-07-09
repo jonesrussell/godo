@@ -18,7 +18,6 @@ import (
 	"github.com/jonesrussell/godo/internal/infrastructure/api"
 	"github.com/jonesrussell/godo/internal/infrastructure/gui"
 	"github.com/jonesrussell/godo/internal/infrastructure/gui/quicknote"
-	"github.com/jonesrussell/godo/internal/infrastructure/gui/systray"
 	"github.com/jonesrussell/godo/internal/infrastructure/hotkey"
 	"github.com/jonesrussell/godo/internal/infrastructure/logger"
 	"github.com/jonesrussell/godo/internal/infrastructure/platform"
@@ -92,72 +91,46 @@ func New(
 	return app
 }
 
-// setupSystray initializes the system tray
+// setupSystray initializes the system tray using the simplified Fyne approach
 func (a *App) setupSystray() error {
 	a.logger.Debug("Setting up systray")
 
-	_, ok := a.fyneApp.(desktop.App)
+	desk, ok := a.fyneApp.(desktop.App)
 	if !ok {
-		a.logger.Error("Desktop features not available for systray")
-		return ErrDesktopFeaturesNotAvailable
+		a.logger.Warn("Desktop features not available for systray")
+		return nil // Not an error, just not supported
 	}
 
-	// Use config file path or default
-	logPath := a.config.Logger.FilePath
-	if logPath == "" {
-		logPath = "logs/godo.log"
-	}
-	errorLogPath := logPath + "-error"
-
-	// Create a wrapper for the quick note that creates it on demand
-	quickNoteWrapper := &quickNoteWrapper{
-		app: a,        // Pass the App instance instead of just fyneApp
-		log: a.logger, // Make sure logger is set
-	}
-
-	a.logger.Debug("Quick note wrapper created for systray")
-
-	return systray.SetupSystray(
-		a.fyneApp,
-		a.mainWindow.GetWindow(),
-		quickNoteWrapper,
-		logPath,
-		errorLogPath,
-		a.logger,
+	// Create menu using the standard Fyne menu API
+	m := fyne.NewMenu("Godo",
+		fyne.NewMenuItem("Show", func() {
+			a.logger.Debug("Systray Show menu item tapped")
+			a.mainWindow.Show()
+			a.mainWindow.GetWindow().RequestFocus()
+		}),
+		fyne.NewMenuItem("Quick Note", func() {
+			a.logger.Debug("Systray Quick Note menu item tapped")
+			quickNoteWindow := a.getQuickNoteWindow()
+			if quickNoteWindow != nil {
+				quickNoteWindow.Show()
+			}
+		}),
+		fyne.NewMenuItemSeparator(),
+		fyne.NewMenuItem("Quit", func() {
+			a.logger.Debug("Systray Quit menu item tapped")
+			a.Quit()
+		}),
 	)
-}
 
-// quickNoteWrapper wraps the quick note creation to handle on-demand creation
-type quickNoteWrapper struct {
-	app *App // Changed to *App to access App instance
-	log logger.Logger
-}
+	// Set the system tray menu
+	desk.SetSystemTrayMenu(m)
 
-func (w *quickNoteWrapper) Show() {
-	w.log.Debug("quickNoteWrapper.Show() called")
+	// Set the system tray icon if available
+	// Note: We'll need to import the theme package for this
+	// For now, we'll use the default Fyne icon
 
-	// Use the unified quick note window management with error handling
-	defer func() {
-		if r := recover(); r != nil {
-			w.log.Error("Panic in quick note window creation", "error", r)
-		}
-	}()
-
-	quickNoteWindow := w.app.getQuickNoteWindow()
-	if quickNoteWindow == nil {
-		w.log.Error("Failed to get quick note window for systray")
-		return
-	}
-
-	quickNoteWindow.Show()
-	w.log.Debug("Systray quick note window shown")
-}
-
-func (w *quickNoteWrapper) Hide() {
-	quickNoteWindow := w.app.getQuickNoteWindow()
-	if quickNoteWindow != nil {
-		quickNoteWindow.Hide()
-	}
+	a.logger.Info("Systray setup completed")
+	return nil
 }
 
 // setupHotkey sets up the global hotkey
@@ -191,11 +164,7 @@ func (a *App) SetupUI() error {
 
 	// Set up systray
 	if err := a.setupSystray(); err != nil {
-		if errors.Is(err, ErrDesktopFeaturesNotAvailable) {
-			a.logger.Warn("Desktop features not available, skipping systray setup")
-		} else {
-			a.logger.Warn("Failed to setup systray", "error", err)
-		}
+		a.logger.Warn("Failed to setup systray", "error", err)
 		// Continue without systray
 	}
 

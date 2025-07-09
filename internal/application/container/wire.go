@@ -24,16 +24,6 @@ import (
 	"github.com/jonesrussell/godo/internal/infrastructure/storage/sqlite"
 )
 
-// Application constants
-const (
-	DefaultAppName    = "Godo"
-	DefaultAppVersion = "0.1.0"
-	DefaultAppID      = "io.github.jonesrussell.godo"
-	DefaultLogLevel   = "info"
-	DefaultDBPath     = "godo.db"
-	DefaultLogFile    = "logs/godo.log"
-)
-
 // Provider Sets - Organized by concern
 var (
 	// ConfigSet provides the single source of truth for configuration
@@ -93,54 +83,10 @@ func InitializeApp() (app.Application, func(), error) {
 	return nil, nil, nil
 }
 
-// Configuration provider - single source of truth
+// Configuration provider - uses actual config system
 func ProvideConfig() (*config.Config, error) {
-	cfg := &config.Config{
-		App: config.AppConfig{
-			Name:    DefaultAppName,
-			Version: DefaultAppVersion,
-			ID:      DefaultAppID,
-		},
-		Logger: config.LogConfig{
-			Level:   DefaultLogLevel,
-			Console: true,
-			File:    true,
-			Output:  []string{"stdout"},
-		},
-		Hotkeys: config.HotkeyConfig{
-			QuickNote: config.HotkeyBinding{
-				Modifiers: []string{"Ctrl", "Shift"},
-				Key:       "G",
-			},
-		},
-		Database: config.DatabaseConfig{
-			Path: DefaultDBPath,
-		},
-		UI: config.UIConfig{
-			MainWindow: config.WindowConfig{
-				Width:       800,
-				Height:      600,
-				StartHidden: false,
-			},
-			QuickNote: config.WindowConfig{
-				Width:       400,
-				Height:      300,
-				StartHidden: true,
-			},
-		},
-		HTTP: config.HTTPConfig{
-			Port:              8080,
-			ReadTimeout:       30,
-			WriteTimeout:      30,
-			ReadHeaderTimeout: 10,
-			IdleTimeout:       120,
-		},
-	}
-
-	if err := validateConfig(cfg); err != nil {
-		return nil, fmt.Errorf("invalid configuration: %w", err)
-	}
-
+	// Use the proper config system's default configuration
+	cfg := config.NewDefaultConfig()
 	return cfg, nil
 }
 
@@ -151,10 +97,11 @@ func ProvideLogger(cfg *config.Config) (logger.Logger, func(), error) {
 	}
 
 	logConfig := &logger.LogConfig{
-		Level:   cfg.Logger.Level,
-		Console: cfg.Logger.Console,
-		File:    cfg.Logger.File,
-		Output:  cfg.Logger.Output,
+		Level:    cfg.Logger.Level,
+		Console:  cfg.Logger.Console,
+		File:     cfg.Logger.File,
+		FilePath: cfg.Logger.FilePath,
+		Output:   cfg.Logger.Output,
 	}
 
 	log, err := logger.New(logConfig)
@@ -231,37 +178,4 @@ func ProvideQuickNote(
 	cfg *config.Config,
 ) *quicknote.Window {
 	return quicknote.New(app, store, log, cfg.UI.QuickNote)
-}
-
-// validateConfig validates the configuration
-func validateConfig(cfg *config.Config) error {
-	if cfg.App.Name == "" {
-		return fmt.Errorf("app name is required")
-	}
-	if cfg.Logger.Level == "" {
-		return fmt.Errorf("log level is required")
-	}
-	if err := validateHotkeyConfig(&cfg.Hotkeys.QuickNote); err != nil {
-		return fmt.Errorf("invalid hotkey configuration: %w", err)
-	}
-	return nil
-}
-
-// validateHotkeyConfig validates hotkey configuration
-func validateHotkeyConfig(binding *config.HotkeyBinding) error {
-	if len(binding.Modifiers) == 0 {
-		return fmt.Errorf("at least one modifier is required")
-	}
-	if binding.Key == "" {
-		return fmt.Errorf("key is required")
-	}
-	for _, mod := range binding.Modifiers {
-		switch mod {
-		case "Ctrl", "Alt", "Shift":
-			continue
-		default:
-			return fmt.Errorf("invalid modifier: %s", mod)
-		}
-	}
-	return nil
 }

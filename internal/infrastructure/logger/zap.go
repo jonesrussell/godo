@@ -2,6 +2,8 @@ package logger
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"go.uber.org/zap"
@@ -25,14 +27,27 @@ func New(config *LogConfig) (Logger, error) {
 		return nil, fmt.Errorf("invalid log level %q: %w", config.Level, err)
 	}
 
-	// Set default output paths if not specified
+	// Set up output paths
 	outputPaths := config.Output
 	if len(outputPaths) == 0 {
 		outputPaths = []string{"stdout"}
 	}
 
-	// Set default error output paths
+	// Set up error output paths
 	errorOutputPaths := []string{"stderr"}
+
+	// Handle file logging
+	if config.File && config.FilePath != "" {
+		// Ensure log directory exists
+		logDir := filepath.Dir(config.FilePath)
+		if dirErr := os.MkdirAll(logDir, 0o755); dirErr != nil {
+			return nil, fmt.Errorf("failed to create log directory %s: %w", logDir, dirErr)
+		}
+
+		// Add file paths to outputs
+		outputPaths = append(outputPaths, config.FilePath)
+		errorOutputPaths = append(errorOutputPaths, config.FilePath)
+	}
 
 	// Create Zap logger configuration
 	zapConfig := zap.Config{

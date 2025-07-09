@@ -302,8 +302,8 @@ func NewDefaultConfig() *Config {
 		Logger: LogConfig{
 			Level:    "info",
 			Console:  true,
-			File:     false,
-			FilePath: "", // Default to empty string
+			File:     true,
+			FilePath: "logs/godo.log",
 			Output:   []string{"stdout"},
 		},
 		Database: DatabaseConfig{

@@ -9,7 +9,6 @@ import (
 	"runtime"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/csturiale/hotkey"
 
@@ -18,8 +17,8 @@ import (
 	"github.com/jonesrussell/godo/internal/infrastructure/platform"
 )
 
-// UnifiedManager manages hotkeys for both Linux and Windows
-type UnifiedManager struct {
+// HotkeyManager manages hotkeys for both Linux and Windows
+type HotkeyManager struct {
 	log           logger.Logger
 	quickNote     QuickNoteService
 	quickNoteFunc func() QuickNoteService // Factory function to create quick note on demand
@@ -31,14 +30,9 @@ type UnifiedManager struct {
 	config        *config.HotkeyConfig
 }
 
-// NewUnifiedManager creates a new UnifiedManager instance
-func NewUnifiedManager(log logger.Logger, hotkeyConfig *config.HotkeyConfig) (*UnifiedManager, error) {
-	log.Debug("Creating unified hotkey manager",
-		"os", runtime.GOOS,
-		"arch", runtime.GOARCH,
-		"pid", os.Getpid(),
-		"display", os.Getenv("DISPLAY"))
-	return &UnifiedManager{
+// NewManager creates a new HotkeyManager instance
+func NewManager(log logger.Logger, hotkeyConfig *config.HotkeyConfig) (Manager, error) {
+	return &HotkeyManager{
 		log:      log,
 		stopChan: make(chan struct{}),
 		config:   hotkeyConfig,
@@ -47,7 +41,7 @@ func NewUnifiedManager(log logger.Logger, hotkeyConfig *config.HotkeyConfig) (*U
 
 // newPlatformManager creates a platform-specific manager
 func newPlatformManager(quickNote QuickNoteService, binding *config.HotkeyBinding) Manager {
-	manager := &UnifiedManager{
+	manager := &HotkeyManager{
 		log:       logger.NewNoopLogger(),
 		quickNote: quickNote,
 		binding:   binding,
@@ -57,12 +51,12 @@ func newPlatformManager(quickNote QuickNoteService, binding *config.HotkeyBindin
 }
 
 // SetLogger sets the logger for this manager
-func (m *UnifiedManager) SetLogger(log logger.Logger) {
+func (m *HotkeyManager) SetLogger(log logger.Logger) {
 	m.log = log
 }
 
 // SetQuickNote sets the quick note service and hotkey binding
-func (m *UnifiedManager) SetQuickNote(quickNote QuickNoteService, binding *config.HotkeyBinding) {
+func (m *HotkeyManager) SetQuickNote(quickNote QuickNoteService, binding *config.HotkeyBinding) {
 	m.log.Debug("Setting quick note service and binding",
 		"binding", fmt.Sprintf("%+v", binding),
 		"quicknote_nil", quickNote == nil)
@@ -71,7 +65,7 @@ func (m *UnifiedManager) SetQuickNote(quickNote QuickNoteService, binding *confi
 }
 
 // SetQuickNoteFactory sets a factory function to create the quick note service on demand
-func (m *UnifiedManager) SetQuickNoteFactory(factory func() QuickNoteService, binding *config.HotkeyBinding) {
+func (m *HotkeyManager) SetQuickNoteFactory(factory func() QuickNoteService, binding *config.HotkeyBinding) {
 	m.log.Debug("Setting quick note factory and binding",
 		"binding", fmt.Sprintf("%+v", binding),
 		"factory_nil", factory == nil)
@@ -80,12 +74,12 @@ func (m *UnifiedManager) SetQuickNoteFactory(factory func() QuickNoteService, bi
 }
 
 // SetHotkey sets the hotkey instance (used for testing)
-func (m *UnifiedManager) SetHotkey(hk *hotkey.Hotkey) {
+func (m *HotkeyManager) SetHotkey(hk *hotkey.Hotkey) {
 	m.hk = hk
 }
 
 // checkPlatformSpecificRequirements performs platform-specific checks
-func (m *UnifiedManager) checkPlatformSpecificRequirements() error {
+func (m *HotkeyManager) checkPlatformSpecificRequirements() error {
 	if runtime.GOOS == "linux" {
 		// Linux-specific checks
 		if platform.IsWSL2() {
@@ -99,7 +93,7 @@ func (m *UnifiedManager) checkPlatformSpecificRequirements() error {
 }
 
 // Register registers the configured hotkey with the system
-func (m *UnifiedManager) Register() error {
+func (m *HotkeyManager) Register() error {
 	if m.binding == nil {
 		m.log.Error("Hotkey binding not set")
 		return fmt.Errorf("hotkey binding not set")
@@ -136,8 +130,11 @@ func (m *UnifiedManager) Register() error {
 	// Create hotkey directly
 	m.hk = hotkey.New(mods, key)
 
-	if regErr := m.registerWithRetries(); regErr != nil {
-		return regErr
+	// Register the hotkey ONCE, no retries
+	m.log.Debug("Attempting to register hotkey with system")
+	if err := m.hk.Register(); err != nil {
+		m.log.Error("Failed to register hotkey", "error", err)
+		return fmt.Errorf("failed to register hotkey: %w", err)
 	}
 
 	m.log.Info("Successfully registered hotkey",
@@ -151,7 +148,7 @@ func (m *UnifiedManager) Register() error {
 	return nil
 }
 
-func (m *UnifiedManager) convertModifiers() ([]hotkey.Modifier, error) {
+func (m *HotkeyManager) convertModifiers() ([]hotkey.Modifier, error) {
 	var mods []hotkey.Modifier
 	m.log.Debug("Converting modifiers", "raw_modifiers", m.binding.Modifiers)
 	for _, mod := range m.binding.Modifiers {
@@ -183,7 +180,7 @@ func (m *UnifiedManager) convertModifiers() ([]hotkey.Modifier, error) {
 	return mods, nil
 }
 
-func (m *UnifiedManager) convertKey() (hotkey.Key, error) {
+func (m *HotkeyManager) convertKey() (hotkey.Key, error) {
 	m.log.Debug("Converting key", "raw_key", m.binding.Key)
 
 	// Handle single character keys (A-Z, 0-9)
@@ -328,37 +325,8 @@ func (m *UnifiedManager) convertKey() (hotkey.Key, error) {
 	return 0, fmt.Errorf("unsupported key: %s", m.binding.Key)
 }
 
-func (m *UnifiedManager) registerWithRetries() error {
-	var err error
-	delay := time.Duration(m.config.RetryDelayMs) * time.Millisecond
-	retries := m.config.MaxRetries
-	if delay == 0 {
-		delay = 100 * time.Millisecond
-	}
-	if retries == 0 {
-		retries = 3
-	}
-
-	for i := 0; i < retries; i++ {
-		m.log.Debug("Attempting to register hotkey with system", "attempt", i+1)
-		if err = m.hk.Register(); err == nil {
-			break
-		}
-		m.log.Error("Failed to register hotkey",
-			"error", err,
-			"attempt", i+1)
-		time.Sleep(delay)
-	}
-
-	if err != nil {
-		return fmt.Errorf("failed to register hotkey after %d attempts: %w", retries, err)
-	}
-
-	return nil
-}
-
 // Unregister removes the hotkey registration
-func (m *UnifiedManager) Unregister() error {
+func (m *HotkeyManager) Unregister() error {
 	m.log.Info("Unregistering hotkey")
 
 	if m.hk != nil {
@@ -376,7 +344,7 @@ func (m *UnifiedManager) Unregister() error {
 }
 
 // Start begins listening for hotkey events
-func (m *UnifiedManager) Start() error {
+func (m *HotkeyManager) Start() error {
 	m.log.Debug("Starting hotkey manager",
 		"hotkey_nil", m.hk == nil,
 		"quicknote_nil", m.quickNote == nil,
@@ -447,7 +415,7 @@ func (m *UnifiedManager) Start() error {
 }
 
 // Stop ends the hotkey listening and unregisters the hotkey
-func (m *UnifiedManager) Stop() error {
+func (m *HotkeyManager) Stop() error {
 	m.log.Info("Stopping hotkey manager")
 
 	m.mu.Lock()

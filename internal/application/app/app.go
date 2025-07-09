@@ -68,7 +68,7 @@ func New(
 
 	// Now set up hotkey manager with factory that can access the App instance
 	log.Info("Creating hotkey manager", "config", fmt.Sprintf("%+v", cfg.Hotkeys))
-	if hkm, err := hotkey.NewUnifiedManager(log, &cfg.Hotkeys); err != nil {
+	if hkm, err := hotkey.NewManager(log, &cfg.Hotkeys); err != nil {
 		log.Warn("Failed to create hotkey manager, continuing without hotkeys", "error", err)
 		app.hotkey = nil
 	} else {

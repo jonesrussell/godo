@@ -386,24 +386,33 @@ func (m *HotkeyManager) Start() error {
 				m.log.Info("Received stop signal, ending hotkey listening")
 				return
 			case event := <-m.hk.Keydown():
-				m.log.Info("Hotkey triggered", "event", event)
+				m.log.Info("Hotkey triggered", "event", event, "goroutine_id", getGoroutineID())
 
 				// Try to get quick note service - either from existing instance or factory
 				var quickNoteService QuickNoteService
 				if m.quickNote != nil {
+					m.log.Debug("Using existing quick note service")
 					quickNoteService = m.quickNote
 				} else if m.quickNoteFunc != nil {
-					m.log.Debug("Creating quick note service via factory")
+					m.log.Debug("Creating quick note service via factory", "goroutine_id", getGoroutineID())
 					quickNoteService = m.quickNoteFunc()
 					if quickNoteService != nil {
+						m.log.Debug("Quick note service created successfully via factory")
 						m.quickNote = quickNoteService // Cache it for future use
+					} else {
+						m.log.Error("Factory returned nil quick note service")
 					}
 				}
 
 				if quickNoteService != nil {
-					m.log.Debug("Calling quick note Show() method")
-					quickNoteService.Show()
-					m.log.Debug("Quick note Show() method called")
+					m.log.Debug("Calling quick note Show() method", "goroutine_id", getGoroutineID())
+					// Show window asynchronously to avoid blocking the hotkey thread
+					go func() {
+						m.log.Debug("Showing window in separate goroutine", "goroutine_id", getGoroutineID())
+						quickNoteService.Show()
+						m.log.Debug("Quick note Show() method completed in goroutine")
+					}()
+					m.log.Debug("Quick note Show() method called successfully (async)")
 				} else {
 					m.log.Error("Quick note service is nil - neither instance nor factory available")
 				}
@@ -437,4 +446,9 @@ func (m *HotkeyManager) Stop() error {
 
 	m.log.Info("Hotkey manager stopped successfully")
 	return nil
+}
+
+// getGoroutineID returns a simple goroutine ID for debugging
+func getGoroutineID() string {
+	return fmt.Sprintf("%p", &struct{}{})
 }

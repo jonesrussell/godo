@@ -16,10 +16,22 @@ import (
 
 	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/domain/model"
-	"github.com/jonesrussell/godo/internal/infrastructure/gui/windowmanager"
 	"github.com/jonesrussell/godo/internal/infrastructure/logger"
 	"github.com/jonesrussell/godo/internal/infrastructure/storage"
 )
+
+//go:generate mockgen -destination=../../../test/mocks/mock_mainwindow.go -package=mocks github.com/jonesrussell/godo/internal/infrastructure/gui/mainwindow Interface
+
+// Interface defines the main window functionality
+type Interface interface {
+	Show()
+	Hide()
+	SetContent(content fyne.CanvasObject)
+	Resize(size fyne.Size)
+	CenterOnScreen()
+	GetWindow() fyne.Window
+	Refresh()
+}
 
 // Window represents the main application window
 type Window struct {
@@ -37,9 +49,6 @@ type Window struct {
 	searchEntry *widget.Entry
 	toolbar     *fyne.Container
 	statusBar   *widget.Label
-
-	// Focus management
-	focusManager *windowmanager.FocusManager
 }
 
 // New creates a new main window
@@ -53,7 +62,6 @@ func New(app fyne.App, store storage.TaskStore, log logger.Logger, cfg config.Wi
 		window: app.NewWindow("Godo - Task Manager"),
 	}
 
-	w.focusManager = windowmanager.NewFocusManager(w.window, log)
 	w.setupUI()
 	w.loadTasks()
 	return w
@@ -61,13 +69,16 @@ func New(app fyne.App, store storage.TaskStore, log logger.Logger, cfg config.Wi
 
 // Show displays the main window
 func (w *Window) Show() {
-	w.window.Show()
-	w.focusManager.RequestFocus()
+	fyne.Do(func() {
+		w.window.Show()
+	})
 }
 
 // Hide hides the main window
 func (w *Window) Hide() {
-	w.window.Hide()
+	fyne.Do(func() {
+		w.window.Hide()
+	})
 }
 
 // GetWindow returns the underlying Fyne window
@@ -77,7 +88,9 @@ func (w *Window) GetWindow() fyne.Window {
 
 // SetContent sets the content of the main window
 func (w *Window) SetContent(content fyne.CanvasObject) {
-	w.window.SetContent(content)
+	fyne.Do(func() {
+		w.window.SetContent(content)
+	})
 }
 
 // setupUI initializes the user interface
@@ -86,7 +99,6 @@ func (w *Window) setupUI() {
 	w.createToolbar()
 	w.createStatusBar()
 	w.createMainLayout()
-	w.buildFocusQueue()
 }
 
 // createTaskList creates the task list widget
@@ -106,9 +118,6 @@ func (w *Window) createTaskList() {
 			w.updateTaskListItem(id, obj)
 		},
 	)
-
-	// Add task list to focus queue
-	w.focusManager.AddToFocusQueue(w.taskList)
 }
 
 // updateTaskListItem updates a task list item
@@ -130,7 +139,6 @@ func (w *Window) updateTaskListItem(id widget.ListItemID, obj fyne.CanvasObject)
 		check.OnChanged = func(checked bool) {
 			w.toggleTask(id, checked)
 		}
-		w.focusManager.AddToFocusQueue(check)
 	}
 
 	// Update label
@@ -143,7 +151,6 @@ func (w *Window) updateTaskListItem(id widget.ListItemID, obj fyne.CanvasObject)
 		editBtn.OnTapped = func() {
 			w.editTask(id)
 		}
-		w.focusManager.AddToFocusQueue(editBtn)
 	}
 
 	// Update delete button
@@ -151,7 +158,6 @@ func (w *Window) updateTaskListItem(id widget.ListItemID, obj fyne.CanvasObject)
 		deleteBtn.OnTapped = func() {
 			w.deleteTask(id)
 		}
-		w.focusManager.AddToFocusQueue(deleteBtn)
 	}
 }
 
@@ -159,17 +165,14 @@ func (w *Window) updateTaskListItem(id widget.ListItemID, obj fyne.CanvasObject)
 func (w *Window) createToolbar() {
 	// Create add button
 	w.addButton = widget.NewButtonWithIcon("Add Task", theme.ContentAddIcon(), w.addTask)
-	w.focusManager.AddToFocusQueue(w.addButton)
 
 	// Create refresh button
 	w.refreshBtn = widget.NewButtonWithIcon("Refresh", theme.ViewRefreshIcon(), w.loadTasks)
-	w.focusManager.AddToFocusQueue(w.refreshBtn)
 
 	// Create search entry
 	w.searchEntry = widget.NewEntry()
 	w.searchEntry.SetPlaceHolder("Search tasks...")
 	w.searchEntry.OnChanged = w.filterTasks
-	w.focusManager.AddToFocusQueue(w.searchEntry)
 
 	// Create toolbar
 	w.toolbar = container.NewHBox(
@@ -188,22 +191,19 @@ func (w *Window) createStatusBar() {
 
 // createMainLayout creates the main window layout
 func (w *Window) createMainLayout() {
-	// Create main container
-	content := container.NewBorder(
-		w.toolbar,
-		w.statusBar,
-		nil,
-		nil,
-		w.taskList,
-	)
+	fyne.Do(func() {
+		// Create main container
+		content := container.NewBorder(
+			w.toolbar,
+			w.statusBar,
+			nil,
+			nil,
+			w.taskList,
+		)
 
-	w.window.SetContent(content)
-	w.window.Resize(fyne.NewSize(600, 400))
-}
-
-// buildFocusQueue builds the focus queue for keyboard navigation
-func (w *Window) buildFocusQueue() {
-	w.focusManager.BuildFocusQueue()
+		w.window.SetContent(content)
+		w.window.Resize(fyne.NewSize(600, 400))
+	})
 }
 
 // loadTasks loads all tasks from storage
@@ -226,7 +226,6 @@ func (w *Window) loadTasks() {
 func (w *Window) addTask() {
 	content := widget.NewEntry()
 	content.SetPlaceHolder("Enter task content...")
-	w.focusManager.AddToFocusQueue(content)
 
 	form := dialog.NewForm(
 		"Add Task",
@@ -296,7 +295,6 @@ func (w *Window) editTask(id widget.ListItemID) {
 	task := w.tasks[id]
 	content := widget.NewEntry()
 	content.SetText(task.Content)
-	w.focusManager.AddToFocusQueue(content)
 
 	form := dialog.NewForm(
 		"Edit Task",
@@ -394,15 +392,21 @@ func (w *Window) showStatus(message string, isError bool) {
 
 // CenterOnScreen centers the main window on the screen
 func (w *Window) CenterOnScreen() {
-	w.window.CenterOnScreen()
+	fyne.Do(func() {
+		w.window.CenterOnScreen()
+	})
 }
 
-// Refresh reloads and updates the task list
+// Refresh refreshes the main window content
 func (w *Window) Refresh() {
-	w.loadTasks()
+	fyne.Do(func() {
+		w.taskList.Refresh()
+	})
 }
 
 // Resize resizes the main window
 func (w *Window) Resize(size fyne.Size) {
-	w.window.Resize(size)
+	fyne.Do(func() {
+		w.window.Resize(size)
+	})
 }

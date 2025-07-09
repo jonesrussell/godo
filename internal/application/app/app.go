@@ -66,6 +66,16 @@ func New(
 		store:       store,
 	}
 
+	// Create quick note window on UI thread during initialization
+	log.Debug("Creating quick note window during app initialization")
+	windowConfig := config.WindowConfig{
+		Width:  cfg.UI.QuickNote.Width,
+		Height: cfg.UI.QuickNote.Height,
+	}
+	app.quickNoteWindow = quicknote.New(fyneApp, store, log, windowConfig)
+	app.quickNoteWindow.Initialize(fyneApp, log)
+	log.Debug("Quick note window created during initialization")
+
 	// Now set up hotkey manager with factory that can access the App instance
 	log.Info("Creating hotkey manager", "config", fmt.Sprintf("%+v", cfg.Hotkeys))
 	if hkm, err := hotkey.NewManager(log, &cfg.Hotkeys); err != nil {
@@ -75,11 +85,10 @@ func New(
 		log.Info("Hotkey manager created successfully")
 		app.hotkey = hkm
 
-		// Create a factory function for the quick note window
+		// Create a factory function for the quick note window that just returns the existing instance
 		quickNoteFactory := func() hotkey.QuickNoteService {
-			log.Debug("Creating quick note window via factory")
-			// Hotkey is always background thread
-			return app.getOrCreateQuickNoteWindow(false)
+			log.Debug("Returning existing quick note window via factory")
+			return app.quickNoteWindow
 		}
 
 		app.hotkey.SetQuickNoteFactory(quickNoteFactory, &cfg.Hotkeys.QuickNote)
@@ -139,9 +148,9 @@ func (w *quickNoteWrapper) Show() {
 		}
 	}()
 
-	quickNoteWindow := w.app.getOrCreateQuickNoteWindow(true)
+	quickNoteWindow := w.app.getQuickNoteWindow()
 	if quickNoteWindow == nil {
-		w.log.Error("Failed to create quick note window for systray")
+		w.log.Error("Failed to get quick note window for systray")
 		return
 	}
 
@@ -150,7 +159,7 @@ func (w *quickNoteWrapper) Show() {
 }
 
 func (w *quickNoteWrapper) Hide() {
-	quickNoteWindow := w.app.getOrCreateQuickNoteWindow(true)
+	quickNoteWindow := w.app.getQuickNoteWindow()
 	if quickNoteWindow != nil {
 		quickNoteWindow.Hide()
 	}
@@ -314,66 +323,23 @@ func (a *App) ForceKillTimeout() time.Duration {
 	return time.Duration(a.config.App.ForceKillTimeout) * time.Second
 }
 
-// getOrCreateQuickNoteWindow ensures a single quick note window instance
-func (a *App) getOrCreateQuickNoteWindow(isUIThread bool) quicknote.Interface {
+// getQuickNoteWindow returns the existing quick note window instance
+func (a *App) getQuickNoteWindow() quicknote.Interface {
+	a.logger.Debug("getQuickNoteWindow called", "goroutine_id", getGoroutineID())
+
 	a.quickNoteMu.Lock()
 	defer a.quickNoteMu.Unlock()
 
 	if a.quickNoteWindow != nil {
-		a.logger.Debug("Reusing existing quick note window")
+		a.logger.Debug("Returning existing quick note window")
 		return a.quickNoteWindow
 	}
 
-	a.logger.Debug("Creating new quick note window (thread-safe)")
+	a.logger.Error("Quick note window is nil - this should not happen")
+	return nil
+}
 
-	windowConfig := config.WindowConfig{
-		Width:  a.config.UI.QuickNote.Width,
-		Height: a.config.UI.QuickNote.Height,
-	}
-
-	var quickNoteWindow quicknote.Interface
-	var createErr error
-
-	create := func() {
-		w := quicknote.New(a.fyneApp, a.store, a.logger, windowConfig)
-		w.Initialize(a.fyneApp, a.logger)
-		quickNoteWindow = w
-	}
-
-	if isUIThread {
-		// Safe to create directly
-		defer func() {
-			if r := recover(); r != nil {
-				a.logger.Error("Panic during quick note window creation (UI thread)", "error", r)
-				createErr = fmt.Errorf("panic during quick note window creation: %v", r)
-			}
-		}()
-		create()
-	} else {
-		done := make(chan struct{})
-		go func() {
-			defer func() {
-				if r := recover(); r != nil {
-					a.logger.Error("Panic during quick note window creation (background)", "error", r)
-					createErr = fmt.Errorf("panic during quick note window creation: %v", r)
-				}
-				close(done)
-			}()
-			fyne.DoAndWait(create)
-		}()
-		<-done
-	}
-
-	if createErr != nil {
-		a.logger.Error("Failed to create quick note window", "error", createErr)
-		return nil
-	}
-	if quickNoteWindow == nil {
-		a.logger.Error("Quick note window is nil after creation")
-		return nil
-	}
-
-	a.quickNoteWindow = quickNoteWindow
-	a.logger.Debug("Quick note window created successfully (thread-safe)")
-	return a.quickNoteWindow
+// getGoroutineID returns a simple goroutine ID for debugging
+func getGoroutineID() string {
+	return fmt.Sprintf("%p", &struct{}{})
 }

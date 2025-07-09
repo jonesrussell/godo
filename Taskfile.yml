@@ -116,7 +116,7 @@ tasks:
       LANG: en_US.UTF-8
       LC_ALL: en_US.UTF-8
     cmds:
-    - go run -ldflags "-X main.version={{.VERSION}} -X main.commit={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}}" cmd/godo/main.go
+    - go run -ldflags "-X main.version={{.VERSION}} -X main.commit={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}}" main.go
 
   run-debug:
     desc: Run the application with debug output
@@ -126,7 +126,7 @@ tasks:
       LANG: en_US.UTF-8
       LC_ALL: en_US.UTF-8
     cmds:
-    - go run -ldflags "-X main.version={{.VERSION}} -X main.commit={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}}" cmd/godo/main.go
+    - go run -ldflags "-X main.version={{.VERSION}} -X main.commit={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}}" main.go
 
   watch:
     desc: Watch for changes and rebuild
@@ -198,6 +198,46 @@ tasks:
   wire:
     desc: Generate wire code for current platform
     cmds:
+    - wire ./internal/application/container
+
+  mocks:
+    desc: Generate all mocks using mockgen
+    cmds:
+    - task: mocks:storage
+    - task: mocks:logger
+    - task: mocks:service
+    - task: mocks:gui
+    - task: mocks:app
+
+  mocks:storage:
+    desc: Generate storage interface mocks
+    cmds:
+    - go generate ./internal/storage/...
+
+  mocks:logger:
+    desc: Generate logger interface mocks
+    cmds:
+    - go generate ./internal/logger/...
+
+  mocks:service:
+    desc: Generate service interface mocks
+    cmds:
+    - go generate ./internal/service/...
+
+  mocks:gui:
+    desc: Generate GUI interface mocks
+    cmds:
+    - go generate ./internal/gui/...
+
+  mocks:app:
+    desc: Generate app interface mocks
+    cmds:
+    - go generate ./internal/app/...
+
+  mocks:clean:
+    desc: Clean generated mocks
+    cmds:
+    - rm -rf test/mocks/*.go
     - task: build:wire
 
   build:

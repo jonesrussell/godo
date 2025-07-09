@@ -179,6 +179,45 @@ task lint:linux:docker
 
 Default hotkey: Ctrl+Shift+N
 
+## Code Quality & Linting
+
+This project uses comprehensive code quality checks to maintain high standards:
+
+### Local Development
+```bash
+# Run all linting checks
+task lint
+
+# Format code
+task fmt
+
+# Run tests
+task test
+
+# Build the application
+task build
+```
+
+### CI/CD Pipeline
+- **Enhanced Linting Workflow**: Comprehensive code quality checks including:
+  - Code formatting (gofmt)
+  - Import organization (goimports)
+  - Static analysis (go vet)
+  - Comprehensive linting (golangci-lint)
+  - Build verification
+  - Race condition detection
+  - Security scanning (gosec)
+
+### Architecture
+The project follows Domain-Driven Design (DDD) principles with clean architecture:
+```
+internal/
+├── domain/           # Core business logic
+├── infrastructure/   # External concerns (storage, API, GUI)
+├── application/      # Application layer
+└── shared/          # Shared utilities
+```
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
@@ -188,6 +227,8 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
+
+**Note**: All contributions must pass the enhanced linting checks before merging.
 
 ## License
 

@@ -18,13 +18,25 @@ tasks:
 
   wire:linux:
     desc: Generate wire code for Linux
+    sources:
+      - internal/application/container/wire.go
+      - internal/application/container/providers.go
+      - internal/application/container/wire_gen.go
+    generates:
+      - internal/application/container/wire_gen.go
     cmds:
-    - cd internal/container && wire gen -tags linux
+    - cd internal/application/container && wire gen -tags linux
 
   wire:windows:
     desc: Generate wire code for Windows
+    sources:
+      - internal/application/container/wire.go
+      - internal/application/container/providers.go
+      - internal/application/container/wire_gen.go
+    generates:
+      - internal/application/container/wire_gen.go
     cmds:
-    - cd internal/container && wire gen -tags windows
+    - cd internal/application/container && wire gen -tags windows
 
   wire:
     desc: Generate wire code for current platform
@@ -32,12 +44,18 @@ tasks:
     cmds:
     - task: wire:linux
 
-
-
   cross-windows:
     desc: Cross-compile for Windows from Linux/WSL2
     deps: [ wire:windows ]
     platforms: [ linux ]
+    sources:
+      - main.go
+      - internal/**/*.go
+      - go.mod
+      - go.sum
+      - configs/**/*.yaml
+      - internal/application/container/wire_gen.go
+      - Taskfile.build.yml
     env:
       CGO_ENABLED: 1
       GOOS: windows
@@ -46,43 +64,67 @@ tasks:
       CXX: x86_64-w64-mingw32-g++
     cmds:
     - mkdir -p {{.BUILD_DIR}}
-    - go build -ldflags "-X main.version={{.VERSION}} -X main.commit={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}} -s -w" -tags windows -o {{.BUILD_DIR}}/{{.BINARY_NAME}}.exe cmd/godo/main.go
+    - go build -ldflags "-X main.version={{.VERSION}} -X main.commit={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}} -s -w" -tags windows -o {{.BUILD_DIR}}/{{.BINARY_NAME}}.exe main.go
 
   cross-linux:
     desc: Cross-compile for Linux from Windows
     deps: [ wire:linux ]
     platforms: [ windows ]
+    sources:
+      - main.go
+      - internal/**/*.go
+      - go.mod
+      - go.sum
+      - configs/**/*.yaml
+      - internal/application/container/wire_gen.go
+      - Taskfile.build.yml
     env:
       CGO_ENABLED: 0
       GOOS: linux
       GOARCH: amd64
     cmds:
     - mkdir -p {{.BUILD_DIR}}
-    - go build -ldflags "-X main.version={{.VERSION}} -X main.commit={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}} -s -w" -tags linux -o {{.BUILD_DIR}}/{{.BINARY_NAME}} cmd/godo/main.go
+    - go build -ldflags "-X main.version={{.VERSION}} -X main.commit={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}} -s -w" -tags linux -o {{.BUILD_DIR}}/{{.BINARY_NAME}} main.go
 
   native:linux:
     desc: Build for Linux (native)
     deps: [ wire:linux ]
     platforms: [ linux ]
+    sources:
+      - main.go
+      - internal/**/*.go
+      - go.mod
+      - go.sum
+      - configs/**/*.yaml
+      - internal/application/container/wire_gen.go
+      - Taskfile.build.yml
     env:
       CGO_ENABLED: 1
       GOOS: linux
       GOARCH: amd64
     cmds:
     - mkdir -p {{.BUILD_DIR}}
-    - go build -ldflags "-X main.version={{.VERSION}} -X main.commit={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}} -s -w" -tags linux -o {{.BUILD_DIR}}/{{.BINARY_NAME}} cmd/godo/main.go
+    - go build -ldflags "-X main.version={{.VERSION}} -X main.commit={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}} -s -w" -tags linux -o {{.BUILD_DIR}}/{{.BINARY_NAME}} main.go
 
   native:windows:
     desc: Build for Windows (native)
     deps: [ wire:windows ]
     platforms: [ windows ]
+    sources:
+      - main.go
+      - internal/**/*.go
+      - go.mod
+      - go.sum
+      - configs/**/*.yaml
+      - internal/application/container/wire_gen.go
+      - Taskfile.build.yml
     env:
       CGO_ENABLED: 1
       GOOS: windows
       GOARCH: amd64
     cmds:
     - mkdir -p {{.BUILD_DIR}}
-    - go build -ldflags "-X main.version={{.VERSION}} -X main.commit={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}} -s -w" -tags windows -o {{.BUILD_DIR}}/{{.BINARY_NAME}}.exe cmd/godo/main.go
+    - go build -ldflags "-X main.version={{.VERSION}} -X main.commit={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}} -s -w" -tags windows -o {{.BUILD_DIR}}/{{.BINARY_NAME}}.exe main.go
 
   native:
     desc: Build for current platform (native)
@@ -100,14 +142,15 @@ tasks:
     - echo "Windows executable created"
 
   wsl2:copy-to-windows:
-    desc: Copy Windows executable to Windows-accessible location
+    desc: Copy Windows executable and config to Windows-accessible location
     deps: [ wsl2:build-windows ]
     platforms: [ linux ]
     cmds:
-    - echo "Copying Windows executable"
-    - mkdir -p /mnt/c/Users/{{.USER}}/Desktop/godo-windows
-    - cp {{.BUILD_DIR}}/{{.BINARY_NAME}}.exe /mnt/c/Users/{{.USER}}/Desktop/godo-windows/
-    - echo "Windows executable copied to Windows Desktop"
+    - echo "Copying Windows executable and config"
+    - mkdir -p /mnt/c/Users/{{.USER}}/OneDrive/Desktop/godo-windows
+    - cp {{.BUILD_DIR}}/{{.BINARY_NAME}}.exe /mnt/c/Users/{{.USER}}/OneDrive/Desktop/godo-windows/
+    - cp config.yaml /mnt/c/Users/{{.USER}}/OneDrive/Desktop/godo-windows/ 2>/dev/null || echo "config.yaml not found, skipping"
+    - echo "Windows executable and config copied to Windows Desktop"
 
   wsl2:all:
     desc: Complete WSL2 workflow - setup, build, and copy to Windows
@@ -152,7 +195,7 @@ tasks:
     desc: Clean up generated files
     cmds:
     - rm -rf {{.BUILD_DIR}}
-    - rm -rf internal/container/*_wire_gen.go
+    - rm -rf internal/application/container/*_wire_gen.go
 
   all:
     desc: Build all platforms

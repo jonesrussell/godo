@@ -44,12 +44,6 @@ api/generated/
 swagger.*
 openapi.*
 
-# Test data and mocks
-testdata/
-mock_*.go
-*_mock.go
-*.test.db
-
 # Platform-specific
 .DS_Store
 Thumbs.db

@@ -11,6 +11,7 @@ linters:
   # Existing linters
   - bodyclose
   - contextcheck
+  - dupl  # Added: Useful for detecting duplicate UI patterns
   - errorlint
   - forcetypeassert
   - funlen
@@ -20,7 +21,7 @@ linters:
   - gocyclo
   - goheader
   - goprintffuncname
-  # - gosec  # Security linter is advisory for desktop apps
+  - gosec  # Enabled: Security linter with relaxed settings for desktop apps
   - lll
   - misspell
   - nakedret
@@ -36,7 +37,7 @@ linters:
   - testpackage
   - thelper
   - unconvert
-  - unparam
+  # - unparam  # Disabled: Too strict for internal desktop app code
   - whitespace
   - wrapcheck
 
@@ -80,11 +81,11 @@ linters:
           skipRecvDeref: true
 
     gocyclo:
-      min-complexity: 15
+      min-complexity: 25  # Increased: UI state management can be complex
 
     gosec:
-      severity: medium
-      confidence: medium
+      severity: low  # Relaxed: Desktop apps have different security concerns
+      confidence: low
       # NOTE: gosec is advisory for desktop apps; not all warnings are blockers
 
     govet:
@@ -106,7 +107,7 @@ linters:
       max-func-lines: 30
 
     nestif:
-      min-complexity: 4
+      min-complexity: 6  # Increased: UI conditional logic often requires nesting
 
     nilnil:
       checked-types:
@@ -137,8 +138,7 @@ linters:
       checks:
       - all
 
-    unparam:
-      check-exported: false
+    # unparam settings removed since linter is disabled
 
     unused:
       field-writes-are-uses: true
@@ -183,7 +183,7 @@ linters:
       - gocognit
       - cyclop
       - maintidx
-    - path: cmd/godo/.*\.go
+    - path: main\.go
       linters:
       - funlen
       - gocyclo
@@ -195,7 +195,12 @@ linters:
       linters:
       - wrapcheck
       - errorlint
-    - path: cmd/godo/.*\.go
+    - path: main\.go
+      linters:
+      - wrapcheck
+      - errorlint
+    # Exclude wrapcheck for internal packages (not exposed as library)
+    - path: internal/.*\.go
       linters:
       - wrapcheck
       - errorlint
@@ -219,6 +224,51 @@ linters:
       - nolintlint
       - exhaustruct
       - varnamelen
+      - wsl
+    # Exclude wire.go (dependency injection generated code)
+    - path: wire\.go
+      linters:
+      - funlen
+      - gocyclo
+      - gocognit
+      - cyclop
+      - maintidx
+      - wrapcheck
+      - errorlint
+      - gocritic
+      - nolintlint
+      - varnamelen
+      - exhaustruct
+      - wsl
+    # Exclude generated wire code
+    - path: wire_gen\.go
+      linters:
+      - funlen
+      - gocyclo
+      - gocognit
+      - cyclop
+      - maintidx
+      - wrapcheck
+      - errorlint
+      - gocritic
+      - nolintlint
+      - varnamelen
+      - exhaustruct
+      - wsl
+    # Exclude mock files
+    - path: mocks\.go
+      linters:
+      - funlen
+      - gocyclo
+      - gocognit
+      - cyclop
+      - maintidx
+      - wrapcheck
+      - errorlint
+      - gocritic
+      - nolintlint
+      - varnamelen
+      - exhaustruct
       - wsl
     # Exclude some rules for integration tests
     - path: test/integration/

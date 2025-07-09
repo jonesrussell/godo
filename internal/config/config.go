@@ -8,9 +8,6 @@ import (
 	"strings"
 
 	"github.com/spf13/viper"
-
-	"github.com/jonesrussell/godo/internal/common"
-	"github.com/jonesrussell/godo/internal/logger"
 )
 
 // Configuration keys and defaults
@@ -39,20 +36,44 @@ const (
 	DefaultQuickNoteHeight  = 100
 )
 
+// LogConfig holds logging configuration
+type LogConfig struct {
+	Level    string   `mapstructure:"level"`
+	Console  bool     `mapstructure:"console"`
+	File     bool     `mapstructure:"file"`
+	FilePath string   `mapstructure:"file_path"`
+	Output   []string `mapstructure:"output"`
+}
+
 // Config holds all application configuration
 type Config struct {
-	App      AppConfig        `mapstructure:"app"`
-	Logger   common.LogConfig `mapstructure:"logger"`
-	Hotkeys  HotkeyConfig     `mapstructure:"hotkeys"`
-	Database DatabaseConfig   `mapstructure:"database"`
-	UI       UIConfig         `mapstructure:"ui"`
+	App      AppConfig      `mapstructure:"app"`
+	Logger   LogConfig      `mapstructure:"logger"`
+	Hotkeys  HotkeyConfig   `mapstructure:"hotkeys"`
+	Database DatabaseConfig `mapstructure:"database"`
+	UI       UIConfig       `mapstructure:"ui"`
+	HTTP     HTTPConfig     `mapstructure:"http"`
 }
 
 // AppConfig holds application-specific configuration
 type AppConfig struct {
-	Name    string `mapstructure:"name"`
-	Version string `mapstructure:"version"`
-	ID      string `mapstructure:"id"`
+	Name             string `mapstructure:"name"`
+	Version          string `mapstructure:"version"`
+	ID               string `mapstructure:"id"`
+	ForceKillTimeout int    `mapstructure:"force_kill_timeout"`
+}
+
+// HotkeyConfig holds hotkey configuration
+type HotkeyConfig struct {
+	QuickNote    HotkeyBinding `mapstructure:"quick_note"`
+	RetryDelayMs int           `mapstructure:"retry_delay_ms"`
+	MaxRetries   int           `mapstructure:"max_retries"`
+}
+
+// HotkeyBinding represents a hotkey combination
+type HotkeyBinding struct {
+	Modifiers []string `mapstructure:"modifiers"`
+	Key       string   `mapstructure:"key"`
 }
 
 // DatabaseConfig holds database configuration
@@ -73,12 +94,32 @@ type WindowConfig struct {
 	StartHidden bool `mapstructure:"start_hidden"`
 }
 
+// HTTPConfig holds HTTP server configuration
+type HTTPConfig struct {
+	Port              int `mapstructure:"port"`
+	ReadTimeout       int `mapstructure:"read_timeout"`
+	WriteTimeout      int `mapstructure:"write_timeout"`
+	ReadHeaderTimeout int `mapstructure:"read_header_timeout"`
+	IdleTimeout       int `mapstructure:"idle_timeout"`
+	StartupTimeout    int `mapstructure:"startup_timeout"`
+	ShutdownTimeout   int `mapstructure:"shutdown_timeout"`
+}
+
+// Logger interface for configuration
+type Logger interface {
+	Debug(msg string, keysAndValues ...interface{})
+	Info(msg string, keysAndValues ...interface{})
+	Warn(msg string, keysAndValues ...interface{})
+	Error(msg string, keysAndValues ...interface{})
+	WithError(err error) Logger
+}
+
 // Provider handles configuration loading and validation
 type Provider struct {
 	paths      []string
 	configName string
 	configType string
-	log        logger.Logger
+	log        Logger
 }
 
 // Load reads and validates configuration
@@ -112,7 +153,8 @@ func (p *Provider) Load() (*Config, error) {
 	p.log.Debug("after env binding",
 		"app.name", v.GetString(KeyAppName),
 		"database.path", v.GetString(KeyDBPath),
-		"hotkeys.quick_note.modifiers", v.GetStringSlice("hotkeys.quick_note.modifiers"))
+		"hotkeys.quick_note.modifiers", v.GetStringSlice("hotkeys.quick_note.modifiers"),
+		"hotkeys.quick_note.key", v.GetString("hotkeys.quick_note.key"))
 
 	// Unmarshal into struct
 	cfg = &Config{}
@@ -123,7 +165,9 @@ func (p *Provider) Load() (*Config, error) {
 
 	p.log.Debug("after unmarshal",
 		"app.name", cfg.App.Name,
-		"database.path", cfg.Database.Path)
+		"database.path", cfg.Database.Path,
+		"hotkeys.quick_note.modifiers", cfg.Hotkeys.QuickNote.Modifiers,
+		"hotkeys.quick_note.key", cfg.Hotkeys.QuickNote.Key)
 
 	// Validate and resolve paths
 	if err := ValidateConfig(cfg); err != nil {
@@ -154,6 +198,11 @@ func (p *Provider) setDefaults(v *viper.Viper, cfg *Config) {
 	v.SetDefault(KeyLogConsole, cfg.Logger.Console)
 	v.SetDefault("hotkeys.quick_note.modifiers", cfg.Hotkeys.QuickNote.Modifiers)
 	v.SetDefault("hotkeys.quick_note.key", cfg.Hotkeys.QuickNote.Key)
+	v.SetDefault("hotkeys.quick_note.retry_delay_ms", cfg.Hotkeys.RetryDelayMs)
+	v.SetDefault("hotkeys.quick_note.max_retries", cfg.Hotkeys.MaxRetries)
+	v.SetDefault("app.force_kill_timeout", cfg.App.ForceKillTimeout)
+	v.SetDefault("http.startup_timeout", cfg.HTTP.StartupTimeout)
+	v.SetDefault("http.shutdown_timeout", cfg.HTTP.ShutdownTimeout)
 }
 
 // configureConfigFile sets up the config file configuration
@@ -169,14 +218,19 @@ func (p *Provider) configureConfigFile(v *viper.Viper) {
 // bindEnvironmentVariables binds environment variables to configuration keys
 func (p *Provider) bindEnvironmentVariables(v *viper.Viper) error {
 	envBindings := map[string]string{
-		KeyAppName:                     EnvPrefix + "_APP_NAME",
-		KeyAppVersion:                  EnvPrefix + "_APP_VERSION",
-		KeyAppID:                       EnvPrefix + "_APP_ID",
-		KeyDBPath:                      EnvPrefix + "_DATABASE_PATH",
-		KeyLogLevel:                    EnvPrefix + "_LOGGER_LEVEL",
-		KeyLogConsole:                  EnvPrefix + "_LOGGER_CONSOLE",
-		"hotkeys.quick_note.modifiers": EnvPrefix + "_HOTKEYS_QUICK_NOTE_MODIFIERS",
-		"hotkeys.quick_note.key":       EnvPrefix + "_HOTKEYS_QUICK_NOTE_KEY",
+		KeyAppName:                          EnvPrefix + "_APP_NAME",
+		KeyAppVersion:                       EnvPrefix + "_APP_VERSION",
+		KeyAppID:                            EnvPrefix + "_APP_ID",
+		KeyDBPath:                           EnvPrefix + "_DATABASE_PATH",
+		KeyLogLevel:                         EnvPrefix + "_LOGGER_LEVEL",
+		KeyLogConsole:                       EnvPrefix + "_LOGGER_CONSOLE",
+		"hotkeys.quick_note.modifiers":      EnvPrefix + "_HOTKEYS_QUICK_NOTE_MODIFIERS",
+		"hotkeys.quick_note.key":            EnvPrefix + "_HOTKEYS_QUICK_NOTE_KEY",
+		"hotkeys.quick_note.retry_delay_ms": EnvPrefix + "_HOTKEYS_QUICK_NOTE_RETRY_DELAY_MS",
+		"hotkeys.quick_note.max_retries":    EnvPrefix + "_HOTKEYS_QUICK_NOTE_MAX_RETRIES",
+		"app.force_kill_timeout":            EnvPrefix + "_APP_FORCE_KILL_TIMEOUT",
+		"http.startup_timeout":              EnvPrefix + "_HTTP_STARTUP_TIMEOUT",
+		"http.shutdown_timeout":             EnvPrefix + "_HTTP_SHUTDOWN_TIMEOUT",
 	}
 
 	for k, env := range envBindings {
@@ -235,6 +289,13 @@ func ValidateConfig(cfg *Config) error {
 		validationErrors = append(validationErrors, "invalid log level: "+cfg.Logger.Level)
 	}
 
+	if cfg.HTTP.StartupTimeout <= 0 {
+		validationErrors = append(validationErrors, "http.startup_timeout must be positive")
+	}
+	if cfg.HTTP.ShutdownTimeout <= 0 {
+		validationErrors = append(validationErrors, "http.shutdown_timeout must be positive")
+	}
+
 	if len(validationErrors) > 0 {
 		return &Error{
 			Op:  "validate",
@@ -259,24 +320,28 @@ func isValidLogLevel(level string) bool {
 func NewDefaultConfig() *Config {
 	return &Config{
 		App: AppConfig{
-			Name:    "Godo",
-			Version: "0.1.0",
-			ID:      "io.github.jonesrussell/godo",
+			Name:             "Godo",
+			Version:          "0.1.0",
+			ID:               "io.github.jonesrussell/godo",
+			ForceKillTimeout: 2,
 		},
-		Logger: common.LogConfig{
-			Level:   "info",
-			Console: true,
-			File:    false,
-			Output:  []string{"stdout"},
+		Logger: LogConfig{
+			Level:    "info",
+			Console:  true,
+			File:     true,
+			FilePath: "logs/godo.log",
+			Output:   []string{"stdout"},
 		},
 		Database: DatabaseConfig{
 			Path: "godo.db",
 		},
 		Hotkeys: HotkeyConfig{
-			QuickNote: common.HotkeyBinding{
-				Modifiers: []string{"Ctrl", "Shift"},
-				Key:       "G",
+			QuickNote: HotkeyBinding{
+				Modifiers: []string{}, // Let config file or environment set this
+				Key:       "",         // Let config file or environment set this
 			},
+			RetryDelayMs: 100,
+			MaxRetries:   3,
 		},
 		UI: UIConfig{
 			MainWindow: WindowConfig{
@@ -289,6 +354,15 @@ func NewDefaultConfig() *Config {
 				Height:      DefaultQuickNoteHeight,
 				StartHidden: false,
 			},
+		},
+		HTTP: HTTPConfig{
+			Port:              8080,
+			ReadTimeout:       30,
+			WriteTimeout:      30,
+			ReadHeaderTimeout: 10,
+			IdleTimeout:       120,
+			StartupTimeout:    5,
+			ShutdownTimeout:   5,
 		},
 	}
 }

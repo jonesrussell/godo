@@ -1,0 +1,50 @@
+# Error Handling Guidelines
+
+This project follows consistent error handling patterns across all layers.
+
+## Error Types
+
+### Domain Errors
+- Define domain-specific errors in domain layer
+- Use custom error types: [internal/domain/model/task.go](mdc:internal/domain/model/task.go)
+- Include validation errors and business rule violations
+
+### Infrastructure Errors
+- Handle external system errors gracefully
+- Map external errors to domain errors
+- Use error wrapping for context
+
+### Configuration Errors
+- Validate configuration early: [internal/shared/config/config.go](mdc:internal/shared/config/config.go)
+- Provide clear error messages
+- Fail fast on invalid configuration
+
+## Error Handling Patterns
+
+### Provider Functions
+- Always validate inputs
+- Return descriptive error messages
+- Use error wrapping with context
+- Follow pattern in [internal/application/container/wire.go](mdc:internal/application/container/wire.go)
+
+### Service Layer
+- Log errors with context
+- Return domain-appropriate errors
+- Don't expose infrastructure details
+- Example: [internal/domain/service/task_service.go](mdc:internal/domain/service/task_service.go)
+
+### API Layer
+- Map domain errors to HTTP status codes
+- Provide consistent error responses
+- Log errors for debugging
+- Example: [internal/infrastructure/api/server.go](mdc:internal/infrastructure/api/server.go)
+
+## Error Propagation
+- Use `fmt.Errorf` with `%w` for wrapping
+- Preserve error context through layers
+- Don't swallow errors
+- Log errors at appropriate levels
+description:
+globs:
+alwaysApply: false
+---

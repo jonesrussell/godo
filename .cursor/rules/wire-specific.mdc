@@ -1,0 +1,4 @@
+---
+globs: **/container/*,wire.go
+alwaysApply: false
+---

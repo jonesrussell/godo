@@ -1,0 +1,34 @@
+# Default configuration for Godo
+app:
+  name: "Godo"
+  version: "1.0.0"
+  id: "com.jonesrussell.godo"
+
+logger:
+  level: "debug"
+  console: true
+  file: true
+  file_path: "logs/godo.log"
+  output: ["stdout"]
+
+database:
+  path: "godo.db"
+
+ui:
+  main_window:
+    width: 800
+    height: 600
+    start_hidden: true
+  quick_note:
+    width: 200
+    height: 100
+
+hotkeys:
+  quick_note:
+    modifiers: [ "Ctrl", "Shift" ]
+    key: "1"
+
+http:
+  port: 8080
+  startup_timeout: 5
+  shutdown_timeout: 1

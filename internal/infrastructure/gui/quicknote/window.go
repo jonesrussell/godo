@@ -40,6 +40,7 @@ func New(
 	log logger.Logger,
 	cfg config.WindowConfig,
 ) *Window {
+	log.Debug("Creating new quick note window")
 	w := &Window{
 		app:    app,
 		store:  store,
@@ -49,18 +50,26 @@ func New(
 	}
 
 	w.setupUI()
+	log.Debug("Quick note window created and UI setup completed")
 	return w
 }
 
 // Show displays the quick note window
 func (w *Window) Show() {
 	w.log.Debug("Quick note window Show() called")
+	w.log.Debug("Window state before Show", "window_nil", w.window == nil, "app_nil", w.app == nil)
+
 	fyne.Do(func() {
+		w.log.Debug("Inside fyne.Do - showing window")
 		w.window.Show()
+		w.log.Debug("Window Show() called")
 		w.window.CenterOnScreen()
+		w.log.Debug("Window centered")
 		w.entry.FocusGained()
+		w.log.Debug("Entry focused")
 		w.log.Debug("Quick note window shown and focused")
 	})
+	w.log.Debug("Outside fyne.Do - Show() method completed")
 }
 
 // Hide hides the quick note window
@@ -72,6 +81,8 @@ func (w *Window) Hide() {
 
 // setupUI initializes the user interface
 func (w *Window) setupUI() {
+	w.log.Debug("Setting up quick note UI")
+
 	// Create entry field
 	w.entry = widget.NewEntry()
 	w.entry.SetPlaceHolder("Enter your task here...")
@@ -111,6 +122,8 @@ func (w *Window) setupUI() {
 	w.window.SetCloseIntercept(func() {
 		w.Hide()
 	})
+
+	w.log.Debug("Quick note UI setup completed")
 }
 
 // addTask adds a new task from the entry field

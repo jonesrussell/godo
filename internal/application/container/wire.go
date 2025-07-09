@@ -53,10 +53,8 @@ var (
 	UISet = wire.NewSet(
 		ProvideFyneApp,
 		ProvideMainWindow,
-		ProvideQuickNote,
 		wire.Bind(new(gui.MainWindow), new(*mainwindow.Window)),
 		wire.Bind(new(mainwindow.Interface), new(*mainwindow.Window)),
-		wire.Bind(new(gui.QuickNote), new(*quicknote.Window)),
 	)
 
 	// CoreSet provides essential services

@@ -17,6 +17,8 @@ type Manager interface {
 	Start() error
 	// SetQuickNote configures the quick note service and hotkey binding
 	SetQuickNote(quickNote QuickNoteService, binding *config.HotkeyBinding)
+	// SetQuickNoteFactory configures a factory function to create the quick note service on demand
+	SetQuickNoteFactory(factory func() QuickNoteService, binding *config.HotkeyBinding)
 }
 
 // QuickNoteService defines quick note operations that can be triggered by hotkeys

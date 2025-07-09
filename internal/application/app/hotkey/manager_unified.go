@@ -20,14 +20,15 @@ import (
 
 // UnifiedManager manages hotkeys for both Linux and Windows
 type UnifiedManager struct {
-	log       logger.Logger
-	quickNote QuickNoteService
-	binding   *config.HotkeyBinding
-	hk        *hotkey.Hotkey
-	stopChan  chan struct{}
-	running   bool
-	mu        sync.Mutex
-	config    *config.HotkeyConfig
+	log           logger.Logger
+	quickNote     QuickNoteService
+	quickNoteFunc func() QuickNoteService // Factory function to create quick note on demand
+	binding       *config.HotkeyBinding
+	hk            *hotkey.Hotkey
+	stopChan      chan struct{}
+	running       bool
+	mu            sync.Mutex
+	config        *config.HotkeyConfig
 }
 
 // NewUnifiedManager creates a new UnifiedManager instance
@@ -66,6 +67,15 @@ func (m *UnifiedManager) SetQuickNote(quickNote QuickNoteService, binding *confi
 		"binding", fmt.Sprintf("%+v", binding),
 		"quicknote_nil", quickNote == nil)
 	m.quickNote = quickNote
+	m.binding = binding
+}
+
+// SetQuickNoteFactory sets a factory function to create the quick note service on demand
+func (m *UnifiedManager) SetQuickNoteFactory(factory func() QuickNoteService, binding *config.HotkeyBinding) {
+	m.log.Debug("Setting quick note factory and binding",
+		"binding", fmt.Sprintf("%+v", binding),
+		"factory_nil", factory == nil)
+	m.quickNoteFunc = factory
 	m.binding = binding
 }
 
@@ -369,15 +379,16 @@ func (m *UnifiedManager) Unregister() error {
 func (m *UnifiedManager) Start() error {
 	m.log.Debug("Starting hotkey manager",
 		"hotkey_nil", m.hk == nil,
-		"quicknote_nil", m.quickNote == nil)
+		"quicknote_nil", m.quickNote == nil,
+		"factory_nil", m.quickNoteFunc == nil)
 
 	if m.hk == nil {
 		m.log.Error("Hotkey not registered")
 		return fmt.Errorf("hotkey not registered")
 	}
 
-	if m.quickNote == nil {
-		m.log.Error("Quick note service not set")
+	if m.quickNote == nil && m.quickNoteFunc == nil {
+		m.log.Error("Quick note service not set - neither instance nor factory available")
 		return ErrQuickNoteNotSet
 	}
 
@@ -408,12 +419,25 @@ func (m *UnifiedManager) Start() error {
 				return
 			case event := <-m.hk.Keydown():
 				m.log.Info("Hotkey triggered", "event", event)
+
+				// Try to get quick note service - either from existing instance or factory
+				var quickNoteService QuickNoteService
 				if m.quickNote != nil {
+					quickNoteService = m.quickNote
+				} else if m.quickNoteFunc != nil {
+					m.log.Debug("Creating quick note service via factory")
+					quickNoteService = m.quickNoteFunc()
+					if quickNoteService != nil {
+						m.quickNote = quickNoteService // Cache it for future use
+					}
+				}
+
+				if quickNoteService != nil {
 					m.log.Debug("Calling quick note Show() method")
-					m.quickNote.Show()
+					quickNoteService.Show()
 					m.log.Debug("Quick note Show() method called")
 				} else {
-					m.log.Error("Quick note service is nil")
+					m.log.Error("Quick note service is nil - neither instance nor factory available")
 				}
 			}
 		}

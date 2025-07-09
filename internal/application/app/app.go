@@ -7,10 +7,12 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"sync"
 	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/widget"
 
 	"github.com/jonesrussell/godo/internal/application/app/hotkey"
 	"github.com/jonesrussell/godo/internal/config"
@@ -34,6 +36,10 @@ type App struct {
 	logger      logger.Logger
 	taskService service.TaskService
 	store       storage.TaskStore
+
+	// Unified window management
+	testWindow *testWindow
+	windowMu   sync.Mutex
 }
 
 // New creates a new application instance
@@ -43,33 +49,43 @@ func New(
 	log logger.Logger,
 	taskService service.TaskService,
 	mainWindow gui.MainWindow,
-	quickNote gui.QuickNote,
 	store storage.TaskStore,
 ) *App {
-	var hotkeyManager hotkey.Manager
-	log.Info("Creating hotkey manager", "config", fmt.Sprintf("%+v", cfg.Hotkeys))
-	if hkm, err := hotkey.NewUnifiedManager(log, &cfg.Hotkeys); err != nil {
-		log.Warn("Failed to create hotkey manager, continuing without hotkeys", "error", err)
-		hotkeyManager = nil
-	} else {
-		log.Info("Hotkey manager created successfully")
-		hotkeyManager = hkm
-		hotkeyManager.SetQuickNote(quickNote, &cfg.Hotkeys.QuickNote)
-	}
-
 	apiRunner := api.NewRunner(taskService, log, &cfg.HTTP)
 
-	return &App{
+	// Create the App instance first
+	app := &App{
 		fyneApp:     fyneApp,
 		mainWindow:  mainWindow,
-		quickNote:   quickNote,
-		hotkey:      hotkeyManager,
+		quickNote:   nil, // Will be created on-demand via factory
+		hotkey:      nil, // Will be set up below
 		apiRunner:   apiRunner,
 		config:      cfg,
 		logger:      log,
 		taskService: taskService,
 		store:       store,
 	}
+
+	// Now set up hotkey manager with factory that can access the App instance
+	log.Info("Creating hotkey manager", "config", fmt.Sprintf("%+v", cfg.Hotkeys))
+	if hkm, err := hotkey.NewUnifiedManager(log, &cfg.Hotkeys); err != nil {
+		log.Warn("Failed to create hotkey manager, continuing without hotkeys", "error", err)
+		app.hotkey = nil
+	} else {
+		log.Info("Hotkey manager created successfully")
+		app.hotkey = hkm
+
+		// Create a factory function for the quick note window
+		quickNoteFactory := func() hotkey.QuickNoteService {
+			log.Debug("Creating test window via factory")
+			// Use the unified window management
+			return app.getOrCreateTestWindow()
+		}
+
+		app.hotkey.SetQuickNoteFactory(quickNoteFactory, &cfg.Hotkeys.QuickNote)
+	}
+
+	return app
 }
 
 // setupSystray initializes the system tray
@@ -86,14 +102,66 @@ func (a *App) setupSystray() error {
 	}
 	errorLogPath := logPath + "-error"
 
+	// Create a wrapper for the quick note that creates it on demand
+	quickNoteWrapper := &quickNoteWrapper{
+		app: a, // Pass the App instance instead of just fyneApp
+	}
+
 	return systray.SetupSystray(
 		a.fyneApp,
 		a.mainWindow.GetWindow(),
-		a.quickNote,
+		quickNoteWrapper,
 		logPath,
 		errorLogPath,
 		a.logger,
 	)
+}
+
+// testWindow is a simple test window for debugging
+type testWindow struct {
+	window fyne.Window
+	log    logger.Logger
+}
+
+func (t *testWindow) Show() {
+	t.log.Debug("testWindow.Show() called")
+	// Window is already shown during creation, no additional operations needed
+	t.log.Debug("testWindow.Show() - window already visible")
+	t.log.Debug("testWindow.Show() - completed")
+}
+
+func (t *testWindow) Hide() {
+	fyne.Do(func() {
+		t.window.Hide()
+	})
+}
+
+// quickNoteWrapper wraps the quick note creation to handle on-demand creation
+type quickNoteWrapper struct {
+	app    *App // Changed to *App to access App instance
+	store  storage.TaskStore
+	log    logger.Logger
+	config config.WindowConfig
+	window gui.QuickNote
+}
+
+func (w *quickNoteWrapper) Show() {
+	if w.window == nil {
+		w.log.Debug("Creating test window for systray")
+		// Use the unified window management
+		w.window = w.app.getOrCreateTestWindow()
+		w.log.Debug("Systray window creation completed")
+	}
+	// Window is already shown during creation, no need to call Show() again
+	w.log.Debug("Systray window already visible")
+}
+
+func (w *quickNoteWrapper) Hide() {
+	if w.window != nil {
+		fyne.Do(func() {
+			w.window.Hide()
+		})
+	}
 }
 
 // setupHotkey sets up the global hotkey
@@ -252,4 +320,37 @@ func (a *App) Store() storage.TaskStore {
 
 func (a *App) ForceKillTimeout() time.Duration {
 	return time.Duration(a.config.App.ForceKillTimeout) * time.Second
+}
+
+// getOrCreateTestWindow ensures a single test window instance
+func (a *App) getOrCreateTestWindow() *testWindow {
+	a.windowMu.Lock()
+	defer a.windowMu.Unlock()
+
+	if a.testWindow == nil {
+		a.logger.Debug("Creating unified test window")
+
+		// Create window following Fyne best practices from latest documentation
+		// All UI operations must be wrapped in fyne.DoAndWait() when called from background threads
+		var window fyne.Window
+		fyne.DoAndWait(func() {
+			window = a.fyneApp.NewWindow("Test Window - Unified")
+			label := widget.NewLabel("Test Window - Unified Works!")
+			window.SetContent(label)
+
+			// Set size before showing (as per latest Fyne docs)
+			window.Resize(fyne.NewSize(300, 200))
+
+			// Show the window (as per latest Fyne docs)
+			window.Show()
+		})
+
+		a.testWindow = &testWindow{
+			window: window,
+			log:    a.logger,
+		}
+		a.logger.Debug("Unified test window created")
+	}
+
+	return a.testWindow
 }

@@ -24,12 +24,12 @@ type Runner struct {
 func NewRunner(
 	taskService service.TaskService,
 	l logger.Logger,
-	config *config.HTTPConfig,
+	httpConfig *config.HTTPConfig,
 ) *Runner {
 	return &Runner{
 		server:   NewServer(taskService, l),
 		logger:   l,
-		config:   config,
+		config:   httpConfig,
 		ready:    make(chan struct{}),
 		shutdown: make(chan struct{}),
 	}

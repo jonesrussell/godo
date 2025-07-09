@@ -41,7 +41,7 @@ func isValidModifier(mod string) bool {
 // isValidKey checks if a key is valid
 func isValidKey(key string) bool {
 	// Basic validation - can be expanded as needed
-	if len(key) == 0 {
+	if key == "" {
 		return false
 	}
 

@@ -162,10 +162,8 @@ func (m *UnifiedManager) convertModifiers() ([]hotkey.Modifier, error) {
 			// Platform-specific Alt modifier
 			switch runtime.GOOS {
 			case "windows":
-				// Windows: ModAlt = 0x1
 				mods = append(mods, hotkey.Modifier(0x1))
 			case "linux", "darwin":
-				// Linux/Darwin: Mod1 = (1 << 3) = 8
 				mods = append(mods, hotkey.Modifier(8))
 			default:
 				m.log.Error("Unsupported platform for Alt modifier", "platform", runtime.GOOS)

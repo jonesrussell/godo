@@ -1,6 +1,10 @@
 package app
 
-import "fyne.io/fyne/v2"
+import (
+	"time"
+
+	"fyne.io/fyne/v2"
+)
 
 //go:generate mockgen -destination=../../test/mocks/mock_app.go -package=mocks github.com/jonesrussell/godo/internal/application/app UI,Application
 
@@ -18,4 +22,5 @@ type Application interface {
 	SetupUI() error
 	Run()
 	Cleanup()
+	ForceKillTimeout() time.Duration
 }

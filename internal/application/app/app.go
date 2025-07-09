@@ -24,13 +24,6 @@ import (
 	"github.com/jonesrussell/godo/internal/infrastructure/storage"
 )
 
-// Constants for configuration values
-const (
-	DefaultAPIPort     = 8080
-	APIStartupTimeout  = 5 * time.Second
-	APIShutdownTimeout = 5 * time.Second
-)
-
 // App represents the main application
 type App struct {
 	fyneApp     fyne.App
@@ -56,7 +49,7 @@ func New(
 	fyneApp := app.New()
 
 	var hotkeyManager hotkey.Manager
-	if hkm, err := hotkey.NewUnifiedManager(log); err != nil {
+	if hkm, err := hotkey.NewUnifiedManager(log, &cfg.Hotkeys); err != nil {
 		log.Warn("Failed to create hotkey manager, continuing without hotkeys", "error", err)
 		hotkeyManager = nil
 	} else {
@@ -167,10 +160,14 @@ func (a *App) Run() {
 		"supports_gui", platform.SupportsGUI())
 
 	// Start API server
-	a.apiRunner.Start(DefaultAPIPort)
+	a.apiRunner.Start(a.config.HTTP.Port)
 
 	// Wait for API to be ready
-	if !a.apiRunner.WaitForReady(APIStartupTimeout) {
+	timeout := time.Duration(a.config.HTTP.StartupTimeout) * time.Second
+	if timeout <= 0 {
+		timeout = 5 * time.Second
+	}
+	if !a.apiRunner.WaitForReady(timeout) {
 		a.logger.Error("API server failed to start within timeout")
 		return
 	}
@@ -223,7 +220,11 @@ func (a *App) Cleanup() {
 	}
 
 	// Stop API server with timeout
-	ctx, cancel := context.WithTimeout(context.Background(), APIShutdownTimeout)
+	timeout := time.Duration(a.config.HTTP.ShutdownTimeout) * time.Second
+	if timeout <= 0 {
+		timeout = 5 * time.Second
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
 	if err := a.apiRunner.Shutdown(ctx); err != nil {
@@ -247,4 +248,8 @@ func (a *App) Logger() logger.Logger {
 // Store returns the application store
 func (a *App) Store() storage.TaskStore {
 	return a.store
+}
+
+func (a *App) ForceKillTimeout() time.Duration {
+	return time.Duration(a.config.App.ForceKillTimeout) * time.Second
 }

@@ -12,11 +12,6 @@ import (
 	"github.com/jonesrussell/godo/internal/application/container"
 )
 
-const (
-	// forceKillTimeout is how long to wait before force killing the process
-	forceKillTimeout = 2 * time.Second
-)
-
 func main() {
 	// Initialize the application with all dependencies
 	application, cleanup, err := container.InitializeApp()
@@ -42,6 +37,10 @@ func main() {
 
 		// Force kill after a delay if we're still running
 		go func() {
+			forceKillTimeout := application.ForceKillTimeout()
+			if forceKillTimeout == 0 {
+				forceKillTimeout = 2 * time.Second
+			}
 			time.Sleep(forceKillTimeout)
 			fmt.Println("Forcing process termination...")
 			os.Exit(1)

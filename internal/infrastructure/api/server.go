@@ -15,17 +15,6 @@ import (
 	"github.com/jonesrussell/godo/internal/infrastructure/logger"
 )
 
-const (
-	// DefaultReadTimeout is the default timeout for reading the entire request
-	DefaultReadTimeout = 30 * time.Second
-	// DefaultWriteTimeout is the default timeout for writing the response
-	DefaultWriteTimeout = 30 * time.Second
-	// DefaultReadHeaderTimeout is the default timeout for reading request headers
-	DefaultReadHeaderTimeout = 10 * time.Second
-	// DefaultIdleTimeout is the default timeout for idle connections
-	DefaultIdleTimeout = 120 * time.Second
-)
-
 // ServerConfig holds the server configuration
 type ServerConfig struct {
 	ReadTimeout       time.Duration
@@ -37,10 +26,10 @@ type ServerConfig struct {
 // NewServerConfig creates a new server configuration with default values
 func NewServerConfig() *ServerConfig {
 	return &ServerConfig{
-		ReadTimeout:       DefaultReadTimeout,
-		WriteTimeout:      DefaultWriteTimeout,
-		ReadHeaderTimeout: DefaultReadHeaderTimeout,
-		IdleTimeout:       DefaultIdleTimeout,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		ReadHeaderTimeout: 10 * time.Second,
+		IdleTimeout:       120 * time.Second,
 	}
 }
 
@@ -243,10 +232,10 @@ func (s *Server) Start(port int) error {
 	s.srv = &http.Server{
 		Addr:              fmt.Sprintf(":%d", port),
 		Handler:           s,
-		ReadTimeout:       DefaultReadTimeout,
-		WriteTimeout:      DefaultWriteTimeout,
-		ReadHeaderTimeout: DefaultReadHeaderTimeout,
-		IdleTimeout:       DefaultIdleTimeout,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		ReadHeaderTimeout: 10 * time.Second,
+		IdleTimeout:       120 * time.Second,
 	}
 
 	s.log.Info("Starting HTTP server", "port", port)

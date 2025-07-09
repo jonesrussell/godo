@@ -57,14 +57,17 @@ type Config struct {
 
 // AppConfig holds application-specific configuration
 type AppConfig struct {
-	Name    string `mapstructure:"name"`
-	Version string `mapstructure:"version"`
-	ID      string `mapstructure:"id"`
+	Name             string `mapstructure:"name"`
+	Version          string `mapstructure:"version"`
+	ID               string `mapstructure:"id"`
+	ForceKillTimeout int    `mapstructure:"force_kill_timeout"`
 }
 
 // HotkeyConfig holds hotkey configuration
 type HotkeyConfig struct {
-	QuickNote HotkeyBinding `mapstructure:"quick_note"`
+	QuickNote    HotkeyBinding `mapstructure:"quick_note"`
+	RetryDelayMs int           `mapstructure:"retry_delay_ms"`
+	MaxRetries   int           `mapstructure:"max_retries"`
 }
 
 // HotkeyBinding represents a hotkey combination
@@ -98,6 +101,8 @@ type HTTPConfig struct {
 	WriteTimeout      int `mapstructure:"write_timeout"`
 	ReadHeaderTimeout int `mapstructure:"read_header_timeout"`
 	IdleTimeout       int `mapstructure:"idle_timeout"`
+	StartupTimeout    int `mapstructure:"startup_timeout"`
+	ShutdownTimeout   int `mapstructure:"shutdown_timeout"`
 }
 
 // Logger interface for configuration
@@ -190,6 +195,11 @@ func (p *Provider) setDefaults(v *viper.Viper, cfg *Config) {
 	v.SetDefault(KeyLogConsole, cfg.Logger.Console)
 	v.SetDefault("hotkeys.quick_note.modifiers", cfg.Hotkeys.QuickNote.Modifiers)
 	v.SetDefault("hotkeys.quick_note.key", cfg.Hotkeys.QuickNote.Key)
+	v.SetDefault("hotkeys.quick_note.retry_delay_ms", cfg.Hotkeys.RetryDelayMs)
+	v.SetDefault("hotkeys.quick_note.max_retries", cfg.Hotkeys.MaxRetries)
+	v.SetDefault("app.force_kill_timeout", cfg.App.ForceKillTimeout)
+	v.SetDefault("http.startup_timeout", cfg.HTTP.StartupTimeout)
+	v.SetDefault("http.shutdown_timeout", cfg.HTTP.ShutdownTimeout)
 }
 
 // configureConfigFile sets up the config file configuration
@@ -205,14 +215,19 @@ func (p *Provider) configureConfigFile(v *viper.Viper) {
 // bindEnvironmentVariables binds environment variables to configuration keys
 func (p *Provider) bindEnvironmentVariables(v *viper.Viper) error {
 	envBindings := map[string]string{
-		KeyAppName:                     EnvPrefix + "_APP_NAME",
-		KeyAppVersion:                  EnvPrefix + "_APP_VERSION",
-		KeyAppID:                       EnvPrefix + "_APP_ID",
-		KeyDBPath:                      EnvPrefix + "_DATABASE_PATH",
-		KeyLogLevel:                    EnvPrefix + "_LOGGER_LEVEL",
-		KeyLogConsole:                  EnvPrefix + "_LOGGER_CONSOLE",
-		"hotkeys.quick_note.modifiers": EnvPrefix + "_HOTKEYS_QUICK_NOTE_MODIFIERS",
-		"hotkeys.quick_note.key":       EnvPrefix + "_HOTKEYS_QUICK_NOTE_KEY",
+		KeyAppName:                          EnvPrefix + "_APP_NAME",
+		KeyAppVersion:                       EnvPrefix + "_APP_VERSION",
+		KeyAppID:                            EnvPrefix + "_APP_ID",
+		KeyDBPath:                           EnvPrefix + "_DATABASE_PATH",
+		KeyLogLevel:                         EnvPrefix + "_LOGGER_LEVEL",
+		KeyLogConsole:                       EnvPrefix + "_LOGGER_CONSOLE",
+		"hotkeys.quick_note.modifiers":      EnvPrefix + "_HOTKEYS_QUICK_NOTE_MODIFIERS",
+		"hotkeys.quick_note.key":            EnvPrefix + "_HOTKEYS_QUICK_NOTE_KEY",
+		"hotkeys.quick_note.retry_delay_ms": EnvPrefix + "_HOTKEYS_QUICK_NOTE_RETRY_DELAY_MS",
+		"hotkeys.quick_note.max_retries":    EnvPrefix + "_HOTKEYS_QUICK_NOTE_MAX_RETRIES",
+		"app.force_kill_timeout":            EnvPrefix + "_APP_FORCE_KILL_TIMEOUT",
+		"http.startup_timeout":              EnvPrefix + "_HTTP_STARTUP_TIMEOUT",
+		"http.shutdown_timeout":             EnvPrefix + "_HTTP_SHUTDOWN_TIMEOUT",
 	}
 
 	for k, env := range envBindings {
@@ -271,6 +286,13 @@ func ValidateConfig(cfg *Config) error {
 		validationErrors = append(validationErrors, "invalid log level: "+cfg.Logger.Level)
 	}
 
+	if cfg.HTTP.StartupTimeout <= 0 {
+		validationErrors = append(validationErrors, "http.startup_timeout must be positive")
+	}
+	if cfg.HTTP.ShutdownTimeout <= 0 {
+		validationErrors = append(validationErrors, "http.shutdown_timeout must be positive")
+	}
+
 	if len(validationErrors) > 0 {
 		return &Error{
 			Op:  "validate",
@@ -295,9 +317,10 @@ func isValidLogLevel(level string) bool {
 func NewDefaultConfig() *Config {
 	return &Config{
 		App: AppConfig{
-			Name:    "Godo",
-			Version: "0.1.0",
-			ID:      "io.github.jonesrussell/godo",
+			Name:             "Godo",
+			Version:          "0.1.0",
+			ID:               "io.github.jonesrussell/godo",
+			ForceKillTimeout: 2,
 		},
 		Logger: LogConfig{
 			Level:    "info",
@@ -314,6 +337,8 @@ func NewDefaultConfig() *Config {
 				Modifiers: []string{"Ctrl", "Shift"},
 				Key:       "G",
 			},
+			RetryDelayMs: 100,
+			MaxRetries:   3,
 		},
 		UI: UIConfig{
 			MainWindow: WindowConfig{
@@ -333,6 +358,8 @@ func NewDefaultConfig() *Config {
 			WriteTimeout:      30,
 			ReadHeaderTimeout: 10,
 			IdleTimeout:       120,
+			StartupTimeout:    5,
+			ShutdownTimeout:   5,
 		},
 	}
 }

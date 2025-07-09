@@ -18,13 +18,6 @@ import (
 	"github.com/jonesrussell/godo/internal/infrastructure/platform"
 )
 
-const (
-	// retryDelay is the delay between retry attempts
-	retryDelay = 100 * time.Millisecond
-	// maxRetries is the maximum number of retry attempts
-	maxRetries = 3
-)
-
 // UnifiedManager manages hotkeys for both Linux and Windows
 type UnifiedManager struct {
 	log       logger.Logger
@@ -34,10 +27,11 @@ type UnifiedManager struct {
 	stopChan  chan struct{}
 	running   bool
 	mu        sync.Mutex
+	config    *config.HotkeyConfig
 }
 
 // NewUnifiedManager creates a new UnifiedManager instance
-func NewUnifiedManager(log logger.Logger) (*UnifiedManager, error) {
+func NewUnifiedManager(log logger.Logger, hotkeyConfig *config.HotkeyConfig) (*UnifiedManager, error) {
 	log.Debug("Creating unified hotkey manager",
 		"os", runtime.GOOS,
 		"arch", runtime.GOARCH,
@@ -46,6 +40,7 @@ func NewUnifiedManager(log logger.Logger) (*UnifiedManager, error) {
 	return &UnifiedManager{
 		log:      log,
 		stopChan: make(chan struct{}),
+		config:   hotkeyConfig,
 	}, nil
 }
 
@@ -180,23 +175,161 @@ func (m *UnifiedManager) convertModifiers() ([]hotkey.Modifier, error) {
 
 func (m *UnifiedManager) convertKey() (hotkey.Key, error) {
 	m.log.Debug("Converting key", "raw_key", m.binding.Key)
-	switch m.binding.Key {
-	case "G":
-		m.log.Debug("Using key G", "key_code", hotkey.KeyG)
-		return hotkey.KeyG, nil
-	case "N":
-		m.log.Debug("Using key N", "key_code", hotkey.KeyN)
-		return hotkey.KeyN, nil
-	default:
-		m.log.Error("Unsupported key", "key", m.binding.Key,
-			"supported_keys", []string{"G", "N"})
-		return 0, fmt.Errorf("unsupported key: %s", m.binding.Key)
+
+	// Handle single character keys (A-Z, 0-9)
+	if len(m.binding.Key) == 1 {
+		char := m.binding.Key[0]
+		if char >= 'A' && char <= 'Z' {
+			switch char {
+			case 'A':
+				return hotkey.KeyA, nil
+			case 'B':
+				return hotkey.KeyB, nil
+			case 'C':
+				return hotkey.KeyC, nil
+			case 'D':
+				return hotkey.KeyD, nil
+			case 'E':
+				return hotkey.KeyE, nil
+			case 'F':
+				return hotkey.KeyF, nil
+			case 'G':
+				return hotkey.KeyG, nil
+			case 'H':
+				return hotkey.KeyH, nil
+			case 'I':
+				return hotkey.KeyI, nil
+			case 'J':
+				return hotkey.KeyJ, nil
+			case 'K':
+				return hotkey.KeyK, nil
+			case 'L':
+				return hotkey.KeyL, nil
+			case 'M':
+				return hotkey.KeyM, nil
+			case 'N':
+				return hotkey.KeyN, nil
+			case 'O':
+				return hotkey.KeyO, nil
+			case 'P':
+				return hotkey.KeyP, nil
+			case 'Q':
+				return hotkey.KeyQ, nil
+			case 'R':
+				return hotkey.KeyR, nil
+			case 'S':
+				return hotkey.KeyS, nil
+			case 'T':
+				return hotkey.KeyT, nil
+			case 'U':
+				return hotkey.KeyU, nil
+			case 'V':
+				return hotkey.KeyV, nil
+			case 'W':
+				return hotkey.KeyW, nil
+			case 'X':
+				return hotkey.KeyX, nil
+			case 'Y':
+				return hotkey.KeyY, nil
+			case 'Z':
+				return hotkey.KeyZ, nil
+			}
+		}
+		if char >= '0' && char <= '9' {
+			switch char {
+			case '0':
+				return hotkey.Key0, nil
+			case '1':
+				return hotkey.Key1, nil
+			case '2':
+				return hotkey.Key2, nil
+			case '3':
+				return hotkey.Key3, nil
+			case '4':
+				return hotkey.Key4, nil
+			case '5':
+				return hotkey.Key5, nil
+			case '6':
+				return hotkey.Key6, nil
+			case '7':
+				return hotkey.Key7, nil
+			case '8':
+				return hotkey.Key8, nil
+			case '9':
+				return hotkey.Key9, nil
+			}
+		}
 	}
+
+	// Handle function keys
+	if strings.HasPrefix(m.binding.Key, "F") && len(m.binding.Key) <= 3 {
+		switch m.binding.Key {
+		case "F1":
+			return hotkey.KeyF1, nil
+		case "F2":
+			return hotkey.KeyF2, nil
+		case "F3":
+			return hotkey.KeyF3, nil
+		case "F4":
+			return hotkey.KeyF4, nil
+		case "F5":
+			return hotkey.KeyF5, nil
+		case "F6":
+			return hotkey.KeyF6, nil
+		case "F7":
+			return hotkey.KeyF7, nil
+		case "F8":
+			return hotkey.KeyF8, nil
+		case "F9":
+			return hotkey.KeyF9, nil
+		case "F10":
+			return hotkey.KeyF10, nil
+		case "F11":
+			return hotkey.KeyF11, nil
+		case "F12":
+			return hotkey.KeyF12, nil
+		}
+	}
+
+	// Handle special keys
+	switch m.binding.Key {
+	case "Space":
+		return hotkey.KeySpace, nil
+	case "Return", "Enter":
+		return hotkey.KeyReturn, nil
+	case "Escape", "Esc":
+		return hotkey.KeyEscape, nil
+	case "Delete", "Del":
+		return hotkey.KeyDelete, nil
+	case "Tab":
+		return hotkey.KeyTab, nil
+	case "Left":
+		return hotkey.KeyLeft, nil
+	case "Right":
+		return hotkey.KeyRight, nil
+	case "Up":
+		return hotkey.KeyUp, nil
+	case "Down":
+		return hotkey.KeyDown, nil
+	}
+
+	m.log.Error("Unsupported key", "key", m.binding.Key,
+		"supported_keys", "A-Z, 0-9, F1-F12, Space, Return, Escape, Delete, Tab, Arrow keys")
+	return 0, fmt.Errorf("unsupported key: %s", m.binding.Key)
 }
 
 func (m *UnifiedManager) registerWithRetries() error {
 	var err error
-	for i := 0; i < maxRetries; i++ {
+	delay := time.Duration(m.config.RetryDelayMs) * time.Millisecond
+	retries := m.config.MaxRetries
+	if delay == 0 {
+		delay = 100 * time.Millisecond
+	}
+	if retries == 0 {
+		retries = 3
+	}
+
+	for i := 0; i < retries; i++ {
 		m.log.Debug("Attempting to register hotkey with system", "attempt", i+1)
 		if err = m.hk.Register(); err == nil {
 			break
@@ -204,11 +337,11 @@ func (m *UnifiedManager) registerWithRetries() error {
 		m.log.Error("Failed to register hotkey",
 			"error", err,
 			"attempt", i+1)
-		time.Sleep(retryDelay)
+		time.Sleep(delay)
 	}
 
 	if err != nil {
-		return fmt.Errorf("failed to register hotkey after %d attempts: %w", maxRetries, err)
+		return fmt.Errorf("failed to register hotkey after %d attempts: %w", retries, err)
 	}
 
 	return nil

@@ -18,6 +18,7 @@ import (
 	"github.com/jonesrussell/godo/internal/infrastructure/api"
 	"github.com/jonesrussell/godo/internal/infrastructure/gui"
 	"github.com/jonesrussell/godo/internal/infrastructure/gui/quicknote"
+	"github.com/jonesrussell/godo/internal/infrastructure/gui/theme"
 	"github.com/jonesrussell/godo/internal/infrastructure/hotkey"
 	"github.com/jonesrussell/godo/internal/infrastructure/logger"
 	"github.com/jonesrussell/godo/internal/infrastructure/platform"
@@ -28,7 +29,6 @@ import (
 type App struct {
 	fyneApp     fyne.App
 	mainWindow  gui.MainWindow
-	quickNote   gui.QuickNote
 	hotkey      hotkey.Manager
 	apiRunner   *api.Runner
 	config      *config.Config
@@ -56,7 +56,6 @@ func New(
 	app := &App{
 		fyneApp:     fyneApp,
 		mainWindow:  mainWindow,
-		quickNote:   nil, // Will be created on-demand via factory
 		hotkey:      nil, // Will be set up below
 		apiRunner:   apiRunner,
 		config:      cfg,
@@ -125,9 +124,14 @@ func (a *App) setupSystray() error {
 	// Set the system tray menu
 	desk.SetSystemTrayMenu(m)
 
-	// Set the system tray icon if available
-	// Note: We'll need to import the theme package for this
-	// For now, we'll use the default Fyne icon
+	// Set the system tray icon
+	icon := theme.AppIcon()
+	if icon != nil {
+		desk.SetSystemTrayIcon(icon)
+		a.logger.Debug("Systray icon set successfully")
+	} else {
+		a.logger.Warn("Failed to get systray icon - systray will have no icon")
+	}
 
 	a.logger.Info("Systray setup completed")
 	return nil
@@ -227,6 +231,12 @@ func (a *App) Run() {
 // Cleanup performs cleanup operations before shutdown
 func (a *App) Cleanup() {
 	a.logger.Info("Cleaning up application")
+
+	// Clean up quick note window
+	if a.quickNoteWindow != nil {
+		a.logger.Info("Cleaning up quick note window")
+		a.quickNoteWindow.Hide() // Hide the window if it's visible
+	}
 
 	// Stop hotkey manager with timeout
 	if a.hotkey != nil {

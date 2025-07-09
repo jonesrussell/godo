@@ -9,7 +9,6 @@ import (
 
 	"fyne.io/fyne/v2"
 	fyneapp "fyne.io/fyne/v2/app"
-	"fyne.io/fyne/v2/theme"
 	"github.com/google/wire"
 	"github.com/spf13/viper"
 
@@ -20,6 +19,7 @@ import (
 	"github.com/jonesrussell/godo/internal/infrastructure/gui"
 	"github.com/jonesrussell/godo/internal/infrastructure/gui/mainwindow"
 	"github.com/jonesrussell/godo/internal/infrastructure/gui/quicknote"
+	"github.com/jonesrussell/godo/internal/infrastructure/gui/theme"
 	"github.com/jonesrussell/godo/internal/infrastructure/logger"
 	"github.com/jonesrussell/godo/internal/infrastructure/storage"
 	"github.com/jonesrussell/godo/internal/infrastructure/storage/sqlite"
@@ -175,7 +175,7 @@ func ProvideTaskService(repo repository.TaskRepository, log logger.Logger) servi
 // Fyne app provider
 func ProvideFyneApp(cfg *config.Config) fyne.App {
 	app := fyneapp.New()
-	app.SetIcon(theme.ComputerIcon())
+	app.SetIcon(theme.AppIcon())
 	return app
 }
 

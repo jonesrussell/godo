@@ -54,10 +54,12 @@ func New(
 
 // Show displays the quick note window
 func (w *Window) Show() {
+	w.log.Debug("Quick note window Show() called")
 	fyne.Do(func() {
 		w.window.Show()
 		w.window.CenterOnScreen()
 		w.entry.FocusGained()
+		w.log.Debug("Quick note window shown and focused")
 	})
 }
 

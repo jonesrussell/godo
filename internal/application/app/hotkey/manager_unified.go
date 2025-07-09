@@ -409,7 +409,11 @@ func (m *UnifiedManager) Start() error {
 			case event := <-m.hk.Keydown():
 				m.log.Info("Hotkey triggered", "event", event)
 				if m.quickNote != nil {
+					m.log.Debug("Calling quick note Show() method")
 					m.quickNote.Show()
+					m.log.Debug("Quick note Show() method called")
+				} else {
+					m.log.Error("Quick note service is nil")
 				}
 			}
 		}

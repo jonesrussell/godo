@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/driver/desktop"
 
 	"github.com/jonesrussell/godo/internal/application/app/hotkey"
@@ -39,6 +38,7 @@ type App struct {
 
 // New creates a new application instance
 func New(
+	fyneApp fyne.App,
 	cfg *config.Config,
 	log logger.Logger,
 	taskService service.TaskService,
@@ -46,8 +46,6 @@ func New(
 	quickNote gui.QuickNote,
 	store storage.TaskStore,
 ) *App {
-	fyneApp := app.New()
-
 	var hotkeyManager hotkey.Manager
 	log.Info("Creating hotkey manager", "config", fmt.Sprintf("%+v", cfg.Hotkeys))
 	if hkm, err := hotkey.NewUnifiedManager(log, &cfg.Hotkeys); err != nil {

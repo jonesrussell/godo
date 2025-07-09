@@ -9,19 +9,7 @@ logger:
   console: true
   file: true
   file_path: "logs/godo.log"
-  development: true
-  encoding: "console"
-  output: ["stdout", "logs/godo.log"]
-  error_output: ["stderr", "logs/godo-error.log"]
-  encoderConfig:
-    timeKey: "time"
-    levelKey: "level"
-    nameKey: "logger"
-    callerKey: "caller"
-    messageKey: "msg"
-    stacktraceKey: "stacktrace"
-    timeEncoder: "iso8601"
-    levelEncoder: "lowercase"
+  output: ["stdout"]
 
 database:
   path: "godo.db"

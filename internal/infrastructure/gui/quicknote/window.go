@@ -12,10 +12,10 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/google/uuid"
 
+	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/domain/model"
 	"github.com/jonesrussell/godo/internal/infrastructure/logger"
 	"github.com/jonesrussell/godo/internal/infrastructure/storage"
-	"github.com/jonesrussell/godo/internal/shared/config"
 )
 
 // Window represents a quick note window for rapid task entry
@@ -131,12 +131,12 @@ func (w *Window) addTask() {
 	ctx := context.Background()
 	if err := w.store.Add(ctx, &task); err != nil {
 		w.log.Error("Failed to add task", "error", err)
-		w.showStatus("Failed to add task", false)
+		w.showStatus("Failed to add task")
 		return
 	}
 
 	w.log.Info("Task added successfully", "task_id", task.ID)
-	w.showStatus("Task added successfully!", true)
+	w.showStatus("Task added successfully!")
 	w.clearEntry()
 }
 
@@ -148,7 +148,7 @@ func (w *Window) clearEntry() {
 }
 
 // showStatus shows a status message
-func (w *Window) showStatus(message string, success bool) {
+func (w *Window) showStatus(message string) {
 	fyne.Do(func() {
 		w.statusText.SetText(message)
 		w.statusText.Show()

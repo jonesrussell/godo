@@ -2,14 +2,10 @@ package logger
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-
-	"github.com/jonesrussell/godo/internal/shared/common"
 )
 
 //go:generate mockgen -destination=../../test/mocks/mock_logger.go -package=mocks github.com/jonesrussell/godo/internal/infrastructure/logger Logger
@@ -17,47 +13,26 @@ import (
 // fieldMultiplier is used to calculate the capacity for key-value pairs
 const fieldMultiplier = 2
 
-// Logger defines the logging interface
-// Moved from logger.go
-type Logger interface {
-	Debug(msg string, keysAndValues ...interface{})
-	Info(msg string, keysAndValues ...interface{})
-	Warn(msg string, keysAndValues ...interface{})
-	Error(msg string, keysAndValues ...interface{})
-	Fatal(msg string, keysAndValues ...interface{})
-	WithError(err error) Logger
-	WithField(key string, value interface{}) Logger
-	WithFields(fields map[string]interface{}) Logger
-}
-
 type ZapLogger struct {
 	*zap.SugaredLogger
 }
 
 // New creates a new logger instance based on the provided configuration
-func New(config *common.LogConfig) (Logger, error) {
+func New(config *LogConfig) (Logger, error) {
 	// Validate log level
 	level, err := parseLogLevel(config.Level)
 	if err != nil {
 		return nil, fmt.Errorf("invalid log level %q: %w", config.Level, err)
 	}
 
-	// Ensure log file directory exists if file logging is enabled
-	if config.File && config.FilePath != "" {
-		dir := filepath.Dir(config.FilePath)
-		if mkdirErr := os.MkdirAll(dir, 0o755); mkdirErr != nil {
-			fmt.Printf("Failed to create log directory: %v\n", mkdirErr)
-		}
-		// Also create error log directory if error output is set
-		for _, out := range config.ErrorOutput {
-			if out != "stderr" && out != "stdout" {
-				errDir := filepath.Dir(out)
-				if mkdirErr := os.MkdirAll(errDir, 0o755); mkdirErr != nil {
-					fmt.Printf("Failed to create error log directory: %v\n", mkdirErr)
-				}
-			}
-		}
+	// Set default output paths if not specified
+	outputPaths := config.Output
+	if len(outputPaths) == 0 {
+		outputPaths = []string{"stdout"}
 	}
+
+	// Set default error output paths
+	errorOutputPaths := []string{"stderr"}
 
 	// Create Zap logger configuration
 	zapConfig := zap.Config{
@@ -65,8 +40,8 @@ func New(config *common.LogConfig) (Logger, error) {
 		Development:      false,
 		Encoding:         "console",
 		EncoderConfig:    getEncoderConfig(),
-		OutputPaths:      config.Output,
-		ErrorOutputPaths: config.ErrorOutput,
+		OutputPaths:      outputPaths,
+		ErrorOutputPaths: errorOutputPaths,
 	}
 
 	// Build the logger

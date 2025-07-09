@@ -2,12 +2,12 @@
 package hotkey
 
 import (
+	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/infrastructure/logger"
-	"github.com/jonesrussell/godo/internal/shared/common"
 )
 
 // New creates a new platform-specific hotkey manager
-func New(quickNote QuickNoteService, binding *common.HotkeyBinding, log logger.Logger) (Manager, error) {
+func New(quickNote QuickNoteService, binding *config.HotkeyBinding, log logger.Logger) (Manager, error) {
 	// Create platform-specific manager
 	manager := newPlatformManager(quickNote, binding)
 

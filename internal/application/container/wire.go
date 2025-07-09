@@ -1,5 +1,7 @@
-//go:build wireinject && (windows || linux)
+//go:build wireinject
+// +build wireinject
 
+// Package container provides dependency injection container setup
 package container
 
 import (
@@ -11,6 +13,7 @@ import (
 	"github.com/google/wire"
 
 	"github.com/jonesrussell/godo/internal/application/app"
+	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/domain/repository"
 	"github.com/jonesrussell/godo/internal/domain/service"
 	"github.com/jonesrussell/godo/internal/infrastructure/gui"
@@ -19,8 +22,6 @@ import (
 	"github.com/jonesrussell/godo/internal/infrastructure/logger"
 	"github.com/jonesrussell/godo/internal/infrastructure/storage"
 	"github.com/jonesrussell/godo/internal/infrastructure/storage/sqlite"
-	"github.com/jonesrussell/godo/internal/shared/common"
-	"github.com/jonesrussell/godo/internal/shared/config"
 )
 
 // Application constants
@@ -100,16 +101,14 @@ func ProvideConfig() (*config.Config, error) {
 			Version: DefaultAppVersion,
 			ID:      DefaultAppID,
 		},
-		Logger: common.LogConfig{
-			Level:       DefaultLogLevel,
-			Console:     true,
-			File:        true,
-			FilePath:    DefaultLogFile,
-			Output:      []string{"stdout", DefaultLogFile},
-			ErrorOutput: []string{"stderr"},
+		Logger: config.LogConfig{
+			Level:   DefaultLogLevel,
+			Console: true,
+			File:    true,
+			Output:  []string{"stdout"},
 		},
 		Hotkeys: config.HotkeyConfig{
-			QuickNote: common.HotkeyBinding{
+			QuickNote: config.HotkeyBinding{
 				Modifiers: []string{"Ctrl", "Shift"},
 				Key:       "G",
 			},
@@ -129,8 +128,12 @@ func ProvideConfig() (*config.Config, error) {
 				StartHidden: true,
 			},
 		},
-		HTTP: common.HTTPConfig{
-			Port: 8080,
+		HTTP: config.HTTPConfig{
+			Port:              8080,
+			ReadTimeout:       30,
+			WriteTimeout:      30,
+			ReadHeaderTimeout: 10,
+			IdleTimeout:       120,
 		},
 	}
 
@@ -147,13 +150,11 @@ func ProvideLogger(cfg *config.Config) (logger.Logger, func(), error) {
 		return nil, nil, fmt.Errorf("config is required")
 	}
 
-	logConfig := &common.LogConfig{
-		Level:       cfg.Logger.Level,
-		Console:     cfg.Logger.Console,
-		File:        cfg.Logger.File,
-		FilePath:    cfg.Logger.FilePath,
-		Output:      cfg.Logger.Output,
-		ErrorOutput: cfg.Logger.ErrorOutput,
+	logConfig := &logger.LogConfig{
+		Level:   cfg.Logger.Level,
+		Console: cfg.Logger.Console,
+		File:    cfg.Logger.File,
+		Output:  cfg.Logger.Output,
 	}
 
 	log, err := logger.New(logConfig)
@@ -200,15 +201,15 @@ func ProvideTaskRepository(store storage.TaskStore) repository.TaskRepository {
 	return repository.NewTaskRepository(store)
 }
 
-// Task service provider (now uses repository)
+// Task service provider
 func ProvideTaskService(repo repository.TaskRepository, log logger.Logger) service.TaskService {
 	return service.NewTaskService(repo, log)
 }
 
 // Fyne app provider
 func ProvideFyneApp(cfg *config.Config) fyne.App {
-	app := fyneapp.NewWithID(cfg.App.ID)
-	app.Settings().SetTheme(theme.DefaultTheme())
+	app := fyneapp.New()
+	app.SetIcon(theme.ComputerIcon())
 	return app
 }
 
@@ -222,7 +223,7 @@ func ProvideMainWindow(
 	return mainwindow.New(app, store, log, cfg.UI.MainWindow)
 }
 
-// Quick note window provider
+// Quick note provider
 func ProvideQuickNote(
 	app fyne.App,
 	store storage.TaskStore,
@@ -232,32 +233,35 @@ func ProvideQuickNote(
 	return quicknote.New(app, store, log, cfg.UI.QuickNote)
 }
 
-// Validation functions
+// validateConfig validates the configuration
 func validateConfig(cfg *config.Config) error {
-	if cfg == nil {
-		return fmt.Errorf("config is required")
+	if cfg.App.Name == "" {
+		return fmt.Errorf("app name is required")
 	}
-
-	if cfg.UI.MainWindow.Width <= 0 || cfg.UI.MainWindow.Height <= 0 {
-		return fmt.Errorf("invalid window dimensions")
+	if cfg.Logger.Level == "" {
+		return fmt.Errorf("log level is required")
 	}
-
 	if err := validateHotkeyConfig(&cfg.Hotkeys.QuickNote); err != nil {
 		return fmt.Errorf("invalid hotkey configuration: %w", err)
 	}
-
 	return nil
 }
 
-func validateHotkeyConfig(binding *common.HotkeyBinding) error {
-	if binding == nil {
-		return fmt.Errorf("hotkey binding is required")
-	}
+// validateHotkeyConfig validates hotkey configuration
+func validateHotkeyConfig(binding *config.HotkeyBinding) error {
 	if len(binding.Modifiers) == 0 {
-		return fmt.Errorf("at least one modifier key is required")
+		return fmt.Errorf("at least one modifier is required")
 	}
 	if binding.Key == "" {
 		return fmt.Errorf("key is required")
+	}
+	for _, mod := range binding.Modifiers {
+		switch mod {
+		case "Ctrl", "Alt", "Shift":
+			continue
+		default:
+			return fmt.Errorf("invalid modifier: %s", mod)
+		}
 	}
 	return nil
 }

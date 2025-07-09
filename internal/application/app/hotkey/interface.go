@@ -2,7 +2,7 @@
 package hotkey
 
 import (
-	"github.com/jonesrussell/godo/internal/shared/common"
+	"github.com/jonesrussell/godo/internal/config"
 )
 
 // Manager defines the interface for hotkey management
@@ -16,7 +16,7 @@ type Manager interface {
 	// Stop ends the hotkey listening and unregisters the hotkey
 	Start() error
 	// SetQuickNote configures the quick note service and hotkey binding
-	SetQuickNote(quickNote QuickNoteService, binding *common.HotkeyBinding)
+	SetQuickNote(quickNote QuickNoteService, binding *config.HotkeyBinding)
 }
 
 // QuickNoteService defines quick note operations that can be triggered by hotkeys

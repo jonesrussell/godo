@@ -6,16 +6,16 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/domain/service"
 	"github.com/jonesrussell/godo/internal/infrastructure/logger"
-	"github.com/jonesrussell/godo/internal/shared/common"
 )
 
 // Runner manages the HTTP server lifecycle
 type Runner struct {
 	server   *Server
 	logger   logger.Logger
-	config   *common.HTTPConfig
+	config   *config.HTTPConfig
 	ready    chan struct{}
 	shutdown chan struct{}
 }
@@ -24,7 +24,7 @@ type Runner struct {
 func NewRunner(
 	taskService service.TaskService,
 	l logger.Logger,
-	config *common.HTTPConfig,
+	config *config.HTTPConfig,
 ) *Runner {
 	return &Runner{
 		server:   NewServer(taskService, l),

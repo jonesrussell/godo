@@ -11,11 +11,11 @@ import (
 	"sync"
 	"time"
 
-	"golang.design/x/hotkey"
+	"github.com/csturiale/hotkey"
 
+	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/infrastructure/logger"
 	"github.com/jonesrussell/godo/internal/infrastructure/platform"
-	"github.com/jonesrussell/godo/internal/shared/common"
 )
 
 const (
@@ -29,7 +29,7 @@ const (
 type UnifiedManager struct {
 	log       logger.Logger
 	quickNote QuickNoteService
-	binding   *common.HotkeyBinding
+	binding   *config.HotkeyBinding
 	hk        *hotkey.Hotkey
 	stopChan  chan struct{}
 	running   bool
@@ -50,7 +50,7 @@ func NewUnifiedManager(log logger.Logger) (*UnifiedManager, error) {
 }
 
 // newPlatformManager creates a platform-specific manager
-func newPlatformManager(quickNote QuickNoteService, binding *common.HotkeyBinding) Manager {
+func newPlatformManager(quickNote QuickNoteService, binding *config.HotkeyBinding) Manager {
 	manager := &UnifiedManager{
 		log:       logger.NewNoopLogger(),
 		quickNote: quickNote,
@@ -66,7 +66,7 @@ func (m *UnifiedManager) SetLogger(log logger.Logger) {
 }
 
 // SetQuickNote sets the quick note service and hotkey binding
-func (m *UnifiedManager) SetQuickNote(quickNote QuickNoteService, binding *common.HotkeyBinding) {
+func (m *UnifiedManager) SetQuickNote(quickNote QuickNoteService, binding *config.HotkeyBinding) {
 	m.log.Info("Setting quick note service and binding",
 		"binding", fmt.Sprintf("%+v", binding),
 		"quicknote_nil", quickNote == nil)
@@ -159,10 +159,17 @@ func (m *UnifiedManager) convertModifiers() ([]hotkey.Modifier, error) {
 			mods = append(mods, hotkey.ModShift)
 		case "Alt":
 			m.log.Debug("Adding Alt modifier")
-			if runtime.GOOS == "linux" {
-				mods = append(mods, hotkey.Mod1)
-			} else {
-				mods = append(mods, hotkey.Mod1) // Use Mod1 for both platforms
+			// Platform-specific Alt modifier
+			switch runtime.GOOS {
+			case "windows":
+				// Windows: ModAlt = 0x1
+				mods = append(mods, hotkey.Modifier(0x1))
+			case "linux", "darwin":
+				// Linux/Darwin: Mod1 = (1 << 3) = 8
+				mods = append(mods, hotkey.Modifier(8))
+			default:
+				m.log.Error("Unsupported platform for Alt modifier", "platform", runtime.GOOS)
+				return nil, fmt.Errorf("unsupported platform for Alt modifier: %s", runtime.GOOS)
 			}
 		default:
 			m.log.Error("Unknown modifier", "modifier", mod)

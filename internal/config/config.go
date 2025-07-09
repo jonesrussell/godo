@@ -8,9 +8,6 @@ import (
 	"strings"
 
 	"github.com/spf13/viper"
-
-	"github.com/jonesrussell/godo/internal/infrastructure/logger"
-	"github.com/jonesrussell/godo/internal/shared/common"
 )
 
 // Configuration keys and defaults
@@ -39,14 +36,23 @@ const (
 	DefaultQuickNoteHeight  = 100
 )
 
+// LogConfig holds logging configuration
+type LogConfig struct {
+	Level    string   `mapstructure:"level"`
+	Console  bool     `mapstructure:"console"`
+	File     bool     `mapstructure:"file"`
+	FilePath string   `mapstructure:"file_path"`
+	Output   []string `mapstructure:"output"`
+}
+
 // Config holds all application configuration
 type Config struct {
-	App      AppConfig         `mapstructure:"app"`
-	Logger   common.LogConfig  `mapstructure:"logger"`
-	Hotkeys  HotkeyConfig      `mapstructure:"hotkeys"`
-	Database DatabaseConfig    `mapstructure:"database"`
-	UI       UIConfig          `mapstructure:"ui"`
-	HTTP     common.HTTPConfig `mapstructure:"http"`
+	App      AppConfig      `mapstructure:"app"`
+	Logger   LogConfig      `mapstructure:"logger"`
+	Hotkeys  HotkeyConfig   `mapstructure:"hotkeys"`
+	Database DatabaseConfig `mapstructure:"database"`
+	UI       UIConfig       `mapstructure:"ui"`
+	HTTP     HTTPConfig     `mapstructure:"http"`
 }
 
 // AppConfig holds application-specific configuration
@@ -54,6 +60,17 @@ type AppConfig struct {
 	Name    string `mapstructure:"name"`
 	Version string `mapstructure:"version"`
 	ID      string `mapstructure:"id"`
+}
+
+// HotkeyConfig holds hotkey configuration
+type HotkeyConfig struct {
+	QuickNote HotkeyBinding `mapstructure:"quick_note"`
+}
+
+// HotkeyBinding represents a hotkey combination
+type HotkeyBinding struct {
+	Modifiers []string `mapstructure:"modifiers"`
+	Key       string   `mapstructure:"key"`
 }
 
 // DatabaseConfig holds database configuration
@@ -74,12 +91,30 @@ type WindowConfig struct {
 	StartHidden bool `mapstructure:"start_hidden"`
 }
 
+// HTTPConfig holds HTTP server configuration
+type HTTPConfig struct {
+	Port              int `mapstructure:"port"`
+	ReadTimeout       int `mapstructure:"read_timeout"`
+	WriteTimeout      int `mapstructure:"write_timeout"`
+	ReadHeaderTimeout int `mapstructure:"read_header_timeout"`
+	IdleTimeout       int `mapstructure:"idle_timeout"`
+}
+
+// Logger interface for configuration
+type Logger interface {
+	Debug(msg string, keysAndValues ...interface{})
+	Info(msg string, keysAndValues ...interface{})
+	Warn(msg string, keysAndValues ...interface{})
+	Error(msg string, keysAndValues ...interface{})
+	WithError(err error) Logger
+}
+
 // Provider handles configuration loading and validation
 type Provider struct {
 	paths      []string
 	configName string
 	configType string
-	log        logger.Logger
+	log        Logger
 }
 
 // Load reads and validates configuration
@@ -264,17 +299,18 @@ func NewDefaultConfig() *Config {
 			Version: "0.1.0",
 			ID:      "io.github.jonesrussell/godo",
 		},
-		Logger: common.LogConfig{
-			Level:   "info",
-			Console: true,
-			File:    false,
-			Output:  []string{"stdout"},
+		Logger: LogConfig{
+			Level:    "info",
+			Console:  true,
+			File:     false,
+			FilePath: "", // Default to empty string
+			Output:   []string{"stdout"},
 		},
 		Database: DatabaseConfig{
 			Path: "godo.db",
 		},
 		Hotkeys: HotkeyConfig{
-			QuickNote: common.HotkeyBinding{
+			QuickNote: HotkeyBinding{
 				Modifiers: []string{"Ctrl", "Shift"},
 				Key:       "G",
 			},
@@ -291,7 +327,7 @@ func NewDefaultConfig() *Config {
 				StartHidden: false,
 			},
 		},
-		HTTP: common.HTTPConfig{
+		HTTP: HTTPConfig{
 			Port:              8080,
 			ReadTimeout:       30,
 			WriteTimeout:      30,

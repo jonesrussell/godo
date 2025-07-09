@@ -12,10 +12,10 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/google/uuid"
 
+	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/domain/model"
 	"github.com/jonesrussell/godo/internal/infrastructure/logger"
 	"github.com/jonesrussell/godo/internal/infrastructure/storage"
-	"github.com/jonesrussell/godo/internal/shared/config"
 )
 
 // Window represents the main application window

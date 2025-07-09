@@ -12,13 +12,13 @@ import (
 	"fyne.io/fyne/v2/driver/desktop"
 
 	"github.com/jonesrussell/godo/internal/application/app/hotkey"
+	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/domain/service"
 	"github.com/jonesrussell/godo/internal/infrastructure/api"
 	"github.com/jonesrussell/godo/internal/infrastructure/gui"
 	"github.com/jonesrussell/godo/internal/infrastructure/gui/systray"
 	"github.com/jonesrussell/godo/internal/infrastructure/logger"
 	"github.com/jonesrussell/godo/internal/infrastructure/storage"
-	"github.com/jonesrussell/godo/internal/shared/config"
 )
 
 // Constants for configuration values
@@ -83,12 +83,19 @@ func (a *App) setupSystray() error {
 		return ErrDesktopFeaturesNotAvailable
 	}
 
+	// Use config file path or default
+	logPath := a.config.Logger.FilePath
+	if logPath == "" {
+		logPath = "logs/godo.log"
+	}
+	errorLogPath := logPath + "-error"
+
 	return systray.SetupSystray(
 		a.fyneApp,
 		a.mainWindow.GetWindow(),
 		a.quickNote,
-		a.config.Logger.FilePath,
-		a.config.Logger.FilePath+"-error",
+		logPath,
+		errorLogPath,
 	)
 }
 

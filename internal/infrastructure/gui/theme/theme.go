@@ -2,8 +2,6 @@
 package theme
 
 import (
-	"runtime"
-
 	"fyne.io/fyne/v2"
 
 	_ "embed"
@@ -22,12 +20,10 @@ func AppIcon() fyne.Resource {
 }
 
 // SystrayIcon returns the appropriate icon for the system tray
-// Windows typically expects ICO format for systray icons
+// Using PNG format for better compatibility across platforms
 func SystrayIcon() fyne.Resource {
-	if runtime.GOOS == "windows" {
-		return fyne.NewStaticResource("favicon.ico", iconICOData)
-	}
-	return AppIcon()
+	// Use PNG for all platforms for better compatibility
+	return fyne.NewStaticResource("icon.png", iconData)
 }
 
 // Deprecated: Use AppIcon() instead

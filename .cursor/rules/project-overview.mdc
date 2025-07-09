@@ -1,0 +1,48 @@
+# Godo Project Overview
+
+This is a Go-based task management application using clean architecture and dependency injection.
+
+## Project Structure
+
+### Entry Point
+- Main application: [cmd/godo/main.go](mdc:cmd/godo/main.go)
+- Application logic: [internal/application/app/app.go](mdc:internal/application/app/app.go)
+- DI container: [internal/application/container/wire.go](mdc:internal/application/container/wire.go)
+
+### Architecture Layers
+- **Domain**: Business logic and models - [internal/domain/](mdc:internal/domain/)
+- **Application**: Use cases and orchestration - [internal/application/](mdc:internal/application/)
+- **Infrastructure**: External concerns (storage, GUI, API) - [internal/infrastructure/](mdc:internal/infrastructure/)
+- **Shared**: Common utilities and configuration - [internal/shared/](mdc:internal/shared/)
+
+### Key Components
+- **Task Management**: [internal/domain/service/task_service.go](mdc:internal/domain/service/task_service.go)
+- **Storage**: [internal/infrastructure/storage/](mdc:internal/infrastructure/storage/)
+- **GUI**: [internal/infrastructure/gui/](mdc:internal/infrastructure/gui/)
+- **API**: [internal/infrastructure/api/](mdc:internal/infrastructure/api/)
+- **Configuration**: [internal/shared/config/config.go](mdc:internal/shared/config/config.go)
+
+## Technology Stack
+- **DI Framework**: Google Wire
+- **GUI Framework**: Fyne
+- **Database**: SQLite
+- **Logging**: Zap
+- **Configuration**: Viper
+- **Testing**: Mockgen for mocks
+
+## Development Tools
+- **Build System**: Taskfile - [Taskfile.yml](mdc:Taskfile.yml)
+- **Linting**: golangci-lint - [.golangci.yml](mdc:.golangci.yml)
+- **Code Generation**: Wire, Mockgen
+- **Platform Support**: Linux, Windows
+
+## Key Principles
+- Clean Architecture with clear layer separation
+- Dependency Injection using Wire framework
+- Interface-based design for testability
+- Comprehensive error handling
+- Platform-agnostic core with platform-specific implementations
+description:
+globs:
+alwaysApply: false
+---

@@ -1,0 +1,60 @@
+# Wire Framework Guidelines
+
+This project uses Google's Wire framework for dependency injection. Follow these specific guidelines.
+
+## Wire Configuration
+
+### Provider Sets
+- Organize providers into logical sets
+- Use descriptive set names: `ConfigSet`, `LoggingSet`, `StorageSet`
+- Keep sets focused and small
+- Reference: [internal/application/container/wire.go](mdc:internal/application/container/wire.go)
+
+### Provider Functions
+- Always validate inputs
+- Return cleanup functions for resources
+- Use proper error handling
+- Follow naming convention: `ProvideComponentName`
+
+### Interface Bindings
+- Use `wire.Bind` to bind concrete types to interfaces
+- Keep bindings close to provider definitions
+- Example: `wire.Bind(new(storage.TaskStore), new(*sqlite.Store))`
+
+## Build Constraints
+
+### Platform-Specific Code
+- Use build tags for platform-specific providers
+- Reference: [internal/application/container/build_linux.go](mdc:internal/application/container/build_linux.go)
+- Keep platform-specific code minimal
+- Use common interfaces across platforms
+
+### Wire Generation
+- Use `//go:build wireinject` for injector functions
+- Generate wire code for each platform
+- Keep generated code in version control
+- Use Taskfile for wire generation: [Taskfile.yml](mdc:Taskfile.yml)
+
+## Best Practices
+
+### Injector Functions
+- Only contain `wire.Build` calls
+- No additional logic in injector functions
+- Return proper types and cleanup functions
+- Example: [internal/application/container/wire.go](mdc:internal/application/container/wire.go)
+
+### Error Handling
+- Validate dependencies in providers
+- Return descriptive error messages
+- Use error wrapping for context
+- Handle cleanup on errors
+
+### Testing
+- Create separate test provider sets
+- Use mock implementations for testing
+- Bind interfaces to test doubles
+- Test error scenarios
+description:
+globs:
+alwaysApply: false
+---

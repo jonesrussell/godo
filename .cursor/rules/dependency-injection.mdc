@@ -1,0 +1,41 @@
+# Dependency Injection Guidelines
+
+This project uses Google's Wire framework for dependency injection with clean architecture principles. Follow these guidelines strictly.
+
+## Core Principles
+
+### 1. Wire Provider Organization
+- Organize providers into focused sets in [internal/application/container/wire.go](mdc:internal/application/container/wire.go)
+- Use logical grouping: `ConfigSet`, `LoggingSet`, `StorageSet`, `ServiceSet`, `UISet`
+- Always return cleanup functions for resource management
+
+### 2. Interface Design
+- Define interfaces in domain layer: [internal/domain/service/task_service.go](mdc:internal/domain/service/task_service.go)
+- Use repository pattern: [internal/domain/repository/task_repository.go](mdc:internal/domain/repository/task_repository.go)
+- Implement interfaces in infrastructure layer
+
+### 3. Constructor Injection
+- All dependencies must be injected via constructors
+- Never use `new` keyword for service dependencies
+- Follow the pattern in [internal/application/app/app.go](mdc:internal/application/app/app.go)
+
+### 4. Provider Functions
+- Always validate inputs in provider functions
+- Return proper error handling
+- Include cleanup functions for resources
+- Follow the pattern in [internal/application/container/wire.go](mdc:internal/application/container/wire.go)
+
+## Anti-patterns to Avoid
+- Service Locator pattern
+- Static dependencies
+- Global state
+- Tight coupling between layers
+
+## Testing Requirements
+- Create mock providers for testing
+- Use interface bindings for test doubles
+- Implement proper test isolation
+description:
+globs:
+alwaysApply: false
+---

@@ -1,0 +1,42 @@
+# Clean Architecture Patterns
+
+This project follows clean architecture principles with clear layer separation.
+
+## Layer Structure
+
+### Domain Layer (`internal/domain/`)
+- Contains business logic and domain models
+- Define interfaces here: [internal/domain/service/task_service.go](mdc:internal/domain/service/task_service.go)
+- Keep domain models pure: [internal/domain/model/task.go](mdc:internal/domain/model/task.go)
+- No external dependencies except standard library
+
+### Application Layer (`internal/application/`)
+- Orchestrates domain services
+- Contains use cases and application logic
+- Main app structure: [internal/application/app/app.go](mdc:internal/application/app/app.go)
+- DI container: [internal/application/container/wire.go](mdc:internal/application/container/wire.go)
+
+### Infrastructure Layer (`internal/infrastructure/`)
+- External concerns: storage, logging, GUI, API
+- Implement domain interfaces
+- Storage implementations: [internal/infrastructure/storage/](mdc:internal/infrastructure/storage/)
+- GUI components: [internal/infrastructure/gui/](mdc:internal/infrastructure/gui/)
+
+### Shared Layer (`internal/shared/`)
+- Common utilities and configuration
+- Configuration management: [internal/shared/config/config.go](mdc:internal/shared/config/config.go)
+- Cross-cutting concerns
+
+## Dependency Direction
+- Dependencies point inward: Infrastructure → Application → Domain
+- Domain layer has no dependencies on other layers
+- Use interfaces for dependency inversion
+
+## Interface Segregation
+- Keep interfaces focused and small
+- Follow single responsibility principle
+- Use repository pattern for data access
+description:
+globs:
+alwaysApply: false
+---

@@ -1,15 +1,29 @@
+// Package theme provides UI theme and asset management for the application
 package theme
 
 import (
-	_ "embed"
-
 	"fyne.io/fyne/v2"
+
+	_ "embed"
 )
 
-//go:embed favicon.ico
+//go:embed icon.png
 var iconData []byte
 
-// AppIcon returns the application icon
+// AppIcon returns the application icon resource
+// This is used for both the main application and system tray
 func AppIcon() fyne.Resource {
-	return fyne.NewStaticResource("favicon.ico", iconData)
+	return fyne.NewStaticResource("icon.png", iconData)
+}
+
+// Deprecated: Use AppIcon() instead
+// GetAppIconResource returns the application icon resource
+func GetAppIconResource() fyne.Resource {
+	return AppIcon()
+}
+
+// Deprecated: Use AppIcon() instead
+// GetSystrayIconResource returns the system tray icon resource
+func GetSystrayIconResource() fyne.Resource {
+	return AppIcon()
 }

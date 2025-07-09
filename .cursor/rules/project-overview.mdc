@@ -13,14 +13,14 @@ This is a Go-based task management application using clean architecture and depe
 - **Domain**: Business logic and models - [internal/domain/](mdc:internal/domain/)
 - **Application**: Use cases and orchestration - [internal/application/](mdc:internal/application/)
 - **Infrastructure**: External concerns (storage, GUI, API) - [internal/infrastructure/](mdc:internal/infrastructure/)
-- **Shared**: Common utilities and configuration - [internal/shared/](mdc:internal/shared/)
 
 ### Key Components
 - **Task Management**: [internal/domain/service/task_service.go](mdc:internal/domain/service/task_service.go)
 - **Storage**: [internal/infrastructure/storage/](mdc:internal/infrastructure/storage/)
 - **GUI**: [internal/infrastructure/gui/](mdc:internal/infrastructure/gui/)
 - **API**: [internal/infrastructure/api/](mdc:internal/infrastructure/api/)
-- **Configuration**: [internal/shared/config/config.go](mdc:internal/shared/config/config.go)
+- **Configuration**: [internal/config/config.go](mdc:internal/config/config.go)
+- **Hotkey Management**: [internal/application/app/hotkey/](mdc:internal/application/app/hotkey/)
 
 ## Technology Stack
 - **DI Framework**: Google Wire
@@ -29,6 +29,7 @@ This is a Go-based task management application using clean architecture and depe
 - **Logging**: Zap
 - **Configuration**: Viper
 - **Testing**: Mockgen for mocks
+- **Hotkey Library**: github.com/csturiale/hotkey (actively maintained fork)
 
 ## Development Tools
 - **Build System**: Taskfile - [Taskfile.yml](mdc:Taskfile.yml)
@@ -42,6 +43,15 @@ This is a Go-based task management application using clean architecture and depe
 - Interface-based design for testability
 - Comprehensive error handling
 - Platform-agnostic core with platform-specific implementations
+- Simplified configuration management (no shared directories)
+- Unified hotkey management across platforms
+
+## Recent Improvements
+- Migrated from over-engineered shared/config to simplified internal/config
+- Removed circular dependencies and unnecessary abstractions
+- Updated to actively maintained hotkey library fork
+- Consolidated platform-specific hotkey managers into unified implementation
+- Eliminated shared/common and shared/config anti-patterns
 description:
 globs:
 alwaysApply: false

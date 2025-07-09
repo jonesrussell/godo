@@ -1,0 +1,61 @@
+# Hotkey Management
+
+This project uses a unified hotkey management system with cross-platform support.
+
+## Hotkey Architecture
+
+### Unified Manager
+- Single implementation: [internal/application/app/hotkey/manager_unified.go](mdc:internal/application/app/hotkey/manager_unified.go)
+- Platform-specific logic only where necessary
+- Uses actively maintained library: `github.com/csturiale/hotkey`
+
+### Configuration
+- Hotkey configuration in [internal/config/config.go](mdc:internal/config/config.go)
+- Simple string-based modifiers: `["Ctrl", "Shift", "Alt"]`
+- Cross-platform key support: `"G"`, `"N"`, etc.
+
+## Implementation Guidelines
+
+### Modifier Handling
+- Use raw modifier values for cross-platform compatibility
+- Windows: `hotkey.Modifier(0x1)` for Alt
+- Linux/Darwin: `hotkey.Modifier(8)` for Alt (Mod1)
+- Avoid platform-specific constants that don't exist on other platforms
+
+### Platform-Specific Logic
+- Only add platform-specific code when absolutely necessary
+- Use `runtime.GOOS` checks for platform detection
+- Keep platform logic minimal and well-documented
+
+### Error Handling
+- Graceful fallback when hotkeys aren't supported (e.g., WSL2)
+- Clear error messages for unsupported platforms
+- Continue application operation even if hotkeys fail
+
+## Best Practices
+
+### Library Selection
+- Use actively maintained libraries (avoid unmaintained ones)
+- Prefer forks with recent updates over original unmaintained libraries
+- Document library choices and reasoning
+
+### Code Organization
+- Single manager implementation for all platforms
+- Clear interface definitions
+- Proper dependency injection
+- No circular dependencies
+
+### Testing
+- Test cross-platform compilation
+- Verify hotkey registration works on target platforms
+- Test graceful degradation when hotkeys aren't available
+
+## Migration Notes
+- Migrated from `golang.design/x/hotkey` to `github.com/csturiale/hotkey`
+- Removed platform-specific wrapper files
+- Consolidated into unified manager
+- Eliminated unnecessary abstractions
+description:
+globs: ["**/hotkey/**/*.go"]
+alwaysApply: false
+---

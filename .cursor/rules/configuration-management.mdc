@@ -1,14 +1,15 @@
 # Configuration Management
 
-This project uses centralized configuration management with proper validation.
+This project uses simplified, centralized configuration management with proper validation.
 
 ## Configuration Structure
 
 ### Main Configuration
-- Centralized in [internal/shared/config/config.go](mdc:internal/shared/config/config.go)
+- Centralized in [internal/config/config.go](mdc:internal/config/config.go)
 - Use Viper for configuration loading
 - Support environment variables and config files
 - Validate configuration early
+- No circular dependencies or shared anti-patterns
 
 ### Provider Configuration
 - Configure providers in [internal/application/container/wire.go](mdc:internal/application/container/wire.go)
@@ -40,6 +41,13 @@ This project uses centralized configuration management with proper validation.
 - Don't access configuration globally
 - Use dependency injection for configuration
 - Validate configuration in provider functions
+- Avoid circular dependencies between config and other packages
+
+## Simplified Structure
+- Single config package: `internal/config/`
+- No shared directories or anti-patterns
+- Clear separation of concerns
+- Platform-specific logic only where necessary
 description:
 globs:
 alwaysApply: false

@@ -18,6 +18,10 @@ builds:
   - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
   tags:
   - windows
+  hooks:
+    pre:
+    - cmd: go install github.com/google/wire/cmd/wire@latest
+    - cmd: cd internal/application/container && wire gen -tags windows
 
 - id: linux
   main: ./main.go
@@ -31,6 +35,10 @@ builds:
   - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
   tags:
   - linux
+  hooks:
+    pre:
+    - cmd: go install github.com/google/wire/cmd/wire@latest
+    - cmd: cd internal/application/container && wire gen -tags linux
 
 archives:
 - id: windows

@@ -13,7 +13,7 @@ import (
 	"github.com/google/wire"
 	"github.com/spf13/viper"
 
-	"github.com/jonesrussell/godo/internal/application"
+	"github.com/jonesrussell/godo/internal/application/core"
 	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/domain/repository"
 	"github.com/jonesrussell/godo/internal/domain/service"
@@ -67,13 +67,13 @@ var (
 
 	// AppSet provides the main application
 	AppSet = wire.NewSet(
-		application.New,
-		wire.Bind(new(application.Application), new(*application.App)),
+		core.New,
+		wire.Bind(new(core.Application), new(*core.App)),
 	)
 )
 
 // InitializeApp initializes the application with all dependencies
-func InitializeApp() (application.Application, func(), error) {
+func InitializeApp() (core.Application, func(), error) {
 	wire.Build(
 		CoreSet, // Configuration and core services
 		UISet,   // User interface

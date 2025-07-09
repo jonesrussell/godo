@@ -8,8 +8,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/jonesrussell/godo/internal/application"
 	"github.com/jonesrussell/godo/internal/application/container"
+	"github.com/jonesrussell/godo/internal/application/core"
 )
 
 func main() {
@@ -30,7 +30,7 @@ func main() {
 		fmt.Println("\nReceived interrupt signal. Cleaning up...")
 
 		// Get the concrete App type
-		if godoApp, ok := myapp.(*application.App); ok {
+		if godoApp, ok := myapp.(*core.App); ok {
 			// Quit the application
 			godoApp.Quit()
 		}

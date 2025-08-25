@@ -26,7 +26,7 @@ jobs:
     outputs:
       go-cache-key: ${{ steps.go-cache.outputs.cache-key }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - id: go-cache
         run: echo "cache-key=${{ hashFiles('**/go.sum') }}" >> $GITHUB_OUTPUT
 
@@ -45,7 +45,7 @@ jobs:
             artifact: godo
             cc: gcc
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       
       - uses: actions/setup-go@v5
         with:

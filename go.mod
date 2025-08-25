@@ -10,7 +10,7 @@ require (
 	github.com/go-playground/validator/v10 v10.27.0
 	github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/google/uuid v1.6.0
-	github.com/google/wire v0.6.0
+	github.com/google/wire v0.7.0
 	github.com/gorilla/mux v1.8.1
 	github.com/spf13/viper v1.20.1
 	go.uber.org/zap v1.27.0

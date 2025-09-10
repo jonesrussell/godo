@@ -57,6 +57,9 @@ tasks:
       - config.yaml
       - internal/application/container/wire_gen.go
       - Taskfile.build.yml
+    generates:
+      - dist/godo.exe
+      - dist/config.yaml
     env:
       CGO_ENABLED: 1
       GOOS: windows
@@ -81,6 +84,9 @@ tasks:
       - config.yaml
       - internal/application/container/wire_gen.go
       - Taskfile.build.yml
+    generates:
+      - dist/godo
+      - dist/config.yaml
     env:
       CGO_ENABLED: 0
       GOOS: linux
@@ -103,6 +109,9 @@ tasks:
       - config.yaml
       - internal/application/container/wire_gen.go
       - Taskfile.build.yml
+    generates:
+      - dist/godo
+      - dist/config.yaml
     env:
       CGO_ENABLED: 1
       GOOS: linux
@@ -125,6 +134,9 @@ tasks:
       - config.yaml
       - internal/application/container/wire_gen.go
       - Taskfile.build.yml
+    generates:
+      - dist/godo.exe
+      - dist/config.yaml
     env:
       CGO_ENABLED: 1
       GOOS: windows

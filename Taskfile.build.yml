@@ -54,6 +54,7 @@ tasks:
       - go.mod
       - go.sum
       - configs/**/*.yaml
+      - config.yaml
       - internal/application/container/wire_gen.go
       - Taskfile.build.yml
     env:
@@ -65,6 +66,7 @@ tasks:
     cmds:
     - mkdir -p {{.BUILD_DIR}}
     - go build -ldflags "-X main.version={{.VERSION}} -X main.commit={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}} -s -w" -tags windows -o {{.BUILD_DIR}}/{{.BINARY_NAME}}.exe main.go
+    - cp config.yaml {{.BUILD_DIR}}/ 2>/dev/null || echo "config.yaml not found, skipping"
 
   cross-linux:
     desc: Cross-compile for Linux from Windows
@@ -76,6 +78,7 @@ tasks:
       - go.mod
       - go.sum
       - configs/**/*.yaml
+      - config.yaml
       - internal/application/container/wire_gen.go
       - Taskfile.build.yml
     env:
@@ -85,6 +88,7 @@ tasks:
     cmds:
     - mkdir -p {{.BUILD_DIR}}
     - go build -ldflags "-X main.version={{.VERSION}} -X main.commit={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}} -s -w" -tags linux -o {{.BUILD_DIR}}/{{.BINARY_NAME}} main.go
+    - copy config.yaml {{.BUILD_DIR}}\ 2>nul || echo config.yaml not found, skipping
 
   native:linux:
     desc: Build for Linux (native)
@@ -96,6 +100,7 @@ tasks:
       - go.mod
       - go.sum
       - configs/**/*.yaml
+      - config.yaml
       - internal/application/container/wire_gen.go
       - Taskfile.build.yml
     env:
@@ -105,6 +110,7 @@ tasks:
     cmds:
     - mkdir -p {{.BUILD_DIR}}
     - go build -ldflags "-X main.version={{.VERSION}} -X main.commit={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}} -s -w" -tags linux -o {{.BUILD_DIR}}/{{.BINARY_NAME}} main.go
+    - cp config.yaml {{.BUILD_DIR}}/ 2>/dev/null || echo "config.yaml not found, skipping"
 
   native:windows:
     desc: Build for Windows (native)
@@ -116,6 +122,7 @@ tasks:
       - go.mod
       - go.sum
       - configs/**/*.yaml
+      - config.yaml
       - internal/application/container/wire_gen.go
       - Taskfile.build.yml
     env:
@@ -125,6 +132,7 @@ tasks:
     cmds:
     - mkdir -p {{.BUILD_DIR}}
     - go build -ldflags "-X main.version={{.VERSION}} -X main.commit={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}} -s -w" -tags windows -o {{.BUILD_DIR}}/{{.BINARY_NAME}}.exe main.go
+    - copy config.yaml {{.BUILD_DIR}}\ 2>nul || echo config.yaml not found, skipping
 
   native:
     desc: Build for current platform (native)
@@ -179,6 +187,7 @@ tasks:
     - docker create --name godo-linux-temp godo-linux
     - docker cp godo-linux-temp:/app/godo {{.BUILD_DIR}}/godo
     - docker rm godo-linux-temp
+    - cp config.yaml {{.BUILD_DIR}}/ 2>/dev/null || echo "config.yaml not found, skipping"
 
   docker:build-windows:
     desc: Build Windows binary using Docker
@@ -190,6 +199,7 @@ tasks:
     - docker create --name godo-windows-temp godo-windows
     - docker cp godo-windows-temp:/godo.exe {{.BUILD_DIR}}/godo.exe
     - docker rm godo-windows-temp
+    - copy config.yaml {{.BUILD_DIR}}\ 2>nul || echo config.yaml not found, skipping
 
   clean:
     desc: Clean up generated files

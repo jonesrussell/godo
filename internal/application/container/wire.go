@@ -6,6 +6,8 @@ package container
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"fyne.io/fyne/v2"
 	fyneapp "fyne.io/fyne/v2/app"
@@ -87,10 +89,18 @@ func ProvideConfig() (*config.Config, error) {
 	// Start with default config
 	cfg := config.NewDefaultConfig()
 
-	// Try to load config.yaml from current directory
+	// Try to load config.yaml from executable directory and current directory
 	v := viper.New()
 	v.SetConfigName("config")
 	v.SetConfigType("yaml")
+
+	// Add executable directory as first search path
+	if execPath, err := os.Executable(); err == nil {
+		execDir := filepath.Dir(execPath)
+		v.AddConfigPath(execDir)
+	}
+
+	// Also try current directory as fallback
 	v.AddConfigPath(".")
 
 	if err := v.ReadInConfig(); err == nil {

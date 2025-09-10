@@ -244,6 +244,7 @@ tasks:
     desc: Build for current platform (native)
     cmds:
     - task: build:native
+    - cp config.yaml {{.BUILD_DIR}}/ 2>/dev/null || echo "config.yaml not found, skipping"
 
   check:
     desc: Quick check - format and lint only

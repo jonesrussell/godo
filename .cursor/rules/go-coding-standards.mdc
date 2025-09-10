@@ -1,0 +1,143 @@
+---
+globs: *.go
+description: Go coding standards and conventions for the Godo project
+---
+
+# Go Coding Standards
+
+## Code Style and Formatting
+
+### Formatting
+- Use `gofumpt` for code formatting (configured in VSCode) [[memory:2319967]]
+- Run `task fmt` before committing to ensure consistent formatting
+- Use `goimports` for import organization
+- Enable `golangci-lint` with `--fast` flag for linting [[memory:2319967]]
+
+### Naming Conventions
+- **Exported types/functions**: PascalCase (e.g., `TaskService`, `NewApp`)
+- **Private types/functions**: camelCase (e.g., `taskService`, `newWindow`)
+- **Interfaces**: Use descriptive names ending with behavior (e.g., `TaskStore`, `Logger`)
+- **Constants**: UPPER_SNAKE_CASE (e.g., `DEFAULT_TIMEOUT`)
+- **Avoid "Enhanced" prefix** in any naming [[memory:2700854]]
+
+### Package Organization
+- One package per directory
+- Package names should be lowercase, single word
+- Use meaningful package names that describe purpose
+- Keep packages focused and cohesive
+
+## Error Handling
+
+### Error Patterns
+```go
+// Good: Wrap errors with context
+if err != nil {
+    return fmt.Errorf("failed to initialize storage: %w", err)
+}
+
+// Good: Use sentinel errors for expected conditions
+var ErrTaskNotFound = errors.New("task not found")
+
+// Good: Return errors as the last return value
+func (s *Service) GetTask(id string) (*Task, error) {
+    // implementation
+}
+```
+
+### Logging
+- Use structured logging with appropriate levels
+- Include context in log messages
+- Use the logger interface from `internal/infrastructure/logger`
+
+## Concurrency
+
+### Goroutines
+- Always handle goroutine lifecycle properly
+- Use context for cancellation
+- Avoid goroutine leaks
+- Use sync primitives when needed
+
+### Example Pattern
+```go
+func (a *App) startWorker(ctx context.Context) {
+    go func() {
+        defer func() {
+            if r := recover(); r != nil {
+                a.logger.Error("worker panic", zap.Any("panic", r))
+            }
+        }()
+        
+        for {
+            select {
+            case <-ctx.Done():
+                return
+            case work := <-a.workChan:
+                a.processWork(work)
+            }
+        }
+    }()
+}
+```
+
+## Testing
+
+### Test Organization
+- Test files end with `_test.go`
+- Use table-driven tests for multiple scenarios
+- Place tests in the same package (white-box testing)
+- Use `testify` for assertions when helpful
+
+### Test Naming
+```go
+func TestTaskService_CreateTask(t *testing.T) {
+    // Test implementation
+}
+
+func TestTaskService_CreateTask_WithInvalidData(t *testing.T) {
+    // Test implementation
+}
+```
+
+## Documentation
+
+### Comments
+- Document all exported types, functions, and methods
+- Use complete sentences in comments
+- Start with the name being described
+- Example:
+```go
+// TaskService provides business logic for task management.
+// It coordinates between the repository and external services.
+type TaskService struct {
+    // implementation
+}
+```
+
+### README and Documentation
+- Keep README.md updated with current features
+- Document API endpoints and configuration options
+- Include setup and development instructions
+
+## Performance Considerations
+
+### Memory Management
+- Be mindful of memory allocations in hot paths
+- Use object pooling for frequently created/destroyed objects
+- Profile memory usage when needed
+
+### Database Operations
+- Use prepared statements for repeated queries
+- Implement proper connection pooling
+- Use transactions for multi-step operations
+- Handle connection timeouts gracefully
+
+## Security
+
+### Input Validation
+- Validate all user inputs
+- Use the `validator` package for struct validation
+- Sanitize data before storage
+
+### Error Information
+- Don't expose internal implementation details in errors
+- Log detailed errors internally, return user-friendly messages

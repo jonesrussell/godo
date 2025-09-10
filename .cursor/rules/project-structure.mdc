@@ -1,0 +1,64 @@
+---
+alwaysApply: true
+description: Project structure and architecture guidelines for the Godo application
+---
+
+# Project Structure and Architecture
+
+## Overview
+Godo is a cross-platform todo application built with Go using Clean Architecture principles. The application combines a GUI interface (Fyne), REST API, and global hotkey functionality for quick note capture.
+
+## Architecture Layers
+
+### Domain Layer (`internal/domain/`)
+- **Purpose**: Contains business logic and core entities
+- **Structure**:
+  - `model/` - Core domain entities and value objects
+  - `repository/` - Repository interfaces for data access
+  - `service/` - Business logic interfaces and implementations
+- **Rules**: 
+  - No external dependencies (pure Go)
+  - Contains only interfaces and domain models
+  - Business logic should be in service layer
+
+### Application Layer (`internal/application/`)
+- **Purpose**: Orchestrates domain services and coordinates application flow
+- **Structure**:
+  - `core/` - Main application logic and interfaces
+  - `container/` - Dependency injection setup using Google Wire
+- **Rules**:
+  - Uses dependency injection for all dependencies
+  - Implements application interfaces defined in core
+  - Contains Wire configuration for DI
+
+### Infrastructure Layer (`internal/infrastructure/`)
+- **Purpose**: External concerns and implementations
+- **Structure**:
+  - `api/` - REST API server and handlers
+  - `gui/` - Fyne GUI components and windows
+  - `hotkey/` - Global hotkey management
+  - `logger/` - Logging implementations
+  - `platform/` - Platform-specific code
+  - `storage/` - Data persistence implementations
+- **Rules**:
+  - Implements interfaces defined in domain layer
+  - Contains all external dependencies
+  - Platform-specific code goes in `platform/`
+
+## Key Files
+
+- [main.go](mdc:main.go) - Application entry point with signal handling
+- [config.yaml](mdc:config.yaml) - Application configuration
+- [FyneApp.toml](mdc:FyneApp.toml) - Fyne application metadata
+- [Taskfile.yml](mdc:Taskfile.yml) - Build automation and development tasks
+- [go.mod](mdc:go.mod) - Go module dependencies
+
+## Dependency Flow
+```
+main.go → container.InitializeApp() → Wire DI → All layers
+```
+
+## Naming Conventions
+- Avoid using "Enhanced" prefix in any naming [[memory:2700854]]
+- Use descriptive, clear names that reflect functionality
+- Follow Go naming conventions (PascalCase for exported, camelCase for private)

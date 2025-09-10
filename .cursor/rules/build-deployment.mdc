@@ -1,0 +1,301 @@
+---
+globs: Taskfile*.yml,build/**/*,*.toml
+description: Build, deployment, and Taskfile usage guidelines
+---
+
+# Build, Deployment, and Taskfile Usage
+
+## Taskfile Overview
+
+The project uses Taskfile for build automation and development workflows. Main configuration is in [Taskfile.yml](mdc:Taskfile.yml) with build-specific tasks in [Taskfile.build.yml](mdc:Taskfile.build.yml).
+
+## Core Tasks
+
+### Development Workflow
+```bash
+# Quick development check (format + lint)
+task dev
+
+# WSL2 development workflow (with X11 support)
+task dev:wsl2
+
+# Full development cycle
+task all
+```
+
+### Code Quality
+```bash
+# Format code
+task fmt
+
+# Run linters
+task lint
+
+# Run linters with auto-fix
+task lint:fix
+
+# Quick check (format + fast lint)
+task check
+```
+
+### Testing
+```bash
+# Run basic tests
+task test
+
+# Run tests with race detection
+task test:race
+
+# Run tests with coverage
+task test:cover
+
+# Run tests on Linux with virtual display
+task test:linux
+
+# Run tests in WSL2 environment
+task test:wsl2
+```
+
+### Building
+```bash
+# Build for current platform
+task build
+
+# Generate Wire DI code
+task wire
+
+# Watch for changes and rebuild
+task watch
+```
+
+## Build Process
+
+### Wire Generation
+Wire dependency injection code must be generated before building:
+```bash
+task wire
+```
+
+This generates the DI code in `internal/application/container/` using Google Wire.
+
+### Cross-Platform Building
+The project supports building for multiple platforms:
+- **Windows**: Native executable with system tray support
+- **Linux**: Native executable (system tray not supported)
+- **macOS**: Coming soon
+
+### Build Artifacts
+- Binaries are output to `dist/` directory
+- Windows: `dist/godo.exe`
+- Linux/macOS: `dist/godo`
+
+## Configuration
+
+### Environment Variables
+- `CGO_ENABLED=1` - Required for Fyne GUI
+- `LANG=en_US.UTF-8` - Locale settings
+- `LC_ALL=en_US.UTF-8` - Locale settings
+- `LOG_LEVEL=debug` - Debug logging (for run-debug)
+
+### Build Flags
+The application uses build-time variables:
+- `main.version` - Git tag or "dev"
+- `main.commit` - Git commit hash
+- `main.buildTime` - UTC build timestamp
+
+## Platform-Specific Setup
+
+### Linux Dependencies
+```bash
+# Install Linux dependencies
+task setup:linux
+```
+
+Installs:
+- `xvfb` - Virtual display for headless testing
+- `libx11-dev` - X11 development libraries
+
+### Windows Dependencies
+```bash
+# Install Windows dependencies
+task setup:windows
+```
+
+Installs:
+- `mingw` - MinGW compiler
+- `make` - Build tool
+
+## Testing in Different Environments
+
+### WSL2 Testing
+For WSL2 with X11 forwarding:
+```bash
+# Test GUI components
+task wsl2:test-gui
+
+# Full WSL2 development workflow
+task dev:wsl2
+```
+
+### Headless Testing
+For CI/CD environments without display:
+```bash
+# Linux with virtual display
+task test:linux
+```
+
+## Release Management
+
+### Release Preparation
+```bash
+# Prepare release (clean, format, lint, test, build)
+task release:prepare
+```
+
+### Release Tagging
+```bash
+# Create and push release tag
+task release:tag v1.0.0
+```
+
+### Docker Release
+```bash
+# Build and push Docker images
+task release:docker v1.0.0
+```
+
+## Docker Support
+
+### Docker Build
+The project includes Docker support for containerized deployment:
+- Multi-stage builds for different targets
+- Linux runtime images
+- Cross-platform builds
+
+### Docker Commands
+```bash
+# Build all Docker images
+task --taskfile Taskfile.build.yml docker:build-all
+
+# Build specific platform
+task --taskfile Taskfile.build.yml docker:build-linux
+```
+
+## Development Tools
+
+### Tool Installation
+```bash
+# Install all development tools
+task install-tools
+```
+
+Installs:
+- `golangci-lint` - Linting
+- `goimports` - Import formatting
+- `wire` - Dependency injection
+
+### Mock Generation
+```bash
+# Generate all mocks
+task mocks
+
+# Generate specific mocks
+task mocks:storage
+task mocks:logger
+task mocks:service
+task mocks:gui
+task mocks:app
+
+# Clean generated mocks
+task mocks:clean
+```
+
+## CI/CD Integration
+
+### CI Pipeline
+```bash
+# Run CI checks (lint + test)
+task ci
+
+# Run full CI pipeline (includes builds)
+task ci:full
+```
+
+### GitHub Actions
+The project is configured for GitHub Actions with:
+- Cross-platform builds
+- Automated testing
+- Docker image building
+- Release automation
+
+## Application Configuration
+
+### Fyne Configuration
+[FyneApp.toml](mdc:FyneApp.toml) contains Fyne-specific metadata:
+- Application name and ID
+- Version information
+- Platform-specific settings
+- Build configuration
+
+### Runtime Configuration
+[config.yaml](mdc:config.yaml) contains runtime settings:
+- Application settings
+- Logger configuration
+- Database settings
+- UI preferences
+- Hotkey configuration
+- HTTP server settings
+
+## Debug and Development
+
+### Debug Mode
+```bash
+# Run with debug output
+task run-debug
+```
+
+### Regular Run
+```bash
+# Run application normally
+task run
+```
+
+### Watch Mode
+```bash
+# Watch for changes and rebuild
+task watch
+```
+
+## Memory and Preferences
+
+### User Preferences
+- Application starts by printing debug info (OS, architecture, environment) [[memory:2661425]]
+- User compiles for Windows and tests GUI by double-clicking executable [[memory:2694402]]
+- Linter is run with `task lint` command [[memory:2645877]]
+
+### Build Commands
+- `task wire`: Generates Wire DI code for current platform [[memory:2657929]]
+- `task build`: Builds application for current platform [[memory:2657929]]
+
+## Troubleshooting
+
+### Common Issues
+1. **Wire generation fails**: Ensure all dependencies are properly defined
+2. **GUI tests fail**: Check display environment and X11 forwarding
+3. **Cross-compilation issues**: Verify target platform dependencies
+4. **Mock generation fails**: Check interface definitions and mockgen installation
+
+### Debug Commands
+```bash
+# Check Go environment
+go env
+
+# Verify Wire installation
+wire -h
+
+# Check linter configuration
+golangci-lint config
+
+# Test display environment
+echo $DISPLAY
+```

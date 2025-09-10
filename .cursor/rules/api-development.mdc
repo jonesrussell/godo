@@ -1,0 +1,397 @@
+---
+globs: internal/infrastructure/api/**/*.go
+description: REST API development patterns and best practices
+---
+
+# REST API Development Patterns
+
+## Overview
+The project includes a REST API for programmatic task management and integration. The API layer is implemented in `internal/infrastructure/api/` using Gorilla Mux for routing and standard HTTP patterns.
+
+## API Architecture
+
+### Component Organization
+- `server.go` - HTTP server implementation
+- `runner.go` - Server lifecycle management
+- `handlers/` - HTTP request handlers
+- `middleware/` - HTTP middleware (logging, CORS, etc.)
+- `models/` - API request/response models
+
+### Server Management
+- Graceful startup and shutdown
+- Configurable timeouts
+- Health check endpoint
+- Proper error handling
+
+## HTTP Handler Patterns
+
+### Handler Structure
+```go
+type TaskHandler struct {
+    service service.TaskService
+    logger  logger.Logger
+}
+
+func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
+    // Parse request
+    var req CreateTaskRequest
+    if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+        h.writeError(w, http.StatusBadRequest, "Invalid JSON", err)
+        return
+    }
+    
+    // Validate request
+    if err := h.validateCreateTaskRequest(&req); err != nil {
+        h.writeError(w, http.StatusBadRequest, "Validation failed", err)
+        return
+    }
+    
+    // Process request
+    task := &model.Task{
+        ID:   uuid.New().String(),
+        Text: req.Text,
+    }
+    
+    if err := h.service.CreateTask(r.Context(), task); err != nil {
+        h.writeError(w, http.StatusInternalServerError, "Failed to create task", err)
+        return
+    }
+    
+    // Write response
+    h.writeJSON(w, http.StatusCreated, CreateTaskResponse{
+        ID:   task.ID,
+        Text: task.Text,
+    })
+}
+```
+
+### Response Patterns
+```go
+// Success response
+func (h *TaskHandler) writeJSON(w http.ResponseWriter, status int, data interface{}) {
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(status)
+    json.NewEncoder(w).Encode(data)
+}
+
+// Error response
+func (h *TaskHandler) writeError(w http.ResponseWriter, status int, message string, err error) {
+    h.logger.Error("API error", 
+        zap.Int("status", status),
+        zap.String("message", message),
+        zap.Error(err),
+    )
+    
+    response := ErrorResponse{
+        Error:   message,
+        Details: err.Error(),
+    }
+    
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(status)
+    json.NewEncoder(w).Encode(response)
+}
+```
+
+## Request/Response Models
+
+### Request Models
+```go
+type CreateTaskRequest struct {
+    Text string `json:"text" validate:"required,min=1,max=500"`
+}
+
+type UpdateTaskRequest struct {
+    Text      string `json:"text,omitempty" validate:"omitempty,min=1,max=500"`
+    Completed bool   `json:"completed,omitempty"`
+}
+```
+
+### Response Models
+```go
+type TaskResponse struct {
+    ID        string    `json:"id"`
+    Text      string    `json:"text"`
+    Completed bool      `json:"completed"`
+    CreatedAt time.Time `json:"created_at"`
+    UpdatedAt time.Time `json:"updated_at"`
+}
+
+type ErrorResponse struct {
+    Error   string `json:"error"`
+    Details string `json:"details,omitempty"`
+}
+```
+
+## Routing and Middleware
+
+### Route Definition
+```go
+func (s *Server) setupRoutes() {
+    r := mux.NewRouter()
+    
+    // API routes
+    api := r.PathPrefix("/api/v1").Subrouter()
+    
+    // Task routes
+    taskHandler := &TaskHandler{
+        service: s.taskService,
+        logger:  s.logger,
+    }
+    
+    api.HandleFunc("/tasks", taskHandler.CreateTask).Methods("POST")
+    api.HandleFunc("/tasks", taskHandler.ListTasks).Methods("GET")
+    api.HandleFunc("/tasks/{id}", taskHandler.GetTask).Methods("GET")
+    api.HandleFunc("/tasks/{id}", taskHandler.UpdateTask).Methods("PUT")
+    api.HandleFunc("/tasks/{id}", taskHandler.DeleteTask).Methods("DELETE")
+    
+    // Health check
+    r.HandleFunc("/health", s.healthCheck).Methods("GET")
+    
+    s.router = r
+}
+```
+
+### Middleware
+```go
+func (s *Server) setupMiddleware() {
+    // Logging middleware
+    s.router.Use(s.loggingMiddleware)
+    
+    // CORS middleware
+    s.router.Use(s.corsMiddleware)
+    
+    // Recovery middleware
+    s.router.Use(s.recoveryMiddleware)
+}
+
+func (s *Server) loggingMiddleware(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        start := time.Now()
+        
+        // Wrap response writer to capture status code
+        wrapped := &responseWriter{ResponseWriter: w, statusCode: http.StatusOK}
+        
+        next.ServeHTTP(wrapped, r)
+        
+        duration := time.Since(start)
+        s.logger.Info("HTTP request",
+            zap.String("method", r.Method),
+            zap.String("path", r.URL.Path),
+            zap.Int("status", wrapped.statusCode),
+            zap.Duration("duration", duration),
+        )
+    })
+}
+```
+
+## Error Handling
+
+### HTTP Status Codes
+- `200 OK` - Successful GET, PUT
+- `201 Created` - Successful POST
+- `204 No Content` - Successful DELETE
+- `400 Bad Request` - Invalid request data
+- `404 Not Found` - Resource not found
+- `500 Internal Server Error` - Server error
+
+### Error Response Format
+```go
+type ErrorResponse struct {
+    Error   string            `json:"error"`
+    Details string            `json:"details,omitempty"`
+    Fields  map[string]string `json:"fields,omitempty"`
+}
+```
+
+### Validation Errors
+```go
+func (h *TaskHandler) validateCreateTaskRequest(req *CreateTaskRequest) error {
+    validate := validator.New()
+    if err := validate.Struct(req); err != nil {
+        return fmt.Errorf("validation failed: %w", err)
+    }
+    return nil
+}
+```
+
+## Context and Timeouts
+
+### Request Context
+```go
+func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
+    // Use request context for cancellation
+    ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+    defer cancel()
+    
+    // Pass context to service layer
+    if err := h.service.CreateTask(ctx, task); err != nil {
+        h.writeError(w, http.StatusInternalServerError, "Failed to create task", err)
+        return
+    }
+}
+```
+
+### Server Timeouts
+```go
+func (s *Server) Start() error {
+    srv := &http.Server{
+        Addr:         fmt.Sprintf(":%d", s.config.Port),
+        Handler:      s.router,
+        ReadTimeout:  s.config.ReadTimeout,
+        WriteTimeout: s.config.WriteTimeout,
+        IdleTimeout:  s.config.IdleTimeout,
+    }
+    
+    return srv.ListenAndServe()
+}
+```
+
+## Testing API Endpoints
+
+### Test Server Setup
+```go
+func setupTestServer(t *testing.T) (*httptest.Server, func()) {
+    // Create test dependencies
+    mockService := &mockTaskService{}
+    mockLogger := &mockLogger{}
+    
+    // Create test server
+    server := &Server{
+        taskService: mockService,
+        logger:      mockLogger,
+    }
+    server.setupRoutes()
+    
+    testServer := httptest.NewServer(server.router)
+    
+    cleanup := func() {
+        testServer.Close()
+    }
+    
+    return testServer, cleanup
+}
+```
+
+### API Test Examples
+```go
+func TestTaskHandler_CreateTask(t *testing.T) {
+    server, cleanup := setupTestServer(t)
+    defer cleanup()
+    
+    tests := []struct {
+        name           string
+        requestBody    string
+        expectedStatus int
+        expectedError  string
+    }{
+        {
+            name:           "valid request",
+            requestBody:    `{"text": "Test task"}`,
+            expectedStatus: http.StatusCreated,
+        },
+        {
+            name:           "empty text",
+            requestBody:    `{"text": ""}`,
+            expectedStatus: http.StatusBadRequest,
+            expectedError:  "Validation failed",
+        },
+    }
+    
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            resp, err := http.Post(server.URL+"/api/v1/tasks", 
+                "application/json", 
+                strings.NewReader(tt.requestBody))
+            require.NoError(t, err)
+            defer resp.Body.Close()
+            
+            assert.Equal(t, tt.expectedStatus, resp.StatusCode)
+            
+            if tt.expectedError != "" {
+                var errorResp ErrorResponse
+                err := json.NewDecoder(resp.Body).Decode(&errorResp)
+                require.NoError(t, err)
+                assert.Contains(t, errorResp.Error, tt.expectedError)
+            }
+        })
+    }
+}
+```
+
+## API Documentation
+
+### OpenAPI/Swagger
+- Document all endpoints
+- Include request/response schemas
+- Provide example requests
+- Document error responses
+
+### Endpoint Documentation
+```go
+// CreateTask creates a new task
+// @Summary Create a new task
+// @Description Create a new task with the provided text
+// @Tags tasks
+// @Accept json
+// @Produce json
+// @Param task body CreateTaskRequest true "Task data"
+// @Success 201 {object} CreateTaskResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /api/v1/tasks [post]
+func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
+    // Implementation
+}
+```
+
+## Security Considerations
+
+### Input Validation
+- Validate all input data
+- Sanitize user inputs
+- Use proper data types
+- Implement rate limiting
+
+### Authentication/Authorization
+- Implement proper authentication
+- Use secure session management
+- Validate permissions
+- Log security events
+
+### CORS Configuration
+```go
+func (s *Server) corsMiddleware(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        w.Header().Set("Access-Control-Allow-Origin", "*")
+        w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+        w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+        
+        if r.Method == "OPTIONS" {
+            w.WriteHeader(http.StatusOK)
+            return
+        }
+        
+        next.ServeHTTP(w, r)
+    })
+}
+```
+
+## Performance Optimization
+
+### Response Caching
+- Implement appropriate caching headers
+- Use ETags for conditional requests
+- Cache static responses
+
+### Database Optimization
+- Use connection pooling
+- Implement query optimization
+- Use prepared statements
+- Handle database timeouts
+
+### Monitoring and Metrics
+- Log request/response times
+- Monitor error rates
+- Track resource usage
+- Implement health checks

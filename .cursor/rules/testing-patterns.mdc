@@ -1,0 +1,346 @@
+---
+globs: *_test.go
+description: Testing patterns, conventions, and best practices for the Godo project
+---
+
+# Testing Patterns and Conventions
+
+## Test Organization
+
+### File Structure
+- Test files end with `_test.go`
+- Place tests in the same package as the code being tested (white-box testing)
+- Use table-driven tests for multiple scenarios
+- Group related tests in the same file
+
+### Test Naming Conventions
+```go
+// Test function naming: Test[Type]_[Method]_[Scenario]
+func TestTaskService_CreateTask(t *testing.T) {
+    // Happy path test
+}
+
+func TestTaskService_CreateTask_WithInvalidData(t *testing.T) {
+    // Error case test
+}
+
+func TestTaskService_CreateTask_WithDuplicateID(t *testing.T) {
+    // Edge case test
+}
+```
+
+## Test Categories
+
+### Unit Tests
+- Test individual functions and methods
+- Mock external dependencies
+- Fast execution (< 1ms per test)
+- High coverage of business logic
+
+### Integration Tests
+- Test component interactions
+- Use real dependencies where appropriate
+- Test database operations
+- Test API endpoints
+
+### GUI Tests
+- Test Fyne components in isolation
+- Use virtual display for headless testing
+- Test user interactions and callbacks
+
+## Test Setup Patterns
+
+### Table-Driven Tests
+```go
+func TestTaskService_CreateTask(t *testing.T) {
+    tests := []struct {
+        name        string
+        input       *model.Task
+        setup       func(*testing.T) *taskService
+        expectError bool
+        expectedErr string
+    }{
+        {
+            name: "valid task",
+            input: &model.Task{
+                ID:   "test-id",
+                Text: "Test task",
+            },
+            setup: func(t *testing.T) *taskService {
+                return &taskService{
+                    store:  &mockStore{},
+                    logger: &mockLogger{},
+                }
+            },
+            expectError: false,
+        },
+        {
+            name: "empty task text",
+            input: &model.Task{
+                ID:   "test-id",
+                Text: "",
+            },
+            setup: func(t *testing.T) *taskService {
+                return &taskService{
+                    store:  &mockStore{},
+                    logger: &mockLogger{},
+                }
+            },
+            expectError: true,
+            expectedErr: "task text cannot be empty",
+        },
+    }
+
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            service := tt.setup(t)
+            err := service.CreateTask(context.Background(), tt.input)
+            
+            if tt.expectError {
+                require.Error(t, err)
+                assert.Contains(t, err.Error(), tt.expectedErr)
+            } else {
+                require.NoError(t, err)
+            }
+        })
+    }
+}
+```
+
+### Test Helpers
+```go
+func setupTestTaskService(t *testing.T) (*taskService, func()) {
+    // Setup test dependencies
+    mockStore := &mockStore{}
+    mockLogger := &mockLogger{}
+    
+    service := &taskService{
+        store:  mockStore,
+        logger: mockLogger,
+    }
+    
+    cleanup := func() {
+        // Cleanup resources
+    }
+    
+    return service, cleanup
+}
+```
+
+## Mock Patterns
+
+### Interface Mocks
+```go
+type mockTaskStore struct {
+    tasks map[string]*model.Task
+    err   error
+}
+
+func (m *mockTaskStore) CreateTask(ctx context.Context, task *model.Task) error {
+    if m.err != nil {
+        return m.err
+    }
+    m.tasks[task.ID] = task
+    return nil
+}
+
+func (m *mockTaskStore) GetTask(ctx context.Context, id string) (*model.Task, error) {
+    if m.err != nil {
+        return nil, m.err
+    }
+    task, exists := m.tasks[id]
+    if !exists {
+        return nil, storage.ErrTaskNotFound
+    }
+    return task, nil
+}
+```
+
+### Mock Generation
+Use `go generate` with mockgen for complex interfaces:
+```go
+//go:generate mockgen -source=task_store.go -destination=mocks/task_store_mock.go -package=mocks
+type TaskStore interface {
+    CreateTask(ctx context.Context, task *model.Task) error
+    GetTask(ctx context.Context, id string) (*model.Task, error)
+}
+```
+
+Run mock generation:
+```bash
+task mocks
+```
+
+## Database Testing
+
+### Test Database Setup
+```go
+func setupTestDB(t *testing.T) (*sqlite.Store, func()) {
+    // Create temporary database
+    dbPath := filepath.Join(t.TempDir(), "test.db")
+    
+    store, err := sqlite.New(dbPath)
+    require.NoError(t, err)
+    
+    cleanup := func() {
+        store.Close()
+        os.Remove(dbPath)
+    }
+    
+    return store, cleanup
+}
+```
+
+### Transaction Testing
+```go
+func TestTaskService_CreateTask_WithTransaction(t *testing.T) {
+    store, cleanup := setupTestDB(t)
+    defer cleanup()
+    
+    service := &taskService{store: store}
+    
+    // Test within transaction
+    err := store.WithTransaction(func(tx storage.Transaction) error {
+        return service.CreateTask(context.Background(), &model.Task{
+            ID:   "test-id",
+            Text: "Test task",
+        })
+    })
+    
+    require.NoError(t, err)
+}
+```
+
+## GUI Testing
+
+### Fyne Component Testing
+```go
+func TestMainWindow_CreateTask(t *testing.T) {
+    // Set up virtual display for headless testing
+    if os.Getenv("DISPLAY") == "" {
+        t.Skip("Skipping GUI test: no display available")
+    }
+    
+    app := fyne.NewApp()
+    window := app.NewWindow("Test")
+    
+    // Create component under test
+    mainWindow := &mainwindow.Window{
+        App:    app,
+        Window: window,
+    }
+    
+    // Test component behavior
+    mainWindow.Show()
+    // ... test interactions
+}
+```
+
+### WSL2 Testing
+For WSL2 environment with X11 forwarding:
+```bash
+task test:wsl2
+```
+
+## Test Execution
+
+### Running Tests
+```bash
+# Run all tests
+task test
+
+# Run tests with race detection
+task test:race
+
+# Run tests with coverage
+task test:cover
+
+# Run tests on Linux with virtual display
+task test:linux
+
+# Run tests in WSL2
+task test:wsl2
+```
+
+### Test Coverage
+- Aim for 80%+ coverage on business logic
+- Focus on critical paths and error conditions
+- Use `task test:cover` to generate coverage reports
+- Coverage reports are saved in `coverage/` directory
+
+## Test Data Management
+
+### Test Fixtures
+```go
+func createTestTask() *model.Task {
+    return &model.Task{
+        ID:        "test-task-1",
+        Text:      "Test task",
+        CreatedAt: time.Now(),
+        UpdatedAt: time.Now(),
+    }
+}
+
+func createTestTasks(count int) []*model.Task {
+    tasks := make([]*model.Task, count)
+    for i := 0; i < count; i++ {
+        tasks[i] = &model.Task{
+            ID:   fmt.Sprintf("test-task-%d", i),
+            Text: fmt.Sprintf("Test task %d", i),
+        }
+    }
+    return tasks
+}
+```
+
+### Test Cleanup
+- Always clean up test resources
+- Use `t.TempDir()` for temporary files
+- Close database connections
+- Clean up goroutines and channels
+
+## Performance Testing
+
+### Benchmark Tests
+```go
+func BenchmarkTaskService_CreateTask(b *testing.B) {
+    service, cleanup := setupTestTaskService(b)
+    defer cleanup()
+    
+    b.ResetTimer()
+    for i := 0; i < b.N; i++ {
+        task := &model.Task{
+            ID:   fmt.Sprintf("task-%d", i),
+            Text: fmt.Sprintf("Task %d", i),
+        }
+        service.CreateTask(context.Background(), task)
+    }
+}
+```
+
+### Load Testing
+- Test with realistic data volumes
+- Measure memory usage and performance
+- Test concurrent operations
+- Validate resource cleanup
+
+## Test Environment
+
+### Environment Variables
+```go
+func TestMain(m *testing.M) {
+    // Set up test environment
+    os.Setenv("LOG_LEVEL", "error")
+    os.Setenv("DISPLAY", ":99")
+    
+    code := m.Run()
+    
+    // Cleanup
+    os.Exit(code)
+}
+```
+
+### Platform-Specific Testing
+- Test on target platforms (Windows, Linux)
+- Use CI/CD for cross-platform testing
+- Test GUI components with appropriate display

@@ -1,0 +1,194 @@
+---
+globs: internal/application/container/*.go,internal/application/core/*.go
+description: Dependency injection patterns and Google Wire usage guidelines
+---
+
+# Dependency Injection and Wire Usage
+
+## Overview
+The project uses Google Wire for compile-time dependency injection. All dependencies are managed through the container package and injected into the application core.
+
+## Wire Configuration
+
+### Provider Sets
+Provider sets are organized by concern in [internal/application/container/wire.go](mdc:internal/application/container/wire.go):
+
+- **ConfigSet**: Configuration management
+- **LoggingSet**: Logging infrastructure  
+- **StorageSet**: Data persistence
+- **ServiceSet**: Business logic services
+- **UISet**: User interface components
+- **CoreSet**: Essential services (config, logging, storage, services)
+- **AppSet**: Main application
+
+### Adding New Dependencies
+
+#### 1. Create Provider Function
+```go
+// Provider function signature
+func ProvideNewService(deps Dependencies) (*NewService, error) {
+    // Implementation
+    return &NewService{}, nil
+}
+```
+
+#### 2. Add to Appropriate Provider Set
+```go
+var ServiceSet = wire.NewSet(
+    ProvideTaskRepository,
+    ProvideTaskService,
+    ProvideNewService, // Add here
+)
+```
+
+#### 3. Add Interface Binding (if needed)
+```go
+var ServiceSet = wire.NewSet(
+    ProvideNewService,
+    wire.Bind(new(domain.NewServiceInterface), new(*NewService)),
+)
+```
+
+#### 4. Include in AppSet
+```go
+var AppSet = wire.NewSet(
+    CoreSet,
+    UISet,
+    ProvideNewService, // Add if not in other sets
+    AppSet,
+)
+```
+
+## Interface Segregation
+
+### Domain Interfaces
+Define interfaces in the domain layer:
+```go
+// internal/domain/service/task.go
+type TaskService interface {
+    CreateTask(ctx context.Context, task *model.Task) error
+    GetTask(ctx context.Context, id string) (*model.Task, error)
+    // ... other methods
+}
+```
+
+### Infrastructure Implementations
+Implement interfaces in infrastructure layer:
+```go
+// internal/infrastructure/service/task.go
+type taskService struct {
+    store storage.TaskStore
+    logger logger.Logger
+}
+
+func (s *taskService) CreateTask(ctx context.Context, task *model.Task) error {
+    // Implementation
+}
+```
+
+## Wire Generation
+
+### Running Wire
+```bash
+# Generate Wire code for current platform
+task wire
+
+# Or directly
+wire ./internal/application/container
+```
+
+### Wire Build Tags
+- Use `//go:build wireinject` for Wire files
+- Use `// +build wireinject` for compatibility
+- Generated files should not have build tags
+
+## Container Initialization
+
+### Main Entry Point
+The application initializes through [main.go](mdc:main.go):
+```go
+myapp, cleanup, err := container.InitializeApp()
+if err != nil {
+    // Handle error
+}
+defer cleanup()
+```
+
+### Cleanup Pattern
+- Always call cleanup function on exit
+- Implement proper resource cleanup in providers
+- Use defer for cleanup in main function
+
+## Testing with Wire
+
+### Test Containers
+Create test-specific containers for unit tests:
+```go
+func TestSomething(t *testing.T) {
+    container, cleanup := setupTestContainer(t)
+    defer cleanup()
+    
+    // Use container for testing
+}
+```
+
+### Mock Providers
+Use Wire's mock capabilities for testing:
+```go
+var TestSet = wire.NewSet(
+    ProvideMockLogger,
+    ProvideMockStore,
+    // ... other test providers
+)
+```
+
+## Best Practices
+
+### Provider Functions
+- Return concrete types, not interfaces
+- Use `wire.Bind` to bind interfaces
+- Handle errors properly in providers
+- Keep providers focused and simple
+
+### Interface Design
+- Keep interfaces small and focused
+- Use composition over inheritance
+- Define interfaces in the domain layer
+- Implement interfaces in infrastructure layer
+
+### Error Handling
+- Return errors from providers
+- Handle initialization errors in main
+- Use proper error wrapping with context
+
+### Resource Management
+- Implement cleanup in providers when needed
+- Use defer for cleanup in main
+- Handle resource leaks properly
+
+## Common Patterns
+
+### Singleton Services
+```go
+func ProvideLogger(cfg *config.Config) (logger.Logger, error) {
+    // Return singleton instance
+    return logger.New(cfg.Logger), nil
+}
+```
+
+### Factory Functions
+```go
+func ProvideTaskService(store storage.TaskStore) service.TaskService {
+    return &taskService{store: store}
+}
+```
+
+### Conditional Providers
+```go
+func ProvideLogger(cfg *config.Config) logger.Logger {
+    if cfg.Logger.File {
+        return logger.NewFileLogger(cfg.Logger)
+    }
+    return logger.NewConsoleLogger(cfg.Logger)
+}
+```

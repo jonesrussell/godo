@@ -1,0 +1,325 @@
+---
+globs: internal/infrastructure/gui/**/*.go
+description: Fyne GUI development patterns and best practices
+---
+
+# Fyne GUI Development Patterns
+
+## Overview
+The project uses Fyne v2 for cross-platform GUI development. The GUI layer is organized in `internal/infrastructure/gui/` with separate components for different windows and functionality.
+
+## GUI Architecture
+
+### Component Organization
+- `mainwindow/` - Main application window
+- `quicknote/` - Quick note popup window
+- `theme/` - Custom theme and styling
+- `common/` - Shared GUI components
+
+### Window Management
+- Main window: Full-featured todo management interface
+- Quick note window: Lightweight popup for instant note capture
+- System tray integration (Windows only)
+
+## Fyne Best Practices
+
+### Widget Creation
+```go
+// Use descriptive variable names
+taskList := widget.NewList(
+    func() int { return len(tasks) },
+    func() fyne.CanvasObject { return widget.NewLabel("") },
+    func(id widget.ListItemID, obj fyne.CanvasObject) {
+        label := obj.(*widget.Label)
+        label.SetText(tasks[id].Text)
+    },
+)
+
+// Set proper sizing
+taskList.Resize(fyne.NewSize(400, 300))
+```
+
+### Layout Management
+```go
+// Use appropriate containers
+content := container.NewVBox(
+    widget.NewLabel("Tasks"),
+    taskList,
+    container.NewHBox(
+        addButton,
+        deleteButton,
+    ),
+)
+
+// Apply padding and spacing
+paddedContent := container.NewPadded(content)
+```
+
+### Event Handling
+```go
+// Handle button clicks
+addButton.OnTapped = func() {
+    // Handle add task
+    task := &model.Task{
+        ID:   uuid.New().String(),
+        Text: input.Text,
+    }
+    
+    if err := service.CreateTask(context.Background(), task); err != nil {
+        // Show error dialog
+        dialog.ShowError(err, window)
+        return
+    }
+    
+    // Update UI
+    refreshTaskList()
+}
+
+// Handle window events
+window.SetOnClosed(func() {
+    // Cleanup resources
+    app.Quit()
+})
+```
+
+## Quick Note Window
+
+### Design Principles
+- Minimal and lightweight
+- Appears instantly on hotkey
+- Disappears after note capture
+- No visual clutter
+
+### Implementation Pattern
+```go
+type QuickNoteWindow struct {
+    window fyne.Window
+    input  *widget.Entry
+    app    fyne.App
+}
+
+func (qn *QuickNoteWindow) Show() {
+    qn.window.Show()
+    qn.input.FocusGained()
+}
+
+func (qn *QuickNoteWindow) Hide() {
+    qn.window.Hide()
+    qn.input.SetText("")
+}
+```
+
+### Hotkey Integration
+- Global hotkey triggers quick note
+- Window appears at cursor position
+- Enter key submits note
+- Escape key cancels
+
+## Theme and Styling
+
+### Custom Theme
+```go
+// Define custom theme
+type CustomTheme struct {
+    fyne.Theme
+}
+
+func (t *CustomTheme) Color(name fyne.ThemeColorName, variant fyne.ThemeVariant) color.Color {
+    switch name {
+    case theme.ColorNameBackground:
+        return color.RGBA{R: 45, G: 45, B: 45, A: 255}
+    // ... other colors
+    }
+    return t.Theme.Color(name, variant)
+}
+```
+
+### Styling Guidelines
+- Use consistent color scheme
+- Maintain good contrast ratios
+- Follow platform conventions
+- Test on different themes
+
+## Data Binding
+
+### List Widgets
+```go
+// Bind data to list widget
+func (w *MainWindow) updateTaskList(tasks []*model.Task) {
+    w.taskList.Length = func() int { return len(tasks) }
+    w.taskList.CreateItem = func() fyne.CanvasObject {
+        return widget.NewLabel("")
+    }
+    w.taskList.UpdateItem = func(id widget.ListItemID, obj fyne.CanvasObject) {
+        label := obj.(*widget.Label)
+        if id < len(tasks) {
+            label.SetText(tasks[id].Text)
+        }
+    }
+    w.taskList.Refresh()
+}
+```
+
+### Form Widgets
+```go
+// Create form with validation
+form := &widget.Form{
+    Items: []*widget.FormItem{
+        {Text: "Task Text", Widget: taskInput},
+        {Text: "Priority", Widget: prioritySelect},
+    },
+    OnSubmit: func() {
+        // Handle form submission
+    },
+    OnCancel: func() {
+        // Handle form cancellation
+    },
+}
+```
+
+## Error Handling
+
+### User-Friendly Errors
+```go
+// Show error dialogs
+func showError(err error, parent fyne.Window) {
+    dialog.ShowError(err, parent)
+}
+
+// Show confirmation dialogs
+func showConfirm(title, message string, callback func(bool), parent fyne.Window) {
+    dialog.ShowConfirm(title, message, callback, parent)
+}
+```
+
+### Validation
+```go
+// Input validation
+func validateTaskInput(text string) error {
+    if strings.TrimSpace(text) == "" {
+        return errors.New("task text cannot be empty")
+    }
+    if len(text) > 500 {
+        return errors.New("task text too long")
+    }
+    return nil
+}
+```
+
+## Performance Considerations
+
+### Efficient Updates
+- Use `Refresh()` sparingly
+- Update only changed widgets
+- Batch UI updates when possible
+- Use goroutines for long operations
+
+### Memory Management
+- Properly dispose of resources
+- Avoid memory leaks in event handlers
+- Clean up goroutines on window close
+
+## Testing GUI Components
+
+### Unit Testing
+```go
+func TestMainWindow_CreateTask(t *testing.T) {
+    app := fyne.NewApp()
+    window := app.NewWindow("Test")
+    
+    mainWindow := &MainWindow{
+        App:    app,
+        Window: window,
+    }
+    
+    // Test component behavior
+    mainWindow.Show()
+    // ... test interactions
+}
+```
+
+### Integration Testing
+```go
+func TestQuickNote_Integration(t *testing.T) {
+    if os.Getenv("DISPLAY") == "" {
+        t.Skip("Skipping GUI test: no display available")
+    }
+    
+    // Test with real Fyne app
+    app := fyne.NewApp()
+    defer app.Quit()
+    
+    // Test quick note functionality
+}
+```
+
+## Platform-Specific Considerations
+
+### Windows
+- System tray integration
+- Global hotkey support
+- Native look and feel
+
+### Linux
+- X11/Wayland compatibility
+- No system tray support
+- Desktop environment integration
+
+### macOS
+- Native menu bar integration
+- Global hotkey support
+- Retina display support
+
+## Accessibility
+
+### Keyboard Navigation
+- Support Tab navigation
+- Provide keyboard shortcuts
+- Handle focus properly
+
+### Screen Reader Support
+- Use descriptive labels
+- Provide alternative text
+- Test with accessibility tools
+
+## Common Patterns
+
+### Modal Dialogs
+```go
+func showModalDialog(title, message string, parent fyne.Window) {
+    dialog := widget.NewModalPopUp(
+        container.NewVBox(
+            widget.NewLabel(message),
+            widget.NewButton("OK", func() {
+                dialog.Hide()
+            }),
+        ),
+        parent.Canvas(),
+    )
+    dialog.Show()
+}
+```
+
+### Progress Indicators
+```go
+func showProgress(message string, parent fyne.Window) fyne.Widget {
+    progress := widget.NewProgressBarInfinite()
+    dialog := widget.NewModalPopUp(
+        container.NewVBox(
+            widget.NewLabel(message),
+            progress,
+        ),
+        parent.Canvas(),
+    )
+    dialog.Show()
+    return progress
+}
+```
+
+### Status Updates
+```go
+func (w *MainWindow) updateStatus(message string) {
+    w.statusLabel.SetText(message)
+    w.statusLabel.Refresh()
+}
+```

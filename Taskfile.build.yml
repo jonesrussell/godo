@@ -205,7 +205,7 @@ tasks:
     desc: Clean up generated files
     cmds:
     - rm -rf {{.BUILD_DIR}}
-    - rm -rf internal/application/container/*_wire_gen.go
+    - rm -rf internal/application/container/wire_gen.go
 
   all:
     desc: Build all platforms

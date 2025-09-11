@@ -4,7 +4,7 @@ ARG COMMIT=unknown
 ARG BUILD_TIME=unknown
 
 # Base stage with common dependencies
-FROM golang:1.23-bullseye AS base
+FROM golang:1.24-bullseye AS base
 ARG VERSION
 ARG COMMIT
 ARG BUILD_TIME

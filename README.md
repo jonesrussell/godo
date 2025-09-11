@@ -96,7 +96,7 @@ http DELETE :8080/api/v1/tasks/{id}
 
 ## Prerequisites
 
-- Go 1.23 or higher
+- Go 1.24 or higher
 - SQLite3
 - MinGW-w64 GCC (required for Windows builds)
   - **Ubuntu/WSL2:**

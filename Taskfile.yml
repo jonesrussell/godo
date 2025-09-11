@@ -9,7 +9,7 @@ vars:
   BINARY_NAME: godo
   BUILD_DIR: dist
   COVERAGE_DIR: coverage
-  GO_VERSION: 1.23
+  GO_VERSION: 1.24
   GOOS:
     sh: go env GOOS
   VERSION:

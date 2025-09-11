@@ -20,26 +20,43 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Ensure cleanup runs in all exit scenarios
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Printf("Application panicked: %v\n", r)
+			cleanup()
+			os.Exit(1)
+		}
+	}()
+
 	// Set up signal handling
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+
+	// Create done channel to coordinate shutdown
+	done := make(chan bool, 1)
 
 	// Run signal handler in a separate goroutine
 	go func() {
 		<-sigChan
 		fmt.Println("\nReceived interrupt signal. Cleaning up...")
 
-		// Get the concrete App type
+		// Run cleanup BEFORE terminating the application
+		cleanup()
+
+		// Get the concrete App type and quit
 		if godoApp, ok := myapp.(*core.App); ok {
-			// Quit the application
 			godoApp.Quit()
 		}
+
+		// Signal that we're done
+		done <- true
 
 		// Force kill after a delay if we're still running
 		go func() {
 			forceKillTimeout := myapp.ForceKillTimeout()
 			if forceKillTimeout == 0 {
-				forceKillTimeout = 2 * time.Second
+				forceKillTimeout = 3 * time.Second
 			}
 			time.Sleep(forceKillTimeout)
 			fmt.Println("Forcing process termination...")
@@ -47,9 +64,18 @@ func main() {
 		}()
 	}()
 
-	// Run the application
+	// Run the application from the main goroutine (required by Fyne)
+	// The signal handler will call myapp.Quit() when a signal is received
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Printf("Application error: application panicked: %v\n", r)
+			cleanup()
+			os.Exit(1)
+		}
+	}()
+
 	myapp.Run()
 
-	// Run cleanup on normal exit
+	// Normal app completion
 	cleanup()
 }

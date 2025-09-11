@@ -38,11 +38,10 @@ const (
 
 // LogConfig holds logging configuration
 type LogConfig struct {
-	Level    string   `mapstructure:"level"`
-	Console  bool     `mapstructure:"console"`
-	File     bool     `mapstructure:"file"`
-	FilePath string   `mapstructure:"file_path"`
-	Output   []string `mapstructure:"output"`
+	Level    string `mapstructure:"level"`
+	Console  bool   `mapstructure:"console"`
+	File     bool   `mapstructure:"file"`
+	FilePath string `mapstructure:"file_path"`
 }
 
 // Config holds all application configuration
@@ -267,12 +266,23 @@ func (p *Provider) ResolvePaths(cfg *Config) error {
 		return nil
 	}
 
+	// Expand environment variables in paths
+	originalPath := cfg.Database.Path
+	cfg.Database.Path = os.ExpandEnv(cfg.Database.Path)
+	cfg.Logger.FilePath = os.ExpandEnv(cfg.Logger.FilePath)
+
+	p.log.Debug("Database path resolution",
+		"original", originalPath,
+		"expanded", cfg.Database.Path,
+		"is_absolute", filepath.IsAbs(cfg.Database.Path))
+
 	if !filepath.IsAbs(cfg.Database.Path) {
 		userConfigDir, err := os.UserConfigDir()
 		if err != nil {
 			return err
 		}
 		cfg.Database.Path = filepath.Join(userConfigDir, "godo", cfg.Database.Path)
+		p.log.Debug("Made database path absolute", "final_path", cfg.Database.Path)
 	}
 	return nil
 }
@@ -330,7 +340,6 @@ func NewDefaultConfig() *Config {
 			Console:  true,
 			File:     true,
 			FilePath: "logs/godo.log",
-			Output:   []string{"stdout"},
 		},
 		Database: DatabaseConfig{
 			Path: "godo.db",

@@ -4,6 +4,9 @@ package sqlite
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/jonesrussell/godo/internal/domain/model"
 	"github.com/jonesrussell/godo/internal/infrastructure/logger"
@@ -21,6 +24,14 @@ type Store struct {
 
 // New creates a new SQLite store
 func New(path string, log logger.Logger) (*Store, error) {
+	// Ensure the directory exists
+	dir := filepath.Dir(path)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		log.Error("Failed to create database directory", "dir", dir, "error", err)
+		return nil, fmt.Errorf("failed to create database directory: %w", err)
+	}
+	log.Debug("Database directory ensured", "dir", dir)
+
 	db, err := sql.Open("sqlite", path)
 	if err != nil {
 		return nil, err

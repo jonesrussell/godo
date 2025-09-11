@@ -64,12 +64,14 @@ func New(
 		store:       store,
 	}
 
-	// Create quick note window on UI thread during initialization
+	// Create quick note window during initialization
+	// Since we're on the main goroutine, we can call Fyne functions directly
 	log.Debug("Creating quick note window during app initialization")
 	windowConfig := config.WindowConfig{
 		Width:  cfg.UI.QuickNote.Width,
 		Height: cfg.UI.QuickNote.Height,
 	}
+
 	app.quickNoteWindow = quicknote.New(fyneApp, store, log, windowConfig)
 	app.quickNoteWindow.Initialize(fyneApp, log)
 	log.Debug("Quick note window created during initialization")
@@ -94,6 +96,7 @@ func New(
 func (a *App) setupSystray() error {
 	a.logger.Debug("Setting up systray")
 
+	// Since we're on the main goroutine, we can call Fyne functions directly
 	desk, ok := a.fyneApp.(desktop.App)
 	if !ok {
 		a.logger.Warn("Desktop features not available for systray")
@@ -104,34 +107,43 @@ func (a *App) setupSystray() error {
 	m := fyne.NewMenu("Godo",
 		fyne.NewMenuItem("Show", func() {
 			a.logger.Debug("Systray Show menu item tapped")
-			a.mainWindow.Show()
-			a.mainWindow.GetWindow().RequestFocus()
+			// Ensure window operations happen on UI thread
+			fyne.Do(func() {
+				a.mainWindow.Show()
+				a.mainWindow.GetWindow().RequestFocus()
+			})
 		}),
 		fyne.NewMenuItem("Quick Note", func() {
 			a.logger.Debug("Systray Quick Note menu item tapped")
-			quickNoteWindow := a.getQuickNoteWindow()
-			if quickNoteWindow != nil {
-				quickNoteWindow.Show()
-			}
+			// Ensure window operations happen on UI thread
+			fyne.Do(func() {
+				quickNoteWindow := a.getQuickNoteWindow()
+				if quickNoteWindow != nil {
+					quickNoteWindow.Show()
+				}
+			})
 		}),
 		fyne.NewMenuItemSeparator(),
 		fyne.NewMenuItem("Quit", func() {
 			a.logger.Debug("Systray Quit menu item tapped")
+			// Quit can be called from any thread
 			a.Quit()
 		}),
 	)
 
-	// Set the system tray menu
-	desk.SetSystemTrayMenu(m)
+	// Set the system tray menu and icon on the UI thread
+	fyne.Do(func() {
+		desk.SetSystemTrayMenu(m)
 
-	// Set the system tray icon
-	icon := theme.AppIcon()
-	if icon != nil {
-		desk.SetSystemTrayIcon(icon)
-		a.logger.Debug("Systray icon set successfully")
-	} else {
-		a.logger.Warn("Failed to get systray icon - systray will have no icon")
-	}
+		// Set the system tray icon
+		icon := theme.AppIcon()
+		if icon != nil {
+			desk.SetSystemTrayIcon(icon)
+			a.logger.Debug("Systray icon set successfully")
+		} else {
+			a.logger.Warn("Failed to get systray icon - systray will have no icon")
+		}
+	})
 
 	a.logger.Info("Systray setup completed")
 	return nil
@@ -174,6 +186,7 @@ func (a *App) SetupUI() error {
 
 	// Show main window if not configured to start hidden
 	if !a.config.UI.MainWindow.StartHidden {
+		// Since we're on the main goroutine, we can call Fyne functions directly
 		a.mainWindow.Show()
 	}
 
@@ -196,7 +209,7 @@ func (a *App) Run() {
 		"wsl2", platform.IsWSL2(),
 		"supports_gui", platform.SupportsGUI())
 
-	// Start API server
+	// Start API server (this is safe to do from any thread)
 	a.apiRunner.Start(a.config.HTTP.Port)
 
 	// Wait for API to be ready
@@ -209,19 +222,20 @@ func (a *App) Run() {
 		return
 	}
 
-	// Setup UI
+	// Setup UI (this contains UI thread operations)
 	if err := a.SetupUI(); err != nil {
 		a.logger.Error("Failed to setup UI", "error", err)
 		return
 	}
 
-	// Setup hotkey
+	// Setup hotkey (this is safe to do from any thread)
 	if err := a.setupHotkey(); err != nil {
 		a.logger.Error("Failed to setup hotkey", "error", err)
 		// Continue running even if hotkey fails
 	}
 
 	// Run the application (this blocks until quit)
+	// This MUST be called from the main thread
 	a.fyneApp.Run()
 
 	// When we get here, the app was quit via GUI
@@ -235,7 +249,10 @@ func (a *App) Cleanup() {
 	// Clean up quick note window
 	if a.quickNoteWindow != nil {
 		a.logger.Info("Cleaning up quick note window")
-		a.quickNoteWindow.Hide() // Hide the window if it's visible
+		// Use fyne.DoAndWait to ensure this runs on the main thread
+		fyne.DoAndWait(func() {
+			a.quickNoteWindow.Hide() // Hide the window if it's visible
+		})
 	}
 
 	// Stop hotkey manager with timeout
@@ -277,9 +294,30 @@ func (a *App) Cleanup() {
 
 // Quit performs cleanup and quits the application
 func (a *App) Quit() {
+	// First perform cleanup
 	a.Cleanup()
+
+	// Then quit the application on the UI thread
 	if a.fyneApp != nil {
-		a.fyneApp.Quit()
+		// Determine if we're already on the UI thread
+		// If we are, just call Quit directly; if not, use fyne.Do
+		done := make(chan struct{})
+		timeout := time.After(2 * time.Second)
+
+		go func() {
+			defer close(done)
+			fyne.Do(func() {
+				a.fyneApp.Quit()
+			})
+		}()
+
+		// Wait for quit with timeout
+		select {
+		case <-done:
+			a.logger.Info("Application quit completed")
+		case <-timeout:
+			a.logger.Warn("Application quit timed out, forcing exit")
+		}
 	}
 }
 

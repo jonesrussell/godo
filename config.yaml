@@ -9,10 +9,9 @@ logger:
   console: true
   file: true
   file_path: "logs/godo.log"
-  output: ["stdout"]
 
 database:
-  path: "godo.db"
+  path: "$HOME/.config/godo/godo.db"
 
 ui:
   main_window:

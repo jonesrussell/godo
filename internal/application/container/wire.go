@@ -130,7 +130,6 @@ func ProvideLogger(cfg *config.Config) (logger.Logger, func(), error) {
 		Console:  cfg.Logger.Console,
 		File:     cfg.Logger.File,
 		FilePath: cfg.Logger.FilePath,
-		Output:   cfg.Logger.Output,
 	}
 
 	log, err := logger.New(logConfig)
@@ -140,6 +139,7 @@ func ProvideLogger(cfg *config.Config) (logger.Logger, func(), error) {
 
 	cleanup := func() {
 		if zapLogger, ok := log.(*logger.ZapLogger); ok {
+			// Sync is now safe since we use os.Stdout/os.Stderr directly
 			if err := zapLogger.Sync(); err != nil {
 				fmt.Printf("Failed to sync logger: %v\n", err)
 			}
@@ -158,6 +158,7 @@ func ProvideSQLiteStore(log logger.Logger, cfg *config.Config) (*sqlite.Store, f
 		return nil, nil, fmt.Errorf("config is required")
 	}
 
+	log.Debug("Creating SQLite store", "path", cfg.Database.Path)
 	store, err := sqlite.New(cfg.Database.Path, log)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create store: %w", err)

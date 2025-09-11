@@ -48,7 +48,7 @@ archives:
   files:
   - LICENSE
   - README.md
-  - configs/*.yaml
+  - config.yaml
 
 - id: linux
   builds: [ linux ]
@@ -57,7 +57,7 @@ archives:
   files:
   - LICENSE
   - README.md
-  - configs/*.yaml
+  - config.yaml
 
 checksum:
   name_template: 'checksums.txt'

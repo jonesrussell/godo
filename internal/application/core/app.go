@@ -33,8 +33,8 @@ type App struct {
 	apiRunner   *api.Runner
 	config      *config.Config
 	logger      logger.Logger
-	taskService service.TaskService
-	store       storage.TaskStore
+	noteService service.NoteService
+	store       storage.NoteStore
 
 	// Quick note window management
 	quickNoteWindow quicknote.Interface
@@ -46,11 +46,11 @@ func New(
 	fyneApp fyne.App,
 	cfg *config.Config,
 	log logger.Logger,
-	taskService service.TaskService,
+	noteService service.NoteService,
 	mainWindow gui.MainWindow,
-	store storage.TaskStore,
+	store storage.NoteStore,
 ) *App {
-	apiRunner := api.NewRunner(taskService, log, &cfg.HTTP)
+	apiRunner := api.NewRunner(noteService, log, &cfg.HTTP)
 
 	// Create the App instance first
 	app := &App{
@@ -60,7 +60,7 @@ func New(
 		apiRunner:   apiRunner,
 		config:      cfg,
 		logger:      log,
-		taskService: taskService,
+		noteService: noteService,
 		store:       store,
 	}
 
@@ -327,7 +327,7 @@ func (a *App) Logger() logger.Logger {
 }
 
 // Store returns the application store
-func (a *App) Store() storage.TaskStore {
+func (a *App) Store() storage.NoteStore {
 	return a.store
 }
 

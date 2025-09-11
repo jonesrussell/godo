@@ -1,4 +1,4 @@
-// Package quicknote provides a quick note window for rapid task entry
+// Package quicknote provides a quick note window for rapid note entry
 package quicknote
 
 import (
@@ -30,11 +30,11 @@ type Interface interface {
 	Hide()
 }
 
-// Window represents a quick note window for rapid task entry
+// Window represents a quick note window for rapid note entry
 type Window struct {
 	app    fyne.App
 	window fyne.Window
-	store  storage.TaskStore
+	store  storage.NoteStore
 	log    logger.Logger
 	cfg    config.WindowConfig
 
@@ -49,7 +49,7 @@ type Window struct {
 // New creates a new quick note window
 func New(
 	app fyne.App,
-	store storage.TaskStore,
+	store storage.NoteStore,
 	log logger.Logger,
 	cfg config.WindowConfig,
 ) *Window {
@@ -106,10 +106,10 @@ func (w *Window) setupUI() {
 
 	// Create entry field
 	w.entry = NewEntry()
-	w.entry.SetPlaceHolder("Enter your task here...")
+	w.entry.SetPlaceHolder("Enter your note here...")
 
 	// Create add button
-	w.addButton = widget.NewButtonWithIcon("Add", theme.ContentAddIcon(), w.addTask)
+	w.addButton = widget.NewButtonWithIcon("Add", theme.ContentAddIcon(), w.addNote)
 
 	// Create clear button
 	w.clearBtn = widget.NewButtonWithIcon("Clear", theme.ContentClearIcon(), w.clearEntry)
@@ -146,19 +146,19 @@ func (w *Window) setupUI() {
 
 // setupKeyboardShortcuts sets up keyboard shortcuts
 func (w *Window) setupKeyboardShortcuts() {
-	w.entry.SetOnCtrlEnter(w.addTask)
+	w.entry.SetOnCtrlEnter(w.addNote)
 	w.entry.SetOnEscape(w.Hide)
 }
 
-// addTask adds a new task from the entry field
-func (w *Window) addTask() {
+// addNote adds a new note from the entry field
+func (w *Window) addNote() {
 	content := w.entry.Text
 	if content == "" {
 		return
 	}
 
-	// Create new task
-	task := model.Task{
+	// Create new note
+	note := model.Note{
 		ID:        uuid.New().String(),
 		Content:   content,
 		Done:      false,
@@ -166,20 +166,20 @@ func (w *Window) addTask() {
 		UpdatedAt: time.Now(),
 	}
 
-	// Save task to store
+	// Save note to store
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	if err := w.store.Add(ctx, &task); err != nil {
-		w.log.Error("Failed to create task", "error", err)
-		w.showStatus("Failed to create task", true)
+	if err := w.store.Add(ctx, &note); err != nil {
+		w.log.Error("Failed to create note", "error", err)
+		w.showStatus("Failed to create note", true)
 		return
 	}
 
 	// Clear entry and show success message
 	w.entry.SetText("")
-	w.showStatus("Task added successfully", false)
-	w.log.Debug("Task added successfully", "content", content)
+	w.showStatus("Note added successfully", false)
+	w.log.Debug("Note added successfully", "content", content)
 }
 
 // clearEntry clears the entry field

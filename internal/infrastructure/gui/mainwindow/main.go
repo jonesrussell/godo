@@ -37,13 +37,13 @@ type Interface interface {
 type Window struct {
 	app    fyne.App
 	window fyne.Window
-	store  storage.TaskStore
+	store  storage.NoteStore
 	log    logger.Logger
-	tasks  []model.Task
+	notes  []model.Note
 	cfg    config.WindowConfig
 
 	// UI components
-	taskList    *widget.List
+	noteList    *widget.List
 	addButton   *widget.Button
 	refreshBtn  *widget.Button
 	searchEntry *widget.Entry
@@ -52,18 +52,18 @@ type Window struct {
 }
 
 // New creates a new main window
-func New(app fyne.App, store storage.TaskStore, log logger.Logger, cfg config.WindowConfig) *Window {
+func New(app fyne.App, store storage.NoteStore, log logger.Logger, cfg config.WindowConfig) *Window {
 	w := &Window{
 		app:    app,
 		store:  store,
 		log:    log,
 		cfg:    cfg,
-		tasks:  make([]model.Task, 0),
-		window: app.NewWindow("Godo - Task Manager"),
+		notes:  make([]model.Note, 0),
+		window: app.NewWindow("Godo - Note Manager"),
 	}
 
 	w.setupUI()
-	w.loadTasks()
+	w.loadNotes()
 	return w
 }
 
@@ -95,68 +95,68 @@ func (w *Window) SetContent(content fyne.CanvasObject) {
 
 // setupUI initializes the user interface
 func (w *Window) setupUI() {
-	w.createTaskList()
+	w.createNoteList()
 	w.createToolbar()
 	w.createStatusBar()
 	w.createMainLayout()
 }
 
-// createTaskList creates the task list widget
-func (w *Window) createTaskList() {
-	w.taskList = widget.NewList(
-		func() int { return len(w.tasks) },
+// createNoteList creates the note list widget
+func (w *Window) createNoteList() {
+	w.noteList = widget.NewList(
+		func() int { return len(w.notes) },
 		func() fyne.CanvasObject {
 			return container.NewHBox(
 				widget.NewCheck("", nil),
-				widget.NewLabel("Task content"),
+				widget.NewLabel("Note content"),
 				layout.NewSpacer(),
 				widget.NewButton("Edit", nil),
 				widget.NewButton("Delete", nil),
 			)
 		},
 		func(id widget.ListItemID, obj fyne.CanvasObject) {
-			w.updateTaskListItem(id, obj)
+			w.updateNoteListItem(id, obj)
 		},
 	)
 }
 
-// updateTaskListItem updates a task list item
-func (w *Window) updateTaskListItem(id widget.ListItemID, obj fyne.CanvasObject) {
+// updateNoteListItem updates a note list item
+func (w *Window) updateNoteListItem(id widget.ListItemID, obj fyne.CanvasObject) {
 	box, ok := obj.(*fyne.Container)
 	if !ok {
 		w.log.Error("Failed to cast object to container")
 		return
 	}
 
-	if id >= len(w.tasks) {
+	if id >= len(w.notes) {
 		return
 	}
-	task := w.tasks[id]
+	note := w.notes[id]
 
 	// Update check box
 	if check, okCheck := box.Objects[0].(*widget.Check); okCheck {
-		check.Checked = task.Done
+		check.Checked = note.Done
 		check.OnChanged = func(checked bool) {
-			w.toggleTask(id, checked)
+			w.toggleNote(id, checked)
 		}
 	}
 
 	// Update label
 	if label, okLabel := box.Objects[1].(*widget.Label); okLabel {
-		label.SetText(task.Content)
+		label.SetText(note.Content)
 	}
 
 	// Update edit button
 	if editBtn, okEdit := box.Objects[3].(*widget.Button); okEdit {
 		editBtn.OnTapped = func() {
-			w.editTask(id)
+			w.editNote(id)
 		}
 	}
 
 	// Update delete button
 	if deleteBtn, okDelete := box.Objects[4].(*widget.Button); okDelete {
 		deleteBtn.OnTapped = func() {
-			w.deleteTask(id)
+			w.deleteNote(id)
 		}
 	}
 }
@@ -164,15 +164,15 @@ func (w *Window) updateTaskListItem(id widget.ListItemID, obj fyne.CanvasObject)
 // createToolbar creates the toolbar with buttons and search
 func (w *Window) createToolbar() {
 	// Create add button
-	w.addButton = widget.NewButtonWithIcon("Add Task", theme.ContentAddIcon(), w.addTask)
+	w.addButton = widget.NewButtonWithIcon("Add Note", theme.ContentAddIcon(), w.addNote)
 
 	// Create refresh button
-	w.refreshBtn = widget.NewButtonWithIcon("Refresh", theme.ViewRefreshIcon(), w.loadTasks)
+	w.refreshBtn = widget.NewButtonWithIcon("Refresh", theme.ViewRefreshIcon(), w.loadNotes)
 
 	// Create search entry
 	w.searchEntry = widget.NewEntry()
-	w.searchEntry.SetPlaceHolder("Search tasks...")
-	w.searchEntry.OnChanged = w.filterTasks
+	w.searchEntry.SetPlaceHolder("Search notes...")
+	w.searchEntry.OnChanged = w.filterNotes
 
 	// Create toolbar
 	w.toolbar = container.NewHBox(
@@ -198,7 +198,7 @@ func (w *Window) createMainLayout() {
 			w.statusBar,
 			nil,
 			nil,
-			w.taskList,
+			w.noteList,
 		)
 
 		w.window.SetContent(content)
@@ -206,40 +206,40 @@ func (w *Window) createMainLayout() {
 	})
 }
 
-// loadTasks loads all tasks from storage
-func (w *Window) loadTasks() {
+// loadNotes loads all notes from storage
+func (w *Window) loadNotes() {
 	ctx := context.Background()
-	tasks, err := w.store.List(ctx)
+	notes, err := w.store.List(ctx)
 	if err != nil {
-		w.log.Error("Failed to load tasks", "error", err)
-		w.showStatus("Failed to load tasks", true)
+		w.log.Error("Failed to load notes", "error", err)
+		w.showStatus("Failed to load notes", true)
 		return
 	}
 
-	w.tasks = tasks
-	w.taskList.Refresh()
-	w.showStatus(fmt.Sprintf("Loaded %d tasks", len(tasks)), false)
-	w.log.Info("Tasks loaded", "count", len(tasks))
+	w.notes = notes
+	w.noteList.Refresh()
+	w.showStatus(fmt.Sprintf("Loaded %d notes", len(notes)), false)
+	w.log.Info("Notes loaded", "count", len(notes))
 }
 
-// addTask adds a new task with enhanced dialog
-func (w *Window) addTask() {
+// addNote adds a new note with enhanced dialog
+func (w *Window) addNote() {
 	content := widget.NewEntry()
-	content.SetPlaceHolder("Enter task content...")
+	content.SetPlaceHolder("Enter note content...")
 
 	form := dialog.NewForm(
-		"Add Task",
+		"Add Note",
 		"Add",
 		"Cancel",
 		[]*widget.FormItem{
-			widget.NewFormItem("Task", content),
+			widget.NewFormItem("Note", content),
 		},
 		func(confirm bool) {
 			if !confirm || content.Text == "" {
 				return
 			}
 
-			task := model.Task{
+			note := model.Note{
 				ID:        uuid.New().String(),
 				Content:   content.Text,
 				Done:      false,
@@ -248,14 +248,14 @@ func (w *Window) addTask() {
 			}
 
 			ctx := context.Background()
-			if err := w.store.Add(ctx, &task); err != nil {
-				w.log.Error("Failed to add task", "error", err)
-				w.showStatus("Failed to add task", true)
+			if err := w.store.Add(ctx, &note); err != nil {
+				w.log.Error("Failed to add note", "error", err)
+				w.showStatus("Failed to add note", true)
 				return
 			}
 
-			w.loadTasks()
-			w.showStatus("Task added successfully", false)
+			w.loadNotes()
+			w.showStatus("Note added successfully", false)
 		},
 		w.window,
 	)
@@ -264,63 +264,63 @@ func (w *Window) addTask() {
 	form.Show()
 }
 
-// toggleTask toggles the done status of a task
-func (w *Window) toggleTask(id widget.ListItemID, done bool) {
-	if id >= len(w.tasks) {
+// toggleNote toggles the done status of a note
+func (w *Window) toggleNote(id widget.ListItemID, done bool) {
+	if id >= len(w.notes) {
 		return
 	}
 
-	task := w.tasks[id]
-	task.Done = done
-	task.UpdatedAt = time.Now()
+	note := w.notes[id]
+	note.Done = done
+	note.UpdatedAt = time.Now()
 
 	ctx := context.Background()
-	if err := w.store.Update(ctx, &task); err != nil {
-		w.log.Error("Failed to update task", "task_id", task.ID, "error", err)
-		w.showStatus("Failed to update task", true)
+	if err := w.store.Update(ctx, &note); err != nil {
+		w.log.Error("Failed to update note", "note_id", note.ID, "error", err)
+		w.showStatus("Failed to update note", true)
 		return
 	}
 
-	w.tasks[id] = task
-	w.taskList.Refresh()
-	w.showStatus("Task updated", false)
+	w.notes[id] = note
+	w.noteList.Refresh()
+	w.showStatus("Note updated", false)
 }
 
-// editTask opens a dialog to edit a task
-func (w *Window) editTask(id widget.ListItemID) {
-	if id >= len(w.tasks) {
+// editNote opens a dialog to edit a note
+func (w *Window) editNote(id widget.ListItemID) {
+	if id >= len(w.notes) {
 		return
 	}
 
-	task := w.tasks[id]
+	note := w.notes[id]
 	content := widget.NewEntry()
-	content.SetText(task.Content)
+	content.SetText(note.Content)
 
 	form := dialog.NewForm(
-		"Edit Task",
+		"Edit Note",
 		"Save",
 		"Cancel",
 		[]*widget.FormItem{
-			widget.NewFormItem("Task", content),
+			widget.NewFormItem("Note", content),
 		},
 		func(confirm bool) {
 			if !confirm || content.Text == "" {
 				return
 			}
 
-			task.Content = content.Text
-			task.UpdatedAt = time.Now()
+			note.Content = content.Text
+			note.UpdatedAt = time.Now()
 
 			ctx := context.Background()
-			if err := w.store.Update(ctx, &task); err != nil {
-				w.log.Error("Failed to update task", "task_id", task.ID, "error", err)
-				w.showStatus("Failed to update task", true)
+			if err := w.store.Update(ctx, &note); err != nil {
+				w.log.Error("Failed to update note", "note_id", note.ID, "error", err)
+				w.showStatus("Failed to update note", true)
 				return
 			}
 
-			w.tasks[id] = task
-			w.taskList.Refresh()
-			w.showStatus("Task updated", false)
+			w.notes[id] = note
+			w.noteList.Refresh()
+			w.showStatus("Note updated", false)
 		},
 		w.window,
 	)
@@ -329,31 +329,31 @@ func (w *Window) editTask(id widget.ListItemID) {
 	form.Show()
 }
 
-// deleteTask deletes a task with confirmation
-func (w *Window) deleteTask(id widget.ListItemID) {
-	if id >= len(w.tasks) {
+// deleteNote deletes a note with confirmation
+func (w *Window) deleteNote(id widget.ListItemID) {
+	if id >= len(w.notes) {
 		return
 	}
 
-	task := w.tasks[id]
+	note := w.notes[id]
 
 	confirm := dialog.NewConfirm(
-		"Delete Task",
-		fmt.Sprintf("Are you sure you want to delete '%s'?", task.Content),
+		"Delete Note",
+		fmt.Sprintf("Are you sure you want to delete '%s'?", note.Content),
 		func(confirm bool) {
 			if !confirm {
 				return
 			}
 
 			ctx := context.Background()
-			if err := w.store.Delete(ctx, task.ID); err != nil {
-				w.log.Error("Failed to delete task", "task_id", task.ID, "error", err)
-				w.showStatus("Failed to delete task", true)
+			if err := w.store.Delete(ctx, note.ID); err != nil {
+				w.log.Error("Failed to delete note", "note_id", note.ID, "error", err)
+				w.showStatus("Failed to delete note", true)
 				return
 			}
 
-			w.loadTasks()
-			w.showStatus("Task deleted", false)
+			w.loadNotes()
+			w.showStatus("Note deleted", false)
 		},
 		w.window,
 	)
@@ -361,11 +361,11 @@ func (w *Window) deleteTask(id widget.ListItemID) {
 	confirm.Show()
 }
 
-// filterTasks filters the task list based on search text
-func (w *Window) filterTasks(searchText string) {
-	// For now, just reload all tasks
+// filterNotes filters the note list based on search text
+func (w *Window) filterNotes(searchText string) {
+	// For now, just reload all notes
 	// In a real implementation, you might want to implement client-side filtering
-	w.loadTasks()
+	w.loadNotes()
 }
 
 // showStatus shows a status message
@@ -400,7 +400,7 @@ func (w *Window) CenterOnScreen() {
 // Refresh refreshes the main window content
 func (w *Window) Refresh() {
 	fyne.Do(func() {
-		w.taskList.Refresh()
+		w.noteList.Refresh()
 	})
 }
 

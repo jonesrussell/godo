@@ -8,63 +8,63 @@ import (
 	"github.com/jonesrussell/godo/internal/domain/model"
 )
 
-//go:generate mockgen -destination=../../test/mocks/mock_taskstore.go -package=mocks github.com/jonesrussell/godo/internal/infrastructure/storage TaskStore
-//go:generate mockgen -destination=../../test/mocks/mock_tasktx.go -package=mocks github.com/jonesrussell/godo/internal/infrastructure/storage TaskTx
-//go:generate mockgen -destination=../../test/mocks/mock_taskreader.go -package=mocks github.com/jonesrussell/godo/internal/infrastructure/storage TaskReader
+//go:generate mockgen -destination=../../test/mocks/mock_notestore.go -package=mocks github.com/jonesrussell/godo/internal/infrastructure/storage NoteStore
+//go:generate mockgen -destination=../../test/mocks/mock_notetx.go -package=mocks github.com/jonesrussell/godo/internal/infrastructure/storage NoteTx
+//go:generate mockgen -destination=../../test/mocks/mock_notereader.go -package=mocks github.com/jonesrussell/godo/internal/infrastructure/storage NoteReader
 
-// TaskStore defines the interface for task storage operations
-type TaskStore interface {
-	Add(ctx context.Context, task *model.Task) error
-	GetByID(ctx context.Context, id string) (model.Task, error)
-	Update(ctx context.Context, task *model.Task) error
+// NoteStore defines the interface for note storage operations
+type NoteStore interface {
+	Add(ctx context.Context, note *model.Note) error
+	GetByID(ctx context.Context, id string) (model.Note, error)
+	Update(ctx context.Context, note *model.Note) error
 	Delete(ctx context.Context, id string) error
-	List(ctx context.Context) ([]model.Task, error)
+	List(ctx context.Context) ([]model.Note, error)
 	Close() error
 }
 
-// TaskTxStore extends TaskStore with transaction support
-type TaskTxStore interface {
-	TaskStore
-	BeginTx(ctx context.Context) (TaskTx, error)
+// NoteTxStore extends NoteStore with transaction support
+type NoteTxStore interface {
+	NoteStore
+	BeginTx(ctx context.Context) (NoteTx, error)
 }
 
-// TaskTx defines the interface for task operations within a transaction
-type TaskTx interface {
-	Add(ctx context.Context, task *model.Task) error
-	GetByID(ctx context.Context, id string) (model.Task, error)
-	Update(ctx context.Context, task *model.Task) error
+// NoteTx defines the interface for note operations within a transaction
+type NoteTx interface {
+	Add(ctx context.Context, note *model.Note) error
+	GetByID(ctx context.Context, id string) (model.Note, error)
+	Update(ctx context.Context, note *model.Note) error
 	Delete(ctx context.Context, id string) error
-	List(ctx context.Context) ([]model.Task, error)
+	List(ctx context.Context) ([]model.Note, error)
 	Commit() error
 	Rollback() error
 }
 
-// Store is deprecated: use TaskStore instead
+// Store is deprecated: use NoteStore instead
 // Kept for backward compatibility during migration
 type Store interface {
-	// List returns all stored tasks
-	List() ([]model.Task, error)
+	// List returns all stored notes
+	List() ([]model.Note, error)
 
-	// Add stores a new task
-	Add(task *model.Task) error
+	// Add stores a new note
+	Add(note *model.Note) error
 
-	// Update modifies an existing task
-	Update(task *model.Task) error
+	// Update modifies an existing note
+	Update(note *model.Note) error
 
-	// Delete removes a task by ID
+	// Delete removes a note by ID
 	Delete(id string) error
 
-	// GetByID retrieves a task by its ID
-	GetByID(id string) (*model.Task, error)
+	// GetByID retrieves a note by its ID
+	GetByID(id string) (*model.Note, error)
 
 	// Close releases any resources held by the store
 	Close() error
 }
 
-// TaskReader defines the read-only interface for task storage operations
-type TaskReader interface {
-	GetByID(ctx context.Context, id string) (model.Task, error)
-	List(ctx context.Context) ([]model.Task, error)
+// NoteReader defines the read-only interface for note storage operations
+type NoteReader interface {
+	GetByID(ctx context.Context, id string) (model.Note, error)
+	List(ctx context.Context) ([]model.Note, error)
 }
 
 // ConnectionError represents a database connection error

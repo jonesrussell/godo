@@ -5,8 +5,8 @@ import "errors"
 
 // Common errors
 var (
-	// ErrTaskNotFound is returned when a task cannot be found
-	ErrTaskNotFound = errors.New("task not found")
+	// ErrNoteNotFound is returned when a note cannot be found
+	ErrNoteNotFound = errors.New("note not found")
 	// ErrDuplicateID is returned when trying to add a task with an ID that already exists
 	ErrDuplicateID = errors.New("task ID already exists")
 	// ErrStoreClosed is returned when attempting to use a closed store
@@ -24,7 +24,7 @@ func (e *NotFoundError) Error() string {
 	return "task not found: " + e.ID
 }
 
-// Is implements errors.Is interface to match against ErrTaskNotFound
+// Is implements errors.Is interface to match against ErrNoteNotFound
 func (e *NotFoundError) Is(target error) bool {
-	return target == ErrTaskNotFound
+	return target == ErrNoteNotFound
 }

@@ -92,10 +92,10 @@ func WithErrorHandling(log logger.Logger) Middleware {
 
 					switch e := err.(type) {
 					case error:
-						if errors.Is(e, model.ErrTaskNotFound) {
+						if errors.Is(e, model.ErrNoteNotFound) {
 							status = http.StatusNotFound
-							code = "task_not_found"
-							msg = "Task not found"
+							code = "note_not_found"
+							msg = "Note not found"
 						} else {
 							status = http.StatusInternalServerError
 							code = "internal_error"
@@ -146,10 +146,10 @@ func writeValidationError(w http.ResponseWriter, fields map[string]string) {
 // mapError maps an error to an HTTP status code and error message
 func mapError(err error) (code int, msg, details string) {
 	switch {
-	case errors.Is(err, model.ErrTaskNotFound):
-		return http.StatusNotFound, "Task not found", err.Error()
+	case errors.Is(err, model.ErrNoteNotFound):
+		return http.StatusNotFound, "Note not found", err.Error()
 	case errors.Is(err, model.ErrDuplicateID):
-		return http.StatusConflict, "Task ID already exists", err.Error()
+		return http.StatusConflict, "Note ID already exists", err.Error()
 	default:
 		return http.StatusInternalServerError, internalServerErrorMsg, err.Error()
 	}

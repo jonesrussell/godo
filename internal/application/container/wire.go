@@ -42,13 +42,13 @@ var (
 	// StorageSet provides data persistence
 	StorageSet = wire.NewSet(
 		ProvideSQLiteStore,
-		wire.Bind(new(storage.TaskStore), new(*sqlite.Store)),
+		wire.Bind(new(storage.NoteStore), new(*sqlite.Store)),
 	)
 
 	// ServiceSet provides business logic
 	ServiceSet = wire.NewSet(
-		ProvideTaskRepository,
-		ProvideTaskService,
+		ProvideNoteRepository,
+		ProvideNoteService,
 	)
 
 	// UISet provides user interface components
@@ -173,14 +173,14 @@ func ProvideSQLiteStore(log logger.Logger, cfg *config.Config) (*sqlite.Store, f
 	return store, cleanup, nil
 }
 
-// Task repository provider
-func ProvideTaskRepository(store storage.TaskStore) repository.TaskRepository {
-	return repository.NewTaskRepository(store)
+// Note repository provider
+func ProvideNoteRepository(store storage.NoteStore) repository.NoteRepository {
+	return repository.NewNoteRepository(store)
 }
 
-// Task service provider
-func ProvideTaskService(repo repository.TaskRepository, log logger.Logger) service.TaskService {
-	return service.NewTaskService(repo, log)
+// Note service provider
+func ProvideNoteService(repo repository.NoteRepository, log logger.Logger) service.NoteService {
+	return service.NewNoteService(repo, log)
 }
 
 // Fyne app provider
@@ -193,7 +193,7 @@ func ProvideFyneApp(cfg *config.Config) fyne.App {
 // Main window provider
 func ProvideMainWindow(
 	app fyne.App,
-	store storage.TaskStore,
+	store storage.NoteStore,
 	log logger.Logger,
 	cfg *config.Config,
 ) *mainwindow.Window {
@@ -203,7 +203,7 @@ func ProvideMainWindow(
 // Quick note provider
 func ProvideQuickNote(
 	app fyne.App,
-	store storage.TaskStore,
+	store storage.NoteStore,
 	log logger.Logger,
 	cfg *config.Config,
 ) *quicknote.Window {

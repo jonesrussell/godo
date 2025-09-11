@@ -35,16 +35,16 @@ func NewServerConfig() *ServerConfig {
 
 // Server represents the HTTP server
 type Server struct {
-	service service.TaskService
+	service service.NoteService
 	log     logger.Logger
 	router  *mux.Router
 	srv     *http.Server
 }
 
 // NewServer creates a new Server instance
-func NewServer(taskService service.TaskService, log logger.Logger) *Server {
+func NewServer(noteService service.NoteService, log logger.Logger) *Server {
 	s := &Server{
-		service: taskService,
+		service: noteService,
 		log:     log,
 		router:  mux.NewRouter(),
 	}
@@ -67,150 +67,150 @@ func (s *Server) routes() {
 		WithErrorHandling(s.log),
 	)).Methods(http.MethodGet)
 
-	// Protected Task endpoints (JWT auth required)
-	api.HandleFunc("/tasks", Chain(s.handleListTasks,
+	// Protected Note endpoints (JWT auth required)
+	api.HandleFunc("/notes", Chain(s.handleListNotes,
 		WithJWTAuth(s.log),
 		WithLogging(s.log),
 		WithErrorHandling(s.log),
 	)).Methods(http.MethodGet)
 
-	api.HandleFunc("/tasks", Chain(s.handleCreateTask,
+	api.HandleFunc("/notes", Chain(s.handleCreateNote,
 		WithJWTAuth(s.log),
 		WithLogging(s.log),
 		WithErrorHandling(s.log),
-		WithValidation[CreateTaskRequest](s.log),
+		WithValidation[CreateNoteRequest](s.log),
 	)).Methods(http.MethodPost)
 
-	api.HandleFunc("/tasks/{id}", Chain(s.handleGetTask,
+	api.HandleFunc("/notes/{id}", Chain(s.handleGetNote,
 		WithJWTAuth(s.log),
 		WithLogging(s.log),
 		WithErrorHandling(s.log),
 	)).Methods(http.MethodGet)
 
-	api.HandleFunc("/tasks/{id}", Chain(s.handleUpdateTask,
+	api.HandleFunc("/notes/{id}", Chain(s.handleUpdateNote,
 		WithJWTAuth(s.log),
 		WithLogging(s.log),
 		WithErrorHandling(s.log),
-		WithValidation[UpdateTaskRequest](s.log),
+		WithValidation[UpdateNoteRequest](s.log),
 	)).Methods(http.MethodPut)
 
-	api.HandleFunc("/tasks/{id}", Chain(s.handlePatchTask,
+	api.HandleFunc("/notes/{id}", Chain(s.handlePatchNote,
 		WithJWTAuth(s.log),
 		WithLogging(s.log),
 		WithErrorHandling(s.log),
-		WithValidation[PatchTaskRequest](s.log),
+		WithValidation[PatchNoteRequest](s.log),
 	)).Methods(http.MethodPatch)
 
-	api.HandleFunc("/tasks/{id}", Chain(s.handleDeleteTask,
+	api.HandleFunc("/notes/{id}", Chain(s.handleDeleteNote,
 		WithJWTAuth(s.log),
 		WithLogging(s.log),
 		WithErrorHandling(s.log),
 	)).Methods(http.MethodDelete)
 }
 
-func (s *Server) handleListTasks(w http.ResponseWriter, r *http.Request) {
-	tasks, err := s.service.ListTasks(r.Context(), nil)
+func (s *Server) handleListNotes(w http.ResponseWriter, r *http.Request) {
+	notes, err := s.service.ListNotes(r.Context(), nil)
 	if err != nil {
 		status, code, msg := mapError(err)
 		writeError(w, status, code, msg)
 		return
 	}
 
-	// Convert service tasks to model tasks for response
-	modelTasks := make([]model.Task, len(tasks))
-	for i, task := range tasks {
-		modelTasks[i] = *task
+	// Convert service notes to model notes for response
+	modelNotes := make([]model.Note, len(notes))
+	for i, note := range notes {
+		modelNotes[i] = *note
 	}
 
-	writeJSON(w, http.StatusOK, NewTaskListResponse(modelTasks))
+	writeJSON(w, http.StatusOK, NewNoteListResponse(modelNotes))
 }
 
-func (s *Server) handleCreateTask(w http.ResponseWriter, r *http.Request) {
-	req, ok := GetRequest[CreateTaskRequest](r)
+func (s *Server) handleCreateNote(w http.ResponseWriter, r *http.Request) {
+	req, ok := GetRequest[CreateNoteRequest](r)
 	if !ok {
 		writeError(w, http.StatusBadRequest, "invalid_request", "Invalid request")
 		return
 	}
 
-	task, err := s.service.CreateTask(r.Context(), req.Content)
+	note, err := s.service.CreateNote(r.Context(), req.Content)
 	if err != nil {
 		status, code, msg := mapError(err)
 		writeError(w, status, code, msg)
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, NewTaskResponse(task))
+	writeJSON(w, http.StatusCreated, NewNoteResponse(note))
 }
 
-func (s *Server) handleGetTask(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleGetNote(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 
-	task, err := s.service.GetTask(r.Context(), id)
+	note, err := s.service.GetNote(r.Context(), id)
 	if err != nil {
 		status, code, msg := mapError(err)
 		writeError(w, status, code, msg)
 		return
 	}
 
-	writeJSON(w, http.StatusOK, NewTaskResponse(task))
+	writeJSON(w, http.StatusOK, NewNoteResponse(note))
 }
 
-func (s *Server) handleUpdateTask(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleUpdateNote(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 
-	req, ok := GetRequest[UpdateTaskRequest](r)
+	req, ok := GetRequest[UpdateNoteRequest](r)
 	if !ok {
 		writeError(w, http.StatusBadRequest, "invalid_request", "Invalid request")
 		return
 	}
 
-	updates := service.TaskUpdateRequest{
+	updates := service.NoteUpdateRequest{
 		Content: &req.Content,
 		Done:    &req.Done,
 	}
 
-	task, err := s.service.UpdateTask(r.Context(), id, updates)
+	note, err := s.service.UpdateNote(r.Context(), id, updates)
 	if err != nil {
 		status, code, msg := mapError(err)
 		writeError(w, status, code, msg)
 		return
 	}
 
-	writeJSON(w, http.StatusOK, NewTaskResponse(task))
+	writeJSON(w, http.StatusOK, NewNoteResponse(note))
 }
 
-func (s *Server) handlePatchTask(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handlePatchNote(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 
-	req, ok := GetRequest[PatchTaskRequest](r)
+	req, ok := GetRequest[PatchNoteRequest](r)
 	if !ok {
 		writeError(w, http.StatusBadRequest, "invalid_request", "Invalid request")
 		return
 	}
 
-	updates := service.TaskUpdateRequest{
+	updates := service.NoteUpdateRequest{
 		Content: req.Content,
 		Done:    req.Done,
 	}
 
-	task, err := s.service.UpdateTask(r.Context(), id, updates)
+	note, err := s.service.UpdateNote(r.Context(), id, updates)
 	if err != nil {
 		status, code, msg := mapError(err)
 		writeError(w, status, code, msg)
 		return
 	}
 
-	writeJSON(w, http.StatusOK, NewTaskResponse(task))
+	writeJSON(w, http.StatusOK, NewNoteResponse(note))
 }
 
-func (s *Server) handleDeleteTask(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleDeleteNote(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 
-	if err := s.service.DeleteTask(r.Context(), id); err != nil {
+	if err := s.service.DeleteNote(r.Context(), id); err != nil {
 		status, code, msg := mapError(err)
 		writeError(w, status, code, msg)
 		return

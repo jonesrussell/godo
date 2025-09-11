@@ -9,56 +9,56 @@ import (
 	"github.com/jonesrussell/godo/internal/infrastructure/storage"
 )
 
-// TaskValidator validates task data
-type TaskValidator struct {
-	store storage.TaskReader // For uniqueness checks
+// NoteValidator validates note data
+type NoteValidator struct {
+	store storage.NoteReader // For uniqueness checks
 }
 
-// NewTaskValidator creates a new task validator
-func NewTaskValidator(store storage.TaskReader) *TaskValidator {
-	return &TaskValidator{
+// NewNoteValidator creates a new note validator
+func NewNoteValidator(store storage.NoteReader) *NoteValidator {
+	return &NoteValidator{
 		store: store,
 	}
 }
 
-// ValidateTask validates a task
-func (v *TaskValidator) ValidateTask(task *model.Task) error {
-	if err := v.validateContent(task.Content); err != nil {
+// ValidateNote validates a note
+func (v *NoteValidator) ValidateNote(note *model.Note) error {
+	if err := v.validateContent(note.Content); err != nil {
 		return err
 	}
 
-	if err := v.validateTimestamps(task); err != nil {
+	if err := v.validateTimestamps(note); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-// validateContent validates task content
-func (v *TaskValidator) validateContent(content string) error {
+// validateContent validates note content
+func (v *NoteValidator) validateContent(content string) error {
 	if content == "" {
 		return &model.ValidationError{
 			Field:   "content",
-			Message: "task content cannot be empty",
+			Message: "note content cannot be empty",
 		}
 	}
 
 	if len(content) > 1000 {
 		return &model.ValidationError{
 			Field:   "content",
-			Message: "task content cannot exceed 1000 characters",
+			Message: "note content cannot exceed 1000 characters",
 		}
 	}
 
 	return nil
 }
 
-// validateTimestamps validates task timestamps
-func (v *TaskValidator) validateTimestamps(task *model.Task) error {
+// validateTimestamps validates note timestamps
+func (v *NoteValidator) validateTimestamps(note *model.Note) error {
 	now := time.Now()
 
 	// Check if created_at is in the future
-	if task.CreatedAt.After(now) {
+	if note.CreatedAt.After(now) {
 		return &model.ValidationError{
 			Field:   "created_at",
 			Message: "created_at cannot be in the future",
@@ -66,7 +66,7 @@ func (v *TaskValidator) validateTimestamps(task *model.Task) error {
 	}
 
 	// Check if updated_at is in the future
-	if task.UpdatedAt.After(now) {
+	if note.UpdatedAt.After(now) {
 		return &model.ValidationError{
 			Field:   "updated_at",
 			Message: "updated_at cannot be in the future",
@@ -74,7 +74,7 @@ func (v *TaskValidator) validateTimestamps(task *model.Task) error {
 	}
 
 	// Check if updated_at is before created_at
-	if task.UpdatedAt.Before(task.CreatedAt) {
+	if note.UpdatedAt.Before(note.CreatedAt) {
 		return &model.ValidationError{
 			Field:   "updated_at",
 			Message: "updated_at cannot be before created_at",
@@ -84,10 +84,10 @@ func (v *TaskValidator) validateTimestamps(task *model.Task) error {
 	return nil
 }
 
-// ValidateTaskUpdate validates task update operations
-func (v *TaskValidator) ValidateTaskUpdate(original, updated *model.Task) error {
-	// Validate the updated task
-	if err := v.ValidateTask(updated); err != nil {
+// ValidateNoteUpdate validates note update operations
+func (v *NoteValidator) ValidateNoteUpdate(original, updated *model.Note) error {
+	// Validate the updated note
+	if err := v.ValidateNote(updated); err != nil {
 		return err
 	}
 

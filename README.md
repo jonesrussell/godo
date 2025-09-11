@@ -1,15 +1,15 @@
 # Godo
 
-A cross-platform todo application with quick-note hotkey support and REST API.
+A cross-platform note application with quick-note hotkey support and REST API.
 
 ## Overview
 
 Godo combines three powerful features:
-1. A global hotkey that triggers a lightweight graphical popup for instantly capturing thoughts and tasks
-2. A full-featured graphical interface for detailed todo management
-3. A REST API for programmatic task management and integration
+1. A global hotkey that triggers a lightweight graphical popup for instantly capturing thoughts and notes
+2. A full-featured graphical interface for detailed note management
+3. A REST API for programmatic note management and integration
 
-The quick-note feature uses a minimal graphical window that appears when you press the hotkey - type your note, hit enter, and it disappears. The main todo management interface provides efficient task organization with a clean, modern design. The REST API allows for integration with other tools and services.
+The quick-note feature uses a minimal graphical window that appears when you press the hotkey - type your note, hit enter, and it disappears. The main note management interface provides efficient note organization with a clean, modern design. The REST API allows for integration with other tools and services.
 
 ## Features
 
@@ -20,21 +20,21 @@ The quick-note feature uses a minimal graphical window that appears when you pre
 - Instant note capture with global hotkey
   - Press hotkey → Graphical popup appears
   - Type note → Press enter → Window disappears
-  - Zero-friction task capture with minimal visual interruption
+  - Zero-friction note capture with minimal visual interruption
   - Robust hotkey lifecycle management
   - Proper cleanup and resource management
-- Graphical todo management interface
-  - Organize and manage tasks
-  - Mark tasks as complete
-  - Delete tasks when done
+- Graphical note management interface
+  - Organize and manage notes
+  - Mark notes as complete
+  - Delete notes when done
 - REST API
-  - Full CRUD operations for tasks
+  - Full CRUD operations for notes
   - JSON responses
   - Health check endpoint
   - Proper error handling
 - Robust storage system
   - SQLite-based persistence with comprehensive validation
-  - Interface segregation (TaskReader, TaskWriter, TaskStore)
+  - Interface segregation (NoteReader, NoteWriter, NoteStore)
   - Transaction support with proper rollback
   - Connection pooling and prepared statements
   - Thread-safe operations with proper concurrency
@@ -73,25 +73,25 @@ GET /health
 Response: {"status": "ok"}
 ```
 
-### Tasks
-- List all tasks: `GET /api/v1/tasks`
-- Create task: `POST /api/v1/tasks`
-- Update task: `PUT /api/v1/tasks/{id}`
-- Delete task: `DELETE /api/v1/tasks/{id}`
+### Notes
+- List all notes: `GET /api/v1/notes`
+- Create note: `POST /api/v1/notes`
+- Update note: `PUT /api/v1/notes/{id}`
+- Delete note: `DELETE /api/v1/notes/{id}`
 
 Example using HTTPie:
 ```bash
-# List tasks
-http :8080/api/v1/tasks
+# List notes
+http :8080/api/v1/notes
 
-# Create task
-http POST :8080/api/v1/tasks title="Buy groceries" description="Milk, bread, eggs"
+# Create note
+http POST :8080/api/v1/notes content="Buy groceries"
 
-# Update task
-http PUT :8080/api/v1/tasks/{id} title="Updated title" description="New description"
+# Update note
+http PUT :8080/api/v1/notes/{id} content="Updated note content"
 
-# Delete task
-http DELETE :8080/api/v1/tasks/{id}
+# Delete note
+http DELETE :8080/api/v1/notes/{id}
 ```
 
 ## Prerequisites

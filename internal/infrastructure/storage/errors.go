@@ -1,33 +1,33 @@
-// Package storage provides interfaces and implementations for task persistence
+// Package storage provides interfaces and implementations for note persistence
 package storage
 
 import "errors"
 
 // Common errors returned by storage operations
 var (
-	// ErrTaskNotFound is returned when a task cannot be found
-	ErrTaskNotFound = errors.New("task not found")
+	// ErrNoteNotFound is returned when a note cannot be found
+	ErrNoteNotFound = errors.New("note not found")
 
-	// ErrDuplicateID is returned when attempting to add a task with an existing ID
-	ErrDuplicateID = errors.New("task ID already exists")
+	// ErrDuplicateID is returned when attempting to add a note with an existing ID
+	ErrDuplicateID = errors.New("note ID already exists")
 
 	// ErrInvalidPath is returned when an invalid database path is provided
 	ErrInvalidPath = errors.New("invalid database path")
 
-	// ErrInvalidID is returned when a task ID is invalid
-	ErrInvalidID = errors.New("invalid task ID")
+	// ErrInvalidID is returned when a note ID is invalid
+	ErrInvalidID = errors.New("invalid note ID")
 )
 
-// NotFoundError is returned when a task cannot be found
+// NotFoundError is returned when a note cannot be found
 type NotFoundError struct {
 	ID string
 }
 
 func (e *NotFoundError) Error() string {
-	return "task not found: " + e.ID
+	return "note not found: " + e.ID
 }
 
-// Is implements errors.Is interface to match against ErrTaskNotFound
+// Is implements errors.Is interface to match against ErrNoteNotFound
 func (e *NotFoundError) Is(target error) bool {
-	return target == ErrTaskNotFound
+	return target == ErrNoteNotFound
 }

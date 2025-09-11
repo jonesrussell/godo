@@ -22,12 +22,12 @@ type Runner struct {
 
 // NewRunner creates a new HTTP server runner
 func NewRunner(
-	taskService service.TaskService,
+	noteService service.NoteService,
 	l logger.Logger,
 	httpConfig *config.HTTPConfig,
 ) *Runner {
 	return &Runner{
-		server:   NewServer(taskService, l),
+		server:   NewServer(noteService, l),
 		logger:   l,
 		config:   httpConfig,
 		ready:    make(chan struct{}),

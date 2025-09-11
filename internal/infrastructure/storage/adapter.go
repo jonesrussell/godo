@@ -6,43 +6,43 @@ import (
 	"github.com/jonesrussell/godo/internal/domain/model"
 )
 
-// StoreAdapter adapts the new TaskStore interface to the old Store interface
+// StoreAdapter adapts the new NoteStore interface to the old Store interface
 type StoreAdapter struct {
-	store TaskStore
+	store NoteStore
 }
 
 // NewStoreAdapter creates a new adapter
-func NewStoreAdapter(store TaskStore) *StoreAdapter {
+func NewStoreAdapter(store NoteStore) *StoreAdapter {
 	return &StoreAdapter{store: store}
 }
 
-// List returns all tasks
-func (a *StoreAdapter) List() ([]model.Task, error) {
+// List returns all notes
+func (a *StoreAdapter) List() ([]model.Note, error) {
 	return a.store.List(context.Background())
 }
 
-// Add stores a new task
-func (a *StoreAdapter) Add(task *model.Task) error {
-	return a.store.Add(context.Background(), task)
+// Add stores a new note
+func (a *StoreAdapter) Add(note *model.Note) error {
+	return a.store.Add(context.Background(), note)
 }
 
-// Update modifies an existing task
-func (a *StoreAdapter) Update(task *model.Task) error {
-	return a.store.Update(context.Background(), task)
+// Update modifies an existing note
+func (a *StoreAdapter) Update(note *model.Note) error {
+	return a.store.Update(context.Background(), note)
 }
 
-// Delete removes a task by ID
+// Delete removes a note by ID
 func (a *StoreAdapter) Delete(id string) error {
 	return a.store.Delete(context.Background(), id)
 }
 
-// GetByID retrieves a task by its ID
-func (a *StoreAdapter) GetByID(id string) (*model.Task, error) {
-	task, err := a.store.GetByID(context.Background(), id)
+// GetByID retrieves a note by its ID
+func (a *StoreAdapter) GetByID(id string) (*model.Note, error) {
+	note, err := a.store.GetByID(context.Background(), id)
 	if err != nil {
 		return nil, err
 	}
-	return &task, nil
+	return &note, nil
 }
 
 // Close releases any resources held by the store

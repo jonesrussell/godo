@@ -12,7 +12,7 @@ import (
 type Container struct {
 	App    core.Application
 	Logger logger.Logger
-	Store  storage.TaskStore
+	Store  storage.NoteStore
 }
 
 // New creates a new container instance

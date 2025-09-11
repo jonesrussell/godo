@@ -18,7 +18,7 @@ Website = "https://github.com/jonesrussell/godo"
   HelperText = "Release build without debug symbols"
 
 [LinuxAndBSD]
-  GenericName = "Todo Application"
+  GenericName = "Note Application"
   Categories = ["Utility", "Office"]
-  Comment = "Quick-note and todo management application"
-  Keywords = ["todo", "notes", "tasks", "productivity"]
+  Comment = "Quick-note and note management application"
+  Keywords = ["notes", "productivity", "quick-note"]

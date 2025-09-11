@@ -8,41 +8,41 @@ import (
 	"github.com/jonesrussell/godo/internal/domain/model"
 )
 
-// TaskHandler defines the interface for task-related HTTP handlers
-type TaskHandler interface {
-	// List returns all tasks
+// NoteHandler defines the interface for note-related HTTP handlers
+type NoteHandler interface {
+	// List returns all notes
 	List(w http.ResponseWriter, r *http.Request)
-	// Create creates a new task
+	// Create creates a new note
 	Create(w http.ResponseWriter, r *http.Request)
-	// Get returns a specific task
+	// Get returns a specific note
 	Get(w http.ResponseWriter, r *http.Request)
-	// Update replaces an existing task
+	// Update replaces an existing note
 	Update(w http.ResponseWriter, r *http.Request)
-	// Patch partially updates an existing task
+	// Patch partially updates an existing note
 	Patch(w http.ResponseWriter, r *http.Request)
-	// Delete removes a task
+	// Delete removes a note
 	Delete(w http.ResponseWriter, r *http.Request)
 }
 
-// CreateTaskRequest represents a request to create a new task
-type CreateTaskRequest struct {
+// CreateNoteRequest represents a request to create a new note
+type CreateNoteRequest struct {
 	Content string `json:"content" validate:"required,max=1000"`
 }
 
-// UpdateTaskRequest represents a request to update an existing task
-type UpdateTaskRequest struct {
+// UpdateNoteRequest represents a request to update an existing note
+type UpdateNoteRequest struct {
 	Content string `json:"content" validate:"required,max=1000"`
 	Done    bool   `json:"done"`
 }
 
-// PatchTaskRequest represents a request to partially update a task
-type PatchTaskRequest struct {
+// PatchNoteRequest represents a request to partially update a note
+type PatchNoteRequest struct {
 	Content *string `json:"content,omitempty" validate:"omitempty,max=1000"`
 	Done    *bool   `json:"done,omitempty"`
 }
 
-// TaskResponse represents a task in API responses
-type TaskResponse struct {
+// NoteResponse represents a note in API responses
+type NoteResponse struct {
 	ID        string    `json:"id"`
 	Content   string    `json:"content"`
 	Done      bool      `json:"done"`
@@ -50,29 +50,29 @@ type TaskResponse struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// NewTaskResponse creates a TaskResponse from a model.Task
-func NewTaskResponse(task *model.Task) TaskResponse {
-	return TaskResponse{
-		ID:        task.ID,
-		Content:   task.Content,
-		Done:      task.Done,
-		CreatedAt: task.CreatedAt,
-		UpdatedAt: task.UpdatedAt,
+// NewNoteResponse creates a NoteResponse from a model.Note
+func NewNoteResponse(note *model.Note) NoteResponse {
+	return NoteResponse{
+		ID:        note.ID,
+		Content:   note.Content,
+		Done:      note.Done,
+		CreatedAt: note.CreatedAt,
+		UpdatedAt: note.UpdatedAt,
 	}
 }
 
-// TaskListResponse represents a list of tasks in API responses
-type TaskListResponse struct {
-	Tasks []TaskResponse `json:"tasks"`
+// NoteListResponse represents a list of notes in API responses
+type NoteListResponse struct {
+	Notes []NoteResponse `json:"notes"`
 }
 
-// NewTaskListResponse creates a TaskListResponse from a slice of model.Tasks
-func NewTaskListResponse(tasks []model.Task) TaskListResponse {
-	response := TaskListResponse{
-		Tasks: make([]TaskResponse, len(tasks)),
+// NewNoteListResponse creates a NoteListResponse from a slice of model.Notes
+func NewNoteListResponse(notes []model.Note) NoteListResponse {
+	response := NoteListResponse{
+		Notes: make([]NoteResponse, len(notes)),
 	}
-	for i, task := range tasks {
-		response.Tasks[i] = NewTaskResponse(&task)
+	for i, note := range notes {
+		response.Notes[i] = NewNoteResponse(&note)
 	}
 	return response
 }

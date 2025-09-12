@@ -14,7 +14,7 @@ database:
   path: "$HOME/.config/godo/godo.db"
 
 storage:
-  type: "sqlite"  # Options: "sqlite" or "api"
+  type: "api"  # Options: "sqlite" or "api"
   sqlite:
     file_path: "$HOME/.config/godo/godo.db"
   api:

@@ -18,13 +18,14 @@ import (
 	"github.com/jonesrussell/godo/internal/config"
 	"github.com/jonesrussell/godo/internal/domain/repository"
 	"github.com/jonesrussell/godo/internal/domain/service"
+	domainstorage "github.com/jonesrussell/godo/internal/domain/storage"
 	"github.com/jonesrussell/godo/internal/infrastructure/gui"
 	"github.com/jonesrussell/godo/internal/infrastructure/gui/mainwindow"
 	"github.com/jonesrussell/godo/internal/infrastructure/gui/quicknote"
 	"github.com/jonesrussell/godo/internal/infrastructure/gui/theme"
 	"github.com/jonesrussell/godo/internal/infrastructure/logger"
 	"github.com/jonesrussell/godo/internal/infrastructure/storage"
-	"github.com/jonesrussell/godo/internal/infrastructure/storage/sqlite"
+	"github.com/jonesrussell/godo/internal/infrastructure/storage/factory"
 )
 
 // Provider Sets - Organized by concern
@@ -41,13 +42,15 @@ var (
 
 	// StorageSet provides data persistence
 	StorageSet = wire.NewSet(
-		ProvideSQLiteStore,
-		wire.Bind(new(storage.NoteStore), new(*sqlite.Store)),
+		ProvideUnifiedStorage,
+		ProvideNoteStoreAdapter,
+		wire.Bind(new(storage.NoteStore), new(*storage.NoteStoreAdapter)),
 	)
 
 	// ServiceSet provides business logic
 	ServiceSet = wire.NewSet(
-		ProvideNoteRepository,
+		ProvideUnifiedStorage,
+		ProvideNoteRepositoryFromUnified,
 		ProvideNoteService,
 	)
 
@@ -149,8 +152,8 @@ func ProvideLogger(cfg *config.Config) (logger.Logger, func(), error) {
 	return log, cleanup, nil
 }
 
-// SQLite store provider
-func ProvideSQLiteStore(log logger.Logger, cfg *config.Config) (*sqlite.Store, func(), error) {
+// Unified storage provider
+func ProvideUnifiedStorage(log logger.Logger, cfg *config.Config) (domainstorage.UnifiedNoteStorage, func(), error) {
 	if log == nil {
 		return nil, nil, fmt.Errorf("logger is required")
 	}
@@ -158,23 +161,49 @@ func ProvideSQLiteStore(log logger.Logger, cfg *config.Config) (*sqlite.Store, f
 		return nil, nil, fmt.Errorf("config is required")
 	}
 
-	log.Debug("Creating SQLite store", "path", cfg.Database.Path)
-	store, err := sqlite.New(cfg.Database.Path, log)
+	// Convert config to storage config
+	storageConfig := &domainstorage.StorageConfig{
+		Type: domainstorage.StorageType(cfg.Storage.Type),
+		SQLite: domainstorage.SQLiteConfig{
+			FilePath: cfg.Storage.SQLite.FilePath,
+		},
+		API: domainstorage.APIConfig{
+			BaseURL:    cfg.Storage.API.BaseURL,
+			Timeout:    cfg.Storage.API.Timeout,
+			RetryCount: cfg.Storage.API.RetryCount,
+			RetryDelay: cfg.Storage.API.RetryDelay,
+		},
+	}
+
+	// If storage config is not set, fall back to database config for backward compatibility
+	if cfg.Storage.Type == "" {
+		log.Debug("Storage type not configured, falling back to SQLite", "path", cfg.Database.Path)
+		storageConfig.Type = domainstorage.StorageTypeSQLite
+		storageConfig.SQLite.FilePath = cfg.Database.Path
+	}
+
+	log.Debug("Creating unified storage", "type", storageConfig.Type)
+	store, err := factory.NewUnifiedStorage(storageConfig, log)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to create store: %w", err)
+		return nil, nil, fmt.Errorf("failed to create unified storage: %w", err)
 	}
 
 	cleanup := func() {
 		if err := store.Close(); err != nil {
-			log.Error("failed to close store during cleanup", "error", err)
+			log.Error("failed to close storage during cleanup", "error", err)
 		}
 	}
 
 	return store, cleanup, nil
 }
 
-// Note repository provider
-func ProvideNoteRepository(store storage.NoteStore) repository.NoteRepository {
+// Note store adapter provider
+func ProvideNoteStoreAdapter(unifiedStore domainstorage.UnifiedNoteStorage) *storage.NoteStoreAdapter {
+	return storage.NewNoteStoreAdapter(unifiedStore)
+}
+
+// Note repository provider from unified storage
+func ProvideNoteRepositoryFromUnified(store domainstorage.UnifiedNoteStorage) repository.NoteRepository {
 	return repository.NewNoteRepository(store)
 }
 

@@ -1,7 +1,10 @@
 // Package storage provides interfaces and implementations for note persistence
 package storage
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
 // Common errors returned by storage operations
 var (
@@ -30,4 +33,17 @@ func (e *NotFoundError) Error() string {
 // Is implements errors.Is interface to match against ErrNoteNotFound
 func (e *NotFoundError) Is(target error) bool {
 	return target == ErrNoteNotFound
+}
+
+// ValidationError represents a validation error from API
+type ValidationError struct {
+	Message string
+	Fields  map[string]string
+}
+
+func (e *ValidationError) Error() string {
+	if len(e.Fields) > 0 {
+		return fmt.Sprintf("validation error: %s - %v", e.Message, e.Fields)
+	}
+	return fmt.Sprintf("validation error: %s", e.Message)
 }

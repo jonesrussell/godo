@@ -13,6 +13,16 @@ logger:
 database:
   path: "$HOME/.config/godo/godo.db"
 
+storage:
+  type: "api"  # Options: "sqlite" or "api"
+  sqlite:
+    file_path: "$HOME/.config/godo/godo.db"
+  api:
+    base_url: "http://localhost:8000/api"
+    timeout_seconds: 30
+    retry_count: 3
+    retry_delay_ms: 1000
+
 ui:
   main_window:
     width: 800

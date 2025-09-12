@@ -1,7 +1,10 @@
 // Package errors provides error definitions for the storage package
 package errors
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
 // Common errors
 var (
@@ -27,4 +30,17 @@ func (e *NotFoundError) Error() string {
 // Is implements errors.Is interface to match against ErrNoteNotFound
 func (e *NotFoundError) Is(target error) bool {
 	return target == ErrNoteNotFound
+}
+
+// ValidationError is returned when validation fails
+type ValidationError struct {
+	Message string
+	Fields  map[string]string
+}
+
+func (e *ValidationError) Error() string {
+	if len(e.Fields) > 0 {
+		return fmt.Sprintf("validation error: %s", e.Message)
+	}
+	return e.Message
 }

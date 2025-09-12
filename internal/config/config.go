@@ -49,7 +49,8 @@ type Config struct {
 	App      AppConfig      `mapstructure:"app"`
 	Logger   LogConfig      `mapstructure:"logger"`
 	Hotkeys  HotkeyConfig   `mapstructure:"hotkeys"`
-	Database DatabaseConfig `mapstructure:"database"`
+	Database DatabaseConfig `mapstructure:"database"` // Deprecated - use Storage
+	Storage  StorageConfig  `mapstructure:"storage"`
 	UI       UIConfig       `mapstructure:"ui"`
 	HTTP     HTTPConfig     `mapstructure:"http"`
 }
@@ -75,9 +76,29 @@ type HotkeyBinding struct {
 	Key       string   `mapstructure:"key"`
 }
 
-// DatabaseConfig holds database configuration
+// DatabaseConfig holds database configuration (deprecated - use StorageConfig)
 type DatabaseConfig struct {
 	Path string `mapstructure:"path"`
+}
+
+// StorageConfig holds storage configuration for different backends
+type StorageConfig struct {
+	Type   string       `mapstructure:"type"`
+	SQLite SQLiteConfig `mapstructure:"sqlite"`
+	API    APIConfig    `mapstructure:"api"`
+}
+
+// SQLiteConfig holds SQLite-specific configuration
+type SQLiteConfig struct {
+	FilePath string `mapstructure:"file_path"`
+}
+
+// APIConfig holds API-specific configuration
+type APIConfig struct {
+	BaseURL    string `mapstructure:"base_url"`
+	Timeout    int    `mapstructure:"timeout_seconds"`
+	RetryCount int    `mapstructure:"retry_count"`
+	RetryDelay int    `mapstructure:"retry_delay_ms"`
 }
 
 // UIConfig holds UI-related configuration

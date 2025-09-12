@@ -49,7 +49,6 @@ var (
 
 	// ServiceSet provides business logic
 	ServiceSet = wire.NewSet(
-		ProvideUnifiedStorage,
 		ProvideNoteRepositoryFromUnified,
 		ProvideNoteService,
 	)

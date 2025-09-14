@@ -17,18 +17,22 @@ import (
 
 // Manager defines the interface for hotkey management
 type Manager interface {
-	// Register registers the hotkey with the system
+	// Register registers all configured hotkeys with the system
 	Register() error
-	// Unregister removes the hotkey registration from the system
+	// Unregister removes all hotkey registrations from the system
 	Unregister() error
 	// Start begins listening for hotkey events
 	Start() error
-	// Stop ends the hotkey listening and unregisters the hotkey
+	// Stop ends the hotkey listening and unregisters all hotkeys
 	Stop() error
 	// SetQuickNote configures the quick note service and hotkey binding
 	SetQuickNote(quickNote QuickNoteService, binding *config.HotkeyBinding)
 	// SetQuickNoteFactory configures a factory function to create the quick note service on demand
 	SetQuickNoteFactory(factory func() QuickNoteService, binding *config.HotkeyBinding)
+	// SetMainWindow configures the main window service and hotkey binding
+	SetMainWindow(mainWindow MainWindowService, binding *config.HotkeyBinding)
+	// SetMainWindowFactory configures a factory function to create the main window service on demand
+	SetMainWindowFactory(factory func() MainWindowService, binding *config.HotkeyBinding)
 }
 
 // QuickNoteService defines quick note operations that can be triggered by hotkeys
@@ -37,15 +41,26 @@ type QuickNoteService interface {
 	Hide()
 }
 
+// MainWindowService defines main window operations that can be triggered by hotkeys
+type MainWindowService interface {
+	Show()
+	Hide()
+}
+
+// HotkeyEntry represents a single hotkey configuration
+type HotkeyEntry struct {
+	hotkey     *hotkey.Hotkey
+	binding    *config.HotkeyBinding
+	quickNote  QuickNoteService
+	mainWindow MainWindowService
+}
+
 // HotkeyManager manages hotkeys using the simplified library approach
 type HotkeyManager struct {
-	log           logger.Logger
-	quickNote     QuickNoteService
-	quickNoteFunc func() QuickNoteService // Factory function for backward compatibility
-	binding       *config.HotkeyBinding
-	hk            *hotkey.Hotkey
-	stopChan      chan struct{}
-	running       bool
+	log      logger.Logger
+	hotkeys  []HotkeyEntry
+	stopChan chan struct{}
+	running  bool
 }
 
 // NewManager creates a new HotkeyManager instance
@@ -61,8 +76,13 @@ func (m *HotkeyManager) SetQuickNote(quickNote QuickNoteService, binding *config
 	m.log.Debug("Setting quick note service and binding",
 		"binding", fmt.Sprintf("%+v", binding),
 		"quicknote_nil", quickNote == nil)
-	m.quickNote = quickNote
-	m.binding = binding
+
+	// Create hotkey entry for quick note
+	entry := HotkeyEntry{
+		binding:   binding,
+		quickNote: quickNote,
+	}
+	m.hotkeys = append(m.hotkeys, entry)
 }
 
 // SetQuickNoteFactory configures a factory function to create the quick note service on demand
@@ -70,18 +90,47 @@ func (m *HotkeyManager) SetQuickNoteFactory(factory func() QuickNoteService, bin
 	m.log.Debug("Setting quick note factory and binding",
 		"binding", fmt.Sprintf("%+v", binding),
 		"factory_nil", factory == nil)
-	m.quickNoteFunc = factory
-	m.binding = binding
+
+	// Create hotkey entry for quick note with factory
+	entry := HotkeyEntry{
+		binding:   binding,
+		quickNote: factory(), // Call factory immediately to get service
+	}
+	m.hotkeys = append(m.hotkeys, entry)
 }
 
-// Register registers the configured hotkey with the system
-func (m *HotkeyManager) Register() error {
-	if m.binding == nil {
-		return fmt.Errorf("hotkey binding not set")
-	}
+// SetMainWindow configures the main window service and hotkey binding
+func (m *HotkeyManager) SetMainWindow(mainWindow MainWindowService, binding *config.HotkeyBinding) {
+	m.log.Debug("Setting main window service and binding",
+		"binding", fmt.Sprintf("%+v", binding),
+		"mainwindow_nil", mainWindow == nil)
 
-	if m.hk != nil {
-		return fmt.Errorf("hotkey already registered")
+	// Create hotkey entry for main window
+	entry := HotkeyEntry{
+		binding:    binding,
+		mainWindow: mainWindow,
+	}
+	m.hotkeys = append(m.hotkeys, entry)
+}
+
+// SetMainWindowFactory configures a factory function to create the main window service on demand
+func (m *HotkeyManager) SetMainWindowFactory(factory func() MainWindowService, binding *config.HotkeyBinding) {
+	m.log.Debug("Setting main window factory and binding",
+		"binding", fmt.Sprintf("%+v", binding),
+		"factory_nil", factory == nil)
+
+	// Create hotkey entry for main window with factory
+	entry := HotkeyEntry{
+		binding:    binding,
+		mainWindow: factory(), // Call factory immediately to get service
+	}
+	m.hotkeys = append(m.hotkeys, entry)
+}
+
+// Register registers all configured hotkeys with the system
+func (m *HotkeyManager) Register() error {
+	if len(m.hotkeys) == 0 {
+		return fmt.Errorf("no hotkeys configured")
 	}
 
 	// Platform-specific checks
@@ -89,56 +138,68 @@ func (m *HotkeyManager) Register() error {
 		return err
 	}
 
-	m.log.Info("Registering hotkey",
-		"modifiers", strings.Join(m.binding.Modifiers, "+"),
-		"key", m.binding.Key,
-		"os", runtime.GOOS)
+	for i, entry := range m.hotkeys {
+		if entry.binding == nil {
+			return fmt.Errorf("hotkey binding not set for entry %d", i)
+		}
 
-	mods, err := m.convertModifiers()
-	if err != nil {
-		return fmt.Errorf("failed to convert modifiers: %w", err)
+		m.log.Info("Registering hotkey",
+			"entry", i,
+			"modifiers", strings.Join(entry.binding.Modifiers, "+"),
+			"key", entry.binding.Key,
+			"os", runtime.GOOS)
+
+		mods, err := m.convertModifiers(entry.binding)
+		if err != nil {
+			return fmt.Errorf("failed to convert modifiers for entry %d: %w", i, err)
+		}
+
+		key, err := m.convertKey(entry.binding)
+		if err != nil {
+			return fmt.Errorf("failed to convert key for entry %d: %w", i, err)
+		}
+
+		// Create and register hotkey using library's simple API
+		hk := hotkey.New(mods, key)
+		if registerErr := hk.Register(); registerErr != nil {
+			return fmt.Errorf("failed to register hotkey for entry %d: %w", i, registerErr)
+		}
+
+		// Store the hotkey in the entry
+		m.hotkeys[i].hotkey = hk
+
+		m.log.Info("Successfully registered hotkey",
+			"entry", i,
+			"modifiers", strings.Join(entry.binding.Modifiers, "+"),
+			"key", entry.binding.Key)
 	}
 
-	key, err := m.convertKey()
-	if err != nil {
-		return fmt.Errorf("failed to convert key: %w", err)
-	}
-
-	// Create and register hotkey using library's simple API
-	m.hk = hotkey.New(mods, key)
-	if registerErr := m.hk.Register(); registerErr != nil {
-		return fmt.Errorf("failed to register hotkey: %w", registerErr)
-	}
-
-	m.log.Info("Successfully registered hotkey",
-		"modifiers", strings.Join(m.binding.Modifiers, "+"),
-		"key", m.binding.Key)
 	return nil
 }
 
-// Unregister removes the hotkey registration
+// Unregister removes all hotkey registrations
 func (m *HotkeyManager) Unregister() error {
-	if m.hk == nil {
-		return nil
+	var lastErr error
+
+	for i, entry := range m.hotkeys {
+		if entry.hotkey != nil {
+			if err := entry.hotkey.Unregister(); err != nil {
+				m.log.Error("Failed to unregister hotkey", "entry", i, "error", err)
+				lastErr = fmt.Errorf("failed to unregister hotkey %d: %w", i, err)
+			} else {
+				m.log.Info("Hotkey unregistered", "entry", i)
+			}
+			m.hotkeys[i].hotkey = nil
+		}
 	}
 
-	if err := m.hk.Unregister(); err != nil {
-		return fmt.Errorf("failed to unregister hotkey: %w", err)
-	}
-
-	m.hk = nil
-	m.log.Info("Hotkey unregistered")
-	return nil
+	return lastErr
 }
 
 // Start begins listening for hotkey events using the library's channel-based approach
 func (m *HotkeyManager) Start() error {
-	if m.hk == nil {
-		return fmt.Errorf("hotkey not registered")
-	}
-
-	if m.quickNote == nil && m.quickNoteFunc == nil {
-		return fmt.Errorf("quick note service not set")
+	if len(m.hotkeys) == 0 {
+		return fmt.Errorf("no hotkeys registered")
 	}
 
 	if m.running {
@@ -155,22 +216,37 @@ func (m *HotkeyManager) Start() error {
 			m.log.Info("Hotkey listener stopped")
 		}()
 
+		// Create a slice of channels for all hotkeys
+		channels := make([]<-chan hotkey.Event, len(m.hotkeys))
+		for i, entry := range m.hotkeys {
+			if entry.hotkey != nil {
+				channels[i] = entry.hotkey.Keydown()
+			}
+		}
+
 		for {
 			select {
 			case <-m.stopChan:
 				return
-			case <-m.hk.Keydown():
-				m.log.Info("Hotkey triggered")
-				// Get quick note service - either from existing instance or factory
-				var quickNoteService QuickNoteService
-				if m.quickNote != nil {
-					quickNoteService = m.quickNote
-				} else if m.quickNoteFunc != nil {
-					quickNoteService = m.quickNoteFunc()
-				}
+			default:
+				// Check each hotkey channel
+				for i, ch := range channels {
+					if ch != nil {
+						select {
+						case event := <-ch:
+							m.log.Info("Hotkey triggered", "entry", i, "event", event)
+							entry := m.hotkeys[i]
 
-				if quickNoteService != nil {
-					quickNoteService.Show()
+							// Trigger the appropriate service
+							if entry.quickNote != nil {
+								entry.quickNote.Show()
+							} else if entry.mainWindow != nil {
+								entry.mainWindow.Show()
+							}
+						default:
+							// No event on this channel, continue
+						}
+					}
 				}
 			}
 		}
@@ -209,7 +285,7 @@ func (m *HotkeyManager) checkPlatformRequirements() error {
 }
 
 // convertModifiers converts string modifiers to hotkey.Modifier using a simple map
-func (m *HotkeyManager) convertModifiers() ([]hotkey.Modifier, error) {
+func (m *HotkeyManager) convertModifiers(binding *config.HotkeyBinding) ([]hotkey.Modifier, error) {
 	modifierMap := map[string]hotkey.Modifier{
 		"Ctrl":  hotkey.ModCtrl,
 		"Shift": hotkey.ModShift,
@@ -217,7 +293,7 @@ func (m *HotkeyManager) convertModifiers() ([]hotkey.Modifier, error) {
 	}
 
 	var mods []hotkey.Modifier
-	for _, modStr := range m.binding.Modifiers {
+	for _, modStr := range binding.Modifiers {
 		if mod, exists := modifierMap[modStr]; exists {
 			mods = append(mods, mod)
 		} else {
@@ -242,7 +318,7 @@ func (m *HotkeyManager) getAltModifier() hotkey.Modifier {
 }
 
 // convertKey converts string key to hotkey.Key using a simple map
-func (m *HotkeyManager) convertKey() (hotkey.Key, error) {
+func (m *HotkeyManager) convertKey(binding *config.HotkeyBinding) (hotkey.Key, error) {
 	// Simple map for common keys - only include keys that actually exist in the library
 	keyMap := map[string]hotkey.Key{
 		// Letters
@@ -267,9 +343,9 @@ func (m *HotkeyManager) convertKey() (hotkey.Key, error) {
 		"Up":     hotkey.KeyUp, "Down": hotkey.KeyDown, "Left": hotkey.KeyLeft, "Right": hotkey.KeyRight,
 	}
 
-	if key, exists := keyMap[m.binding.Key]; exists {
+	if key, exists := keyMap[binding.Key]; exists {
 		return key, nil
 	}
 
-	return 0, fmt.Errorf("unsupported key: %s", m.binding.Key)
+	return 0, fmt.Errorf("unsupported key: %s", binding.Key)
 }

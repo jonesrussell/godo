@@ -66,6 +66,7 @@ type AppConfig struct {
 // HotkeyConfig holds hotkey configuration
 type HotkeyConfig struct {
 	QuickNote    HotkeyBinding `mapstructure:"quick_note"`
+	MainWindow   HotkeyBinding `mapstructure:"main_window"`
 	RetryDelayMs int           `mapstructure:"retry_delay_ms"`
 	MaxRetries   int           `mapstructure:"max_retries"`
 }
@@ -95,10 +96,11 @@ type SQLiteConfig struct {
 
 // APIConfig holds API-specific configuration
 type APIConfig struct {
-	BaseURL    string `mapstructure:"base_url"`
-	Timeout    int    `mapstructure:"timeout_seconds"`
-	RetryCount int    `mapstructure:"retry_count"`
-	RetryDelay int    `mapstructure:"retry_delay_ms"`
+	BaseURL            string `mapstructure:"base_url"`
+	Timeout            int    `mapstructure:"timeout_seconds"`
+	RetryCount         int    `mapstructure:"retry_count"`
+	RetryDelay         int    `mapstructure:"retry_delay_ms"`
+	InsecureSkipVerify bool   `mapstructure:"insecure_skip_verify"`
 }
 
 // UIConfig holds UI-related configuration
@@ -218,6 +220,8 @@ func (p *Provider) setDefaults(v *viper.Viper, cfg *Config) {
 	v.SetDefault(KeyLogConsole, cfg.Logger.Console)
 	v.SetDefault("hotkeys.quick_note.modifiers", cfg.Hotkeys.QuickNote.Modifiers)
 	v.SetDefault("hotkeys.quick_note.key", cfg.Hotkeys.QuickNote.Key)
+	v.SetDefault("hotkeys.main_window.modifiers", cfg.Hotkeys.MainWindow.Modifiers)
+	v.SetDefault("hotkeys.main_window.key", cfg.Hotkeys.MainWindow.Key)
 	v.SetDefault("hotkeys.quick_note.retry_delay_ms", cfg.Hotkeys.RetryDelayMs)
 	v.SetDefault("hotkeys.quick_note.max_retries", cfg.Hotkeys.MaxRetries)
 	v.SetDefault("app.force_kill_timeout", cfg.App.ForceKillTimeout)
@@ -246,6 +250,8 @@ func (p *Provider) bindEnvironmentVariables(v *viper.Viper) error {
 		KeyLogConsole:                       EnvPrefix + "_LOGGER_CONSOLE",
 		"hotkeys.quick_note.modifiers":      EnvPrefix + "_HOTKEYS_QUICK_NOTE_MODIFIERS",
 		"hotkeys.quick_note.key":            EnvPrefix + "_HOTKEYS_QUICK_NOTE_KEY",
+		"hotkeys.main_window.modifiers":     EnvPrefix + "_HOTKEYS_MAIN_WINDOW_MODIFIERS",
+		"hotkeys.main_window.key":           EnvPrefix + "_HOTKEYS_MAIN_WINDOW_KEY",
 		"hotkeys.quick_note.retry_delay_ms": EnvPrefix + "_HOTKEYS_QUICK_NOTE_RETRY_DELAY_MS",
 		"hotkeys.quick_note.max_retries":    EnvPrefix + "_HOTKEYS_QUICK_NOTE_MAX_RETRIES",
 		"app.force_kill_timeout":            EnvPrefix + "_APP_FORCE_KILL_TIMEOUT",
@@ -260,7 +266,7 @@ func (p *Provider) bindEnvironmentVariables(v *viper.Viper) error {
 		if envVal := os.Getenv(env); envVal != "" {
 			p.log.Debug("environment variable found", "key", env, "value", envVal)
 			// Special handling for modifiers array
-			if k == "hotkeys.quick_note.modifiers" {
+			if k == "hotkeys.quick_note.modifiers" || k == "hotkeys.main_window.modifiers" {
 				p.log.Debug("processing modifiers array", "raw_value", envVal)
 				// Remove brackets and quotes, then split by comma
 				trimmed := strings.Trim(envVal, "[]")
@@ -367,6 +373,10 @@ func NewDefaultConfig() *Config {
 		},
 		Hotkeys: HotkeyConfig{
 			QuickNote: HotkeyBinding{
+				Modifiers: []string{}, // Let config file or environment set this
+				Key:       "",         // Let config file or environment set this
+			},
+			MainWindow: HotkeyBinding{
 				Modifiers: []string{}, // Let config file or environment set this
 				Key:       "",         // Let config file or environment set this
 			},

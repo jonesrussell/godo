@@ -50,10 +50,11 @@ type SQLiteConfig struct {
 
 // APIConfig holds API-specific configuration
 type APIConfig struct {
-	BaseURL    string `mapstructure:"base_url" json:"base_url"`
-	Timeout    int    `mapstructure:"timeout_seconds" json:"timeout_seconds"`
-	RetryCount int    `mapstructure:"retry_count" json:"retry_count"`
-	RetryDelay int    `mapstructure:"retry_delay_ms" json:"retry_delay_ms"`
+	BaseURL            string `mapstructure:"base_url" json:"base_url"`
+	Timeout            int    `mapstructure:"timeout_seconds" json:"timeout_seconds"`
+	RetryCount         int    `mapstructure:"retry_count" json:"retry_count"`
+	RetryDelay         int    `mapstructure:"retry_delay_ms" json:"retry_delay_ms"`
+	InsecureSkipVerify bool   `mapstructure:"insecure_skip_verify" json:"insecure_skip_verify"`
 }
 
 // DefaultStorageConfig returns a default storage configuration
@@ -64,10 +65,11 @@ func DefaultStorageConfig() *StorageConfig {
 			FilePath: "godo.db",
 		},
 		API: APIConfig{
-			BaseURL:    "http://localhost:8000/api",
-			Timeout:    30,
-			RetryCount: 3,
-			RetryDelay: 1000,
+			BaseURL:            "http://localhost:8000/api",
+			Timeout:            30,
+			RetryCount:         3,
+			RetryDelay:         1000,
+			InsecureSkipVerify: false,
 		},
 	}
 }

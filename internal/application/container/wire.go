@@ -167,10 +167,11 @@ func ProvideUnifiedStorage(log logger.Logger, cfg *config.Config) (domainstorage
 			FilePath: cfg.Storage.SQLite.FilePath,
 		},
 		API: domainstorage.APIConfig{
-			BaseURL:    cfg.Storage.API.BaseURL,
-			Timeout:    cfg.Storage.API.Timeout,
-			RetryCount: cfg.Storage.API.RetryCount,
-			RetryDelay: cfg.Storage.API.RetryDelay,
+			BaseURL:            cfg.Storage.API.BaseURL,
+			Timeout:            cfg.Storage.API.Timeout,
+			RetryCount:         cfg.Storage.API.RetryCount,
+			RetryDelay:         cfg.Storage.API.RetryDelay,
+			InsecureSkipVerify: cfg.Storage.API.InsecureSkipVerify,
 		},
 	}
 

@@ -87,6 +87,11 @@ func New(
 
 		// Use the simplified interface - pass the quick note service directly
 		app.hotkey.SetQuickNote(app.quickNoteWindow, &cfg.Hotkeys.QuickNote)
+
+		// Set up main window hotkey if configured
+		if cfg.Hotkeys.MainWindow.Key != "" {
+			app.hotkey.SetMainWindow(app.mainWindow, &cfg.Hotkeys.MainWindow)
+		}
 	}
 
 	return app

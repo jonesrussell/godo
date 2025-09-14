@@ -4,6 +4,7 @@ package api
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -46,8 +47,17 @@ func New(config domainstorage.APIConfig, log logger.Logger) (*Store, error) {
 		retryDelay = 1000 * time.Millisecond
 	}
 
+	// Configure TLS
+	log.Debug("Configuring TLS", "insecure_skip_verify", config.InsecureSkipVerify)
+	transport := &http.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: config.InsecureSkipVerify,
+		},
+	}
+
 	client := &http.Client{
-		Timeout: timeout,
+		Timeout:   timeout,
+		Transport: transport,
 	}
 
 	return &Store{

@@ -18,10 +18,11 @@ storage:
   sqlite:
     file_path: "$HOME/.config/godo/godo.db"
   api:
-    base_url: "http://localhost:8000/api"
+    base_url: "https://lame.ddev.site/api"
     timeout_seconds: 30
     retry_count: 3
     retry_delay_ms: 1000
+    insecure_skip_verify: true
 
 ui:
   main_window:
@@ -36,8 +37,11 @@ hotkeys:
   quick_note:
     modifiers: [ "Ctrl", "Shift" ]
     key: "1"
+  main_window:
+    modifiers: [ "Ctrl", "Shift" ]
+    key: "2"
 
 http:
-  port: 8080
+  port: 8008
   startup_timeout: 5
   shutdown_timeout: 1

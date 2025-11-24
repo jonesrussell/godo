@@ -13,7 +13,7 @@ require (
 	github.com/google/wire v0.7.0
 	github.com/gorilla/mux v1.8.1
 	github.com/spf13/viper v1.21.0
-	go.uber.org/zap v1.27.0
+	go.uber.org/zap v1.27.1
 	modernc.org/sqlite v1.38.2
 )
 

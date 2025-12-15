@@ -111,7 +111,7 @@ jobs:
 
       # Upload individual artifacts with version
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: godo-${{ steps.get_version.outputs.version }}-${{ matrix.os }}-${{ matrix.arch }}
           path: dist/${{ matrix.artifact }}

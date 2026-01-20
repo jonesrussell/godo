@@ -1,0 +1,8 @@
+version: '3'
+
+# Windows-specific variables and tasks
+
+vars:
+  BUILD_TIME:
+    sh: powershell -Command "(Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')"
+  NATIVE_BUILD_TASK: native:windows

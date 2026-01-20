@@ -1,0 +1,47 @@
+# Default configuration for Godo
+app:
+  name: "Godo"
+  version: "1.0.0"
+  id: "com.jonesrussell.godo"
+
+logger:
+  level: "debug"
+  console: true
+  file: true
+  file_path: "logs/godo.log"
+
+database:
+  path: "$HOME/.config/godo/godo.db"
+
+storage:
+  type: "sqlite"  # Options: "sqlite" or "api"
+  sqlite:
+    file_path: "$HOME/.config/godo/godo.db"
+  api:
+    base_url: "https://lame.ddev.site/api"
+    timeout_seconds: 30
+    retry_count: 3
+    retry_delay_ms: 1000
+    insecure_skip_verify: true
+
+ui:
+  main_window:
+    width: 800
+    height: 600
+    start_hidden: true
+  quick_note:
+    width: 200
+    height: 100
+
+hotkeys:
+  quick_note:
+    modifiers: [ "Ctrl", "Shift" ]
+    key: "1"
+  main_window:
+    modifiers: [ "Ctrl", "Shift" ]
+    key: "2"
+
+http:
+  port: 8008
+  startup_timeout: 5
+  shutdown_timeout: 1

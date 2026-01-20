@@ -9,13 +9,13 @@ Godo is a cross-platform note application combining three powerful features:
 2. Full-featured graphical note management interface (Ctrl+Shift+2)
 3. REST API for programmatic note management
 
-Built with Go 1.24+ using Fyne toolkit for native GUI, supporting Windows and Linux (macOS coming soon).
+Built with Go 1.25+ using Fyne toolkit for native GUI, supporting Windows and Linux (macOS coming soon).
 
 ## Essential Commands
 
 ### Development Workflow
 ```bash
-# Install development tools (golangci-lint, goimports, wire)
+# Install development tools (uses Go 1.25 tool directive in go.mod)
 task install-tools
 
 # Format code (runs gofmt, goimports, go vet)
@@ -40,11 +40,49 @@ task run                    # Normal mode
 task run-debug              # With LOG_LEVEL=debug
 
 # Build for current platform
-task build
+task build                   # Uses main Taskfile.yml (cross-platform)
 
 # Complete development cycle
 task dev                    # Format, lint, test
 task all                    # deps, fmt, lint, test, build
+```
+
+### Platform-Specific Build Notes
+- Uses Task's OS-specific taskfile feature: `Taskfile_{{OS}}.yml`
+- `Taskfile_windows.yml`: Windows-specific variables (BUILD_TIME uses PowerShell)
+- `Taskfile_linux.yml`: Linux-specific variables (BUILD_TIME uses date command)
+- Both main Taskfile.yml and Taskfile.build.yml include OS-specific taskfiles
+- BUILD_TIME variable automatically uses correct command for the platform
+
+### Additional Build Commands
+The main Taskfile.yml includes Taskfile.build.yml, so you can access build tasks with the `build:` prefix:
+
+```bash
+# Native builds (current platform)
+task build                          # Build for current platform (alias for build:native)
+task build:native:windows          # Windows native build
+task build:native:linux            # Linux native build
+
+# Cross-compilation
+task build:cross-windows           # Cross-compile for Windows from Linux/WSL2
+task build:cross-linux             # Cross-compile for Linux from Windows
+
+# Docker builds
+task build:docker:build-all        # Build both Windows and Linux using Docker
+task build:docker:build-linux      # Build Linux binary using Docker
+task build:docker:build-windows    # Build Windows binary using Docker
+
+# Wire generation for specific platforms
+task build:wire                    # Generate Wire code for current platform
+task build:wire:windows           # Generate Wire code for Windows
+task build:wire:linux             # Generate Wire code for Linux
+
+# Cleanup
+task build:clean                   # Clean build artifacts (dist/, wire_gen.go)
+
+# WSL2-specific workflows
+task build:wsl2:all               # Complete WSL2 workflow (build + copy to Windows)
+task build:wsl2:build-windows     # Build Windows executable from WSL2
 ```
 
 ### Testing Single Files or Packages
@@ -65,6 +103,15 @@ go test -race ./internal/infrastructure/hotkey/...
 # Always use:
 go mod download
 go mod tidy
+
+# Development tools are managed via Go 1.25 tool directive
+# Tools are defined in go.mod:
+#   tool (
+#     github.com/golangci/golangci-lint/cmd/golangci-lint
+#     golang.org/x/tools/cmd/goimports
+#     github.com/google/wire/cmd/wire
+#   )
+# Install with: task install-tools (runs `go get` and `go mod tidy`)
 ```
 
 ### Mock Generation
@@ -84,6 +131,25 @@ task wire
 # Or directly:
 wire ./internal/application/container
 ```
+
+### OS-Specific Taskfiles
+The project uses Task's OS-specific taskfile feature for platform-dependent variables:
+
+```yaml
+# Taskfile.yml includes OS-specific taskfiles
+includes:
+  os:
+    taskfile: ./Taskfile_{{OS}}.yml  # Automatically loads Taskfile_windows.yml or Taskfile_linux.yml
+```
+
+**Files:**
+- `Taskfile_windows.yml`: Windows-specific variables and tasks (BUILD_TIME uses PowerShell)
+- `Taskfile_linux.yml`: Linux-specific variables and tasks (BUILD_TIME uses date command)
+
+**Usage:**
+- Variables from OS-specific taskfiles are referenced with `.os.` prefix
+- Example: `BUILD_TIME: {ref: .os.BUILD_TIME}` in main taskfile
+- Task automatically selects the correct file based on runtime OS
 
 ## Architecture
 
@@ -185,11 +251,12 @@ internal/
 - **WSL2**: GUI works with X11 forwarding, but hotkeys don't work (use `task test:wsl2`)
 
 ### Build Prerequisites
-- Go 1.24+
+- Go 1.25+
 - SQLite3
-- MinGW-w64 GCC (Windows builds)
+- MinGW-w64 GCC (Windows builds - required for CGO)
 - GNU diffutils (Windows linting)
 - Task runner (`choco install go-task`)
+- Development tools are managed via Go 1.25 `tool` directive in go.mod
 
 ### Thread Safety in GUI Code
 Always wrap GUI operations in `fyne.Do()`:
@@ -276,13 +343,14 @@ QuickNote.addNote()
 Storage backend selection in [config.yaml](config.yaml):
 ```yaml
 storage:
-  type: "api"  # Options: "sqlite" or "api"
+  type: "sqlite"  # Options: "sqlite" or "api"
   sqlite:
     file_path: "$HOME/.config/godo/godo.db"
   api:
     base_url: "https://lame.ddev.site/api"
     timeout_seconds: 30
     retry_count: 3
+    retry_delay_ms: 1000
     insecure_skip_verify: true
 ```
 

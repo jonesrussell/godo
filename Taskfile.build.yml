@@ -1,5 +1,9 @@
 version: '3'
 
+includes:
+  os:
+    taskfile: ./Taskfile_{{OS}}.yml
+
 vars:
   BINARY_NAME: godo
   BUILD_DIR: dist
@@ -7,8 +11,9 @@ vars:
     sh: git describe --tags --always 2>/dev/null || echo dev
   COMMIT:
     sh: git rev-parse --short HEAD 2>/dev/null || echo unknown
+  # BUILD_TIME is defined in OS-specific taskfiles
   BUILD_TIME:
-    sh: date -u +"%Y-%m-%dT%H:%M:%SZ"
+    ref: .os.BUILD_TIME
 
 tasks:
   default:
@@ -144,13 +149,12 @@ tasks:
     cmds:
     - mkdir -p {{.BUILD_DIR}}
     - go build -ldflags "-X main.version={{.VERSION}} -X main.commit={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}} -s -w" -tags windows -o {{.BUILD_DIR}}/{{.BINARY_NAME}}.exe main.go
-    - copy config.yaml {{.BUILD_DIR}}\ 2>nul || echo config.yaml not found, skipping
+    - cp config.yaml {{.BUILD_DIR}}\ 2>nul || echo config.yaml not found, skipping
 
   native:
     desc: Build for current platform (native)
-    platforms: [ linux ]
     cmds:
-    - task: native:linux
+    - task: '{{if eq OS "windows"}}native:windows{{else}}native:linux{{end}}'
 
   wsl2:build-windows:
     desc: Build Windows executable from WSL2

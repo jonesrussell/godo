@@ -22,3 +22,4 @@ godo-linter.exe
 
 test/mocks/
 main
+.claude/settings.local.json

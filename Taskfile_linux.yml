@@ -1,0 +1,8 @@
+version: '3'
+
+# Linux-specific variables and tasks
+
+vars:
+  BUILD_TIME:
+    sh: date -u +"%Y-%m-%dT%H:%M:%SZ"
+  NATIVE_BUILD_TASK: native:linux

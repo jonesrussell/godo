@@ -4,27 +4,23 @@ includes:
   build:
     taskfile: ./Taskfile.build.yml
     optional: true
+  os:
+    taskfile: ./Taskfile_{{OS}}.yml
 
 vars:
   BINARY_NAME: godo
   BUILD_DIR: dist
   COVERAGE_DIR: coverage
-  GO_VERSION: 1.24
+  GO_VERSION: 1.25
   GOOS:
     sh: go env GOOS
   VERSION:
     sh: git describe --tags --always 2>/dev/null || echo dev
   COMMIT:
     sh: git rev-parse --short HEAD 2>/dev/null || echo unknown
-  # Cross-platform build time
+  # BUILD_TIME is now defined in OS-specific taskfiles (Taskfile_windows.yml, Taskfile_linux.yml)
   BUILD_TIME:
-    # Use PowerShell on Windows, date on Linux/macOS
-    sh: |
-      if [ "$(go env GOOS)" = "windows" ]; then
-        powershell -Command "(Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')"
-      else
-        date -u +"%Y-%m-%dT%H:%M:%SZ"
-      fi
+    ref: .os.BUILD_TIME
 
 tasks:
   default:
@@ -33,11 +29,10 @@ tasks:
     silent: true
 
   install-tools:
-    desc: Install development tools
+    desc: Install development tools (using Go 1.25 tool directive)
     cmds:
-    - go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
-    - go install golang.org/x/tools/cmd/goimports@latest
-    - go install github.com/google/wire/cmd/wire@latest
+    - go get  # Install tools from go.mod tool directive
+    - go mod tidy
 
   deps:
     desc: Download and tidy dependencies

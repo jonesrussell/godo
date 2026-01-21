@@ -35,18 +35,20 @@ func NewServerConfig() *ServerConfig {
 
 // Server represents the HTTP server
 type Server struct {
-	service service.NoteService
-	log     logger.Logger
-	router  *mux.Router
-	srv     *http.Server
+	service   service.NoteService
+	log       logger.Logger
+	router    *mux.Router
+	srv       *http.Server
+	jwtSecret string
 }
 
 // NewServer creates a new Server instance
-func NewServer(noteService service.NoteService, log logger.Logger) *Server {
+func NewServer(noteService service.NoteService, log logger.Logger, jwtSecret string) *Server {
 	s := &Server{
-		service: noteService,
-		log:     log,
-		router:  mux.NewRouter(),
+		service:   noteService,
+		log:       log,
+		router:    mux.NewRouter(),
+		jwtSecret: jwtSecret,
 	}
 	s.routes()
 	return s
@@ -69,40 +71,40 @@ func (s *Server) routes() {
 
 	// Protected Note endpoints (JWT auth required)
 	api.HandleFunc("/notes", Chain(s.handleListNotes,
-		WithJWTAuth(s.log),
+		WithJWTAuth(s.log, s.jwtSecret),
 		WithLogging(s.log),
 		WithErrorHandling(s.log),
 	)).Methods(http.MethodGet)
 
 	api.HandleFunc("/notes", Chain(s.handleCreateNote,
-		WithJWTAuth(s.log),
+		WithJWTAuth(s.log, s.jwtSecret),
 		WithLogging(s.log),
 		WithErrorHandling(s.log),
 		WithValidation[CreateNoteRequest](s.log),
 	)).Methods(http.MethodPost)
 
 	api.HandleFunc("/notes/{id}", Chain(s.handleGetNote,
-		WithJWTAuth(s.log),
+		WithJWTAuth(s.log, s.jwtSecret),
 		WithLogging(s.log),
 		WithErrorHandling(s.log),
 	)).Methods(http.MethodGet)
 
 	api.HandleFunc("/notes/{id}", Chain(s.handleUpdateNote,
-		WithJWTAuth(s.log),
+		WithJWTAuth(s.log, s.jwtSecret),
 		WithLogging(s.log),
 		WithErrorHandling(s.log),
 		WithValidation[UpdateNoteRequest](s.log),
 	)).Methods(http.MethodPut)
 
 	api.HandleFunc("/notes/{id}", Chain(s.handlePatchNote,
-		WithJWTAuth(s.log),
+		WithJWTAuth(s.log, s.jwtSecret),
 		WithLogging(s.log),
 		WithErrorHandling(s.log),
 		WithValidation[PatchNoteRequest](s.log),
 	)).Methods(http.MethodPatch)
 
 	api.HandleFunc("/notes/{id}", Chain(s.handleDeleteNote,
-		WithJWTAuth(s.log),
+		WithJWTAuth(s.log, s.jwtSecret),
 		WithLogging(s.log),
 		WithErrorHandling(s.log),
 	)).Methods(http.MethodDelete)

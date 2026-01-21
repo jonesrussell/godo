@@ -45,3 +45,4 @@ http:
   port: 8008
   startup_timeout: 5
   shutdown_timeout: 1
+  jwt_secret: ""  # Set this to your JWT secret key

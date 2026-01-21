@@ -118,13 +118,14 @@ type WindowConfig struct {
 
 // HTTPConfig holds HTTP server configuration
 type HTTPConfig struct {
-	Port              int `mapstructure:"port"`
-	ReadTimeout       int `mapstructure:"read_timeout"`
-	WriteTimeout      int `mapstructure:"write_timeout"`
-	ReadHeaderTimeout int `mapstructure:"read_header_timeout"`
-	IdleTimeout       int `mapstructure:"idle_timeout"`
-	StartupTimeout    int `mapstructure:"startup_timeout"`
-	ShutdownTimeout   int `mapstructure:"shutdown_timeout"`
+	Port              int    `mapstructure:"port"`
+	ReadTimeout       int    `mapstructure:"read_timeout"`
+	WriteTimeout      int    `mapstructure:"write_timeout"`
+	ReadHeaderTimeout int    `mapstructure:"read_header_timeout"`
+	IdleTimeout       int    `mapstructure:"idle_timeout"`
+	StartupTimeout    int    `mapstructure:"startup_timeout"`
+	ShutdownTimeout   int    `mapstructure:"shutdown_timeout"`
+	JWTSecret         string `mapstructure:"jwt_secret"`
 }
 
 // Logger interface for configuration
@@ -257,6 +258,7 @@ func (p *Provider) bindEnvironmentVariables(v *viper.Viper) error {
 		"app.force_kill_timeout":            EnvPrefix + "_APP_FORCE_KILL_TIMEOUT",
 		"http.startup_timeout":              EnvPrefix + "_HTTP_STARTUP_TIMEOUT",
 		"http.shutdown_timeout":             EnvPrefix + "_HTTP_SHUTDOWN_TIMEOUT",
+		"http.jwt_secret":                   EnvPrefix + "_HTTP_JWT_SECRET",
 	}
 
 	for k, env := range envBindings {
@@ -403,6 +405,7 @@ func NewDefaultConfig() *Config {
 			IdleTimeout:       120,
 			StartupTimeout:    5,
 			ShutdownTimeout:   5,
+			JWTSecret:         "",
 		},
 	}
 }

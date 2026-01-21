@@ -27,7 +27,7 @@ func NewRunner(
 	httpConfig *config.HTTPConfig,
 ) *Runner {
 	return &Runner{
-		server:   NewServer(noteService, l),
+		server:   NewServer(noteService, l, httpConfig.JWTSecret),
 		logger:   l,
 		config:   httpConfig,
 		ready:    make(chan struct{}),

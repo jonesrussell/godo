@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/go-playground/validator/v10"
@@ -176,13 +175,12 @@ func GetUserID(r *http.Request) (string, bool) {
 }
 
 // WithJWTAuth validates JWT tokens and extracts user information
-func WithJWTAuth(log logger.Logger) Middleware {
+func WithJWTAuth(log logger.Logger, jwtSecret string) Middleware {
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			// Get JWT secret from environment
-			jwtSecret := os.Getenv("JWT_SECRET")
+			// Validate JWT secret is configured
 			if jwtSecret == "" {
-				log.Error("JWT_SECRET environment variable not set")
+				log.Error("JWT secret not configured")
 				writeError(w, http.StatusInternalServerError, "server_error", "Authentication configuration error")
 				return
 			}
@@ -244,7 +242,7 @@ func WithJWTAuth(log logger.Logger) Middleware {
 }
 
 // WithOptionalJWTAuth validates JWT tokens if present, but allows requests without tokens
-func WithOptionalJWTAuth(log logger.Logger) Middleware {
+func WithOptionalJWTAuth(log logger.Logger, jwtSecret string) Middleware {
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			authHeader := r.Header.Get("Authorization")
@@ -255,7 +253,7 @@ func WithOptionalJWTAuth(log logger.Logger) Middleware {
 			}
 
 			// If auth header is present, validate it using the same logic as WithJWTAuth
-			jwtAuthMiddleware := WithJWTAuth(log)
+			jwtAuthMiddleware := WithJWTAuth(log, jwtSecret)
 			jwtAuthMiddleware(next)(w, r)
 		}
 	}

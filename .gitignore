@@ -20,6 +20,8 @@ godo-linter.exe
 
 .task/
 
+.audit-go126/
+
 test/mocks/
 main
 .claude/settings.local.json

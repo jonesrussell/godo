@@ -171,7 +171,7 @@ func (s *Store) GetAllNotes(ctx context.Context) ([]*model.Note, error) {
 
 // UpdateNote updates a note via API
 func (s *Store) UpdateNote(ctx context.Context, id string, content string, done bool) (*model.Note, error) {
-	requestBody := map[string]interface{}{
+	requestBody := map[string]any{
 		"content": content,
 		"done":    done,
 	}

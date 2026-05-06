@@ -1,5 +1,4 @@
 //go:build wireinject
-// +build wireinject
 
 // Package container provides dependency injection container setup
 package container

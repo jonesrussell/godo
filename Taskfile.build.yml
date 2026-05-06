@@ -30,7 +30,7 @@ tasks:
     generates:
       - internal/application/container/wire_gen.go
     cmds:
-    - cd internal/application/container && wire gen -tags linux
+    - cd internal/application/container && go run github.com/google/wire/cmd/wire@v0.7.0 gen -tags linux
 
   wire:windows:
     desc: Generate wire code for Windows
@@ -41,7 +41,19 @@ tasks:
     generates:
       - internal/application/container/wire_gen.go
     cmds:
-    - cd internal/application/container && wire gen -tags windows
+    - cd internal/application/container && go run github.com/google/wire/cmd/wire@v0.7.0 gen -tags windows
+
+  wire:darwin:
+    desc: Generate wire code on macOS (host GOOS; no custom OS tags)
+    sources:
+      - internal/application/container/wire.go
+      - internal/application/container/providers.go
+      - internal/application/container/wire_gen.go
+    generates:
+      - internal/application/container/wire_gen.go
+    platforms: [ darwin ]
+    cmds:
+    - cd internal/application/container && go run github.com/google/wire/cmd/wire@v0.7.0 gen
 
   wire:
     desc: Generate wire code for current platform
@@ -100,6 +112,29 @@ tasks:
     - mkdir -p {{.BUILD_DIR}}
     - go build -ldflags "-X main.version={{.VERSION}} -X main.commit={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}} -s -w" -tags linux -o {{.BUILD_DIR}}/{{.BINARY_NAME}} main.go
     - copy config.yaml {{.BUILD_DIR}}\ 2>nul || echo config.yaml not found, skipping
+
+  native:darwin:
+    desc: Build for macOS (native; requires Xcode CLT and Fyne deps)
+    deps: [ wire:darwin ]
+    platforms: [ darwin ]
+    sources:
+      - main.go
+      - internal/**/*.go
+      - go.mod
+      - go.sum
+      - configs/**/*.yaml
+      - config.yaml
+      - internal/application/container/wire_gen.go
+      - Taskfile.build.yml
+    generates:
+      - dist/godo
+      - dist/config.yaml
+    env:
+      CGO_ENABLED: 1
+    cmds:
+    - mkdir -p {{.BUILD_DIR}}
+    - go build -ldflags "-X main.version={{.VERSION}} -X main.commit={{.COMMIT}} -X main.buildTime={{.BUILD_TIME}} -s -w" -o {{.BUILD_DIR}}/{{.BINARY_NAME}} main.go
+    - cp config.yaml {{.BUILD_DIR}}/ 2>/dev/null || echo "config.yaml not found, skipping"
 
   native:linux:
     desc: Build for Linux (native)

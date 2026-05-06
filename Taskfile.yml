@@ -29,7 +29,7 @@ tasks:
     silent: true
 
   install-tools:
-    desc: Install development tools (using Go 1.25 tool directive)
+    desc: Install development tools (uses Go tool directive in go.mod)
     cmds:
     - go get  # Install tools from go.mod tool directive
     - go mod tidy

@@ -1,0 +1,8 @@
+vcs:
+  type: git
+agents:
+  available:
+  - cursor
+  - claude
+  - codex
+  auto_commit: true

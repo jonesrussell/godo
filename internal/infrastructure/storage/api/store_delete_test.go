@@ -26,11 +26,11 @@ func TestStore_DeleteNote_NotFound(t *testing.T) {
 
 	log := logger.NewTestLogger(t)
 	cfg := domainstorage.APIConfig{
-		BaseURL:            srv.URL,
-		Timeout:            5,
-		RetryCount:         0,
-		RetryDelay:         1,
-		InsecureSkipVerify: false,
+		BaseURL:               srv.URL,
+		Timeout:               5,
+		RetryCount:            0,
+		RetryDelay:            1,
+		TLSInsecureSkipVerify: false,
 	}
 
 	s, err := api.New(cfg, log)

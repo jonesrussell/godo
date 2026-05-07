@@ -187,7 +187,7 @@ jobs:
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: godo-${{ steps.get_version.outputs.version }}-${{ matrix.os }}-${{ matrix.arch }}
           path: dist/${{ matrix.artifact }}
@@ -262,7 +262,7 @@ jobs:
 
       - name: Upload cross-build artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: build-matrix-${{ matrix.goos }}-${{ matrix.goarch }}
           path: ${{ runner.temp }}/matrix-${{ matrix.goos }}-${{ matrix.goarch }}/

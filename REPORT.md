@@ -1,35 +1,36 @@
-# PR: fix/tests-repo-integration (ISSUE-003)
+# PR: fix/tls-defaults (ISSUE-005)
 
 ## Summary
 
-Add `internal/domain/testhelpers` SQLite harness (modernc.org/sqlite, no CGO) and `repository_sqlite_test.go` with deterministic CRUD coverage for `NoteRepository` backed by a temp database.
+Make API TLS defaults explicit in `NewDefaultConfig`, reject userinfo in `storage.api.base_url` during `ValidateConfig`, and add unit tests for the default and validation rule.
 
 ## Changes
 
-- `internal/domain/testhelpers/sqltest.go` — `NewTempSQLiteUnified` opens SQLite under `t.TempDir()` and returns `storage.UnifiedNoteStorage` + cleanup.
-- `internal/domain/repository/repository_sqlite_test.go` — integration-style CRUD test using the helper.
+- `NewDefaultConfig` — populate `Storage` with explicit `API.InsecureSkipVerify: false`.
+- `validateStorageAPI` — `url.Parse` on base URL; error if `User` is set.
+- `internal/config/config_storage_api_test.go` — asserts default TLS verify flag and credential rejection.
 
 ## How to verify
 
 ```bash
-go test ./internal/domain/... -tags=wireinject -count=1 -v
+go test ./internal/config/... -tags=wireinject -count=1 -v
 go test ./... -tags=wireinject -count=1
 ```
 
 ## Acceptance criteria
 
-- [ ] `TestNoteRepository_SQLite_CRUD` passes on Linux without CGO.
-- [ ] Tests use only `t.TempDir()` paths (no shared global DB).
-- [ ] `go test ./... -tags=wireinject` passes when stacked on the Wire fix branch.
+- [ ] Default `InsecureSkipVerify` is `false` for new default config.
+- [ ] `ValidateConfig` fails when API base URL contains embedded credentials.
+- [ ] Full test suite passes (stacked on prior fix branches).
 
 ## Audit reference
 
 ```json
 {
-  "id": "ISSUE-003",
+  "id": "ISSUE-005",
   "severity": "medium",
-  "file": "internal/domain/repository",
-  "line": 0,
-  "message": "Repository layer has no SQLite-backed integration tests..."
+  "file": "internal/config/config.go",
+  "line": 358,
+  "message": "NewDefaultConfig omits an explicit Storage.API block..."
 }
 ```

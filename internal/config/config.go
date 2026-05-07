@@ -3,6 +3,7 @@ package config
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -335,6 +336,10 @@ func ValidateConfig(cfg *Config) error {
 		validationErrors = append(validationErrors, "http.shutdown_timeout must be positive")
 	}
 
+	if err := validateStorageAPI(&cfg.Storage.API); err != nil {
+		validationErrors = append(validationErrors, err.Error())
+	}
+
 	if len(validationErrors) > 0 {
 		return &Error{
 			Op:  "validate",
@@ -353,6 +358,20 @@ func isValidLogLevel(level string) bool {
 		"error": true,
 	}
 	return validLevels[strings.ToLower(level)]
+}
+
+func validateStorageAPI(api *APIConfig) error {
+	if api == nil || api.BaseURL == "" {
+		return nil
+	}
+	u, err := url.Parse(api.BaseURL)
+	if err != nil {
+		return fmt.Errorf("storage.api.base_url: invalid URL: %w", err)
+	}
+	if u.User != nil && u.User.String() != "" {
+		return fmt.Errorf("storage.api.base_url must not embed credentials (userinfo is not allowed)")
+	}
+	return nil
 }
 
 // NewDefaultConfig creates a new configuration with default values
@@ -406,6 +425,19 @@ func NewDefaultConfig() *Config {
 			StartupTimeout:    5,
 			ShutdownTimeout:   5,
 			JWTSecret:         "",
+		},
+		Storage: StorageConfig{
+			Type: "sqlite",
+			SQLite: SQLiteConfig{
+				FilePath: "godo.db",
+			},
+			API: APIConfig{
+				BaseURL:            "http://localhost:8000/api",
+				Timeout:            30,
+				RetryCount:         3,
+				RetryDelay:         1000,
+				InsecureSkipVerify: false,
+			},
 		},
 	}
 }

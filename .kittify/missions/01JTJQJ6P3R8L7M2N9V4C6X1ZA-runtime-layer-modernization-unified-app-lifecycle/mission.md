@@ -43,3 +43,23 @@ Refactor startup and shutdown orchestration by extracting lifecycle ownership fr
   - `plan.md`
   - `tasks.md`
 - Draft PR branch `mission/runtime-layer` containing mission bundle only.
+
+## Mission Complete
+
+### Architectural Improvements
+- Introduced a dedicated `internal/runtime` layer for lifecycle responsibilities:
+  - root context + signal integration
+  - panic-to-error recovery
+  - coordinated shutdown with force-kill timeout policy
+  - exit-code normalization
+  - single runtime entrypoint (`runtime.Run(...)`)
+- Added lifecycle contracts so runtime integration no longer depends on concrete type assertions in `main.go`.
+- Added runtime smoke/testing harness coverage for lifecycle orchestration behavior.
+
+### Lifecycle Before/After
+- **Before**: `main.go` owned signal channels, duplicate panic recovery blocks, manual force-kill goroutine, ad hoc shutdown flow, and multiple early-exit paths.
+- **After**: `main.go` is a thin bootstrap wrapper (DI init -> runtime root context -> `runtime.Run(...)` -> single final `os.Exit(code)`), while lifecycle orchestration is centralized in runtime.
+
+### Future Harness Integration Notes
+- Runtime now exposes stable orchestration seams for deeper lifecycle harness testing.
+- Next harness expansion can add scenario matrices for ordered participant shutdown (UI/hotkey/storage/audit/harness), timeout fault injection, and integration-level cancellation behavior.

@@ -195,6 +195,16 @@ tasks:
     cmds:
     - task: build:wire:{{if eq OS "windows"}}windows{{else}}linux{{end}}
 
+  wire:regen:
+    desc: Regenerate Wire via scripts/regen-wire.sh (prints diff)
+    cmds:
+    - bash scripts/regen-wire.sh
+
+  wire:drift-check:
+    desc: Fail if wire_gen.go does not match wire_gen.sha256
+    cmds:
+    - bash scripts/check-wire-drift.sh
+
   mocks:
     desc: Generate all mocks using mockgen
     cmds:
@@ -267,3 +277,13 @@ tasks:
     cmds:
     - echo "Testing GUI in WSL2 environment"
     - go test -v ./internal/gui/...
+
+  spec:verify:
+    desc: Verify Spec Kitty installation and repo governance files
+    cmds:
+    - spec-kitty verify-setup
+
+  spec:sync:
+    desc: Sync charter.md to extracted governance YAML (run after charter edits)
+    cmds:
+    - spec-kitty charter sync

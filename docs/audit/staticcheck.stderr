@@ -1,1 +1,2 @@
+Note: `go run honnef.co/go/tools/cmd/staticcheck@version -- -f=json ./...` mis-parsed flags; audit used `go install ...@v0.6.1` and `/tmp/staticcheck -f=json ./...` instead.
 exit status 1

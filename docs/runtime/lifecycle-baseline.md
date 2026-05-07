@@ -190,3 +190,16 @@ sequenceDiagram
 - Multiple `os.Exit` paths before final process return point.
 - Type assertions indicate missing lifecycle abstraction boundary.
 - Cleanup can run from multiple paths (signal, panic, normal completion), raising idempotency pressure.
+## Runtime Skeleton Mapping
+The new `internal/runtime` package introduced in WP02 establishes the future ownership boundary that will replace lifecycle responsibilities currently in `main.go`.
+
+Planned mapping:
+- `main.go` current orchestration role -> future `runtime.Run(...)` entrypoint.
+- manual signal wiring (`signal.Notify`) -> future runtime signal/context integration (`signals.go` placeholder).
+- ad hoc shutdown sequencing across `main` and `core.App` -> future coordinated runtime shutdown flow (`shutdown.go` placeholder).
+- concrete app coupling and type assertions -> future lifecycle interface contract (`lifecycle.go`).
+
+WP02 is scaffold-only:
+- no lifecycle logic moved yet
+- no behavioral changes yet
+- runtime files currently define interfaces, placeholders, and TODO boundaries only

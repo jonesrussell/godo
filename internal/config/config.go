@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	domainstorage "github.com/jonesrussell/godo/internal/domain/storage"
 	"github.com/spf13/viper"
 )
 
@@ -97,11 +98,15 @@ type SQLiteConfig struct {
 
 // APIConfig holds API-specific configuration
 type APIConfig struct {
-	BaseURL            string `mapstructure:"base_url"`
-	Timeout            int    `mapstructure:"timeout_seconds"`
-	RetryCount         int    `mapstructure:"retry_count"`
-	RetryDelay         int    `mapstructure:"retry_delay_ms"`
-	InsecureSkipVerify bool   `mapstructure:"insecure_skip_verify"`
+	BaseURL    string `mapstructure:"base_url"`
+	Timeout    int    `mapstructure:"timeout_seconds"`
+	RetryCount int    `mapstructure:"retry_count"`
+	RetryDelay int    `mapstructure:"retry_delay_ms"`
+	// TLSInsecureSkipVerify opts out of TLS certificate verification (development only).
+	// Prefer storage.api.tls_insecure_skip_verify in YAML; insecure_skip_verify is deprecated.
+	TLSInsecureSkipVerify bool `mapstructure:"tls_insecure_skip_verify"`
+	// InsecureSkipVerify is deprecated; use tls_insecure_skip_verify. If either flag is true, insecure TLS is enabled.
+	InsecureSkipVerify bool `mapstructure:"insecure_skip_verify"`
 }
 
 // UIConfig holds UI-related configuration
@@ -131,10 +136,10 @@ type HTTPConfig struct {
 
 // Logger interface for configuration
 type Logger interface {
-	Debug(msg string, keysAndValues ...interface{})
-	Info(msg string, keysAndValues ...interface{})
-	Warn(msg string, keysAndValues ...interface{})
-	Error(msg string, keysAndValues ...interface{})
+	Debug(msg string, keysAndValues ...any)
+	Info(msg string, keysAndValues ...any)
+	Warn(msg string, keysAndValues ...any)
+	Error(msg string, keysAndValues ...any)
 	WithError(err error) Logger
 }
 
@@ -336,6 +341,11 @@ func ValidateConfig(cfg *Config) error {
 		validationErrors = append(validationErrors, "http.shutdown_timeout must be positive")
 	}
 
+	if strings.EqualFold(cfg.Storage.Type, "api") {
+		if err := domainstorage.ValidateAPIBaseURL(cfg.Storage.API.BaseURL); err != nil {
+			validationErrors = append(validationErrors, "storage.api.base_url: "+err.Error())
+		}
+	}
 	if err := validateStorageAPI(&cfg.Storage.API); err != nil {
 		validationErrors = append(validationErrors, err.Error())
 	}

@@ -1,0 +1,2 @@
+Note: golangci-lint v2 rejects --out-format=json; use --output.json.path=docs/audit/lint.json instead.
+lint_exit:1

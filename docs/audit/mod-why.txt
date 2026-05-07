@@ -1,0 +1,1717 @@
+==== go mod why -m 4d63.com/gocheckcompilerdirectives ====
+# 4d63.com/gocheckcompilerdirectives
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/gocheckcompilerdirectives
+4d63.com/gocheckcompilerdirectives/checkcompilerdirectives
+
+==== go mod why -m 4d63.com/gochecknoglobals ====
+# 4d63.com/gochecknoglobals
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/gochecknoglobals
+4d63.com/gochecknoglobals/checknoglobals
+
+==== go mod why -m fyne.io/fyne/v2 ====
+# fyne.io/fyne/v2
+github.com/jonesrussell/godo/internal/application/container
+fyne.io/fyne/v2
+
+==== go mod why -m fyne.io/systray ====
+# fyne.io/systray
+github.com/jonesrussell/godo/internal/application/container
+fyne.io/fyne/v2/app
+fyne.io/fyne/v2/internal/driver/glfw
+fyne.io/systray
+
+==== go mod why -m github.com/4meepo/tagalign ====
+# github.com/4meepo/tagalign
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/tagalign
+github.com/4meepo/tagalign
+
+==== go mod why -m github.com/Abirdcfly/dupword ====
+# github.com/Abirdcfly/dupword
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/dupword
+github.com/Abirdcfly/dupword
+
+==== go mod why -m github.com/Antonboom/errname ====
+# github.com/Antonboom/errname
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/errname
+github.com/Antonboom/errname/pkg/analyzer
+
+==== go mod why -m github.com/Antonboom/nilnil ====
+# github.com/Antonboom/nilnil
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/nilnil
+github.com/Antonboom/nilnil/pkg/analyzer
+
+==== go mod why -m github.com/Antonboom/testifylint ====
+# github.com/Antonboom/testifylint
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/testifylint
+github.com/Antonboom/testifylint/analyzer
+
+==== go mod why -m github.com/BurntSushi/toml ====
+# github.com/BurntSushi/toml
+github.com/jonesrussell/godo/internal/application/container
+fyne.io/fyne/v2/app
+fyne.io/fyne/v2/internal/metadata
+github.com/BurntSushi/toml
+
+==== go mod why -m github.com/Crocmagnon/fatcontext ====
+# github.com/Crocmagnon/fatcontext
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/fatcontext
+github.com/Crocmagnon/fatcontext/pkg/analyzer
+
+==== go mod why -m github.com/Djarvur/go-err113 ====
+# github.com/Djarvur/go-err113
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/err113
+github.com/Djarvur/go-err113
+
+==== go mod why -m github.com/GaijinEntertainment/go-exhaustruct/v3 ====
+# github.com/GaijinEntertainment/go-exhaustruct/v3
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/exhaustruct
+github.com/GaijinEntertainment/go-exhaustruct/v3/analyzer
+
+==== go mod why -m github.com/Masterminds/semver/v3 ====
+# github.com/Masterminds/semver/v3
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/gomodguard
+github.com/ryancurrah/gomodguard
+github.com/Masterminds/semver/v3
+
+==== go mod why -m github.com/OpenPeeDeeP/depguard/v2 ====
+# github.com/OpenPeeDeeP/depguard/v2
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/depguard
+github.com/OpenPeeDeeP/depguard/v2
+
+==== go mod why -m github.com/alecthomas/go-check-sumtype ====
+# github.com/alecthomas/go-check-sumtype
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/gochecksumtype
+github.com/alecthomas/go-check-sumtype
+
+==== go mod why -m github.com/alexkohler/nakedret/v2 ====
+# github.com/alexkohler/nakedret/v2
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/nakedret
+github.com/alexkohler/nakedret/v2
+
+==== go mod why -m github.com/alexkohler/prealloc ====
+# github.com/alexkohler/prealloc
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/prealloc
+github.com/alexkohler/prealloc/pkg
+
+==== go mod why -m github.com/alingse/asasalint ====
+# github.com/alingse/asasalint
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/asasalint
+github.com/alingse/asasalint
+
+==== go mod why -m github.com/alingse/nilnesserr ====
+# github.com/alingse/nilnesserr
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/nilnesserr
+github.com/alingse/nilnesserr
+
+==== go mod why -m github.com/ashanbrown/forbidigo ====
+# github.com/ashanbrown/forbidigo
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/forbidigo
+github.com/ashanbrown/forbidigo/forbidigo
+
+==== go mod why -m github.com/ashanbrown/makezero ====
+# github.com/ashanbrown/makezero
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/makezero
+github.com/ashanbrown/makezero/makezero
+
+==== go mod why -m github.com/beorn7/perks ====
+# github.com/beorn7/perks
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/promlinter
+github.com/yeya24/promlinter
+github.com/prometheus/client_golang/prometheus
+github.com/beorn7/perks/quantile
+
+==== go mod why -m github.com/bkielbasa/cyclop ====
+# github.com/bkielbasa/cyclop
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/cyclop
+github.com/bkielbasa/cyclop/pkg/analyzer
+
+==== go mod why -m github.com/blizzy78/varnamelen ====
+# github.com/blizzy78/varnamelen
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/varnamelen
+github.com/blizzy78/varnamelen
+
+==== go mod why -m github.com/bombsimon/wsl/v4 ====
+# github.com/bombsimon/wsl/v4
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/wsl
+github.com/bombsimon/wsl/v4
+
+==== go mod why -m github.com/breml/bidichk ====
+# github.com/breml/bidichk
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/bidichk
+github.com/breml/bidichk/pkg/bidichk
+
+==== go mod why -m github.com/breml/errchkjson ====
+# github.com/breml/errchkjson
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/errchkjson
+github.com/breml/errchkjson
+
+==== go mod why -m github.com/butuzov/ireturn ====
+# github.com/butuzov/ireturn
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/ireturn
+github.com/butuzov/ireturn/analyzer
+
+==== go mod why -m github.com/butuzov/mirror ====
+# github.com/butuzov/mirror
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/mirror
+github.com/butuzov/mirror
+
+==== go mod why -m github.com/catenacyber/perfsprint ====
+# github.com/catenacyber/perfsprint
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/perfsprint
+github.com/catenacyber/perfsprint/analyzer
+
+==== go mod why -m github.com/ccojocar/zxcvbn-go ====
+# github.com/ccojocar/zxcvbn-go
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/gosec
+github.com/securego/gosec/v2/rules
+github.com/ccojocar/zxcvbn-go
+
+==== go mod why -m github.com/cespare/xxhash/v2 ====
+# github.com/cespare/xxhash/v2
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/promlinter
+github.com/yeya24/promlinter
+github.com/prometheus/client_golang/prometheus
+github.com/cespare/xxhash/v2
+
+==== go mod why -m github.com/charithe/durationcheck ====
+# github.com/charithe/durationcheck
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/durationcheck
+github.com/charithe/durationcheck
+
+==== go mod why -m github.com/chavacava/garif ====
+# github.com/chavacava/garif
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/revive
+github.com/mgechev/revive/config
+github.com/mgechev/revive/formatter
+github.com/chavacava/garif
+
+==== go mod why -m github.com/ckaznocha/intrange ====
+# github.com/ckaznocha/intrange
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/intrange
+github.com/ckaznocha/intrange
+
+==== go mod why -m github.com/csturiale/hotkey ====
+# github.com/csturiale/hotkey
+github.com/jonesrussell/godo/internal/infrastructure/hotkey
+github.com/csturiale/hotkey
+
+==== go mod why -m github.com/curioswitch/go-reassign ====
+# github.com/curioswitch/go-reassign
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/reassign
+github.com/curioswitch/go-reassign
+
+==== go mod why -m github.com/daixiang0/gci ====
+# github.com/daixiang0/gci
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/result/processors
+github.com/golangci/golangci-lint/pkg/goformatters/gci
+github.com/daixiang0/gci/pkg/config
+
+==== go mod why -m github.com/davecgh/go-spew ====
+# github.com/davecgh/go-spew
+github.com/jonesrussell/godo/internal/application/container
+fyne.io/fyne/v2
+fyne.io/fyne/v2.test
+github.com/stretchr/testify/assert
+github.com/davecgh/go-spew/spew
+
+==== go mod why -m github.com/denis-tingaikin/go-header ====
+# github.com/denis-tingaikin/go-header
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/goheader
+github.com/denis-tingaikin/go-header
+
+==== go mod why -m github.com/dustin/go-humanize ====
+# github.com/dustin/go-humanize
+github.com/jonesrussell/godo/internal/infrastructure/storage/sqlite
+modernc.org/sqlite
+modernc.org/libc
+github.com/dustin/go-humanize
+
+==== go mod why -m github.com/ettle/strcase ====
+# github.com/ettle/strcase
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/sloglint
+go-simpler.org/sloglint
+github.com/ettle/strcase
+
+==== go mod why -m github.com/fatih/color ====
+# github.com/fatih/color
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/fatih/color
+
+==== go mod why -m github.com/fatih/structtag ====
+# github.com/fatih/structtag
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/revive
+github.com/mgechev/revive/rule
+github.com/fatih/structtag
+
+==== go mod why -m github.com/firefart/nonamedreturns ====
+# github.com/firefart/nonamedreturns
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/nonamedreturns
+github.com/firefart/nonamedreturns/analyzer
+
+==== go mod why -m github.com/fredbi/uri ====
+# github.com/fredbi/uri
+github.com/jonesrussell/godo/internal/application/container
+fyne.io/fyne/v2/app
+fyne.io/fyne/v2/storage/repository
+github.com/fredbi/uri
+
+==== go mod why -m github.com/fsnotify/fsnotify ====
+# github.com/fsnotify/fsnotify
+github.com/jonesrussell/godo/internal/application/container
+fyne.io/fyne/v2/app
+github.com/fsnotify/fsnotify
+
+==== go mod why -m github.com/fyne-io/gl-js ====
+# github.com/fyne-io/gl-js
+github.com/jonesrussell/godo/internal/application/container
+fyne.io/fyne/v2/app
+fyne.io/fyne/v2/internal/driver/glfw
+github.com/fyne-io/gl-js
+
+==== go mod why -m github.com/fyne-io/glfw-js ====
+# github.com/fyne-io/glfw-js
+github.com/jonesrussell/godo/internal/application/container
+fyne.io/fyne/v2/app
+fyne.io/fyne/v2/internal/driver/glfw
+github.com/fyne-io/glfw-js
+
+==== go mod why -m github.com/fyne-io/image ====
+# github.com/fyne-io/image
+github.com/jonesrussell/godo/internal/application/container
+fyne.io/fyne/v2/app
+fyne.io/fyne/v2/internal/driver/glfw
+github.com/fyne-io/image/ico
+
+==== go mod why -m github.com/fyne-io/oksvg ====
+# github.com/fyne-io/oksvg
+github.com/jonesrussell/godo/internal/infrastructure/gui/mainwindow
+fyne.io/fyne/v2/theme
+fyne.io/fyne/v2/internal/svg
+github.com/fyne-io/oksvg
+
+==== go mod why -m github.com/fzipp/gocyclo ====
+# github.com/fzipp/gocyclo
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/gocyclo
+github.com/fzipp/gocyclo
+
+==== go mod why -m github.com/gabriel-vasile/mimetype ====
+# github.com/gabriel-vasile/mimetype
+github.com/jonesrussell/godo/internal/infrastructure/api
+github.com/go-playground/validator/v10
+github.com/gabriel-vasile/mimetype
+
+==== go mod why -m github.com/ghostiam/protogetter ====
+# github.com/ghostiam/protogetter
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/protogetter
+github.com/ghostiam/protogetter
+
+==== go mod why -m github.com/go-critic/go-critic ====
+# github.com/go-critic/go-critic
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/gocritic
+github.com/go-critic/go-critic/checkers
+
+==== go mod why -m github.com/go-gl/gl ====
+# github.com/go-gl/gl
+github.com/jonesrussell/godo/internal/application/container
+fyne.io/fyne/v2/app
+fyne.io/fyne/v2/internal/driver/glfw
+fyne.io/fyne/v2/internal/painter/gl
+github.com/go-gl/gl/v2.1/gl
+
+==== go mod why -m github.com/go-gl/glfw/v3.3/glfw ====
+# github.com/go-gl/glfw/v3.3/glfw
+github.com/jonesrussell/godo/internal/application/container
+fyne.io/fyne/v2/app
+fyne.io/fyne/v2/internal/driver/glfw
+github.com/go-gl/glfw/v3.3/glfw
+
+==== go mod why -m github.com/go-playground/locales ====
+# github.com/go-playground/locales
+github.com/jonesrussell/godo/internal/infrastructure/api
+github.com/go-playground/validator/v10
+github.com/go-playground/universal-translator
+github.com/go-playground/locales
+
+==== go mod why -m github.com/go-playground/universal-translator ====
+# github.com/go-playground/universal-translator
+github.com/jonesrussell/godo/internal/infrastructure/api
+github.com/go-playground/validator/v10
+github.com/go-playground/universal-translator
+
+==== go mod why -m github.com/go-playground/validator/v10 ====
+# github.com/go-playground/validator/v10
+github.com/jonesrussell/godo/internal/infrastructure/api
+github.com/go-playground/validator/v10
+
+==== go mod why -m github.com/go-text/render ====
+# github.com/go-text/render
+github.com/jonesrussell/godo/internal/infrastructure/gui/mainwindow
+fyne.io/fyne/v2/widget
+fyne.io/fyne/v2/internal/painter
+github.com/go-text/render
+
+==== go mod why -m github.com/go-text/typesetting ====
+# github.com/go-text/typesetting
+github.com/jonesrussell/godo/internal/infrastructure/gui/mainwindow
+fyne.io/fyne/v2/widget
+github.com/go-text/typesetting/di
+
+==== go mod why -m github.com/go-toolsmith/astcast ====
+# github.com/go-toolsmith/astcast
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/canonicalheader
+github.com/lasiar/canonicalheader
+github.com/go-toolsmith/astcast
+
+==== go mod why -m github.com/go-toolsmith/astcopy ====
+# github.com/go-toolsmith/astcopy
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/gocritic
+github.com/go-critic/go-critic/checkers
+github.com/go-toolsmith/astcopy
+
+==== go mod why -m github.com/go-toolsmith/astequal ====
+# github.com/go-toolsmith/astequal
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/gocritic
+github.com/go-critic/go-critic/checkers
+github.com/go-toolsmith/astequal
+
+==== go mod why -m github.com/go-toolsmith/astfmt ====
+# github.com/go-toolsmith/astfmt
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/gocritic
+github.com/go-critic/go-critic/checkers
+github.com/go-toolsmith/astfmt
+
+==== go mod why -m github.com/go-toolsmith/astp ====
+# github.com/go-toolsmith/astp
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/gocritic
+github.com/go-critic/go-critic/checkers
+github.com/go-toolsmith/astp
+
+==== go mod why -m github.com/go-toolsmith/strparse ====
+# github.com/go-toolsmith/strparse
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/gocritic
+github.com/go-critic/go-critic/checkers
+github.com/go-toolsmith/strparse
+
+==== go mod why -m github.com/go-toolsmith/typep ====
+# github.com/go-toolsmith/typep
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/gocritic
+github.com/go-critic/go-critic/checkers
+github.com/go-toolsmith/typep
+
+==== go mod why -m github.com/go-viper/mapstructure/v2 ====
+# github.com/go-viper/mapstructure/v2
+github.com/jonesrussell/godo/internal/application/container
+github.com/spf13/viper
+github.com/go-viper/mapstructure/v2
+
+==== go mod why -m github.com/go-xmlfmt/xmlfmt ====
+# github.com/go-xmlfmt/xmlfmt
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/printers
+github.com/go-xmlfmt/xmlfmt
+
+==== go mod why -m github.com/gobwas/glob ====
+# github.com/gobwas/glob
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/depguard
+github.com/OpenPeeDeeP/depguard/v2
+github.com/gobwas/glob
+
+==== go mod why -m github.com/godbus/dbus/v5 ====
+# github.com/godbus/dbus/v5
+github.com/jonesrussell/godo/internal/application/container
+fyne.io/fyne/v2/app
+github.com/godbus/dbus/v5
+
+==== go mod why -m github.com/gofrs/flock ====
+# github.com/gofrs/flock
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/gofrs/flock
+
+==== go mod why -m github.com/golang-jwt/jwt/v4 ====
+# github.com/golang-jwt/jwt/v4
+github.com/jonesrussell/godo/internal/infrastructure/api
+github.com/golang-jwt/jwt/v4
+
+==== go mod why -m github.com/golang/protobuf ====
+# github.com/golang/protobuf
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/promlinter
+github.com/yeya24/promlinter
+github.com/prometheus/client_golang/prometheus
+github.com/golang/protobuf/proto
+
+==== go mod why -m github.com/golangci/dupl ====
+# github.com/golangci/dupl
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/dupl
+github.com/golangci/dupl/lib
+
+==== go mod why -m github.com/golangci/go-printf-func-name ====
+# github.com/golangci/go-printf-func-name
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/goprintffuncname
+github.com/golangci/go-printf-func-name/pkg/analyzer
+
+==== go mod why -m github.com/golangci/gofmt ====
+# github.com/golangci/gofmt
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/result/processors
+github.com/golangci/golangci-lint/pkg/goformatters/gofmt
+github.com/golangci/gofmt/gofmt
+
+==== go mod why -m github.com/golangci/golangci-lint ====
+# github.com/golangci/golangci-lint
+github.com/golangci/golangci-lint/cmd/golangci-lint
+
+==== go mod why -m github.com/golangci/misspell ====
+# github.com/golangci/misspell
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/misspell
+github.com/golangci/misspell
+
+==== go mod why -m github.com/golangci/plugin-module-register ====
+# github.com/golangci/plugin-module-register
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/plugin-module-register/register
+
+==== go mod why -m github.com/golangci/revgrep ====
+# github.com/golangci/revgrep
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/result/processors
+github.com/golangci/revgrep
+
+==== go mod why -m github.com/golangci/unconvert ====
+# github.com/golangci/unconvert
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/unconvert
+github.com/golangci/unconvert
+
+==== go mod why -m github.com/google/go-cmp ====
+# github.com/google/go-cmp
+github.com/google/wire/cmd/wire
+github.com/google/wire/internal/wire
+github.com/google/wire/internal/wire.test
+github.com/google/go-cmp/cmp
+
+==== go mod why -m github.com/google/subcommands ====
+# github.com/google/subcommands
+github.com/google/wire/cmd/wire
+github.com/google/subcommands
+
+==== go mod why -m github.com/google/uuid ====
+# github.com/google/uuid
+github.com/jonesrussell/godo/internal/domain/model
+github.com/google/uuid
+
+==== go mod why -m github.com/google/wire ====
+# github.com/google/wire
+github.com/google/wire/cmd/wire
+
+==== go mod why -m github.com/gordonklaus/ineffassign ====
+# github.com/gordonklaus/ineffassign
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/ineffassign
+github.com/gordonklaus/ineffassign/pkg/ineffassign
+
+==== go mod why -m github.com/gorilla/mux ====
+# github.com/gorilla/mux
+github.com/jonesrussell/godo/internal/infrastructure/api
+github.com/gorilla/mux
+
+==== go mod why -m github.com/gostaticanalysis/analysisutil ====
+# github.com/gostaticanalysis/analysisutil
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/bodyclose
+github.com/timakin/bodyclose/passes/bodyclose
+github.com/gostaticanalysis/analysisutil
+
+==== go mod why -m github.com/gostaticanalysis/comment ====
+# github.com/gostaticanalysis/comment
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/nilerr
+github.com/gostaticanalysis/nilerr
+github.com/gostaticanalysis/comment
+
+==== go mod why -m github.com/gostaticanalysis/forcetypeassert ====
+# github.com/gostaticanalysis/forcetypeassert
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/forcetypeassert
+github.com/gostaticanalysis/forcetypeassert
+
+==== go mod why -m github.com/gostaticanalysis/nilerr ====
+# github.com/gostaticanalysis/nilerr
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/nilerr
+github.com/gostaticanalysis/nilerr
+
+==== go mod why -m github.com/hack-pad/go-indexeddb ====
+# github.com/hack-pad/go-indexeddb
+github.com/jonesrussell/godo/internal/application/container
+fyne.io/fyne/v2/app
+fyne.io/fyne/v2/internal/repository
+github.com/hack-pad/go-indexeddb/idb
+
+==== go mod why -m github.com/hack-pad/safejs ====
+# github.com/hack-pad/safejs
+github.com/jonesrussell/godo/internal/application/container
+fyne.io/fyne/v2/app
+fyne.io/fyne/v2/internal/repository
+github.com/hack-pad/go-indexeddb/idb
+github.com/hack-pad/safejs
+
+==== go mod why -m github.com/hashicorp/go-immutable-radix/v2 ====
+# github.com/hashicorp/go-immutable-radix/v2
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/tagliatelle
+github.com/ldez/tagliatelle
+github.com/hashicorp/go-immutable-radix/v2
+
+==== go mod why -m github.com/hashicorp/go-version ====
+# github.com/hashicorp/go-version
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/hashicorp/go-version
+
+==== go mod why -m github.com/hashicorp/golang-lru/v2 ====
+# github.com/hashicorp/golang-lru/v2
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/tagliatelle
+github.com/ldez/tagliatelle
+github.com/hashicorp/go-immutable-radix/v2
+github.com/hashicorp/golang-lru/v2/simplelru
+
+==== go mod why -m github.com/hexops/gotextdiff ====
+# github.com/hexops/gotextdiff
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/result/processors
+github.com/golangci/golangci-lint/pkg/goformatters/gci
+github.com/daixiang0/gci/pkg/gci
+github.com/hexops/gotextdiff
+
+==== go mod why -m github.com/inconshreveable/mousetrap ====
+# github.com/inconshreveable/mousetrap
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/spf13/cobra
+github.com/inconshreveable/mousetrap
+
+==== go mod why -m github.com/jeandeaual/go-locale ====
+# github.com/jeandeaual/go-locale
+github.com/jonesrussell/godo/internal/infrastructure/gui/mainwindow
+fyne.io/fyne/v2/dialog
+fyne.io/fyne/v2/lang
+github.com/jeandeaual/go-locale
+
+==== go mod why -m github.com/jgautheron/goconst ====
+# github.com/jgautheron/goconst
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/goconst
+github.com/jgautheron/goconst
+
+==== go mod why -m github.com/jingyugao/rowserrcheck ====
+# github.com/jingyugao/rowserrcheck
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/rowserrcheck
+github.com/jingyugao/rowserrcheck/passes/rowserr
+
+==== go mod why -m github.com/jjti/go-spancheck ====
+# github.com/jjti/go-spancheck
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/spancheck
+github.com/jjti/go-spancheck
+
+==== go mod why -m github.com/jsummers/gobmp ====
+# github.com/jsummers/gobmp
+github.com/jonesrussell/godo/internal/application/container
+fyne.io/fyne/v2/app
+fyne.io/fyne/v2/internal/driver/glfw
+github.com/fyne-io/image/ico
+github.com/jsummers/gobmp
+
+==== go mod why -m github.com/julz/importas ====
+# github.com/julz/importas
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/importas
+github.com/julz/importas
+
+==== go mod why -m github.com/karamaru-alpha/copyloopvar ====
+# github.com/karamaru-alpha/copyloopvar
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/copyloopvar
+github.com/karamaru-alpha/copyloopvar
+
+==== go mod why -m github.com/kisielk/errcheck ====
+# github.com/kisielk/errcheck
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/errcheck
+github.com/kisielk/errcheck/errcheck
+
+==== go mod why -m github.com/kkHAIKE/contextcheck ====
+# github.com/kkHAIKE/contextcheck
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/contextcheck
+github.com/kkHAIKE/contextcheck
+
+==== go mod why -m github.com/kulti/thelper ====
+# github.com/kulti/thelper
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/thelper
+github.com/kulti/thelper/pkg/analyzer
+
+==== go mod why -m github.com/kunwardeep/paralleltest ====
+# github.com/kunwardeep/paralleltest
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/paralleltest
+github.com/kunwardeep/paralleltest/pkg/paralleltest
+
+==== go mod why -m github.com/lasiar/canonicalheader ====
+# github.com/lasiar/canonicalheader
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/canonicalheader
+github.com/lasiar/canonicalheader
+
+==== go mod why -m github.com/ldez/exptostd ====
+# github.com/ldez/exptostd
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/exptostd
+github.com/ldez/exptostd
+
+==== go mod why -m github.com/ldez/gomoddirectives ====
+# github.com/ldez/gomoddirectives
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/gomoddirectives
+github.com/ldez/gomoddirectives
+
+==== go mod why -m github.com/ldez/grignotin ====
+# github.com/ldez/grignotin
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/config
+github.com/ldez/grignotin/goenv
+
+==== go mod why -m github.com/ldez/tagliatelle ====
+# github.com/ldez/tagliatelle
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/tagliatelle
+github.com/ldez/tagliatelle
+
+==== go mod why -m github.com/ldez/usetesting ====
+# github.com/ldez/usetesting
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/usetesting
+github.com/ldez/usetesting
+
+==== go mod why -m github.com/leodido/go-urn ====
+# github.com/leodido/go-urn
+github.com/jonesrussell/godo/internal/infrastructure/api
+github.com/go-playground/validator/v10
+github.com/leodido/go-urn
+
+==== go mod why -m github.com/leonklingele/grouper ====
+# github.com/leonklingele/grouper
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/grouper
+github.com/leonklingele/grouper/pkg/analyzer
+
+==== go mod why -m github.com/macabu/inamedparam ====
+# github.com/macabu/inamedparam
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/inamedparam
+github.com/macabu/inamedparam
+
+==== go mod why -m github.com/maratori/testableexamples ====
+# github.com/maratori/testableexamples
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/testableexamples
+github.com/maratori/testableexamples/pkg/testableexamples
+
+==== go mod why -m github.com/maratori/testpackage ====
+# github.com/maratori/testpackage
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/testpackage
+github.com/maratori/testpackage/pkg/testpackage
+
+==== go mod why -m github.com/matoous/godox ====
+# github.com/matoous/godox
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/godox
+github.com/matoous/godox
+
+==== go mod why -m github.com/mattn/go-colorable ====
+# github.com/mattn/go-colorable
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/fatih/color
+github.com/mattn/go-colorable
+
+==== go mod why -m github.com/mattn/go-isatty ====
+# github.com/mattn/go-isatty
+github.com/jonesrussell/godo/internal/infrastructure/storage/sqlite
+modernc.org/sqlite
+modernc.org/libc
+github.com/mattn/go-isatty
+
+==== go mod why -m github.com/mattn/go-runewidth ====
+# github.com/mattn/go-runewidth
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/revive
+github.com/mgechev/revive/config
+github.com/mgechev/revive/formatter
+github.com/olekukonko/tablewriter
+github.com/mattn/go-runewidth
+
+==== go mod why -m github.com/matttproud/golang_protobuf_extensions ====
+# github.com/matttproud/golang_protobuf_extensions
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/promlinter
+github.com/yeya24/promlinter
+github.com/prometheus/client_golang/prometheus
+github.com/prometheus/common/expfmt
+github.com/matttproud/golang_protobuf_extensions/pbutil
+
+==== go mod why -m github.com/mgechev/revive ====
+# github.com/mgechev/revive
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/revive
+github.com/mgechev/revive/config
+
+==== go mod why -m github.com/mitchellh/go-homedir ====
+# github.com/mitchellh/go-homedir
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/config
+github.com/mitchellh/go-homedir
+
+==== go mod why -m github.com/moricho/tparallel ====
+# github.com/moricho/tparallel
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/tparallel
+github.com/moricho/tparallel
+
+==== go mod why -m github.com/nakabonne/nestif ====
+# github.com/nakabonne/nestif
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/nestif
+github.com/nakabonne/nestif
+
+==== go mod why -m github.com/ncruces/go-strftime ====
+# github.com/ncruces/go-strftime
+github.com/jonesrussell/godo/internal/infrastructure/storage/sqlite
+modernc.org/sqlite
+modernc.org/libc
+github.com/ncruces/go-strftime
+
+==== go mod why -m github.com/nfnt/resize ====
+# github.com/nfnt/resize
+github.com/jonesrussell/godo/internal/application/container
+fyne.io/fyne/v2/app
+fyne.io/fyne/v2/internal/metadata
+github.com/nfnt/resize
+
+==== go mod why -m github.com/nicksnyder/go-i18n/v2 ====
+# github.com/nicksnyder/go-i18n/v2
+github.com/jonesrussell/godo/internal/infrastructure/gui/mainwindow
+fyne.io/fyne/v2/dialog
+fyne.io/fyne/v2/lang
+github.com/nicksnyder/go-i18n/v2/i18n
+
+==== go mod why -m github.com/nishanths/exhaustive ====
+# github.com/nishanths/exhaustive
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/exhaustive
+github.com/nishanths/exhaustive
+
+==== go mod why -m github.com/nishanths/predeclared ====
+# github.com/nishanths/predeclared
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/predeclared
+github.com/nishanths/predeclared/passes/predeclared
+
+==== go mod why -m github.com/nunnatsa/ginkgolinter ====
+# github.com/nunnatsa/ginkgolinter
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/ginkgolinter
+github.com/nunnatsa/ginkgolinter
+
+==== go mod why -m github.com/olekukonko/tablewriter ====
+# github.com/olekukonko/tablewriter
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/revive
+github.com/mgechev/revive/config
+github.com/mgechev/revive/formatter
+github.com/olekukonko/tablewriter
+
+==== go mod why -m github.com/pelletier/go-toml/v2 ====
+# github.com/pelletier/go-toml/v2
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/pelletier/go-toml/v2
+
+==== go mod why -m github.com/pmezard/go-difflib ====
+# github.com/pmezard/go-difflib
+github.com/google/wire/cmd/wire
+github.com/pmezard/go-difflib/difflib
+
+==== go mod why -m github.com/polyfloyd/go-errorlint ====
+# github.com/polyfloyd/go-errorlint
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/errorlint
+github.com/polyfloyd/go-errorlint/errorlint
+
+==== go mod why -m github.com/prometheus/client_golang ====
+# github.com/prometheus/client_golang
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/promlinter
+github.com/yeya24/promlinter
+github.com/prometheus/client_golang/prometheus
+
+==== go mod why -m github.com/prometheus/client_model ====
+# github.com/prometheus/client_model
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/promlinter
+github.com/yeya24/promlinter
+github.com/prometheus/client_model/go
+
+==== go mod why -m github.com/prometheus/common ====
+# github.com/prometheus/common
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/promlinter
+github.com/yeya24/promlinter
+github.com/prometheus/client_golang/prometheus
+github.com/prometheus/common/expfmt
+
+==== go mod why -m github.com/prometheus/procfs ====
+# github.com/prometheus/procfs
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/promlinter
+github.com/yeya24/promlinter
+github.com/prometheus/client_golang/prometheus
+github.com/prometheus/procfs
+
+==== go mod why -m github.com/quasilyte/go-ruleguard ====
+# github.com/quasilyte/go-ruleguard
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/gocritic
+github.com/go-critic/go-critic/checkers
+github.com/quasilyte/go-ruleguard/ruleguard
+
+==== go mod why -m github.com/quasilyte/go-ruleguard/dsl ====
+# github.com/quasilyte/go-ruleguard/dsl
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/gocritic
+github.com/quasilyte/go-ruleguard/dsl
+
+==== go mod why -m github.com/quasilyte/gogrep ====
+# github.com/quasilyte/gogrep
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/gocritic
+github.com/go-critic/go-critic/checkers
+github.com/quasilyte/go-ruleguard/ruleguard
+github.com/quasilyte/gogrep
+
+==== go mod why -m github.com/quasilyte/regex/syntax ====
+# github.com/quasilyte/regex/syntax
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/gocritic
+github.com/go-critic/go-critic/checkers
+github.com/quasilyte/regex/syntax
+
+==== go mod why -m github.com/quasilyte/stdinfo ====
+# github.com/quasilyte/stdinfo
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/gocritic
+github.com/go-critic/go-critic/checkers
+github.com/quasilyte/go-ruleguard/ruleguard
+github.com/quasilyte/stdinfo
+
+==== go mod why -m github.com/raeperd/recvcheck ====
+# github.com/raeperd/recvcheck
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/recvcheck
+github.com/raeperd/recvcheck
+
+==== go mod why -m github.com/remyoudompheng/bigfft ====
+# github.com/remyoudompheng/bigfft
+github.com/jonesrussell/godo/internal/infrastructure/storage/sqlite
+modernc.org/sqlite
+modernc.org/libc
+modernc.org/mathutil
+github.com/remyoudompheng/bigfft
+
+==== go mod why -m github.com/rivo/uniseg ====
+# github.com/rivo/uniseg
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/revive
+github.com/mgechev/revive/config
+github.com/mgechev/revive/formatter
+github.com/olekukonko/tablewriter
+github.com/mattn/go-runewidth
+github.com/rivo/uniseg
+
+==== go mod why -m github.com/rogpeppe/go-internal ====
+# github.com/rogpeppe/go-internal
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint
+github.com/golangci/golangci-lint/pkg/goformatters
+github.com/rogpeppe/go-internal/diff
+
+==== go mod why -m github.com/ryancurrah/gomodguard ====
+# github.com/ryancurrah/gomodguard
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/gomodguard
+github.com/ryancurrah/gomodguard
+
+==== go mod why -m github.com/ryanrolds/sqlclosecheck ====
+# github.com/ryanrolds/sqlclosecheck
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/sqlclosecheck
+github.com/ryanrolds/sqlclosecheck/pkg/analyzer
+
+==== go mod why -m github.com/rymdport/portal ====
+# github.com/rymdport/portal
+github.com/jonesrussell/godo/internal/infrastructure/gui/mainwindow
+fyne.io/fyne/v2/dialog
+github.com/rymdport/portal
+
+==== go mod why -m github.com/sagikazarmark/locafero ====
+# github.com/sagikazarmark/locafero
+github.com/jonesrussell/godo/internal/application/container
+github.com/spf13/viper
+github.com/sagikazarmark/locafero
+
+==== go mod why -m github.com/sanposhiho/wastedassign/v2 ====
+# github.com/sanposhiho/wastedassign/v2
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/wastedassign
+github.com/sanposhiho/wastedassign/v2
+
+==== go mod why -m github.com/santhosh-tekuri/jsonschema/v6 ====
+# github.com/santhosh-tekuri/jsonschema/v6
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/santhosh-tekuri/jsonschema/v6
+
+==== go mod why -m github.com/sashamelentyev/interfacebloat ====
+# github.com/sashamelentyev/interfacebloat
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/interfacebloat
+github.com/sashamelentyev/interfacebloat/pkg/analyzer
+
+==== go mod why -m github.com/sashamelentyev/usestdlibvars ====
+# github.com/sashamelentyev/usestdlibvars
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/usestdlibvars
+github.com/sashamelentyev/usestdlibvars/pkg/analyzer
+
+==== go mod why -m github.com/securego/gosec/v2 ====
+# github.com/securego/gosec/v2
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/gosec
+github.com/securego/gosec/v2
+
+==== go mod why -m github.com/sirupsen/logrus ====
+# github.com/sirupsen/logrus
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/logutils
+github.com/sirupsen/logrus
+
+==== go mod why -m github.com/sivchari/containedctx ====
+# github.com/sivchari/containedctx
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/containedctx
+github.com/sivchari/containedctx
+
+==== go mod why -m github.com/sivchari/tenv ====
+# github.com/sivchari/tenv
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/tenv
+github.com/sivchari/tenv
+
+==== go mod why -m github.com/sonatard/noctx ====
+# github.com/sonatard/noctx
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/noctx
+github.com/sonatard/noctx
+
+==== go mod why -m github.com/sourcegraph/go-diff ====
+# github.com/sourcegraph/go-diff
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint
+github.com/golangci/golangci-lint/pkg/goformatters
+github.com/golangci/golangci-lint/pkg/goformatters/internal
+github.com/sourcegraph/go-diff/diff
+
+==== go mod why -m github.com/spf13/afero ====
+# github.com/spf13/afero
+github.com/jonesrussell/godo/internal/application/container
+github.com/spf13/viper
+github.com/spf13/afero
+
+==== go mod why -m github.com/spf13/cast ====
+# github.com/spf13/cast
+github.com/jonesrussell/godo/internal/application/container
+github.com/spf13/viper
+github.com/spf13/cast
+
+==== go mod why -m github.com/spf13/cobra ====
+# github.com/spf13/cobra
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/spf13/cobra
+
+==== go mod why -m github.com/spf13/pflag ====
+# github.com/spf13/pflag
+github.com/jonesrussell/godo/internal/application/container
+github.com/spf13/viper
+github.com/spf13/pflag
+
+==== go mod why -m github.com/spf13/viper ====
+# github.com/spf13/viper
+github.com/jonesrussell/godo/internal/application/container
+github.com/spf13/viper
+
+==== go mod why -m github.com/srwiley/oksvg ====
+# github.com/srwiley/oksvg
+github.com/jonesrussell/godo/internal/infrastructure/gui/mainwindow
+fyne.io/fyne/v2/widget
+fyne.io/fyne/v2/internal/painter
+github.com/go-text/render
+github.com/srwiley/oksvg
+
+==== go mod why -m github.com/srwiley/rasterx ====
+# github.com/srwiley/rasterx
+github.com/jonesrussell/godo/internal/infrastructure/gui/mainwindow
+fyne.io/fyne/v2/theme
+fyne.io/fyne/v2/internal/svg
+github.com/srwiley/rasterx
+
+==== go mod why -m github.com/ssgreg/nlreturn/v2 ====
+# github.com/ssgreg/nlreturn/v2
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/nlreturn
+github.com/ssgreg/nlreturn/v2/pkg/nlreturn
+
+==== go mod why -m github.com/stbenjam/no-sprintf-host-port ====
+# github.com/stbenjam/no-sprintf-host-port
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/nosprintfhostport
+github.com/stbenjam/no-sprintf-host-port/pkg/analyzer
+
+==== go mod why -m github.com/stretchr/objx ====
+# github.com/stretchr/objx
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/logutils
+github.com/stretchr/testify/mock
+github.com/stretchr/objx
+
+==== go mod why -m github.com/stretchr/testify ====
+# github.com/stretchr/testify
+github.com/jonesrussell/godo/internal/application/container
+fyne.io/fyne/v2
+fyne.io/fyne/v2.test
+github.com/stretchr/testify/assert
+
+==== go mod why -m github.com/subosito/gotenv ====
+# github.com/subosito/gotenv
+github.com/jonesrussell/godo/internal/application/container
+github.com/spf13/viper
+github.com/spf13/viper/internal/encoding/dotenv
+github.com/subosito/gotenv
+
+==== go mod why -m github.com/tdakkota/asciicheck ====
+# github.com/tdakkota/asciicheck
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/asciicheck
+github.com/tdakkota/asciicheck
+
+==== go mod why -m github.com/tetafro/godot ====
+# github.com/tetafro/godot
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/godot
+github.com/tetafro/godot
+
+==== go mod why -m github.com/timakin/bodyclose ====
+# github.com/timakin/bodyclose
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/bodyclose
+github.com/timakin/bodyclose/passes/bodyclose
+
+==== go mod why -m github.com/timonwong/loggercheck ====
+# github.com/timonwong/loggercheck
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/loggercheck
+github.com/timonwong/loggercheck
+
+==== go mod why -m github.com/tomarrell/wrapcheck/v2 ====
+# github.com/tomarrell/wrapcheck/v2
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/wrapcheck
+github.com/tomarrell/wrapcheck/v2/wrapcheck
+
+==== go mod why -m github.com/tommy-muehle/go-mnd/v2 ====
+# github.com/tommy-muehle/go-mnd/v2
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/mnd
+github.com/tommy-muehle/go-mnd/v2
+
+==== go mod why -m github.com/ultraware/funlen ====
+# github.com/ultraware/funlen
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/funlen
+github.com/ultraware/funlen
+
+==== go mod why -m github.com/ultraware/whitespace ====
+# github.com/ultraware/whitespace
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/whitespace
+github.com/ultraware/whitespace
+
+==== go mod why -m github.com/uudashr/gocognit ====
+# github.com/uudashr/gocognit
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/gocognit
+github.com/uudashr/gocognit
+
+==== go mod why -m github.com/uudashr/iface ====
+# github.com/uudashr/iface
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/iface
+github.com/uudashr/iface/identical
+
+==== go mod why -m github.com/xen0n/gosmopolitan ====
+# github.com/xen0n/gosmopolitan
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/gosmopolitan
+github.com/xen0n/gosmopolitan
+
+==== go mod why -m github.com/yagipy/maintidx ====
+# github.com/yagipy/maintidx
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/maintidx
+github.com/yagipy/maintidx
+
+==== go mod why -m github.com/yeya24/promlinter ====
+# github.com/yeya24/promlinter
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/promlinter
+github.com/yeya24/promlinter
+
+==== go mod why -m github.com/ykadowak/zerologlint ====
+# github.com/ykadowak/zerologlint
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/zerologlint
+github.com/ykadowak/zerologlint
+
+==== go mod why -m github.com/yuin/goldmark ====
+# github.com/yuin/goldmark
+github.com/jonesrussell/godo/internal/infrastructure/gui/mainwindow
+fyne.io/fyne/v2/widget
+github.com/yuin/goldmark
+
+==== go mod why -m gitlab.com/bosi/decorder ====
+# gitlab.com/bosi/decorder
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/decorder
+gitlab.com/bosi/decorder
+
+==== go mod why -m go-simpler.org/musttag ====
+# go-simpler.org/musttag
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/musttag
+go-simpler.org/musttag
+
+==== go mod why -m go-simpler.org/sloglint ====
+# go-simpler.org/sloglint
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/sloglint
+go-simpler.org/sloglint
+
+==== go mod why -m go.uber.org/automaxprocs ====
+# go.uber.org/automaxprocs
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+go.uber.org/automaxprocs/maxprocs
+
+==== go mod why -m go.uber.org/multierr ====
+# go.uber.org/multierr
+github.com/jonesrussell/godo/internal/infrastructure/logger
+go.uber.org/zap
+go.uber.org/multierr
+
+==== go mod why -m go.uber.org/zap ====
+# go.uber.org/zap
+github.com/jonesrussell/godo/internal/infrastructure/logger
+go.uber.org/zap
+
+==== go mod why -m go.yaml.in/yaml/v3 ====
+# go.yaml.in/yaml/v3
+github.com/jonesrussell/godo/internal/application/container
+github.com/spf13/viper
+github.com/spf13/viper/internal/encoding/yaml
+go.yaml.in/yaml/v3
+
+==== go mod why -m golang.org/x/crypto ====
+# golang.org/x/crypto
+github.com/jonesrussell/godo/internal/infrastructure/api
+github.com/go-playground/validator/v10
+golang.org/x/crypto/sha3
+
+==== go mod why -m golang.org/x/exp ====
+# golang.org/x/exp
+github.com/jonesrussell/godo/internal/infrastructure/storage/sqlite
+modernc.org/sqlite
+modernc.org/libc
+golang.org/x/exp/constraints
+
+==== go mod why -m golang.org/x/exp/typeparams ====
+# golang.org/x/exp/typeparams
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/gocritic
+github.com/go-critic/go-critic/checkers
+github.com/go-toolsmith/astcopy
+golang.org/x/exp/typeparams
+
+==== go mod why -m golang.org/x/image ====
+# golang.org/x/image
+github.com/jonesrussell/godo/internal/infrastructure/gui/mainwindow
+fyne.io/fyne/v2/widget
+golang.org/x/image/math/fixed
+
+==== go mod why -m golang.org/x/mod ====
+# golang.org/x/mod
+golang.org/x/tools/cmd/goimports
+golang.org/x/tools/internal/imports
+golang.org/x/mod/module
+
+==== go mod why -m golang.org/x/net ====
+# golang.org/x/net
+github.com/jonesrussell/godo/internal/infrastructure/gui/mainwindow
+fyne.io/fyne/v2/theme
+fyne.io/fyne/v2/internal/svg
+github.com/fyne-io/oksvg
+golang.org/x/net/html/charset
+
+==== go mod why -m golang.org/x/sync ====
+# golang.org/x/sync
+golang.org/x/tools/cmd/goimports
+golang.org/x/tools/internal/imports
+golang.org/x/sync/errgroup
+
+==== go mod why -m golang.org/x/sys ====
+# golang.org/x/sys
+github.com/jonesrussell/godo/internal/infrastructure/storage/sqlite
+modernc.org/sqlite
+golang.org/x/sys/unix
+
+==== go mod why -m golang.org/x/telemetry ====
+# golang.org/x/telemetry
+golang.org/x/tools/cmd/goimports
+golang.org/x/telemetry/counter
+
+==== go mod why -m golang.org/x/text ====
+# golang.org/x/text
+github.com/jonesrussell/godo/internal/infrastructure/api
+github.com/go-playground/validator/v10
+golang.org/x/text/language
+
+==== go mod why -m golang.org/x/tools ====
+# golang.org/x/tools
+golang.org/x/tools/cmd/goimports
+
+==== go mod why -m google.golang.org/protobuf ====
+# google.golang.org/protobuf
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/promlinter
+github.com/yeya24/promlinter
+github.com/prometheus/client_golang/prometheus
+google.golang.org/protobuf/types/known/timestamppb
+
+==== go mod why -m gopkg.in/yaml.v2 ====
+# gopkg.in/yaml.v2
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/forbidigo
+github.com/ashanbrown/forbidigo/forbidigo
+gopkg.in/yaml.v2
+
+==== go mod why -m gopkg.in/yaml.v3 ====
+# gopkg.in/yaml.v3
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+gopkg.in/yaml.v3
+
+==== go mod why -m honnef.co/go/tools ====
+# honnef.co/go/tools
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/unused
+honnef.co/go/tools/analysis/facts/directives
+
+==== go mod why -m modernc.org/libc ====
+# modernc.org/libc
+github.com/jonesrussell/godo/internal/infrastructure/storage/sqlite
+modernc.org/sqlite
+modernc.org/libc
+
+==== go mod why -m modernc.org/mathutil ====
+# modernc.org/mathutil
+github.com/jonesrussell/godo/internal/infrastructure/storage/sqlite
+modernc.org/sqlite
+modernc.org/libc
+modernc.org/mathutil
+
+==== go mod why -m modernc.org/memory ====
+# modernc.org/memory
+github.com/jonesrussell/godo/internal/infrastructure/storage/sqlite
+modernc.org/sqlite
+modernc.org/libc
+modernc.org/memory
+
+==== go mod why -m modernc.org/sqlite ====
+# modernc.org/sqlite
+github.com/jonesrussell/godo/internal/infrastructure/storage/sqlite
+modernc.org/sqlite
+
+==== go mod why -m mvdan.cc/gofumpt ====
+# mvdan.cc/gofumpt
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/result/processors
+github.com/golangci/golangci-lint/pkg/goformatters/gofumpt
+mvdan.cc/gofumpt/format
+
+==== go mod why -m mvdan.cc/unparam ====
+# mvdan.cc/unparam
+github.com/golangci/golangci-lint/cmd/golangci-lint
+github.com/golangci/golangci-lint/pkg/commands
+github.com/golangci/golangci-lint/pkg/lint/lintersdb
+github.com/golangci/golangci-lint/pkg/golinters/unparam
+mvdan.cc/unparam/check
+

@@ -1,0 +1,65 @@
+[
+  {
+    "id": "ISSUE-001",
+    "severity": "critical",
+    "file": "internal/application/container/wire_gen.go",
+    "line": 183,
+    "message": "Generated Wire code references TLSInsecureSkipVerify and cfg.Storage.API.TLSInsecureSkipVerify, but domain storage.APIConfig and config.APIConfig only define InsecureSkipVerify. Build, go vet, and staticcheck fail.",
+    "suggested_fix": "Regenerate Wire from internal/application/container/wire.go after adding scripts/regen-wire.sh, or replace the API struct literal with InsecureSkipVerify: cfg.Storage.API.InsecureSkipVerify. Run wire locally to verify.",
+    "estimated_hours": 0.5
+  },
+  {
+    "id": "ISSUE-002",
+    "severity": "high",
+    "file": "internal/application/container/wire_gen.go",
+    "line": 183,
+    "message": "Same compile failure blocks golangci-lint typecheck and go test coverage for container and downstream packages.",
+    "suggested_fix": "Same as ISSUE-001; treat as duplicate symptom of stale wire_gen.go.",
+    "estimated_hours": 0.25
+  },
+  {
+    "id": "ISSUE-003",
+    "severity": "medium",
+    "file": "internal/domain/repository",
+    "line": 0,
+    "message": "Repository layer has no SQLite-backed integration tests; test-output.txt shows 0.0% coverage across packages and no CRUD validation against a real temp DB.",
+    "suggested_fix": "Add testhelpers to open modernc.org/sqlite temp DB and repository tests for Add/Get/Update/Delete/List using NewNoteRepository + UnifiedAdapter.",
+    "estimated_hours": 2
+  },
+  {
+    "id": "ISSUE-004",
+    "severity": "medium",
+    "file": "internal/infrastructure/storage/api/store.go",
+    "line": 229,
+    "message": "DeleteNote duplicates identical http.StatusNotFound branches (lines 229-231 and 232-234), adding noise and cognitive load.",
+    "suggested_fix": "Remove the duplicate if block; keep a single NotFound handling path.",
+    "estimated_hours": 0.25
+  },
+  {
+    "id": "ISSUE-005",
+    "severity": "medium",
+    "file": "internal/config/config.go",
+    "line": 358,
+    "message": "NewDefaultConfig omits an explicit Storage.API block; TLS skip-verify defaults are implicit zero values only. No validation rejects user:password@ in API base URLs while TLS verification is disabled.",
+    "suggested_fix": "Set explicit Storage defaults with InsecureSkipVerify false; extend ValidateConfig to reject URL userinfo on API base URL and add config unit tests.",
+    "estimated_hours": 1
+  },
+  {
+    "id": "ISSUE-006",
+    "severity": "low",
+    "file": "internal/infrastructure/hotkey/manager.go",
+    "line": 200,
+    "message": "HotkeyManager.Start nests channel setup and an infinite select loop with per-channel inner selects, inflating cyclomatic complexity.",
+    "suggested_fix": "Extract listenChannelsForEntries(entries []HotkeyEntry) and unit-test channel slice construction without changing runtime behavior.",
+    "estimated_hours": 1
+  },
+  {
+    "id": "ISSUE-007",
+    "severity": "low",
+    "file": "docs/audit/test-output.txt",
+    "line": 1,
+    "message": "All packages report 0.0% statement coverage in the audit snapshot.",
+    "suggested_fix": "Address ISSUE-003 and add targeted tests for config, API client, and pure helpers to raise baseline coverage.",
+    "estimated_hours": 4
+  }
+]

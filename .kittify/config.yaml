@@ -1,0 +1,14 @@
+charter_path: .kittify/charter/charter.md
+default_template_set: software-dev-default
+verify_setup_cmds:
+  - spec-kitty verify-setup
+
+vcs:
+  type: git
+
+agents:
+  available:
+    - cursor
+    - claude
+    - codex
+  auto_commit: true

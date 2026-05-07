@@ -1,0 +1,24 @@
+# Auto-generated from charter.md — do not edit directly.
+# Run 'spec-kitty charter sync' to regenerate.
+
+directives:
+- id: DIR-001
+  title: 'Single primary store: do not introduce a second pr'
+  description: 'Single primary store: do not introduce a second primary mutable store for the same logical entities without a chartered migration and dual-write/dual-read plan.'
+  severity: warn
+- id: DIR-002
+  title: 'Audit accountability: mutations that affect user t'
+  description: 'Audit accountability: mutations that affect user trust or future harness reconciliation must be observable (append-only log or equivalent immutable history).'
+  severity: warn
+- id: DIR-003
+  title: 'Harness adapter and fixtures: outbound “harness” b'
+  description: 'Harness adapter and fixtures: outbound “harness” behavior lives behind an explicit interface; tests use fakes or `httptest`—not live third-party services—unless a mission opts into a gated integration suite.'
+  severity: warn
+- id: DIR-004
+  title: 'Architecture respect: preserve domain, application'
+  description: 'Architecture respect: preserve domain, application, and infrastructure separation unless a mission explicitly redesigns boundaries.'
+  severity: warn
+- id: DIR-005
+  title: 'Workflow: non-trivial work uses Spec Kitty artifac'
+  description: 'Workflow: non-trivial work uses Spec Kitty artifacts so implementation stays reviewable and reversible.'
+  severity: warn

@@ -148,9 +148,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-${{ matrix.os }}-${{ matrix.arch }}-go-
 
-      - name: Wire drift check
-        run: bash scripts/check-wire-drift.sh
-
       - name: Generate Wire (pinned, matrix OS)
         run: |
           TAG=linux

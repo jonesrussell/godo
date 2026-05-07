@@ -104,6 +104,7 @@ jobs:
     needs: [prepare]
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: windows
@@ -162,8 +163,6 @@ jobs:
 
       - name: Build binary
         env:
-          GOOS: ${{ matrix.os }}
-          GOARCH: ${{ matrix.arch }}
           CC: ${{ matrix.cc }}
         run: |
           if [ "${{ matrix.os }}" = "windows" ]; then
@@ -221,14 +220,12 @@ jobs:
             libxinerama-dev libxi-dev libxxf86vm-dev libglx-dev
 
       - name: Wire + compile (best effort)
-        env:
-          GOOS: ${{ matrix.goos }}
-          GOARCH: ${{ matrix.goarch }}
         run: |
           set -x
-          cd internal/application/container
-          go run github.com/google/wire/cmd/wire@v0.7.0 gen -tags "${{ matrix.wiretag }}"
-          cd ../..
+          # Wire must run with host GOOS; GOOS=windows breaks `go run` on Linux runners.
+          env -u GOOS -u GOARCH bash -c 'cd internal/application/container && go run github.com/google/wire/cmd/wire@v0.7.0 gen -tags "${{ matrix.wiretag }}"'
+          export GOOS=${{ matrix.goos }}
+          export GOARCH=${{ matrix.goarch }}
           OUT="/tmp/godo-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.suffix }}"
           if [ "${{ matrix.goos }}" = "windows" ]; then
             export CGO_ENABLED=1

@@ -216,13 +216,7 @@ func (m *HotkeyManager) Start() error {
 			m.log.Info("Hotkey listener stopped")
 		}()
 
-		// Create a slice of channels for all hotkeys
-		channels := make([]<-chan hotkey.Event, len(m.hotkeys))
-		for i, entry := range m.hotkeys {
-			if entry.hotkey != nil {
-				channels[i] = entry.hotkey.Keydown()
-			}
-		}
+		channels := m.listenChannels()
 
 		for {
 			select {
@@ -253,6 +247,17 @@ func (m *HotkeyManager) Start() error {
 	}()
 
 	return nil
+}
+
+// listenChannels builds the per-hotkey keydown channel slice used by the listener loop.
+func (m *HotkeyManager) listenChannels() []<-chan hotkey.Event {
+	channels := make([]<-chan hotkey.Event, len(m.hotkeys))
+	for i, entry := range m.hotkeys {
+		if entry.hotkey != nil {
+			channels[i] = entry.hotkey.Keydown()
+		}
+	}
+	return channels
 }
 
 // Stop ends the hotkey listening

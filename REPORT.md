@@ -1,34 +1,34 @@
-# PR: fix/duplicate-api-handler (ISSUE-004)
+# PR: refactor/hotkey-start (ISSUE-006)
 
 ## Summary
 
-Remove the duplicated `http.StatusNotFound` branch in `Store.DeleteNote` and add an `httptest` unit test that asserts `NotFoundError` is returned for a 404 API response.
+Extract `HotkeyManager.listenChannels` from the `Start` goroutine so channel construction is isolated and unit-testable without changing listener behavior.
 
 ## Changes
 
-- `internal/infrastructure/storage/api/store.go` — single NotFound handling path in `DeleteNote`.
-- `internal/infrastructure/storage/api/store_delete_test.go` — `TestStore_DeleteNote_NotFound`.
+- `internal/infrastructure/hotkey/manager.go` — `listenChannels()` helper; `Start` calls it.
+- `internal/infrastructure/hotkey/manager_listen_channels_test.go` — whitebox test for nil `hotkey` entries (build-tagged `linux || windows` like the manager).
 
 ## How to verify
 
 ```bash
-go test ./internal/infrastructure/storage/api/... -tags=wireinject -count=1 -v
+go test ./internal/infrastructure/hotkey/... -tags=wireinject -count=1 -v
 go test ./... -tags=wireinject -count=1
 ```
 
 ## Acceptance criteria
 
-- [ ] `DeleteNote` has no duplicate identical `StatusNotFound` checks.
-- [ ] New test passes against a local `httptest` server.
+- [ ] `Start` still builds the same channel slice as before for registered hotkeys.
+- [ ] `listenChannels` returns a slice aligned with `len(m.hotkeys)`.
 
 ## Audit reference
 
 ```json
 {
-  "id": "ISSUE-004",
-  "severity": "medium",
-  "file": "internal/infrastructure/storage/api/store.go",
-  "line": 229,
-  "message": "DeleteNote duplicates identical http.StatusNotFound branches..."
+  "id": "ISSUE-006",
+  "severity": "low",
+  "file": "internal/infrastructure/hotkey/manager.go",
+  "line": 200,
+  "message": "HotkeyManager.Start nests channel setup..."
 }
 ```

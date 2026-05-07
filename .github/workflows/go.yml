@@ -13,6 +13,8 @@ on:
       - '.github/workflows/go.yml'
       - 'Taskfile.yml'
       - 'Taskfile.build.yml'
+      - 'scripts/**'
+      - 'internal/application/container/wire_gen.sha256'
       - 'docs/**'
       - 'build/**'
   pull_request:
@@ -23,6 +25,8 @@ on:
       - '.github/workflows/go.yml'
       - 'Taskfile.yml'
       - 'Taskfile.build.yml'
+      - 'scripts/**'
+      - 'internal/application/container/wire_gen.sha256'
       - 'docs/**'
       - 'build/**'
 
@@ -53,6 +57,7 @@ jobs:
           sudo apt-get install -y \
             gcc \
             pkg-config \
+            xvfb \
             libgl1-mesa-dev \
             libx11-dev \
             libxcursor-dev \
@@ -62,9 +67,14 @@ jobs:
             libxxf86vm-dev \
             libglx-dev
 
-      - name: Generate Wire (linux injectors)
+      - name: Virtual display (hotkey init on Linux)
         run: |
-          cd internal/application/container && go run github.com/google/wire/cmd/wire@v0.7.0 gen -tags linux
+          Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
+          sleep 1
+          echo "DISPLAY=:99.0" >> "$GITHUB_ENV"
+
+      - name: Wire drift check (wire_gen vs wire_gen.sha256)
+        run: bash scripts/check-wire-drift.sh
 
       - name: Verify no pending go fix output
         run: |
@@ -78,16 +88,32 @@ jobs:
         run: go vet ./...
 
       - name: golangci-lint
+        id: lint
         continue-on-error: true
-        run: go tool golangci-lint run ./... --timeout=5m
+        run: |
+          set +e
+          go tool golangci-lint run ./... --timeout=5m 2>&1 | tee "$RUNNER_TEMP/golangci.log"
+          code=${PIPESTATUS[0]}
+          issues=$(grep -E ' issues?:$' "$RUNNER_TEMP/golangci.log" | tail -1 || true)
+          echo "LINT_SUMMARY<<EOF" >> "$GITHUB_OUTPUT"
+          echo "${issues:-golangci-lint finished (see log above)} exit=${code}" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+          exit "$code"
+
+      - name: golangci-lint summary
+        if: always()
+        run: echo "${{ steps.lint.outputs.LINT_SUMMARY }}"
 
       - name: go test (wireinject)
+        env:
+          FYNE_RENDERER: software
         run: go test ./... -tags=wireinject -count=1
 
   build:
     needs: [prepare]
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: windows
@@ -100,13 +126,12 @@ jobs:
             cc: gcc
     steps:
       - uses: actions/checkout@v4
-      
+
       - uses: actions/setup-go@v5
         with:
           go-version: '1.26'
-          cache: true  # Enable Go module caching
-      
-      # Install system dependencies
+          cache: true
+
       - name: Install system dependencies
         run: |
           sudo apt-get update
@@ -123,18 +148,17 @@ jobs:
             libglx-dev \
             pkg-config
 
-      # Cache build tools
       - uses: actions/cache@v4
         with:
           path: |
             ~/.cache/go-build
             ~/go/pkg/mod
-            ~/go/bin  # Cache binary tools like wire
+            ~/go/bin
           key: ${{ runner.os }}-${{ matrix.os }}-${{ matrix.arch }}-go-${{ needs.prepare.outputs.go-cache-key }}
           restore-keys: |
             ${{ runner.os }}-${{ matrix.os }}-${{ matrix.arch }}-go-
 
-      - name: Generate Wire (pinned)
+      - name: Generate Wire (pinned, matrix OS)
         run: |
           TAG=linux
           if [ "${{ matrix.os }}" = "windows" ]; then TAG=windows; fi
@@ -146,11 +170,8 @@ jobs:
           version: 3.x
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-      # Build with matrix variables
       - name: Build binary
         env:
-          GOOS: ${{ matrix.os }}
-          GOARCH: ${{ matrix.arch }}
           CC: ${{ matrix.cc }}
         run: |
           if [ "${{ matrix.os }}" = "windows" ]; then
@@ -159,16 +180,89 @@ jobs:
             task build:native:linux
           fi
 
-      # Add versioning based on git tags
       - name: Get version
         id: get_version
         run: |
           VERSION=$(git describe --tags --always --dirty)
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
 
-      # Upload individual artifacts with version
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: godo-${{ steps.get_version.outputs.version }}-${{ matrix.os }}-${{ matrix.arch }}
           path: dist/${{ matrix.artifact }}
+
+  build-matrix:
+    name: cross-compile (${{ matrix.goos }}/${{ matrix.goarch }})
+    needs: [prepare]
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+            wiretag: linux
+            suffix: ''
+          - goos: windows
+            goarch: amd64
+            wiretag: windows
+            suffix: .exe
+          - goos: darwin
+            goarch: amd64
+            wiretag: linux
+            suffix: ''
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+          cache: true
+
+      - name: Install build deps (Linux + MinGW)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc mingw-w64 pkg-config \
+            libgl1-mesa-dev libx11-dev libxcursor-dev libxrandr-dev \
+            libxinerama-dev libxi-dev libxxf86vm-dev libglx-dev
+
+      - name: Wire + compile (best effort)
+        run: |
+          set -x
+          # Wire must run with host GOOS; GOOS=windows breaks `go run` on Linux runners.
+          env -u GOOS -u GOARCH bash -c 'cd internal/application/container && go run github.com/google/wire/cmd/wire@v0.7.0 gen -tags "${{ matrix.wiretag }}"'
+          export GOOS=${{ matrix.goos }}
+          export GOARCH=${{ matrix.goarch }}
+          OUT="/tmp/godo-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.suffix }}"
+          if [ "${{ matrix.goos }}" = "windows" ]; then
+            export CGO_ENABLED=1
+            export CC=x86_64-w64-mingw32-gcc
+            export CXX=x86_64-w64-mingw32-g++
+            go build -tags windows -ldflags "-s -w" -o "$OUT" .
+          elif [ "${{ matrix.goos }}" = "darwin" ]; then
+            export CGO_ENABLED=1
+            go build -tags linux -ldflags "-s -w" -o "$OUT" . || true
+          else
+            export CGO_ENABLED=1
+            go build -tags linux -ldflags "-s -w" -o "$OUT" .
+          fi
+          ls -la "$OUT" 2>/dev/null || echo "binary missing (expected for unsupported cross targets)"
+
+      - name: Stage cross-build artifacts
+        if: always()
+        run: |
+          mkdir -p "${{ runner.temp }}/matrix-${{ matrix.goos }}-${{ matrix.goarch }}"
+          shopt -s nullglob || true
+          for f in /tmp/godo-${{ matrix.goos }}-${{ matrix.goarch }}*; do
+            cp "$f" "${{ runner.temp }}/matrix-${{ matrix.goos }}-${{ matrix.goarch }}/" || true
+          done
+          echo "GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }}" >"${{ runner.temp }}/matrix-${{ matrix.goos }}-${{ matrix.goarch }}/build-meta.txt"
+
+      - name: Upload cross-build artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-matrix-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: ${{ runner.temp }}/matrix-${{ matrix.goos }}-${{ matrix.goarch }}/

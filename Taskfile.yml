@@ -277,3 +277,13 @@ tasks:
     cmds:
     - echo "Testing GUI in WSL2 environment"
     - go test -v ./internal/gui/...
+
+  spec:verify:
+    desc: Verify Spec Kitty installation and repo governance files
+    cmds:
+    - spec-kitty verify-setup
+
+  spec:sync:
+    desc: Sync charter.md to extracted governance YAML (run after charter edits)
+    cmds:
+    - spec-kitty charter sync

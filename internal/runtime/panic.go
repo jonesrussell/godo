@@ -5,7 +5,8 @@ import (
 	"fmt"
 )
 
-// PanicLogger is the minimal logging interface used during panic recovery.
+// PanicLogger is the minimal surface needed to report recovered panics without
+// printing to stdout/stderr.
 type PanicLogger interface {
 	Error(msg string, keysAndValues ...any)
 }
@@ -14,7 +15,7 @@ type noopPanicLogger struct{}
 
 func (noopPanicLogger) Error(string, ...any) {}
 
-// RecoveredPanicError wraps panic values converted to errors.
+// RecoveredPanicError wraps a value recovered from panic.
 type RecoveredPanicError struct {
 	Value any
 }
@@ -23,14 +24,15 @@ func (e *RecoveredPanicError) Error() string {
 	return fmt.Sprintf("panic recovered: %v", e.Value)
 }
 
-// ErrRecoveredPanic marks errors sourced from panic recovery.
+// ErrRecoveredPanic is a stable sentinel for panic-derived failures.
 var ErrRecoveredPanic = errors.New("recovered panic")
 
 func (e *RecoveredPanicError) Unwrap() error {
 	return ErrRecoveredPanic
 }
 
-// RecoverFromPanic converts recover() values into structured errors.
+// RecoverFromPanic turns a non-nil recover() value into an error and logs it.
+// If recovered is nil, returns nil. If log is nil, a no-op logger is used.
 func RecoverFromPanic(log PanicLogger, recovered any) error {
 	if recovered == nil {
 		return nil
@@ -42,12 +44,13 @@ func RecoverFromPanic(log PanicLogger, recovered any) error {
 	return &RecoveredPanicError{Value: recovered}
 }
 
-// RecoverAndReport is an alias maintained for readability in call sites.
+// RecoverAndReport is equivalent to RecoverFromPanic.
 func RecoverAndReport(log PanicLogger, recovered any) error {
 	return RecoverFromPanic(log, recovered)
 }
 
-// WithPanicRecovery executes fn and converts panics into returned errors.
+// WithPanicRecovery runs fn and converts any panic into a RecoveredPanicError.
+// The returned error is nil if fn completes without panicking.
 func WithPanicRecovery(log PanicLogger, fn func() error) (err error) {
 	defer func() {
 		if r := recover(); r != nil {

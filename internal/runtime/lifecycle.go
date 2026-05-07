@@ -18,4 +18,5 @@ type ShutdownApp interface {
 	ForceKillTimeout() time.Duration
 }
 
-const defaultForceKillTimeout = 3 * time.Second
+// DefaultForceKillTimeout is used when ForceKillTimeout() returns zero.
+const DefaultForceKillTimeout = 3 * time.Second

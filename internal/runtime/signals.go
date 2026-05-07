@@ -7,12 +7,16 @@ import (
 	"syscall"
 )
 
-// NewRootContext creates a root context bound to SIGINT and SIGTERM.
+// NewRootContext creates the root runtime context bound to process interrupt
+// signals. The returned cancel function must always be called by the caller to
+// stop signal delivery and release internal resources.
 func NewRootContext() (context.Context, context.CancelFunc) {
 	return WithSignals(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 }
 
-// WithSignals creates a context canceled by the provided OS signals.
+// WithSignals creates a context cancelled by either parent cancellation or any
+// of the provided OS signals. This WP03 helper only wires signal/context
+// behavior; shutdown orchestration is intentionally deferred.
 func WithSignals(parent context.Context, signals ...os.Signal) (context.Context, context.CancelFunc) {
 	if parent == nil {
 		parent = context.Background()

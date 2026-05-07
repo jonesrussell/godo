@@ -1,0 +1,49 @@
+name: Spec Kitty governance
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.kittify/**'
+      - '.github/workflows/spec-kitty.yml'
+      - 'scripts/check-charter.sh'
+      - 'Taskfile.yml'
+      - 'docs/SPEC-KITTY.md'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.kittify/**'
+      - '.github/workflows/spec-kitty.yml'
+      - 'scripts/check-charter.sh'
+      - 'Taskfile.yml'
+      - 'docs/SPEC-KITTY.md'
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Spec Kitty CLI
+        run: |
+          pip install --upgrade pip
+          pip install "spec-kitty-cli==3.1.7"
+
+      - name: Check charter file presence
+        run: ./scripts/check-charter.sh
+
+      - name: spec-kitty verify-setup
+        run: spec-kitty verify-setup
+
+      - name: Charter status and drift (read-only)
+        run: |
+          spec-kitty charter status --json | tee charter-status.json
+          test "$(jq -r '.status' charter-status.json)" = "synced"
+          jq -e '.current_hash == .stored_hash' charter-status.json > /dev/null

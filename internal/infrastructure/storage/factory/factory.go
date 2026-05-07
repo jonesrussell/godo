@@ -63,6 +63,10 @@ func NewAPIStorage(config *domainstorage.APIConfig, log logger.Logger) (domainst
 		return nil, fmt.Errorf("API base URL is required")
 	}
 
+	if err := domainstorage.ValidateAPIBaseURL(config.BaseURL); err != nil {
+		return nil, err
+	}
+
 	log.Debug("Creating API storage", "base_url", config.BaseURL, "timeout", config.Timeout)
 
 	store, err := api.New(*config, log)

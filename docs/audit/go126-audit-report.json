@@ -1,0 +1,213 @@
+{
+  "meta": {
+    "go_version_toolchain": "go1.26.2",
+    "go_mod_directive": "1.26",
+    "audited_at": "2026-05-06",
+    "repo": "github.com/jonesrussell/godo"
+  },
+  "compile-errors": [
+    {
+      "file": "dist/godo-linux (link)",
+      "line": 0,
+      "short_description": "CGO link failed: cannot find -lXxf86vm on audit host",
+      "remediation": "Install libxxf86vm-dev (Debian/Ubuntu) or equivalent X11 dev packages before Fyne+CGO builds; match CI apt list in .github/workflows/go.yml."
+    },
+    {
+      "file": "dist/godo.exe (cross)",
+      "line": 0,
+      "short_description": "MinGW x86_64-w64-mingw32-gcc not installed on audit host",
+      "remediation": "Install mingw-w64 and set CC/CXX to the MinGW toolchain for Windows cross-builds from Linux."
+    },
+    {
+      "file": "GOOS=darwin (cross from linux)",
+      "line": 0,
+      "short_description": "Invalid cross: GOOS=darwin with mixed zgoos when forcing tags incorrectly; Darwin generally needs a macOS host with Apple clang for CGO+Fyne",
+      "remediation": "Build darwin artifacts on macOS using task build:native:darwin (or local go build with CGO_ENABLED=1 and Xcode CLT)."
+    }
+  ],
+  "test-failures": [],
+  "test-notes": [
+    {
+      "file": "repository-wide",
+      "line": 0,
+      "short_description": "No *_test.go files found; go test passes vacuously with 0% statement coverage",
+      "remediation": "Add table-driven tests for domain services, storage adapters, API handlers, and config; gate merges on coverage thresholds."
+    }
+  ],
+  "vet-issues": [],
+  "lint-issues": [
+    {
+      "file": "internal/infrastructure/storage/api/store.go",
+      "line": 244,
+      "linter": "dupl",
+      "short_description": "ToggleDone/MarkDone/MarkUndone share duplicate PATCH handler bodies",
+      "remediation": "Extract a private helper (e.g. patchNoteEndpoint) parameterized by path suffix and response mapping."
+    },
+    {
+      "file": "internal/infrastructure/logger/zap.go",
+      "line": 347,
+      "linter": "errcheck",
+      "short_description": "logger.Sync return not checked (comment claims ignore)",
+      "remediation": "Assign to _ with nolint and rationale, or log Sync errors at shutdown."
+    },
+    {
+      "file": "internal/infrastructure/hotkey/manager.go",
+      "line": 199,
+      "linter": "gocognit",
+      "short_description": "HotkeyManager.Start cognitive complexity > 30",
+      "remediation": "Split registration, validation, and event-loop setup into smaller functions with early returns."
+    },
+    {
+      "file": "internal/infrastructure/logger/zap.go",
+      "line": 183,
+      "linter": "goconst",
+      "short_description": "String literal windows repeated",
+      "remediation": "Introduce const goosWindows or use runtime.GOOS comparisons via a small helper."
+    },
+    {
+      "file": "internal/infrastructure/logger/zap.go",
+      "line": 54,
+      "linter": "gocritic/unnamedResult",
+      "short_description": "setupWriters unnamed result tuple",
+      "remediation": "Name return values for clarity (writers, closers, etc.)."
+    },
+    {
+      "file": "internal/infrastructure/storage/api/store.go",
+      "line": 111,
+      "linter": "gocritic/httpNoBody",
+      "short_description": "GET/DELETE use nil body instead of http.NoBody",
+      "remediation": "Use http.NoBody for requests with no payload."
+    },
+    {
+      "file": "internal/infrastructure/storage/api/store.go",
+      "line": 173,
+      "linter": "gocritic/paramTypeCombine",
+      "short_description": "Adjacent string params could combine",
+      "remediation": "Optional style fix: func(ctx context.Context, id, content string, done bool)."
+    },
+    {
+      "file": "internal/infrastructure/storage/sqlite/adapter.go",
+      "line": 63,
+      "linter": "gocritic/paramTypeCombine",
+      "short_description": "Same paramTypeCombine as API store UpdateNote",
+      "remediation": "Align signatures with API layer if desired for consistency."
+    },
+    {
+      "file": "internal/config/config.go",
+      "line": 128,
+      "linter": "gosec/G117",
+      "short_description": "Exported JWTSecret field name matches secret pattern",
+      "remediation": "Redact in logs, avoid printing config, document rotation; consider unexported field with accessor if feasible."
+    },
+    {
+      "file": "internal/infrastructure/storage/api/store.go",
+      "line": 54,
+      "linter": "gosec/G402",
+      "short_description": "TLS InsecureSkipVerify may be true from config",
+      "remediation": "Default false in production; warn at startup; document dev-only usage."
+    },
+    {
+      "file": "internal/infrastructure/storage/api/store.go",
+      "line": 352,
+      "linter": "gosec/G704",
+      "short_description": "SSRF taint on client.Do(req)",
+      "remediation": "Validate base_url scheme/host allowlist; reject file:// and redirects to unexpected hosts."
+    },
+    {
+      "file": "internal/infrastructure/storage/api/store.go",
+      "line": 102,
+      "linter": "govet/shadow",
+      "short_description": "err shadowing in decode blocks (multiple lines)",
+      "remediation": "Use separate variable names (decodeErr) or inline without short := shadowing outer err."
+    },
+    {
+      "file": "internal/infrastructure/storage/factory/factory.go",
+      "line": 14,
+      "linter": "lll",
+      "short_description": "Line exceeds 120 characters",
+      "remediation": "Wrap function signature across lines."
+    },
+    {
+      "file": "internal/infrastructure/logger/zap.go",
+      "line": 321,
+      "linter": "staticcheck/QF1008",
+      "short_description": "Redundant embedded SugaredLogger selector",
+      "remediation": "Apply suggested simplification from staticcheck."
+    }
+  ],
+  "wire-issues": [
+    {
+      "file": "internal/application/container/wire_gen.go",
+      "line": 0,
+      "short_description": "wire_gen.go is gitignored via *_gen.go; CI and developers must regenerate before build",
+      "remediation": "Keep go.yml wire step before compile; consider stop ignoring wire_gen.go if reproducible diffs are desired."
+    },
+    {
+      "file": "internal/application/container/wire_gen.go",
+      "line": 3,
+      "short_description": "Linux vs Windows wire gen differs only in //go:generate tag hint line when comparing outputs",
+      "remediation": "Document that release builds must run wire with the target OS tags (task build:wire:linux|windows)."
+    }
+  ],
+  "cgo-issues": [
+    {
+      "file": "fyne.io / golang.design/x/hotkey",
+      "line": 0,
+      "short_description": "Desktop build requires CGO, X11/GL dev libs on Linux, MinGW on Windows cross-builds; hotkey package is linux||windows only",
+      "remediation": "Treat headless/CI as build-only with full apt deps; document WSL2 hotkey limitations per existing project docs."
+    }
+  ],
+  "static-api-audit": {
+    "unsafe": [],
+    "ioutil": [],
+    "math_rand_legacy": [],
+    "notes": "No imports of unsafe, ioutil, or math/rand in application Go sources; prefer math/rand/v2 if cryptographically weak PRNG ever becomes a concern."
+  },
+  "suggested-fixes": [
+    {
+      "file": "Taskfile.build.yml",
+      "line": 0,
+      "short_description": "Wire CLI was not on PATH in audit environment",
+      "remediation": "Use go run github.com/google/wire/cmd/wire@v0.7.0 (applied) so wire generation does not depend on a global install."
+    },
+    {
+      "file": "internal/infrastructure/storage/api/store.go",
+      "line": 244,
+      "short_description": "Duplicate PATCH client code paths",
+      "remediation": "Deduplicate with a shared request helper to reduce drift and bug surface."
+    },
+    {
+      "file": "internal/infrastructure/storage/api/store.go",
+      "line": 54,
+      "short_description": "TLS InsecureSkipVerify and dynamic HTTP client usage",
+      "remediation": "Harden TLS defaults; validate API base URL to mitigate SSRF/gosec findings."
+    },
+    {
+      "file": "repository",
+      "line": 0,
+      "short_description": "Zero unit tests",
+      "remediation": "Add tests starting with domain and storage layers; run go test -race in CI."
+    },
+    {
+      "file": "internal/infrastructure/hotkey/manager.go",
+      "line": 199,
+      "short_description": "High cognitive complexity in Start",
+      "remediation": "Refactor for readability and safer shutdown/error propagation."
+    }
+  ],
+  "gofix-captured": {
+    "note": "Initial go fix -diff (before wire_gen existed) failed on container.InitializeApp undefined; after wire gen, go fix ./... applied cleanly.",
+    "categories_applied": [
+      "interface{} to any (logger, config, API store, JWT callback)",
+      "legacy // +build lines removed where suggested",
+      "builtin min() for slice window in note_service",
+      "httpNoBody-related fixes not in go fix; handled separately by linter backlog"
+    ],
+    "artifact": "Captured unified diff: docs/audit/go126-gofix-captured.diff (from first go fix -diff run before wire_gen existed); applied equivalents committed via go fix ./..."
+  },
+  "coverage": {
+    "command": "go test -coverprofile=cover.out ./... -tags=wireinject",
+    "total_statements_percent": 0.0,
+    "note": "cover.out is gitignored by *.out; regenerate locally after adding tests."
+  }
+}

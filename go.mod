@@ -1,6 +1,6 @@
 module github.com/jonesrussell/godo
 
-go 1.25.0
+go 1.26
 
 tool (
 	github.com/golangci/golangci-lint/cmd/golangci-lint

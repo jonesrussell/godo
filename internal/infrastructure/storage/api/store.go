@@ -4,7 +4,6 @@ package api
 import (
 	"bytes"
 	"context"
-	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -47,12 +46,10 @@ func New(config domainstorage.APIConfig, log logger.Logger) (*Store, error) {
 		retryDelay = 1000 * time.Millisecond
 	}
 
-	// Configure TLS
-	log.Debug("Configuring TLS", "insecure_skip_verify", config.InsecureSkipVerify)
+	// Configure TLS (secure by default; TLSInsecureSkipVerify must be explicitly set on config to disable verification)
+	log.Debug("Configuring TLS", "tls_insecure_skip_verify", config.TLSInsecureSkipVerify)
 	transport := &http.Transport{
-		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: config.InsecureSkipVerify,
-		},
+		TLSClientConfig: tlsClientConfigForStorage(config),
 	}
 
 	client := &http.Client{
@@ -99,8 +96,8 @@ func (s *Store) CreateNote(ctx context.Context, content string) (*model.Note, er
 	}
 
 	var apiResp APIResponse
-	if err := json.NewDecoder(resp.Body).Decode(&apiResp); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+	if decErr := json.NewDecoder(resp.Body).Decode(&apiResp); decErr != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", decErr)
 	}
 
 	return s.mapAPINoteToModel(&apiResp.Data), nil
@@ -108,7 +105,7 @@ func (s *Store) CreateNote(ctx context.Context, content string) (*model.Note, er
 
 // GetNote retrieves a note by ID via API
 func (s *Store) GetNote(ctx context.Context, id string) (*model.Note, error) {
-	req, err := http.NewRequestWithContext(ctx, "GET", s.baseURL+"/notes/"+id, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", s.baseURL+"/notes/"+id, http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -130,8 +127,8 @@ func (s *Store) GetNote(ctx context.Context, id string) (*model.Note, error) {
 	}
 
 	var apiResp APIResponse
-	if err := json.NewDecoder(resp.Body).Decode(&apiResp); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+	if decErr := json.NewDecoder(resp.Body).Decode(&apiResp); decErr != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", decErr)
 	}
 
 	return s.mapAPINoteToModel(&apiResp.Data), nil
@@ -139,7 +136,7 @@ func (s *Store) GetNote(ctx context.Context, id string) (*model.Note, error) {
 
 // GetAllNotes retrieves all notes via API
 func (s *Store) GetAllNotes(ctx context.Context) ([]*model.Note, error) {
-	req, err := http.NewRequestWithContext(ctx, "GET", s.baseURL+"/notes", nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", s.baseURL+"/notes", http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -157,8 +154,8 @@ func (s *Store) GetAllNotes(ctx context.Context) ([]*model.Note, error) {
 	}
 
 	var apiResp APIListResponse
-	if err := json.NewDecoder(resp.Body).Decode(&apiResp); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+	if decErr := json.NewDecoder(resp.Body).Decode(&apiResp); decErr != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", decErr)
 	}
 
 	notes := make([]*model.Note, len(apiResp.Data))
@@ -171,7 +168,7 @@ func (s *Store) GetAllNotes(ctx context.Context) ([]*model.Note, error) {
 
 // UpdateNote updates a note via API
 func (s *Store) UpdateNote(ctx context.Context, id string, content string, done bool) (*model.Note, error) {
-	requestBody := map[string]interface{}{
+	requestBody := map[string]any{
 		"content": content,
 		"done":    done,
 	}
@@ -204,8 +201,8 @@ func (s *Store) UpdateNote(ctx context.Context, id string, content string, done 
 	}
 
 	var apiResp APIResponse
-	if err := json.NewDecoder(resp.Body).Decode(&apiResp); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+	if decErr := json.NewDecoder(resp.Body).Decode(&apiResp); decErr != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", decErr)
 	}
 
 	return s.mapAPINoteToModel(&apiResp.Data), nil
@@ -213,7 +210,7 @@ func (s *Store) UpdateNote(ctx context.Context, id string, content string, done 
 
 // DeleteNote deletes a note via API
 func (s *Store) DeleteNote(ctx context.Context, id string) error {
-	req, err := http.NewRequestWithContext(ctx, "DELETE", s.baseURL+"/notes/"+id, nil)
+	req, err := http.NewRequestWithContext(ctx, "DELETE", s.baseURL+"/notes/"+id, http.NoBody)
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
 	}
@@ -237,13 +234,16 @@ func (s *Store) DeleteNote(ctx context.Context, id string) error {
 	return nil
 }
 
-// ToggleDone toggles the done status of a note via API
-func (s *Store) ToggleDone(ctx context.Context, id string) (*model.Note, error) {
-	req, err := http.NewRequestWithContext(ctx, "PATCH", s.baseURL+"/notes/"+id+"/toggle", nil)
+// patchNoteJSONNoBody issues PATCH {baseURL}/notes/{id}[/{tail}] with no body and decodes a single-note JSON envelope.
+func (s *Store) patchNoteJSONNoBody(ctx context.Context, id, tail string) (*model.Note, error) {
+	path := "/notes/" + id
+	if tail != "" {
+		path = path + "/" + tail
+	}
+	req, err := http.NewRequestWithContext(ctx, "PATCH", s.baseURL+path, http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
-
 	req.Header.Set("Accept", "application/json")
 
 	resp, err := s.executeWithRetry(req)
@@ -255,79 +255,30 @@ func (s *Store) ToggleDone(ctx context.Context, id string) (*model.Note, error) 
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, &storageerrors.NotFoundError{ID: id}
 	}
-
 	if resp.StatusCode != http.StatusOK {
 		return nil, s.handleAPIError(resp)
 	}
 
 	var apiResp APIResponse
-	if err := json.NewDecoder(resp.Body).Decode(&apiResp); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+	if decErr := json.NewDecoder(resp.Body).Decode(&apiResp); decErr != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", decErr)
 	}
-
 	return s.mapAPINoteToModel(&apiResp.Data), nil
+}
+
+// ToggleDone toggles the done status of a note via API
+func (s *Store) ToggleDone(ctx context.Context, id string) (*model.Note, error) {
+	return s.patchNoteJSONNoBody(ctx, id, "toggle")
 }
 
 // MarkDone marks a note as done via API
 func (s *Store) MarkDone(ctx context.Context, id string) (*model.Note, error) {
-	req, err := http.NewRequestWithContext(ctx, "PATCH", s.baseURL+"/notes/"+id+"/mark-done", nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	req.Header.Set("Accept", "application/json")
-
-	resp, err := s.executeWithRetry(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode == http.StatusNotFound {
-		return nil, &storageerrors.NotFoundError{ID: id}
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, s.handleAPIError(resp)
-	}
-
-	var apiResp APIResponse
-	if err := json.NewDecoder(resp.Body).Decode(&apiResp); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
-	}
-
-	return s.mapAPINoteToModel(&apiResp.Data), nil
+	return s.patchNoteJSONNoBody(ctx, id, "mark-done")
 }
 
 // MarkUndone marks a note as undone via API
 func (s *Store) MarkUndone(ctx context.Context, id string) (*model.Note, error) {
-	req, err := http.NewRequestWithContext(ctx, "PATCH", s.baseURL+"/notes/"+id+"/mark-undone", nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	req.Header.Set("Accept", "application/json")
-
-	resp, err := s.executeWithRetry(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode == http.StatusNotFound {
-		return nil, &storageerrors.NotFoundError{ID: id}
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, s.handleAPIError(resp)
-	}
-
-	var apiResp APIResponse
-	if err := json.NewDecoder(resp.Body).Decode(&apiResp); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
-	}
-
-	return s.mapAPINoteToModel(&apiResp.Data), nil
+	return s.patchNoteJSONNoBody(ctx, id, "mark-undone")
 }
 
 // Close closes the API store (no-op for HTTP client)
@@ -378,7 +329,7 @@ func (s *Store) handleAPIError(resp *http.Response) error {
 	}
 
 	var apiErr APIErrorResponse
-	if err := json.Unmarshal(body, &apiErr); err != nil {
+	if unmarshalErr := json.Unmarshal(body, &apiErr); unmarshalErr != nil {
 		return fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))
 	}
 

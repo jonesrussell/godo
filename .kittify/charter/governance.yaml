@@ -1,0 +1,32 @@
+# Auto-generated from charter.md — do not edit directly.
+# Run 'spec-kitty charter sync' to regenerate.
+
+testing:
+  min_coverage: 80
+  tdd_required: false
+  framework: ''
+  type_checking: ''
+quality:
+  linting: ''
+  pr_approvals: 1
+  pre_commit_hooks: false
+commits:
+  convention: conventional
+performance:
+  cli_timeout_seconds: 2.0
+  dashboard_max_wps: 100
+branch_strategy:
+  main_branch: main
+  dev_branch:
+  rules:
+  - Branch `main` is the integration branch; default to short-lived feature branches.
+  - When Spec Kitty lanes are active, follow lane merge rules from mission docs; do not merge drifted charter bundles.
+  - 'External harness wire-ups: when a real remote is introduced, document request and event assumptions in a mission spec (and extend this charter if governance changes); until then, fixtures only in tree.'
+doctrine:
+  selected_paradigms: []
+  selected_directives: []
+  available_tools:
+  - git
+  - spec-kitty
+  template_set: software-dev-default
+enforcement: {}

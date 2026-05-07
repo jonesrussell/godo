@@ -73,8 +73,8 @@ func (a *UnifiedAdapter) UpdateNote(ctx context.Context, id string, content stri
 	note.UpdateContent(content) // This also updates UpdatedAt
 
 	// Save the updated note
-	if err := a.store.Update(ctx, &note); err != nil {
-		return nil, fmt.Errorf("failed to update note: %w", err)
+	if upErr := a.store.Update(ctx, &note); upErr != nil {
+		return nil, fmt.Errorf("failed to update note: %w", upErr)
 	}
 
 	return &note, nil
@@ -97,8 +97,8 @@ func (a *UnifiedAdapter) ToggleDone(ctx context.Context, id string) (*model.Note
 
 	note.ToggleDone()
 
-	if err := a.store.Update(ctx, &note); err != nil {
-		return nil, fmt.Errorf("failed to toggle note status: %w", err)
+	if upErr := a.store.Update(ctx, &note); upErr != nil {
+		return nil, fmt.Errorf("failed to toggle note status: %w", upErr)
 	}
 
 	return &note, nil
@@ -113,8 +113,8 @@ func (a *UnifiedAdapter) MarkDone(ctx context.Context, id string) (*model.Note, 
 
 	note.MarkDone()
 
-	if err := a.store.Update(ctx, &note); err != nil {
-		return nil, fmt.Errorf("failed to mark note as done: %w", err)
+	if upErr := a.store.Update(ctx, &note); upErr != nil {
+		return nil, fmt.Errorf("failed to mark note as done: %w", upErr)
 	}
 
 	return &note, nil
@@ -129,8 +129,8 @@ func (a *UnifiedAdapter) MarkUndone(ctx context.Context, id string) (*model.Note
 
 	note.MarkUndone()
 
-	if err := a.store.Update(ctx, &note); err != nil {
-		return nil, fmt.Errorf("failed to mark note as undone: %w", err)
+	if upErr := a.store.Update(ctx, &note); upErr != nil {
+		return nil, fmt.Errorf("failed to mark note as undone: %w", upErr)
 	}
 
 	return &note, nil

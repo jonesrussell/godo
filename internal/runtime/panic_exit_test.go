@@ -96,10 +96,10 @@ func TestNormalizeExit(t *testing.T) {
 func TestWithPanicRecovery_NoGoroutineLeakSmoke(t *testing.T) {
 	before := runtime.NumGoroutine()
 
-	for range 40 {
+	for i := 0; i < 40; i++ {
 		_ = WithPanicRecovery(nil, func() error { return nil })
 		_ = WithPanicRecovery(nil, func() error {
-			panic(0)
+			panic(i)
 		})
 	}
 

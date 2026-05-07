@@ -4,7 +4,8 @@ import (
 	"errors"
 )
 
-// Process exit codes for NormalizeExit. Callers in main map these to os.Exit.
+// Process exit codes for NormalizeExit. Callers in main should map these to
+// os.Exit; this package must not call os.Exit.
 const (
 	ExitOK     = 0
 	ExitError  = 1
@@ -12,7 +13,8 @@ const (
 	ExitForced = 3
 )
 
-// ErrForcedShutdown signals that graceful shutdown exceeded its deadline.
+// ErrForcedShutdown indicates the process should exit with ExitForced.
+// Reserved for future force-kill / timeout paths.
 var ErrForcedShutdown = errors.New("forced shutdown")
 
 // NormalizeExit maps runtime errors to process exit codes.

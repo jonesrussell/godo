@@ -32,6 +32,7 @@ func (e *RecoveredPanicError) Unwrap() error {
 }
 
 // RecoverFromPanic turns a non-nil recover() value into an error and logs it.
+// If recovered is nil, returns nil. If log is nil, a no-op logger is used.
 func RecoverFromPanic(log PanicLogger, recovered any) error {
 	if recovered == nil {
 		return nil
@@ -49,6 +50,7 @@ func RecoverAndReport(log PanicLogger, recovered any) error {
 }
 
 // WithPanicRecovery runs fn and converts any panic into a RecoveredPanicError.
+// The returned error is nil if fn completes without panicking.
 func WithPanicRecovery(log PanicLogger, fn func() error) (err error) {
 	defer func() {
 		if r := recover(); r != nil {

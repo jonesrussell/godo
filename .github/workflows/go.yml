@@ -57,6 +57,7 @@ jobs:
           sudo apt-get install -y \
             gcc \
             pkg-config \
+            xvfb \
             libgl1-mesa-dev \
             libx11-dev \
             libxcursor-dev \
@@ -65,6 +66,12 @@ jobs:
             libxi-dev \
             libxxf86vm-dev \
             libglx-dev
+
+      - name: Virtual display (hotkey init on Linux)
+        run: |
+          Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
+          sleep 1
+          echo "DISPLAY=:99.0" >> "$GITHUB_ENV"
 
       - name: Wire drift check (wire_gen vs wire_gen.sha256)
         run: bash scripts/check-wire-drift.sh
@@ -98,6 +105,8 @@ jobs:
         run: echo "${{ steps.lint.outputs.LINT_SUMMARY }}"
 
       - name: go test (wireinject)
+        env:
+          FYNE_RENDERER: software
         run: go test ./... -tags=wireinject -count=1
 
   build:

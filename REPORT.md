@@ -1,36 +1,34 @@
-# PR: fix/tls-defaults (ISSUE-005)
+# PR: fix/duplicate-api-handler (ISSUE-004)
 
 ## Summary
 
-Make API TLS defaults explicit in `NewDefaultConfig`, reject userinfo in `storage.api.base_url` during `ValidateConfig`, and add unit tests for the default and validation rule.
+Remove the duplicated `http.StatusNotFound` branch in `Store.DeleteNote` and add an `httptest` unit test that asserts `NotFoundError` is returned for a 404 API response.
 
 ## Changes
 
-- `NewDefaultConfig` — populate `Storage` with explicit `API.InsecureSkipVerify: false`.
-- `validateStorageAPI` — `url.Parse` on base URL; error if `User` is set.
-- `internal/config/config_storage_api_test.go` — asserts default TLS verify flag and credential rejection.
+- `internal/infrastructure/storage/api/store.go` — single NotFound handling path in `DeleteNote`.
+- `internal/infrastructure/storage/api/store_delete_test.go` — `TestStore_DeleteNote_NotFound`.
 
 ## How to verify
 
 ```bash
-go test ./internal/config/... -tags=wireinject -count=1 -v
+go test ./internal/infrastructure/storage/api/... -tags=wireinject -count=1 -v
 go test ./... -tags=wireinject -count=1
 ```
 
 ## Acceptance criteria
 
-- [ ] Default `InsecureSkipVerify` is `false` for new default config.
-- [ ] `ValidateConfig` fails when API base URL contains embedded credentials.
-- [ ] Full test suite passes (stacked on prior fix branches).
+- [ ] `DeleteNote` has no duplicate identical `StatusNotFound` checks.
+- [ ] New test passes against a local `httptest` server.
 
 ## Audit reference
 
 ```json
 {
-  "id": "ISSUE-005",
+  "id": "ISSUE-004",
   "severity": "medium",
-  "file": "internal/config/config.go",
-  "line": 358,
-  "message": "NewDefaultConfig omits an explicit Storage.API block..."
+  "file": "internal/infrastructure/storage/api/store.go",
+  "line": 229,
+  "message": "DeleteNote duplicates identical http.StatusNotFound branches..."
 }
 ```

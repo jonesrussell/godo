@@ -229,9 +229,6 @@ func (s *Store) DeleteNote(ctx context.Context, id string) error {
 	if resp.StatusCode == http.StatusNotFound {
 		return &storageerrors.NotFoundError{ID: id}
 	}
-	if resp.StatusCode == http.StatusNotFound {
-		return &storageerrors.NotFoundError{ID: id}
-	}
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
 		return s.handleAPIError(resp)

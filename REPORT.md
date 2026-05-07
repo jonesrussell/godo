@@ -1,51 +1,39 @@
-# Go 1.26 upgrade and audit report
+# PR: CI hardening, tests, Wire enforcement, and targeted lint fixes
 
-This branch bumps `go.mod` to **Go 1.26**, applies **safe `go fix` / `gofmt` modernization** (`interface{}` → `any`, legacy `// +build` line removal where applicable, `min()` for slice bounds), improves **Wire invocation** via `go run …/wire@v0.7.0` in `Taskfile.build.yml`, adds **`native:darwin` / `wire:darwin`** tasks, and updates **CI** to Go 1.26 with Wire generation, `go vet`, `go fix` drift check, `go tool golangci-lint`, and tests.
+Branch: `fix/ci-tests-wire` (from `upgrade/go1.26-audit`).  
+Audit reference: [`docs/audit/go126-audit-report.json`](docs/audit/go126-audit-report.json).
 
-Machine-readable findings: [`docs/audit/go126-audit-report.json`](docs/audit/go126-audit-report.json).  
-Initial `go fix -diff` output (before `wire_gen` existed, including the early `InitializeApp` failure): [`docs/audit/go126-gofix-captured.diff`](docs/audit/go126-gofix-captured.diff).
+## Summary
 
----
-
-## Executive summary — top five pre-release risks (paste as PR comment)
-
-1. **CGO + Fyne + global hotkey portability** — Release binaries need CGO, platform linkers (X11/GL on Linux, MinGW for Windows cross-compile, Xcode on macOS). Audit host failed Linux link (`-lXxf86vm`) until dev packages are installed; Windows cross-build failed without `x86_64-w64-mingw32-gcc`. Treat CI image package lists as part of the release contract.
-
-2. **Zero automated tests** — The tree contains no `*_test.go` files; `go test ./... -tags=wireinject` succeeds vacuously with **0% coverage**. Shipping without domain/storage/API tests is the largest functional risk.
-
-3. **Static analysis debt (30 golangci-lint issues)** — Notable items: **duplicate** PATCH handlers in `internal/infrastructure/storage/api/store.go`, **gosec** on TLS `InsecureSkipVerify`, JWT field naming, SSRF-style client usage, **govet/shadow** in the same file, and **high cognitive complexity** in `HotkeyManager.Start`. CI runs the linter with `continue-on-error: true` until this backlog is cleared.
-
-4. **`wire_gen.go` is gitignored** — Pattern `*_gen.go` excludes generated Wire output. Every clone and CI job **must** run Wire before `go build`. Drift or stale injectors are easy if someone commits partial state or skips the CI Wire step.
-
-5. **HTTP API storage surface** — API-backed storage combines permissive TLS options, dynamic URLs, and repetitive HTTP code. Harden **base URL validation**, **TLS defaults**, and **redirect** handling before treating API mode as production-safe.
-
----
-
-## Commands run (audit)
-
-| Step | Result |
+| Area | Change |
 |------|--------|
-| `go mod tidy` | OK after `go 1.26` |
-| `go fix ./...` | Applied safe fixes; `go fix -diff` now empty |
-| `gofmt -w .` | OK |
-| `go vet ./...` | OK |
-| `golangci-lint run ./...` | **30 issues** (see JSON `lint-issues`) |
-| `go test ./... -tags=wireinject` | OK; no tests |
-| `go test -coverprofile=cover.out ./... -tags=wireinject` | 0% total; `*.out` gitignored |
-| `task build:native:linux` | Requires `wire` on PATH → addressed by `go run` in Taskfile; native link still needs system libs on the host |
-| Cross Windows / Darwin | Captured failures in JSON `compile-errors` |
+| **CI** | Go **1.26**; **Wire drift** gate via `scripts/check-wire-drift.sh` + committed `wire_gen.sha256`; **`go fix -diff`** must be empty; **`go vet`** + **`go test -tags=wireinject`**; **golangci-lint** runs with `continue-on-error: true` and prints the issue summary line; **`build-matrix`** job attempts linux/windows/darwin cross-compile with `continue-on-error: true` and uploads `/tmp/godo-*` artifacts. |
+| **Wire** | `scripts/regen-wire.sh` prints `git diff` for `wire_gen.go`; `task wire:regen` / `task wire:drift-check`. **Do not commit** `wire_gen.go` (still gitignored); update **`wire_gen.sha256`** whenever Wire inputs change. |
+| **Tests** | `internal/domain/testfixtures` (temp SQLite via `modernc.org/sqlite`), **`note_repository_sqlite_test`**, **`internal/infrastructure/http/api_integration_test`** (JWT + CRUD), TLS/patch/API URL unit tests. |
+| **API / TLS** | Default remains **verified TLS**; opt-in only via **`storage.api.tls_insecure_skip_verify`** (deprecated alias **`insecure_skip_verify`** still merged in `wire.go`). **`ValidateAPIBaseURL`**: `http`/`https` only, no embedded credentials. |
+| **Lint / quality** | Deduplicated PATCH JSON paths in **`api/store.go`**, fixed **shadowing** (decode / sqlite adapter), removed duplicate **404** branch, **`http.NoBody`**, extracted **hotkey** event loop helpers + dispatch unit tests. |
+| **Docs** | [`docs/BUILDING.md`](docs/BUILDING.md) — system packages and Wire checksum workflow. |
 
----
+## Acceptance criteria (PR description)
 
-## Wire
+- [x] CI runs Wire generation and **fails on drift** vs `wire_gen.sha256`.
+- [x] `go test ./... -tags=wireinject` passes with new tests.
+- [x] `go vet` and **`go fix -diff`** drift checks pass (no diffs).
+- [x] Critical audit items addressed: duplicate PATCH client code consolidated, TLS insecure opt-in + URL validation, shadowing reduced, hotkey `Start` split for lower complexity.
 
-- Regenerated with `go run github.com/google/wire/cmd/wire@v0.7.0 gen -tags linux`.
-- Linux vs Windows `wire gen` outputs differ only in the `//go:generate` tag comment line when compared.
+## Known limitations
 
----
+- Cross-platform **CGO** builds still need host toolchains (X11/GL on Linux, MinGW for Windows, Xcode on macOS). **`build-matrix`** is best-effort and may fail for darwin/Windows cross; logs and artifacts are retained.
 
-## Follow-ups (non-blocking for this draft PR)
+## Follow-ups
 
-- Clear or tune golangci-lint rules / fix findings, then flip CI lint step to hard-fail.
-- Add `internal/...` unit and integration tests; re-enable meaningful coverage gates.
-- Optionally stop ignoring `wire_gen.go` if the team wants generated code reviewed in PRs.
+- Clear remaining golangci issues and remove `continue-on-error` on lint.
+- Optionally track `wire_gen.go` in git instead of a checksum file if the team prefers `git diff`-only drift detection.
+
+## PR body (short summary — paste into GitHub)
+
+- **Wire drift gate:** `scripts/check-wire-drift.sh` + `wire_gen.sha256`; CI fails if injectors drift without updating the manifest.
+- **Tests:** SQLite-backed repository CRUD + `httptest` API CRUD with JWT; pure Go SQLite driver (no CGO in tests).
+- **TLS / API storage:** default secure TLS; opt-in `tls_insecure_skip_verify` only; base URL must be `http`/`https` with no embedded credentials.
+- **Lint / safety:** consolidated PATCH helpers, fixed govet shadowing, hotkey `Start` refactored into smaller functions with unit tests.
+- **Cross-builds:** optional `build-matrix` job (linux/windows/darwin) is `continue-on-error` with artifacts for logs.

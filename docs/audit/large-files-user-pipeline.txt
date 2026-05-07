@@ -1,0 +1,200 @@
+---
+globs: internal/infrastructure/api/**/*.go
+description: REST API development patterns and best practices
+---
+
+# REST API Development Patterns
+
+## Overview
+The project includes a REST API for programmatic task management and integration. The API layer is implemented in `internal/infrastructure/api/` using Gorilla Mux for routing and standard HTTP patterns.
+
+## API Architecture
+
+### Component Organization
+- `server.go` - HTTP server implementation
+- `runner.go` - Server lifecycle management
+- `handlers/` - HTTP request handlers
+- `middleware/` - HTTP middleware (logging, CORS, etc.)
+- `models/` - API request/response models
+
+### Server Management
+- Graceful startup and shutdown
+- Configurable timeouts
+- Health check endpoint
+- Proper error handling
+
+## HTTP Handler Patterns
+
+### Handler Structure
+```go
+type TaskHandler struct {
+    service service.TaskService
+    logger  logger.Logger
+}
+
+func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
+    // Parse request
+    var req CreateTaskRequest
+    if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+        h.writeError(w, http.StatusBadRequest, "Invalid JSON", err)
+        return
+    }
+    
+    // Validate request
+    if err := h.validateCreateTaskRequest(&req); err != nil {
+        h.writeError(w, http.StatusBadRequest, "Validation failed", err)
+        return
+    }
+    
+    // Process request
+    task := &model.Task{
+        ID:   uuid.New().String(),
+        Text: req.Text,
+    }
+    
+    if err := h.service.CreateTask(r.Context(), task); err != nil {
+        h.writeError(w, http.StatusInternalServerError, "Failed to create task", err)
+        return
+    }
+    
+    // Write response
+    h.writeJSON(w, http.StatusCreated, CreateTaskResponse{
+        ID:   task.ID,
+        Text: task.Text,
+    })
+}
+```
+
+### Response Patterns
+```go
+// Success response
+func (h *TaskHandler) writeJSON(w http.ResponseWriter, status int, data interface{}) {
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(status)
+    json.NewEncoder(w).Encode(data)
+}
+
+// Error response
+func (h *TaskHandler) writeError(w http.ResponseWriter, status int, message string, err error) {
+    h.logger.Error("API error", 
+        zap.Int("status", status),
+        zap.String("message", message),
+        zap.Error(err),
+    )
+    
+    response := ErrorResponse{
+        Error:   message,
+        Details: err.Error(),
+    }
+    
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(status)
+    json.NewEncoder(w).Encode(response)
+}
+```
+
+## Request/Response Models
+
+### Request Models
+```go
+type CreateTaskRequest struct {
+    Text string `json:"text" validate:"required,min=1,max=500"`
+}
+
+type UpdateTaskRequest struct {
+    Text      string `json:"text,omitempty" validate:"omitempty,min=1,max=500"`
+    Completed bool   `json:"completed,omitempty"`
+}
+```
+
+### Response Models
+```go
+type TaskResponse struct {
+    ID        string    `json:"id"`
+    Text      string    `json:"text"`
+    Completed bool      `json:"completed"`
+    CreatedAt time.Time `json:"created_at"`
+    UpdatedAt time.Time `json:"updated_at"`
+}
+
+type ErrorResponse struct {
+    Error   string `json:"error"`
+    Details string `json:"details,omitempty"`
+}
+```
+
+## Routing and Middleware
+
+### Route Definition
+```go
+func (s *Server) setupRoutes() {
+    r := mux.NewRouter()
+    
+    // API routes
+    api := r.PathPrefix("/api/v1").Subrouter()
+    
+    // Task routes
+    taskHandler := &TaskHandler{
+        service: s.taskService,
+        logger:  s.logger,
+    }
+    
+    api.HandleFunc("/tasks", taskHandler.CreateTask).Methods("POST")
+    api.HandleFunc("/tasks", taskHandler.ListTasks).Methods("GET")
+    api.HandleFunc("/tasks/{id}", taskHandler.GetTask).Methods("GET")
+    api.HandleFunc("/tasks/{id}", taskHandler.UpdateTask).Methods("PUT")
+    api.HandleFunc("/tasks/{id}", taskHandler.DeleteTask).Methods("DELETE")
+    
+    // Health check
+    r.HandleFunc("/health", s.healthCheck).Methods("GET")
+    
+    s.router = r
+}
+```
+
+### Middleware
+```go
+func (s *Server) setupMiddleware() {
+    // Logging middleware
+    s.router.Use(s.loggingMiddleware)
+    
+    // CORS middleware
+    s.router.Use(s.corsMiddleware)
+    
+    // Recovery middleware
+    s.router.Use(s.recoveryMiddleware)
+}
+
+func (s *Server) loggingMiddleware(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        start := time.Now()
+        
+        // Wrap response writer to capture status code
+        wrapped := &responseWriter{ResponseWriter: w, statusCode: http.StatusOK}
+        
+        next.ServeHTTP(wrapped, r)
+        
+        duration := time.Since(start)
+        s.logger.Info("HTTP request",
+            zap.String("method", r.Method),
+            zap.String("path", r.URL.Path),
+            zap.Int("status", wrapped.statusCode),
+            zap.Duration("duration", duration),
+        )
+    })
+}
+```
+
+## Error Handling
+
+### HTTP Status Codes
+- `200 OK` - Successful GET, PUT
+- `201 Created` - Successful POST
+- `204 No Content` - Successful DELETE
+- `400 Bad Request` - Invalid request data
+- `404 Not Found` - Resource not found
+- `500 Internal Server Error` - Server error
+
+### Error Response Format
+```go
+type ErrorResponse struct {

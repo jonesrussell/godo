@@ -1,0 +1,24 @@
+	github.com/jonesrussell/godo		coverage: 0.0% of statements
+	github.com/jonesrussell/godo/internal/application/container		coverage: 0.0% of statements
+	github.com/jonesrussell/godo/internal/application/core		coverage: 0.0% of statements
+	github.com/jonesrussell/godo/internal/config		coverage: 0.0% of statements
+	github.com/jonesrussell/godo/internal/domain/model		coverage: 0.0% of statements
+	github.com/jonesrussell/godo/internal/domain/repository		coverage: 0.0% of statements
+	github.com/jonesrussell/godo/internal/domain/service		coverage: 0.0% of statements
+	github.com/jonesrussell/godo/internal/domain/storage		coverage: 0.0% of statements
+	github.com/jonesrussell/godo/internal/infrastructure/api		coverage: 0.0% of statements
+?   	github.com/jonesrussell/godo/internal/infrastructure/gui	[no test files]
+	github.com/jonesrussell/godo/internal/infrastructure/gui/mainwindow		coverage: 0.0% of statements
+	github.com/jonesrussell/godo/internal/infrastructure/gui/quicknote		coverage: 0.0% of statements
+	github.com/jonesrussell/godo/internal/infrastructure/gui/theme		coverage: 0.0% of statements
+	github.com/jonesrussell/godo/internal/infrastructure/hotkey		coverage: 0.0% of statements
+	github.com/jonesrussell/godo/internal/infrastructure/logger		coverage: 0.0% of statements
+	github.com/jonesrussell/godo/internal/infrastructure/platform		coverage: 0.0% of statements
+	github.com/jonesrussell/godo/internal/infrastructure/storage		coverage: 0.0% of statements
+	github.com/jonesrussell/godo/internal/infrastructure/storage/api		coverage: 0.0% of statements
+	github.com/jonesrussell/godo/internal/infrastructure/storage/errors		coverage: 0.0% of statements
+	github.com/jonesrussell/godo/internal/infrastructure/storage/factory		coverage: 0.0% of statements
+	github.com/jonesrussell/godo/internal/infrastructure/storage/memory		coverage: 0.0% of statements
+	github.com/jonesrussell/godo/internal/infrastructure/storage/sqlite		coverage: 0.0% of statements
+	github.com/jonesrussell/godo/internal/infrastructure/storage/validation		coverage: 0.0% of statements
+test_exit:0

@@ -1,0 +1,4 @@
+# github.com/jonesrussell/godo/internal/application/container
+internal/application/container/wire_gen.go:183:4: unknown field TLSInsecureSkipVerify in struct literal of type "github.com/jonesrussell/godo/internal/domain/storage".APIConfig
+internal/application/container/wire_gen.go:183:43: cfg.Storage.API.TLSInsecureSkipVerify undefined (type config.APIConfig has no field or method TLSInsecureSkipVerify)
+govet_exit:1

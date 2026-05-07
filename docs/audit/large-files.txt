@@ -1,0 +1,2 @@
+# No tracked files exceed 2000 lines of text (wc -l scan of git ls-files).
+# See large-files-user-pipeline.txt for the literal sed pipeline output requested in the audit checklist.

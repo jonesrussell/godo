@@ -5,9 +5,14 @@ import (
 	"time"
 )
 
-// ShutdownApp is the minimal contract for coordinated shutdown. Adapters will
-// wrap application types (e.g. core.App) without embedding UI/hotkey logic in
-// the runtime package.
+// App is the runtime entrypoint contract.
+type App interface {
+	Run()
+	Shutdown(ctx context.Context) error
+	ForceKillTimeout() time.Duration
+}
+
+// ShutdownApp is the minimal contract required by CoordinatedShutdown.
 type ShutdownApp interface {
 	Shutdown(ctx context.Context) error
 	ForceKillTimeout() time.Duration

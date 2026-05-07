@@ -1,4 +1,5 @@
 *_gen.go
+!internal/application/container/wire_gen.go
 *.db
 *.log
 *.out

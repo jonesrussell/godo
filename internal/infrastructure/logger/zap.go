@@ -238,35 +238,35 @@ func getEncoderConfig() zapcore.EncoderConfig {
 }
 
 // Interface implementations with closed state checking
-func (l *ZapLogger) Debug(msg string, keysAndValues ...interface{}) {
+func (l *ZapLogger) Debug(msg string, keysAndValues ...any) {
 	if l.isClosed() {
 		return
 	}
 	l.Debugw(msg, keysAndValues...)
 }
 
-func (l *ZapLogger) Info(msg string, keysAndValues ...interface{}) {
+func (l *ZapLogger) Info(msg string, keysAndValues ...any) {
 	if l.isClosed() {
 		return
 	}
 	l.Infow(msg, keysAndValues...)
 }
 
-func (l *ZapLogger) Warn(msg string, keysAndValues ...interface{}) {
+func (l *ZapLogger) Warn(msg string, keysAndValues ...any) {
 	if l.isClosed() {
 		return
 	}
 	l.Warnw(msg, keysAndValues...)
 }
 
-func (l *ZapLogger) Error(msg string, keysAndValues ...interface{}) {
+func (l *ZapLogger) Error(msg string, keysAndValues ...any) {
 	if l.isClosed() {
 		return
 	}
 	l.Errorw(msg, keysAndValues...)
 }
 
-func (l *ZapLogger) Fatal(msg string, keysAndValues ...interface{}) {
+func (l *ZapLogger) Fatal(msg string, keysAndValues ...any) {
 	if l.isClosed() {
 		return
 	}
@@ -284,7 +284,7 @@ func (l *ZapLogger) WithError(err error) Logger {
 	}
 }
 
-func (l *ZapLogger) WithField(key string, value interface{}) Logger {
+func (l *ZapLogger) WithField(key string, value any) Logger {
 	if l.isClosed() {
 		return l
 	}
@@ -295,12 +295,12 @@ func (l *ZapLogger) WithField(key string, value interface{}) Logger {
 	}
 }
 
-func (l *ZapLogger) WithFields(fields map[string]interface{}) Logger {
+func (l *ZapLogger) WithFields(fields map[string]any) Logger {
 	if l.isClosed() || len(fields) == 0 {
 		return l
 	}
 
-	args := make([]interface{}, 0, len(fields)*fieldMultiplier)
+	args := make([]any, 0, len(fields)*fieldMultiplier)
 	for k, v := range fields {
 		args = append(args, k, v)
 	}

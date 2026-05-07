@@ -22,7 +22,8 @@ storage:
     timeout_seconds: 30
     retry_count: 3
     retry_delay_ms: 1000
-    insecure_skip_verify: true
+    # TLS verification is on by default. For local/dev endpoints with self-signed certs only:
+    # tls_insecure_skip_verify: true
 
 ui:
   main_window:

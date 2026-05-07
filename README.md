@@ -1,240 +1,127 @@
 # Godo
 
-A cross-platform note application with quick-note hotkey support and REST API.
+Desktop **Go** app: **Fyne** UI, **global hotkeys**, and a **REST API** for notes.
+**Clean Architecture** layers; **Google Wire** composes dependencies.
 
-## Overview
+**Local-first companion:** hotkeys, windows, and state work offline. **SQLite** is the canonical store.
+The charter targets durable data and an **append-only audit trail**. Caches are projections only.
+Harnesses stay behind interfaces; **fakes and fixtures** cover tests until integration is chartered.
 
-Godo combines three powerful features:
-1. A global hotkey that triggers a lightweight graphical popup for instantly capturing thoughts and notes
-2. A full-featured graphical interface for detailed note management
-3. A REST API for programmatic note management and integration
+Today Godo still delivers quick-note and note-management workflows. The paragraphs above match
+[.kittify/charter/charter.md](.kittify/charter/charter.md).
 
-The quick-note feature uses a minimal graphical window that appears when you press the hotkey - type your note, hit enter, and it disappears. The main note management interface provides efficient note organization with a clean, modern design. The REST API allows for integration with other tools and services.
+## What it does today
+
+1. **Quick note** — Global hotkey opens a minimal window; capture and dismiss with low friction.
+2. **Main window** — List and manage notes (CRUD-style).
+3. **REST API** — Same operations over HTTP for scripts and integrations.
+
+Default hotkeys (override in `config.yaml`):
+
+| Action       | Default        |
+| ------------ | -------------- |
+| Quick note   | Ctrl+Shift+1   |
+| Main window  | Ctrl+Shift+2   |
+
+## Spec-driven development
+
+Governance and structured feature work use
+**[Spec Kitty](https://github.com/spec-kitty/spec-kitty)**.
+
+- **Charter (human source):** [Project charter](.kittify/charter/charter.md)
+  — local-first intent, SQLite, harness boundary.
+- **CLI:** `spec-kitty verify-setup`, `spec-kitty charter sync` after edits.
+  See Spec Kitty docs for other commands.
+- **Agents:** `.kittify/config.yaml` and `.agents/skills/` (Cursor, Claude Code, Codex).
+
+## Go 1.26 audit (machine-readable)
+
+Results from the Go 1.26 upgrade / audit pass are recorded for tooling and CI reference:
+
+- [docs/audit/go126-audit-report.json](docs/audit/go126-audit-report.json) — structured audit output.
+- [go126-gofix-captured.diff](docs/audit/go126-gofix-captured.diff) — optional `gofix` diff capture.
 
 ## Features
 
-- Cross-platform support
-  - Windows: Full support with system tray integration
-  - Linux: Full support (except system tray)
-  - macOS: Coming soon
-- Instant note capture with global hotkey
-  - Press hotkey → Graphical popup appears
-  - Type note → Press enter → Window disappears
-  - Zero-friction note capture with minimal visual interruption
-  - Robust hotkey lifecycle management
-  - Proper cleanup and resource management
-- Graphical note management interface
-  - Organize and manage notes
-  - Mark notes as complete
-  - Delete notes when done
-- REST API
-  - Full CRUD operations for notes
-  - JSON responses
-  - Health check endpoint
-  - Proper error handling
-- Robust storage system
-  - SQLite-based persistence with comprehensive validation
-  - Interface segregation (NoteReader, NoteWriter, NoteStore)
-  - Transaction support with proper rollback
-  - Connection pooling and prepared statements
-  - Thread-safe operations with proper concurrency
-  - Snapshot support for testing
-  - Prevents data inconsistencies (empty IDs, duplicates)
-  - Connection state management
-  - Structured error handling
-  - Automated migrations
-  - High test coverage (80%+)
-- Robust logging system
-  - Structured logging with multiple implementations
-  - Test-friendly logging for better test output
-  - Comprehensive operation tracking
-  - Clean abstraction for easy customization
-- Comprehensive testing
-  - Unit tests with high coverage
-  - Integration tests for critical paths
-  - Platform-specific feature testing
-  - Error path and edge case coverage
-  - Resource cleanup verification
-  - Component lifecycle testing
-  - Mock implementations for reliable testing
-- Automated builds and releases
-  - GitHub Actions CI/CD pipeline
-  - Cross-platform binary releases
-  - Docker support for development and testing
-- Built with Fyne toolkit for native look and feel
+- **Platforms:** Windows (system tray), Linux (no tray), macOS planned.
+- **Storage:** SQLite; optional API-backed storage via `config.yaml`.
+- **Hotkeys:** OS-level registration where supported (WSL2 has known limitations without extra setup).
+- **Logging:** Structured (Zap); tune with config and `LOG_LEVEL`.
+- **Quality:** `task fmt`, `task lint`, `go test ./... -tags=wireinject`.
+  Charter defines coverage on core layers.
+- **Builds:** cross-platform and Docker via Task.
+  [Taskfile.yml](Taskfile.yml), [Taskfile.build.yml](Taskfile.build.yml).
 
-## API Endpoints
+## API
 
-All endpoints return JSON responses. The base URL is `http://localhost:8080`.
+Default base URL: **`http://localhost:8008`** (`http.port` in [config.yaml](config.yaml)).
 
-### Health Check
-```
-GET /health
-Response: {"status": "ok"}
-```
+| Method | Path                  | Description   |
+| ------ | --------------------- | ------------- |
+| GET    | `/health`             | Health check  |
+| GET    | `/api/v1/notes`      | List notes    |
+| POST   | `/api/v1/notes`      | Create note   |
+| PUT    | `/api/v1/notes/{id}` | Update note   |
+| DELETE | `/api/v1/notes/{id}` | Delete note   |
 
-### Notes
-- List all notes: `GET /api/v1/notes`
-- Create note: `POST /api/v1/notes`
-- Update note: `PUT /api/v1/notes/{id}`
-- Delete note: `DELETE /api/v1/notes/{id}`
-
-Example using HTTPie:
 ```bash
-# List notes
-http :8080/api/v1/notes
-
-# Create note
-http POST :8080/api/v1/notes content="Buy groceries"
-
-# Update note
-http PUT :8080/api/v1/notes/{id} content="Updated note content"
-
-# Delete note
-http DELETE :8080/api/v1/notes/{id}
+curl -s http://localhost:8008/health
+curl -s http://localhost:8008/api/v1/notes
 ```
 
 ## Prerequisites
 
-- Go 1.24 or higher
-- SQLite3
-- MinGW-w64 GCC (required for Windows builds)
-  - **Ubuntu/WSL2:**
-    ```bash
-    sudo apt update
-    sudo apt install -y mingw-w64
-    ```
-  - **Windows:**
-    - Recommended version: [MinGW-w64 GCC 14.2.0 or later](https://github.com/niXman/mingw-builds-binaries/releases)
-    - Choose the appropriate version based on your system architecture (x86_64 or i686)
-    - Installation steps:
-      1. Download the appropriate version (e.g., x86_64-14.2.0-release-posix-seh-ucrt-rt_v12-rev0.7z)
-      2. Extract to C:\mingw64 (or your preferred location)
-      3. Add C:\mingw64\bin to your system's PATH environment variable
-      4. Verify installation by running `gcc --version` in Command Prompt
-- Task (task runner)
-  ```powershell
-  # Install using Chocolatey
-  choco install go-task
-  ```
+- **Go 1.26+** ([go.mod](go.mod))
+- **SQLite** (system `sqlite3` optional; app may use pure Go SQLite per build tags / config)
+- **[Task](https://taskfile.dev/installation/)**
+- **CGO** — global hotkeys need `golang.design/x/hotkey`. **Do not** `go mod vendor` (breaks CGO). Use
+  `go mod download` and `go mod tidy`.
 
-### Additional Development Prerequisites
+**Windows:** MinGW-w64 GCC for CGO. **Linting:** GNU diffutils may be required on Windows.
 
-For Windows developers:
-- GNU diffutils (required for code linting)
-  ```powershell
-  # Install using Chocolatey
-  choco install diffutils
-  
-  # Add to PATH (in PowerShell)
-  $env:PATH += ";C:\ProgramData\chocolatey\lib\diffutils\tools\bin"
-  refreshenv
-  ```
+## Quick start
 
-## Development Notes
-
-- This project uses CGO dependencies (specifically `golang.design/x/hotkey`)
-- Do not use `go mod vendor` as it may break CGO dependencies
-- Always use `go mod tidy` to manage dependencies
-
-## Building
-
-1. Clone the repository
 ```bash
 git clone https://github.com/jonesrussell/godo.git
 cd godo
+task install-tools   # optional dev tools from go.mod tool directive
+task deps
+task wire            # regenerate Wire when providers change
+task run
 ```
 
-2. Build the application
-```powershell
-# For Windows
-task build:windows
+Common checks:
 
-# For Linux
-task build:linux
-
-# For Linux using Docker
-task build:linux:docker
-```
-
-3. Run tests
-```powershell
-# Run tests for current platform
-task test
-
-# Run tests in Docker
-task test:linux:docker
-```
-
-4. Run linting
-```powershell
-# Run linting for current platform
-task lint
-
-# Run linting in Docker
-task lint:linux:docker
-```
-
-## Usage
-
-Default hotkey: Ctrl+Shift+N
-
-## Code Quality & Linting
-
-This project uses comprehensive code quality checks to maintain high standards:
-
-### Local Development
 ```bash
-# Run all linting checks
-task lint
-
-# Format code
-task fmt
-
-# Run tests
-task test
-
-# Build the application
-task build
+task fmt && task lint && task test
+task check           # fast format + lint
+task dev             # fmt, lint, test
+task build           # current platform → dist/
 ```
 
-### CI/CD Pipeline
-- **Enhanced Linting Workflow**: Comprehensive code quality checks including:
-  - Code formatting (gofmt)
-  - Import organization (goimports)
-  - Static analysis (go vet)
-  - Comprehensive linting (golangci-lint)
-  - Build verification
-  - Race condition detection
-  - Security scanning (gosec)
+More detail: [CLAUDE.md](CLAUDE.md).
 
-### Architecture
-The project follows Domain-Driven Design (DDD) principles with clean architecture:
+## Architecture
+
+```text
+main.go → container.InitializeApp() → Wire → domain / application / infrastructure
 ```
-internal/
-├── domain/           # Core business logic
-├── infrastructure/   # External concerns (storage, API, GUI)
-├── application/      # Application layer
-└── shared/          # Shared utilities
-```
+
+- **`internal/domain/`** — Models, repository interfaces, services (no outward infrastructure imports).
+- **`internal/application/`** — Orchestration; Wire [container](internal/application/container/).
+- **`internal/infrastructure/`** — Fyne UI, HTTP API, storage, hotkeys, logging, platform helpers.
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-1. Fork the project
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-**Note**: All contributions must pass the enhanced linting checks before merging.
+1. Fork and branch from the integration branch agreed for your change.
+2. Run `task fmt`, `task lint`, and `task test` (with `-tags=wireinject` where the tree requires Wire).
+3. Open a PR with a clear description; conventional commits are appreciated.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+[MIT](LICENSE)
 
 ## Acknowledgments
 
-- Thanks to all contributors
-- Inspired by the need for a simple, efficient todo system
+- [Fyne](https://fyne.io/) for the GUI toolkit
+- Contributors and everyone dogfooding capture workflows

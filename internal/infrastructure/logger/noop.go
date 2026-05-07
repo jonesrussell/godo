@@ -13,19 +13,19 @@ func NewNoopLogger() Logger {
 }
 
 // Debug implements Logger
-func (l *NoopLogger) Debug(_ string, _ ...interface{}) {}
+func (l *NoopLogger) Debug(_ string, _ ...any) {}
 
 // Info implements Logger
-func (l *NoopLogger) Info(_ string, _ ...interface{}) {}
+func (l *NoopLogger) Info(_ string, _ ...any) {}
 
 // Warn implements Logger
-func (l *NoopLogger) Warn(_ string, _ ...interface{}) {}
+func (l *NoopLogger) Warn(_ string, _ ...any) {}
 
 // Error implements Logger
-func (l *NoopLogger) Error(_ string, _ ...interface{}) {}
+func (l *NoopLogger) Error(_ string, _ ...any) {}
 
 // Fatal implements Logger
-func (l *NoopLogger) Fatal(_ string, _ ...interface{}) {
+func (l *NoopLogger) Fatal(_ string, _ ...any) {
 	os.Exit(1)
 }
 
@@ -35,11 +35,11 @@ func (l *NoopLogger) WithError(_ error) Logger {
 }
 
 // WithField implements Logger
-func (l *NoopLogger) WithField(_ string, _ interface{}) Logger {
+func (l *NoopLogger) WithField(_ string, _ any) Logger {
 	return l
 }
 
 // WithFields implements Logger
-func (l *NoopLogger) WithFields(_ map[string]interface{}) Logger {
+func (l *NoopLogger) WithFields(_ map[string]any) Logger {
 	return l
 }

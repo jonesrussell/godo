@@ -190,7 +190,6 @@ sequenceDiagram
 - Multiple `os.Exit` paths before final process return point.
 - Type assertions indicate missing lifecycle abstraction boundary.
 - Cleanup can run from multiple paths (signal, panic, normal completion), raising idempotency pressure.
-
 ## Runtime Skeleton Mapping
 The new `internal/runtime` package introduced in WP02 establishes the future ownership boundary that will replace lifecycle responsibilities currently in `main.go`.
 

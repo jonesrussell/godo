@@ -1,6 +1,7 @@
 package core
 
 import (
+	"context"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -22,5 +23,6 @@ type Application interface {
 	SetupUI() error
 	Run()
 	Cleanup()
+	Shutdown(ctx context.Context) error
 	ForceKillTimeout() time.Duration
 }

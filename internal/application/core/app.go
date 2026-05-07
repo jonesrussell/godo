@@ -326,6 +326,22 @@ func (a *App) Quit() {
 	}
 }
 
+// Shutdown requests graceful shutdown for runtime orchestration.
+func (a *App) Shutdown(ctx context.Context) error {
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		a.Quit()
+	}()
+
+	select {
+	case <-done:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+
 // Logger returns the application logger
 func (a *App) Logger() logger.Logger {
 	return a.logger

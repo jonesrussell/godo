@@ -16,3 +16,4 @@ go.sum text eol=lf
 # Windows scripts should use CRLF
 *.bat text eol=crlf
 *.cmd text eol=crlf
+kitty-specs/**/status.events.jsonl merge=spec-kitty-event-log

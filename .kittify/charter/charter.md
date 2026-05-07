@@ -112,6 +112,6 @@ Time-bounded exceptions are allowed for experiments; document **rationale**, **e
 ## Reference index
 
 | Reference ID | Kind | Summary | Local Doc |
-| --- | --- | --- |
+| --- | --- | --- | --- |
 | `USER:PROJECT_PROFILE` | user_profile | Interview-derived defaults when present. | `_LIBRARY/user-project-profile.md` |
 | `TEMPLATE_SET:software-dev-default` | template_set | Default software mission doctrine bundle. | `_LIBRARY/template-set-software-dev-default.md` |

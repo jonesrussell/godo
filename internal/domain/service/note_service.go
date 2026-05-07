@@ -219,10 +219,7 @@ func (s *noteService) sliceWithBounds(notes []*model.Note, offset, limit int) []
 	if offset >= len(notes) {
 		return []*model.Note{}
 	}
-	end := offset + limit
-	if end > len(notes) {
-		end = len(notes)
-	}
+	end := min(offset+limit, len(notes))
 	return notes[offset:end]
 }
 

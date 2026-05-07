@@ -9,7 +9,7 @@ import (
 	"github.com/jonesrussell/godo/internal/infrastructure/logger"
 )
 
-func TestHotkeyManager_listenChannels_nilHotkeys(t *testing.T) {
+func TestHotkeyManager_hotkeyKeydownChannels_nilHotkeys(t *testing.T) {
 	t.Parallel()
 
 	log := logger.NewTestLogger(t)
@@ -21,7 +21,7 @@ func TestHotkeyManager_listenChannels_nilHotkeys(t *testing.T) {
 		},
 	}
 
-	ch := m.listenChannels()
+	ch := m.hotkeyKeydownChannels()
 	if len(ch) != len(m.hotkeys) {
 		t.Fatalf("len: got %d want %d", len(ch), len(m.hotkeys))
 	}

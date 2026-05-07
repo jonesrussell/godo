@@ -202,7 +202,7 @@ func WithJWTAuth(log logger.Logger, jwtSecret string) Middleware {
 			tokenString := parts[1]
 
 			// Parse and validate JWT token
-			token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+			token, err := jwt.Parse(tokenString, func(token *jwt.Token) (any, error) {
 				// Validate signing method
 				if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 					return nil, errors.New("invalid signing method")

@@ -1,5 +1,4 @@
 //go:build linux || windows
-// +build linux windows
 
 package hotkey
 
@@ -216,41 +215,14 @@ func (m *HotkeyManager) Start() error {
 			m.log.Info("Hotkey listener stopped")
 		}()
 
-		channels := m.listenChannels()
-
-		for {
-			select {
-			case <-m.stopChan:
-				return
-			default:
-				// Check each hotkey channel
-				for i, ch := range channels {
-					if ch != nil {
-						select {
-						case event := <-ch:
-							m.log.Info("Hotkey triggered", "entry", i, "event", event)
-							entry := m.hotkeys[i]
-
-							// Trigger the appropriate service
-							if entry.quickNote != nil {
-								entry.quickNote.Show()
-							} else if entry.mainWindow != nil {
-								entry.mainWindow.Show()
-							}
-						default:
-							// No event on this channel, continue
-						}
-					}
-				}
-			}
-		}
+		channels := m.hotkeyKeydownChannels()
+		m.runHotkeyEventLoop(channels)
 	}()
 
 	return nil
 }
 
-// listenChannels builds the per-hotkey keydown channel slice used by the listener loop.
-func (m *HotkeyManager) listenChannels() []<-chan hotkey.Event {
+func (m *HotkeyManager) hotkeyKeydownChannels() []<-chan hotkey.Event {
 	channels := make([]<-chan hotkey.Event, len(m.hotkeys))
 	for i, entry := range m.hotkeys {
 		if entry.hotkey != nil {
@@ -258,6 +230,42 @@ func (m *HotkeyManager) listenChannels() []<-chan hotkey.Event {
 		}
 	}
 	return channels
+}
+
+func (m *HotkeyManager) runHotkeyEventLoop(channels []<-chan hotkey.Event) {
+	for {
+		select {
+		case <-m.stopChan:
+			return
+		default:
+			m.pollHotkeyChannels(channels)
+		}
+	}
+}
+
+func (m *HotkeyManager) pollHotkeyChannels(channels []<-chan hotkey.Event) {
+	for i, ch := range channels {
+		if ch == nil {
+			continue
+		}
+		select {
+		case event := <-ch:
+			m.log.Info("Hotkey triggered", "entry", i, "event", event)
+			m.dispatchHotkeyForEntry(i)
+		default:
+		}
+	}
+}
+
+func (m *HotkeyManager) dispatchHotkeyForEntry(index int) {
+	entry := m.hotkeys[index]
+	if entry.quickNote != nil {
+		entry.quickNote.Show()
+		return
+	}
+	if entry.mainWindow != nil {
+		entry.mainWindow.Show()
+	}
 }
 
 // Stop ends the hotkey listening

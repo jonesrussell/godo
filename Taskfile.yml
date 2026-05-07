@@ -11,7 +11,7 @@ vars:
   BINARY_NAME: godo
   BUILD_DIR: dist
   COVERAGE_DIR: coverage
-  GO_VERSION: 1.25
+  GO_VERSION: 1.26
   GOOS:
     sh: go env GOOS
   VERSION:
@@ -29,7 +29,7 @@ tasks:
     silent: true
 
   install-tools:
-    desc: Install development tools (using Go 1.25 tool directive)
+    desc: Install development tools (uses Go tool directive in go.mod)
     cmds:
     - go get  # Install tools from go.mod tool directive
     - go mod tidy
@@ -193,7 +193,17 @@ tasks:
   wire:
     desc: Generate wire code for current platform
     cmds:
-    - wire ./internal/application/container
+    - task: build:wire:{{if eq OS "windows"}}windows{{else}}linux{{end}}
+
+  wire:regen:
+    desc: Regenerate Wire via scripts/regen-wire.sh (prints diff)
+    cmds:
+    - bash scripts/regen-wire.sh
+
+  wire:drift-check:
+    desc: Fail if wire_gen.go does not match wire_gen.sha256
+    cmds:
+    - bash scripts/check-wire-drift.sh
 
   mocks:
     desc: Generate all mocks using mockgen
@@ -267,3 +277,13 @@ tasks:
     cmds:
     - echo "Testing GUI in WSL2 environment"
     - go test -v ./internal/gui/...
+
+  spec:verify:
+    desc: Verify Spec Kitty installation and repo governance files
+    cmds:
+    - spec-kitty verify-setup
+
+  spec:sync:
+    desc: Sync charter.md to extracted governance YAML (run after charter edits)
+    cmds:
+    - spec-kitty charter sync

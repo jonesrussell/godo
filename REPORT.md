@@ -1,36 +1,35 @@
-# PR: fix/wire-api-config (ISSUE-001)
+# PR: fix/tests-repo-integration (ISSUE-003)
 
 ## Summary
 
-Align `ProvideUnifiedStorage` generated Wire output with `config.APIConfig` / `domain/storage.APIConfig` by using `InsecureSkipVerify` only, add `scripts/regen-wire.sh`, and track `wire_gen.go` via a `.gitignore` exception so fresh clones compile.
+Add `internal/domain/testhelpers` SQLite harness (modernc.org/sqlite, no CGO) and `repository_sqlite_test.go` with deterministic CRUD coverage for `NoteRepository` backed by a temp database.
 
 ## Changes
 
-- `internal/application/container/wire_gen.go` — regenerated with `go run github.com/google/wire/cmd/wire@v0.7.0` from `internal/application/container` (matches `wire.go`).
-- `scripts/regen-wire.sh` — runs Wire v0.7.0 for the container package.
-- `.gitignore` — exception `!internal/application/container/wire_gen.go` so DI output is versioned (previously matched `*_gen.go` and was absent from git).
+- `internal/domain/testhelpers/sqltest.go` — `NewTempSQLiteUnified` opens SQLite under `t.TempDir()` and returns `storage.UnifiedNoteStorage` + cleanup.
+- `internal/domain/repository/repository_sqlite_test.go` — integration-style CRUD test using the helper.
 
 ## How to verify
 
 ```bash
-./scripts/regen-wire.sh
+go test ./internal/domain/... -tags=wireinject -count=1 -v
 go test ./... -tags=wireinject -count=1
 ```
 
 ## Acceptance criteria
 
-- [ ] `go test ./... -tags=wireinject` passes on Linux without a pre-existing untracked `wire_gen.go`.
-- [ ] `internal/application/container/wire_gen.go` contains `InsecureSkipVerify: cfg.Storage.API.InsecureSkipVerify` in the API config literal (no `TLSInsecureSkipVerify`).
-- [ ] `./scripts/regen-wire.sh` completes without error and leaves a clean `git diff` for `wire_gen.go` when providers are unchanged.
+- [ ] `TestNoteRepository_SQLite_CRUD` passes on Linux without CGO.
+- [ ] Tests use only `t.TempDir()` paths (no shared global DB).
+- [ ] `go test ./... -tags=wireinject` passes when stacked on the Wire fix branch.
 
 ## Audit reference
 
 ```json
 {
-  "id": "ISSUE-001",
-  "severity": "critical",
-  "file": "internal/application/container/wire_gen.go",
-  "line": 183,
-  "message": "Generated Wire code references TLSInsecureSkipVerify..."
+  "id": "ISSUE-003",
+  "severity": "medium",
+  "file": "internal/domain/repository",
+  "line": 0,
+  "message": "Repository layer has no SQLite-backed integration tests..."
 }
 ```

@@ -9,7 +9,7 @@ tool (
 )
 
 require (
-	fyne.io/fyne/v2 v2.7.3
+	fyne.io/fyne/v2 v2.7.4
 	github.com/csturiale/hotkey v0.0.0-20240515122548-cdc70b36f123
 	github.com/go-playground/validator/v10 v10.30.2
 	github.com/golang-jwt/jwt/v4 v4.5.2
@@ -142,7 +142,7 @@ require (
 	github.com/matoous/godox v1.1.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.22 // indirect
-	github.com/mattn/go-runewidth v0.0.16 // indirect
+	github.com/mattn/go-runewidth v0.0.17 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/mgechev/revive v1.7.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
